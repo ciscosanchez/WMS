@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
+import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -19,6 +21,8 @@ export async function getInventory(filters?: {
   clientId?: string;
   search?: string;
 }) {
+  if (config.useMockData) return mockInventory;
+
   const { tenant } = await getContext();
 
   return tenant.db.inventory.findMany({
@@ -61,6 +65,8 @@ export async function getInventory(filters?: {
 }
 
 export async function getInventoryTransactions(filters?: { productId?: string; type?: string }) {
+  if (config.useMockData) return filters?.type ? mockTransactions.filter((t) => t.type === filters.type) : mockTransactions;
+
   const { tenant } = await getContext();
 
   return tenant.db.inventoryTransaction.findMany({
@@ -79,6 +85,8 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
 }
 
 export async function moveInventory(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", type: "move", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = moveInventorySchema.parse(data);
 
@@ -164,6 +172,8 @@ export async function moveInventory(data: unknown) {
 }
 
 export async function createAdjustment(headerData: unknown, lines: unknown[]) {
+  if (config.useMockData) return { id: "mock-new", adjustmentNumber: "ADJ-MOCK-0001", status: "draft", ...(headerData as any) };
+
   const { user, tenant } = await getContext();
   const header = adjustmentSchema.parse(headerData);
   const parsedLines = lines.map((l) => adjustmentLineSchema.parse(l));
@@ -206,6 +216,8 @@ export async function createAdjustment(headerData: unknown, lines: unknown[]) {
 }
 
 export async function approveAdjustment(id: string) {
+  if (config.useMockData) return;
+
   const { user, tenant } = await getContext();
 
   const adjustment = await tenant.db.inventoryAdjustment.findUniqueOrThrow({
@@ -286,6 +298,8 @@ export async function approveAdjustment(id: string) {
 }
 
 export async function getAdjustments() {
+  if (config.useMockData) return mockAdjustments;
+
   const { tenant } = await getContext();
   return tenant.db.inventoryAdjustment.findMany({
     include: { lines: true },

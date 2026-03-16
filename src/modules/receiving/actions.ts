@@ -52,6 +52,8 @@ export async function getShipment(id: string) {
 }
 
 export async function createShipment(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = inboundShipmentSchema.parse(data);
 
@@ -77,6 +79,8 @@ export async function createShipment(data: unknown) {
 }
 
 export async function addShipmentLine(shipmentId: string, data: unknown) {
+  if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = shipmentLineSchema.parse(data);
 
@@ -99,6 +103,8 @@ export async function updateShipmentStatus(
   id: string,
   status: "expected" | "arrived" | "receiving" | "inspection" | "completed" | "cancelled"
 ) {
+  if (config.useMockData) return { id, status };
+
   const { user, tenant } = await getContext();
 
   const updateData: Record<string, unknown> = { status };
@@ -128,6 +134,8 @@ export async function updateShipmentStatus(
 }
 
 export async function receiveLine(shipmentId: string, data: unknown) {
+  if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = receiveLineSchema.parse(data);
 
@@ -232,6 +240,8 @@ async function finalizeReceiving(
 }
 
 export async function createDiscrepancy(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = discrepancySchema.parse(data);
 
@@ -251,6 +261,8 @@ export async function createDiscrepancy(data: unknown) {
 }
 
 export async function resolveDiscrepancy(id: string, resolution: string) {
+  if (config.useMockData) return { id, status: "resolved", resolution };
+
   const { user, tenant } = await getContext();
 
   const disc = await tenant.db.receivingDiscrepancy.update({

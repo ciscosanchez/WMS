@@ -1,13 +1,16 @@
 import { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
 const LRU_MAX = 50;
 
 const pool = new Map<string, { client: PrismaClient; lastUsed: number }>();
 
-function buildUrl(schema: string): string {
+function buildConnectionString(schema: string): string {
   const base = process.env.DATABASE_URL!;
+  // Remove any existing schema param
   const url = new URL(base);
-  url.searchParams.set("schema", schema);
+  url.searchParams.delete("schema");
   return url.toString();
 }
 
@@ -35,12 +38,23 @@ export function getTenantDb(schema: string): PrismaClient {
     }
   }
 
-  const client = new PrismaClient({
-    datasourceUrl: buildUrl(schema),
+  const pgPool = new pg.Pool({
+    connectionString: buildConnectionString(schema),
   });
 
-  pool.set(schema, { client, lastUsed: Date.now() });
-  return client;
+  // Set search_path to the tenant schema on every new connection
+  const originalConnect = pgPool.connect.bind(pgPool);
+  pgPool.connect = async function () {
+    const client = await originalConnect();
+    await client.query(`SET search_path TO "${schema}"`);
+    return client;
+  } as any;
+
+  const adapter = new PrismaPg(pgPool, { schema });
+  const prismaClient = new PrismaClient({ adapter });
+
+  pool.set(schema, { client: prismaClient, lastUsed: Date.now() });
+  return prismaClient;
 }
 
 export async function disconnectAll() {
