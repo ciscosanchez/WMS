@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit, diffChanges } from "@/lib/audit";
 import { productSchema } from "./schemas";
+import { mockProducts } from "@/lib/mock-data";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -13,6 +15,8 @@ async function getContext() {
 }
 
 export async function getProducts(clientId?: string) {
+  if (config.useMockData) return clientId ? mockProducts.filter((p) => p.clientId === clientId) : mockProducts;
+
   const { tenant } = await getContext();
   return tenant.db.product.findMany({
     where: clientId ? { clientId } : undefined,
@@ -22,6 +26,8 @@ export async function getProducts(clientId?: string) {
 }
 
 export async function getProduct(id: string) {
+  if (config.useMockData) return mockProducts.find((p) => p.id === id) ?? null;
+
   const { tenant } = await getContext();
   return tenant.db.product.findUnique({
     where: { id },
@@ -30,6 +36,8 @@ export async function getProduct(id: string) {
 }
 
 export async function createProduct(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = productSchema.parse(data);
 
@@ -47,6 +55,8 @@ export async function createProduct(data: unknown) {
 }
 
 export async function updateProduct(id: string, data: unknown) {
+  if (config.useMockData) return { id, ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = productSchema.parse(data);
 
@@ -72,6 +82,8 @@ export async function updateProduct(id: string, data: unknown) {
 }
 
 export async function deleteProduct(id: string) {
+  if (config.useMockData) return;
+
   const { user, tenant } = await getContext();
   await tenant.db.product.delete({ where: { id } });
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
@@ -11,6 +12,7 @@ import {
   receiveLineSchema,
   discrepancySchema,
 } from "./schemas";
+import { mockShipments } from "@/lib/mock-data";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -19,6 +21,8 @@ async function getContext() {
 }
 
 export async function getShipments(status?: string) {
+  if (config.useMockData) return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
+
   const { tenant } = await getContext();
   return tenant.db.inboundShipment.findMany({
     where: status ? { status: status as any } : undefined,
@@ -32,6 +36,8 @@ export async function getShipments(status?: string) {
 }
 
 export async function getShipment(id: string) {
+  if (config.useMockData) return mockShipments.find((s) => s.id === id) ?? null;
+
   const { tenant } = await getContext();
   return tenant.db.inboundShipment.findUnique({
     where: { id },

@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { generateBinBarcode } from "@/lib/barcode";
 import { warehouseSchema, zoneSchema, bulkLocationSchema } from "./schemas";
+import { mockWarehouses } from "@/lib/mock-data";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -14,6 +16,8 @@ async function getContext() {
 }
 
 export async function getWarehouses() {
+  if (config.useMockData) return mockWarehouses;
+
   const { tenant } = await getContext();
   return tenant.db.warehouse.findMany({
     include: {
@@ -38,6 +42,8 @@ export async function getWarehouses() {
 }
 
 export async function getWarehouse(id: string) {
+  if (config.useMockData) return mockWarehouses.find((w) => w.id === id) ?? null;
+
   const { tenant } = await getContext();
   return tenant.db.warehouse.findUnique({
     where: { id },
@@ -62,6 +68,8 @@ export async function getWarehouse(id: string) {
 }
 
 export async function createWarehouse(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = warehouseSchema.parse(data);
 
@@ -79,6 +87,8 @@ export async function createWarehouse(data: unknown) {
 }
 
 export async function createZone(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = zoneSchema.parse(data);
 
@@ -96,6 +106,8 @@ export async function createZone(data: unknown) {
 }
 
 export async function generateBulkLocations(data: unknown) {
+  if (config.useMockData) return { zoneId: "mock-zone", binCount: 0 };
+
   const { user, tenant } = await getContext();
   const parsed = bulkLocationSchema.parse(data);
 
@@ -171,6 +183,8 @@ export async function generateBulkLocations(data: unknown) {
 }
 
 export async function getBins(warehouseId?: string) {
+  if (config.useMockData) return [];
+
   const { tenant } = await getContext();
   return tenant.db.bin.findMany({
     include: {

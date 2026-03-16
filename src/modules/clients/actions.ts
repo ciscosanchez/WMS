@@ -1,38 +1,42 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit, diffChanges } from "@/lib/audit";
 import { clientSchema } from "./schemas";
+import { mockClients } from "@/lib/mock-data";
 
 async function getContext() {
-  const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
+  const user = await requireAuth();
+  const tenant = await resolveTenant();
   if (!tenant) throw new Error("Tenant not found");
   return { user, tenant };
 }
 
 export async function getClients() {
+  if (config.useMockData) return mockClients;
+
   const { tenant } = await getContext();
-  return tenant.db.client.findMany({
-    orderBy: { name: "asc" },
-  });
+  return tenant.db.client.findMany({ orderBy: { name: "asc" } });
 }
 
 export async function getClient(id: string) {
+  if (config.useMockData) return mockClients.find((c) => c.id === id) ?? null;
+
   const { tenant } = await getContext();
   return tenant.db.client.findUnique({ where: { id } });
 }
 
 export async function createClient(data: unknown) {
+  if (config.useMockData) return { id: "mock-new", ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = clientSchema.parse(data);
 
   const client = await tenant.db.client.create({
-    data: {
-      ...parsed,
-      contactEmail: parsed.contactEmail || null,
-    },
+    data: { ...parsed, contactEmail: parsed.contactEmail || null },
   });
 
   await logAudit(tenant.db, {
@@ -47,16 +51,15 @@ export async function createClient(data: unknown) {
 }
 
 export async function updateClient(id: string, data: unknown) {
+  if (config.useMockData) return { id, ...(data as any) };
+
   const { user, tenant } = await getContext();
   const parsed = clientSchema.parse(data);
 
   const existing = await tenant.db.client.findUniqueOrThrow({ where: { id } });
   const client = await tenant.db.client.update({
     where: { id },
-    data: {
-      ...parsed,
-      contactEmail: parsed.contactEmail || null,
-    },
+    data: { ...parsed, contactEmail: parsed.contactEmail || null },
   });
 
   const changes = diffChanges(existing as any, parsed as any);
@@ -75,8 +78,9 @@ export async function updateClient(id: string, data: unknown) {
 }
 
 export async function deleteClient(id: string) {
-  const { user, tenant } = await getContext();
+  if (config.useMockData) return;
 
+  const { user, tenant } = await getContext();
   await tenant.db.client.delete({ where: { id } });
 
   await logAudit(tenant.db, {
