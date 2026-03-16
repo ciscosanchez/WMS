@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -117,9 +118,11 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Orders" description="Manage fulfillment orders from all channels">
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Order
+        <Button asChild>
+          <Link href="/orders/new">
+            <Plus className="mr-2 h-4 w-4" />
+            New Order
+          </Link>
         </Button>
       </PageHeader>
 
@@ -142,7 +145,12 @@ export default function OrdersPage() {
               <TableRow key={order.id}>
                 <TableCell>
                   <div>
-                    <span className="font-medium">{order.orderNumber}</span>
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {order.orderNumber}
+                    </Link>
                     {order.externalId && (
                       <span className="ml-2 text-xs text-muted-foreground">{order.externalId}</span>
                     )}

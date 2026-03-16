@@ -58,34 +58,36 @@ export default function WarehousePage() {
         {mockWarehouses.map((wh) => {
           const binCount = wh.zones.reduce((s, z) => s + z.binCount, 0);
           return (
-            <Card key={wh.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{wh.name}</CardTitle>
-                  <Badge variant="outline">{wh.code}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{wh.address}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Zones</p>
-                    <p className="text-lg font-semibold">{wh.zones.length}</p>
+            <Link key={wh.id} href={`/warehouse/${wh.id}`}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{wh.name}</CardTitle>
+                    <Badge variant="outline">{wh.code}</Badge>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Bins</p>
-                    <p className="text-lg font-semibold">{binCount}</p>
+                  <p className="text-sm text-muted-foreground">{wh.address}</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Zones</p>
+                      <p className="text-lg font-semibold">{wh.zones.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Bins</p>
+                      <p className="text-lg font-semibold">{binCount}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-1">
-                  {wh.zones.map((z) => (
-                    <Badge key={z.id} variant="secondary">
-                      {z.code} - {z.name}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="mt-4 flex flex-wrap gap-1">
+                    {wh.zones.map((z) => (
+                      <Badge key={z.id} variant="secondary">
+                        {z.code} - {z.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </div>
