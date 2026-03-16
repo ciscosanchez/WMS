@@ -38,7 +38,7 @@ export class AmazonAdapter implements MarketplaceAdapter {
    * Fetch orders from Amazon SP-API
    * GET /orders/v0/orders?MarketplaceIds={id}&CreatedAfter={since}
    */
-  async fetchOrders(since: Date): Promise<MarketplaceOrder[]> {
+  async fetchOrders(_since: Date): Promise<MarketplaceOrder[]> {
     // TODO: Implement SP-API OAuth token refresh + order fetch
     // Step 1: Exchange refresh token for access token via LWA
     // Step 2: GET /orders/v0/orders with SigV4 signing
@@ -78,7 +78,7 @@ export class AmazonAdapter implements MarketplaceAdapter {
    * Sync inventory to Amazon
    * POST /feeds/2021-06-30/feeds (JSON_LISTINGS_FEED)
    */
-  async syncInventory(updates: InventoryUpdate[]): Promise<void> {
+  async syncInventory(_updates: InventoryUpdate[]): Promise<void> {
     // TODO: Create inventory feed document, submit via Feeds API
     // Feed type: JSON_LISTINGS_FEED
     // Each update: { sku, fulfillment_availability: [{ quantity }] }
@@ -88,7 +88,7 @@ export class AmazonAdapter implements MarketplaceAdapter {
    * Push fulfillment/tracking to Amazon
    * POST /feeds/2021-06-30/feeds (POST_ORDER_FULFILLMENT_DATA)
    */
-  async pushFulfillment(update: FulfillmentUpdate): Promise<void> {
+  async pushFulfillment(_update: FulfillmentUpdate): Promise<void> {
     // TODO: Create order fulfillment feed
     // Feed type: POST_ORDER_FULFILLMENT_DATA
     // Include: order ID, tracking number, carrier code, ship date

@@ -41,7 +41,7 @@ export class NetSuiteClient {
   /**
    * Push billable events to NetSuite for invoice generation
    */
-  async pushBillableEvents(events: BillableEvent[]): Promise<{ invoiceId: string }> {
+  async pushBillableEvents(_events: BillableEvent[]): Promise<{ invoiceId: string }> {
     // TODO: Implement SuiteTalk REST API call
     // POST /services/rest/record/v1/invoice
     throw new Error("NetSuite integration not yet implemented");
@@ -50,7 +50,7 @@ export class NetSuiteClient {
   /**
    * Sync customer from NetSuite → WMS client
    */
-  async syncCustomer(netsuiteCustomerId: string): Promise<{
+  async syncCustomer(_netsuiteCustomerId: string): Promise<{
     name: string;
     code: string;
     email: string;
@@ -72,8 +72,8 @@ export class NetSuiteClient {
    * Push receiving confirmation (equivalent to item receipt in NetSuite)
    */
   async pushReceivingConfirmation(
-    shipmentId: string,
-    lines: Array<{
+    _shipmentId: string,
+    _lines: Array<{
       itemId: string;
       quantity: number;
       locationId: string;
@@ -87,9 +87,9 @@ export class NetSuiteClient {
    * Push shipment fulfillment (equivalent to item fulfillment in NetSuite)
    */
   async pushShipmentFulfillment(
-    orderId: string,
-    trackingNumber: string,
-    carrier: string
+    _orderId: string,
+    _trackingNumber: string,
+    _carrier: string
   ): Promise<void> {
     // TODO: POST /services/rest/record/v1/itemfulfillment
     throw new Error("NetSuite integration not yet implemented");

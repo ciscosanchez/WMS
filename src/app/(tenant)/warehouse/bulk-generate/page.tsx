@@ -39,6 +39,7 @@ export default function BulkGeneratePage() {
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const aisles = watch("aisles") || 0;
   const racks = watch("racksPerAisle") || 0;
   const shelves = watch("shelvesPerRack") || 0;

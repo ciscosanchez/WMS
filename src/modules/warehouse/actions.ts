@@ -184,7 +184,7 @@ export async function generateBulkLocations(data: unknown) {
   return { zoneId: zone.id, binCount };
 }
 
-export async function getBins(warehouseId?: string) {
+export async function getBins(_warehouseId?: string) {
   if (config.useMockData) return [];
 
   const { tenant } = await getContext();

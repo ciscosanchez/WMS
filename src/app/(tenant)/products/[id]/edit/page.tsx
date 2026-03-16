@@ -83,7 +83,7 @@ export default function EditProductPage() {
   const params = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [clients, setClients] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [clients] = useState(MOCK_CLIENTS);
 
   const {
     register,
@@ -97,9 +97,7 @@ export default function EditProductPage() {
   });
 
   useEffect(() => {
-    // Simulate fetching clients and product data
-    setClients(MOCK_CLIENTS);
-
+    // Simulate fetching product data
     const product = MOCK_PRODUCTS[params.id];
     if (product) {
       reset({

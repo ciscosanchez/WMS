@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -23,8 +23,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Truck, Package, ClipboardCheck, AlertTriangle } from "lucide-react";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ShipmentDetailProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shipment: any;
 }
 

@@ -135,6 +135,17 @@ export function useBarcodeScanner(options: ScannerOptions = {}): UseBarcodeScann
   }, []);
   const clear = useCallback(() => setBarcode(null), []);
 
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
   const startCamera = useCallback(async () => {
     if (!cameraSupported) return;
 
@@ -181,18 +192,7 @@ export function useBarcodeScanner(options: ScannerOptions = {}): UseBarcodeScann
     } catch {
       setCameraActive(false);
     }
-  }, [cameraSupported, onScan]);
-
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current = null;
-    }
-    setCameraActive(false);
-  }, []);
+  }, [cameraSupported, onScan, stopCamera]);
 
   // Cleanup on unmount
   useEffect(() => {

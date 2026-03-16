@@ -38,7 +38,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
    * Fetch orders from Shopify
    * GET /admin/api/2024-10/orders.json?status=any&updated_at_min={since}
    */
-  async fetchOrders(since: Date): Promise<MarketplaceOrder[]> {
+  async fetchOrders(_since: Date): Promise<MarketplaceOrder[]> {
     // TODO: Replace with real Shopify API call
     // const res = await fetch(`${this.baseUrl}/orders.json?status=unfulfilled&updated_at_min=${since.toISOString()}`, {
     //   headers: { "X-Shopify-Access-Token": this.config.accessToken }

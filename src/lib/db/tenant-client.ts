@@ -6,7 +6,7 @@ const LRU_MAX = 50;
 
 const pool = new Map<string, { client: PrismaClient; lastUsed: number }>();
 
-function buildConnectionString(schema: string): string {
+function buildConnectionString(_schema: string): string {
   const base = process.env.DATABASE_URL!;
   // Remove any existing schema param
   const url = new URL(base);

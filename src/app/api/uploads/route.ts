@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fileName, mimeType, entityType, entityId } = body;
+    const { fileName, mimeType: _mimeType, entityType, entityId } = body;
 
     if (!fileName || !entityType || !entityId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

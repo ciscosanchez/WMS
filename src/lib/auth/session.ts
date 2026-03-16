@@ -63,7 +63,7 @@ export async function requireTenantAccess(tenantSlug: string) {
   return { user, role: (membership?.role ?? "admin") as TenantRole };
 }
 
-export async function requirePermission(tenantSlug: string, permission: string) {
+export async function requirePermission(tenantSlug: string, _permission: string) {
   if (config.useMockData) {
     return { user: MOCK_USER, role: "admin" as TenantRole };
   }

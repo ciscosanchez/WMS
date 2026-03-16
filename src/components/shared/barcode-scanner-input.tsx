@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,14 @@ export function BarcodeScannerInput({
 }: BarcodeScannerInputProps) {
   const [manualInput, setManualInput] = useState("");
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
+
+  // Sync external value to manual input
+  useEffect(() => {
+    if (externalValue !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setManualInput(externalValue);
+    }
+  }, [externalValue]);
 
   function handleScanned(value: string) {
     if (showFeedback) {
@@ -63,13 +71,6 @@ export function BarcodeScannerInput({
       handleScanned(manualInput.trim());
       setManualInput("");
     }
-  }
-
-  // Sync external value to manual input
-  const prevExternalValue = useRef(externalValue);
-  if (externalValue !== undefined && externalValue !== prevExternalValue.current) {
-    prevExternalValue.current = externalValue;
-    setManualInput(externalValue);
   }
 
   return (

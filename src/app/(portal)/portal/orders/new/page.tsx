@@ -65,7 +65,7 @@ export default function NewOrderPage() {
     name: "lineItems",
   });
 
-  const onSubmit = (data: OrderForm) => {
+  const onSubmit = (_data: OrderForm) => {
     // Mock submission
     // Mock submission — will be replaced with real API call
     setSubmitted(true);

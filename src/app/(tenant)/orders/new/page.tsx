@@ -53,7 +53,7 @@ export default function NewOrderPage() {
   const [shipToCity, setShipToCity] = useState("");
   const [shipToState, setShipToState] = useState("");
   const [shipToZip, setShipToZip] = useState("");
-  const [shipToCountry, setShipToCountry] = useState("US");
+  const [_shipToCountry, _setShipToCountry] = useState("US");
   const [shipToPhone, setShipToPhone] = useState("");
   const [shipToEmail, setShipToEmail] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");

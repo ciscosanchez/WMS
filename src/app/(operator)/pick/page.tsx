@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { ScanLine, MapPin, Check, Clock, ChevronRight } from "lucide-react";
 

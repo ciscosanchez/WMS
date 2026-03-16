@@ -143,6 +143,7 @@ export default function NewProductPage() {
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="trackLot"
+                  // eslint-disable-next-line react-hooks/incompatible-library
                   checked={watch("trackLot")}
                   onCheckedChange={(v) => setValue("trackLot", !!v)}
                 />

@@ -24,12 +24,6 @@ const planColors: Record<string, string> = {
   enterprise: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
-const billingStatusColors: Record<string, string> = {
-  active: "bg-green-100 text-green-700 border-green-200",
-  past_due: "bg-red-100 text-red-700 border-red-200",
-  cancelled: "bg-gray-100 text-gray-700 border-gray-200",
-};
-
 const mockBillingTenants: BillingTenant[] = [
   {
     id: "1",
