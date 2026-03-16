@@ -100,9 +100,7 @@ export function BarcodeScannerInput({
           {feedback === "success" && (
             <Check className="absolute right-3 top-3.5 h-5 w-5 text-green-500" />
           )}
-          {feedback === "error" && (
-            <X className="absolute right-3 top-3.5 h-5 w-5 text-red-500" />
-          )}
+          {feedback === "error" && <X className="absolute right-3 top-3.5 h-5 w-5 text-red-500" />}
         </div>
         {cameraSupported && (
           <Button

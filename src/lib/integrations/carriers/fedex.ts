@@ -31,9 +31,7 @@ export class FedExAdapter implements CarrierAdapter {
 
   constructor(config: FedExConfig) {
     this.config = config;
-    this.baseUrl = config.useSandbox
-      ? "https://apis-sandbox.fedex.com"
-      : "https://apis.fedex.com";
+    this.baseUrl = config.useSandbox ? "https://apis-sandbox.fedex.com" : "https://apis.fedex.com";
   }
 
   /**

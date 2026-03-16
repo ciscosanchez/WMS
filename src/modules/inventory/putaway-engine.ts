@@ -180,7 +180,9 @@ export async function suggestPutawayLocation(
       suggestions.push(closest);
     }
 
-    return suggestions.length > 0 ? suggestions : [{ binId: "", barcode: "N/A", reason: "No bins available" }];
+    return suggestions.length > 0
+      ? suggestions
+      : [{ binId: "", barcode: "N/A", reason: "No bins available" }];
   }
 
   // ── Real DB mode ────────────────────────────────────

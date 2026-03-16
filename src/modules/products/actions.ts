@@ -15,7 +15,8 @@ async function getContext() {
 }
 
 export async function getProducts(clientId?: string) {
-  if (config.useMockData) return clientId ? mockProducts.filter((p) => p.clientId === clientId) : mockProducts;
+  if (config.useMockData)
+    return clientId ? mockProducts.filter((p) => p.clientId === clientId) : mockProducts;
 
   const { tenant } = await getContext();
   return tenant.db.product.findMany({

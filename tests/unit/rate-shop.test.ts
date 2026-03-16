@@ -77,12 +77,8 @@ describe("RateShopEngine", () => {
     });
 
     it("sorts by speed when requested", async () => {
-      const ups = makeMockAdapter("UPS", [
-        makeQuote("UPS", "Ground", 10.0, 5),
-      ]);
-      const fedex = makeMockAdapter("FedEx", [
-        makeQuote("FedEx", "Overnight", 50.0, 1),
-      ]);
+      const ups = makeMockAdapter("UPS", [makeQuote("UPS", "Ground", 10.0, 5)]);
+      const fedex = makeMockAdapter("FedEx", [makeQuote("FedEx", "Overnight", 50.0, 1)]);
       engine.registerAdapter(ups);
       engine.registerAdapter(fedex);
 
@@ -105,9 +101,7 @@ describe("RateShopEngine", () => {
         getTracking: jest.fn(),
         voidLabel: jest.fn(),
       };
-      const goodAdapter = makeMockAdapter("UPS", [
-        makeQuote("UPS", "Ground", 15.0, 5),
-      ]);
+      const goodAdapter = makeMockAdapter("UPS", [makeQuote("UPS", "Ground", 15.0, 5)]);
 
       engine.registerAdapter(failingAdapter);
       engine.registerAdapter(goodAdapter);

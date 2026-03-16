@@ -125,7 +125,12 @@ export default async function DashboardPage() {
           description="Items received today"
           icon={PackageCheck}
         />
-        <KpiCard title="Total SKUs" value={data.totalSkus} description="Active products" icon={Boxes} />
+        <KpiCard
+          title="Total SKUs"
+          value={data.totalSkus}
+          description="Active products"
+          icon={Boxes}
+        />
         <KpiCard
           title="Available Bins"
           value={data.availableBins}

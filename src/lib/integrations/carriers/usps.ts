@@ -94,7 +94,7 @@ export class USPSAdapter implements CarrierAdapter {
           <Length>${pkg.length}</Length>
           <Height>${pkg.height}</Height>
           <Machinable>TRUE</Machinable>
-        </Package>`,
+        </Package>`
           )
           .join("")}
       </RateV4Request>`;

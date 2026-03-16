@@ -192,7 +192,10 @@ export default function EDIConfigurationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="EDI Configuration" description="Manage trading partners and test EDI document parsing">
+      <PageHeader
+        title="EDI Configuration"
+        description="Manage trading partners and test EDI document parsing"
+      >
         <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />
           Add Partner
@@ -234,9 +237,7 @@ export default function EDIConfigurationPage() {
                   </TableCell>
                   <TableCell className="text-xs uppercase">{partner.communicationMethod}</TableCell>
                   <TableCell>
-                    <Badge className={STATUS_COLORS[partner.status]}>
-                      {partner.status}
-                    </Badge>
+                    <Badge className={STATUS_COLORS[partner.status]}>{partner.status}</Badge>
                   </TableCell>
                 </TableRow>
               ))}
@@ -266,7 +267,9 @@ export default function EDIConfigurationPage() {
             <Textarea
               rows={10}
               className="font-mono text-xs"
-              placeholder={"ISA*00*          *00*          *ZZ*SENDER         *ZZ*RECEIVER       *230101*1200*U*00401*000000001*0*P*:~\nGS*SW*SENDER*RECEIVER*20230101*1200*1*X*004010~\nST*940*0001~\n..."}
+              placeholder={
+                "ISA*00*          *00*          *ZZ*SENDER         *ZZ*RECEIVER       *230101*1200*U*00401*000000001*0*P*:~\nGS*SW*SENDER*RECEIVER*20230101*1200*1*X*004010~\nST*940*0001~\n..."
+              }
               value={rawEDI}
               onChange={(e) => setRawEDI(e.target.value)}
             />
@@ -383,9 +386,7 @@ export default function EDIConfigurationPage() {
             <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddPartner}>
-              Add Partner
-            </Button>
+            <Button onClick={handleAddPartner}>Add Partner</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

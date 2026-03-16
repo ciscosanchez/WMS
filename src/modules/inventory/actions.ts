@@ -8,11 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
 import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
-import {
-  type PaginatedResult,
-  paginateQuery,
-  buildPaginatedResult,
-} from "@/lib/pagination";
+import { type PaginatedResult, paginateQuery, buildPaginatedResult } from "@/lib/pagination";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -85,8 +81,7 @@ export async function getInventoryPaginated(opts: {
       const q = opts.search.toLowerCase();
       filtered = filtered.filter(
         (i: any) =>
-          i.product?.sku?.toLowerCase().includes(q) ||
-          i.product?.name?.toLowerCase().includes(q)
+          i.product?.sku?.toLowerCase().includes(q) || i.product?.name?.toLowerCase().includes(q)
       );
     }
     const total = filtered.length;
@@ -147,7 +142,10 @@ export async function getInventoryPaginated(opts: {
 }
 
 export async function getInventoryTransactions(filters?: { productId?: string; type?: string }) {
-  if (config.useMockData) return filters?.type ? mockTransactions.filter((t) => t.type === filters.type) : mockTransactions;
+  if (config.useMockData)
+    return filters?.type
+      ? mockTransactions.filter((t) => t.type === filters.type)
+      : mockTransactions;
 
   const { tenant } = await getContext();
 
@@ -185,8 +183,7 @@ export async function getInventoryTransactionsPaginated(opts: {
       const q = opts.search.toLowerCase();
       filtered = filtered.filter(
         (t: any) =>
-          t.product?.sku?.toLowerCase().includes(q) ||
-          t.referenceType?.toLowerCase().includes(q)
+          t.product?.sku?.toLowerCase().includes(q) || t.referenceType?.toLowerCase().includes(q)
       );
     }
     const total = filtered.length;
@@ -316,7 +313,13 @@ export async function moveInventory(data: unknown) {
 }
 
 export async function createAdjustment(headerData: unknown, lines: unknown[]) {
-  if (config.useMockData) return { id: "mock-new", adjustmentNumber: "ADJ-MOCK-0001", status: "draft", ...(headerData as any) };
+  if (config.useMockData)
+    return {
+      id: "mock-new",
+      adjustmentNumber: "ADJ-MOCK-0001",
+      status: "draft",
+      ...(headerData as any),
+    };
 
   const { user, tenant } = await getContext();
   const header = adjustmentSchema.parse(headerData);

@@ -77,9 +77,7 @@ const columns: ColumnDef<PortalOrder>[] = [
   {
     accessorKey: "orderNumber",
     header: "Order #",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("orderNumber")}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.getValue("orderNumber")}</span>,
   },
   {
     accessorKey: "status",

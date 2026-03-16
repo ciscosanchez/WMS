@@ -14,9 +14,27 @@ interface Document {
 }
 
 const mockDocuments: Document[] = [
-  { id: "d1", type: "bol", fileName: "BOL-2026-0042.pdf", fileSize: 245000, uploadedAt: "2026-03-12T10:30:00" },
-  { id: "d2", type: "packing_list", fileName: "PL-GLX-1234.pdf", fileSize: 128000, uploadedAt: "2026-03-12T10:31:00" },
-  { id: "d3", type: "photo", fileName: "dock-arrival-photo.jpg", fileSize: 1850000, uploadedAt: "2026-03-15T09:15:00" },
+  {
+    id: "d1",
+    type: "bol",
+    fileName: "BOL-2026-0042.pdf",
+    fileSize: 245000,
+    uploadedAt: "2026-03-12T10:30:00",
+  },
+  {
+    id: "d2",
+    type: "packing_list",
+    fileName: "PL-GLX-1234.pdf",
+    fileSize: 128000,
+    uploadedAt: "2026-03-12T10:31:00",
+  },
+  {
+    id: "d3",
+    type: "photo",
+    fileName: "dock-arrival-photo.jpg",
+    fileSize: 1850000,
+    uploadedAt: "2026-03-15T09:15:00",
+  },
 ];
 
 const typeLabels: Record<string, string> = {
@@ -54,10 +72,7 @@ export function DocumentPanel({ shipmentId, documents = mockDocuments }: Documen
           {documents.map((doc) => {
             const Icon = typeIcons[doc.type] || File;
             return (
-              <div
-                key={doc.id}
-                className="flex items-center gap-3 rounded-md border p-3"
-              >
+              <div key={doc.id} className="flex items-center gap-3 rounded-md border p-3">
                 <Icon className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{doc.fileName}</p>

@@ -13,11 +13,7 @@ function escapeCsvCell(value: string): string {
  * Build a CSV string from headers and row data, create a Blob,
  * and trigger a browser download.
  */
-export function exportToCsv(
-  filename: string,
-  headers: string[],
-  rows: string[][],
-) {
+export function exportToCsv(filename: string, headers: string[], rows: string[][]) {
   const headerLine = headers.map(escapeCsvCell).join(",");
   const bodyLines = rows.map((row) => row.map(escapeCsvCell).join(","));
   const csv = [headerLine, ...bodyLines].join("\r\n");

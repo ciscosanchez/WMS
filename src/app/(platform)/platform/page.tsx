@@ -11,13 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Building2,
-  Users,
-  Package,
-  ShoppingCart,
-  DollarSign,
-} from "lucide-react";
+import { Building2, Users, Package, ShoppingCart, DollarSign } from "lucide-react";
 
 const recentActivity = [
   {
@@ -80,36 +74,11 @@ export default function PlatformDashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <KpiCard
-          title="Total Tenants"
-          value={2}
-          description="+1 this month"
-          icon={Building2}
-        />
-        <KpiCard
-          title="Active Users"
-          value={12}
-          description="Across all tenants"
-          icon={Users}
-        />
-        <KpiCard
-          title="Total SKUs"
-          value={47}
-          description="Across all tenants"
-          icon={Package}
-        />
-        <KpiCard
-          title="Total Orders"
-          value={268}
-          description="+34 this week"
-          icon={ShoppingCart}
-        />
-        <KpiCard
-          title="MRR"
-          value="$4,200"
-          description="+$1,200 from upgrades"
-          icon={DollarSign}
-        />
+        <KpiCard title="Total Tenants" value={2} description="+1 this month" icon={Building2} />
+        <KpiCard title="Active Users" value={12} description="Across all tenants" icon={Users} />
+        <KpiCard title="Total SKUs" value={47} description="Across all tenants" icon={Package} />
+        <KpiCard title="Total Orders" value={268} description="+34 this week" icon={ShoppingCart} />
+        <KpiCard title="MRR" value="$4,200" description="+$1,200 from upgrades" icon={DollarSign} />
       </div>
 
       <div className="space-y-4">
@@ -136,12 +105,8 @@ export default function PlatformDashboardPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{activity.detail}</TableCell>
-                  <TableCell className="font-medium">
-                    {activity.tenant}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {activity.timestamp}
-                  </TableCell>
+                  <TableCell className="font-medium">{activity.tenant}</TableCell>
+                  <TableCell className="text-muted-foreground">{activity.timestamp}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

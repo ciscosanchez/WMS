@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,7 +99,14 @@ const allBinOptions = [
 export default function PutawayPage() {
   const [pending, setPending] = useState<PendingItem[]>(mockPendingItems);
   const [completed, setCompleted] = useState<
-    { id: string; productSku: string; productName: string; quantity: number; uom: string; binBarcode: string }[]
+    {
+      id: string;
+      productSku: string;
+      productName: string;
+      quantity: number;
+      uom: string;
+      binBarcode: string;
+    }[]
   >([]);
   const [dialogOpen, setDialogOpen] = useState<string | null>(null);
   const [selectedBin, setSelectedBin] = useState<string>("");

@@ -1,11 +1,5 @@
 import { PageHeader } from "@/components/shared/page-header";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Package, Activity, Receipt, Truck } from "lucide-react";
 
@@ -24,8 +18,7 @@ const reports = [
   },
   {
     title: "Billing Detail",
-    description:
-      "Itemized breakdown of storage, handling, and accessorial charges by period.",
+    description: "Itemized breakdown of storage, handling, and accessorial charges by period.",
     icon: Receipt,
   },
   {
@@ -39,10 +32,7 @@ const reports = [
 export default function PortalReportsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Reports"
-        description="Download reports for your account"
-      />
+      <PageHeader title="Reports" description="Download reports for your account" />
 
       <div className="grid gap-4 md:grid-cols-2">
         {reports.map((report) => {

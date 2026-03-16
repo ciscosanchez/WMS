@@ -132,19 +132,11 @@ export function FileUpload({
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file) => (
-            <div
-              key={file.key}
-              className="flex items-center gap-3 rounded-md border p-2 text-sm"
-            >
+            <div key={file.key} className="flex items-center gap-3 rounded-md border p-2 text-sm">
               <File className="h-4 w-4 text-muted-foreground" />
               <span className="flex-1 truncate">{file.fileName}</span>
               <span className="text-xs text-muted-foreground">{formatSize(file.size)}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeFile(file.key)}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeFile(file.key)}>
                 <X className="h-3 w-3" />
               </Button>
             </div>

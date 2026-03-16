@@ -8,12 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Store, Truck, Database, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -136,10 +131,7 @@ export default function IntegrationsPage() {
                       </div>
                     </>
                   ) : (
-                    <Button
-                      className="w-full"
-                      onClick={() => setConfiguring(mp.type)}
-                    >
+                    <Button className="w-full" onClick={() => setConfiguring(mp.type)}>
                       Connect {mp.name}
                     </Button>
                   )}
@@ -218,9 +210,7 @@ export default function IntegrationsPage() {
               <p className="text-sm text-muted-foreground">
                 Connect DispatchPro to sync LTL/FTL loads, tracking updates, and dock appointments.
               </p>
-              <Button onClick={() => setConfiguring("dispatchpro")}>
-                Connect DispatchPro
-              </Button>
+              <Button onClick={() => setConfiguring("dispatchpro")}>Connect DispatchPro</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -306,7 +296,7 @@ export default function IntegrationsPage() {
                   </div>
                 </>
               )}
-              {(configuring === "walmart") && (
+              {configuring === "walmart" && (
                 <>
                   <div className="space-y-2">
                     <Label>Client ID</Label>

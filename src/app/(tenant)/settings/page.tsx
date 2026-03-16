@@ -124,11 +124,7 @@ export default function SettingsPage() {
               <Label htmlFor="freightMode">Freight / 3PL</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="dtcMode"
-                checked={dtcMode}
-                onCheckedChange={(v) => setDtcMode(!!v)}
-              />
+              <Checkbox id="dtcMode" checked={dtcMode} onCheckedChange={(v) => setDtcMode(!!v)} />
               <Label htmlFor="dtcMode">DTC Fulfillment</Label>
             </div>
           </CardContent>

@@ -41,10 +41,7 @@ export default function NewTenantPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Create Tenant"
-        description="Provision a new tenant on the platform"
-      />
+      <PageHeader title="Create Tenant" description="Provision a new tenant on the platform" />
 
       <div className="mx-auto max-w-2xl">
         <Card>
@@ -54,10 +51,7 @@ export default function NewTenantPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label
-                  htmlFor="name"
-                  className="text-sm font-medium leading-none"
-                >
+                <label htmlFor="name" className="text-sm font-medium leading-none">
                   Tenant Name
                 </label>
                 <Input
@@ -70,10 +64,7 @@ export default function NewTenantPage() {
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="slug"
-                  className="text-sm font-medium leading-none"
-                >
+                <label htmlFor="slug" className="text-sm font-medium leading-none">
                   Slug
                 </label>
                 <Input
@@ -84,16 +75,12 @@ export default function NewTenantPage() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Used in URLs and as the database schema prefix. Auto-generated
-                  from the name.
+                  Used in URLs and as the database schema prefix. Auto-generated from the name.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label
-                  htmlFor="plan"
-                  className="text-sm font-medium leading-none"
-                >
+                <label htmlFor="plan" className="text-sm font-medium leading-none">
                   Plan
                 </label>
                 <select
@@ -113,9 +100,7 @@ export default function NewTenantPage() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-4 w-4 text-blue-600" />
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium text-blue-900">
-                        Schema Creation
-                      </p>
+                      <p className="font-medium text-blue-900">Schema Creation</p>
                       <p className="text-blue-700">
                         Provisioning will create a new PostgreSQL schema{" "}
                         <code className="rounded bg-blue-100 px-1 py-0.5 text-xs font-mono">

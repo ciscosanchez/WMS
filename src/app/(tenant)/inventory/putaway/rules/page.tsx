@@ -151,7 +151,10 @@ export default function PutawayRulesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Putaway Rules" description="Configure how received items are assigned to storage bins">
+      <PageHeader
+        title="Putaway Rules"
+        description="Configure how received items are assigned to storage bins"
+      >
         <Dialog
           open={addOpen}
           onOpenChange={(open) => {

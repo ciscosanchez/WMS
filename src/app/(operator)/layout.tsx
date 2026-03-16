@@ -55,12 +55,10 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
                   "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
                   isActive
                     ? "text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <item.icon
-                  className={cn("h-5 w-5", isActive && "text-primary")}
-                />
+                <item.icon className={cn("h-5 w-5", isActive && "text-primary")} />
                 {item.label}
               </Link>
             );

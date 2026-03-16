@@ -187,7 +187,7 @@ export default function BillingConfigPage() {
 
   function handleDefaultAmountChange(id: string, value: string) {
     setDefaultRates((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, amount: parseFloat(value) || 0 } : r)),
+      prev.map((r) => (r.id === id ? { ...r, amount: parseFloat(value) || 0 } : r))
     );
   }
 
@@ -214,7 +214,7 @@ export default function BillingConfigPage() {
 
   function handleClientRateChange(id: string, value: string) {
     setClientRates((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, amount: parseFloat(value) || 0 } : r)),
+      prev.map((r) => (r.id === id ? { ...r, amount: parseFloat(value) || 0 } : r))
     );
   }
 
@@ -237,8 +237,8 @@ export default function BillingConfigPage() {
                 overrideCount: overrides.length,
                 overrides,
               }
-            : c,
-        ),
+            : c
+        )
       );
 
       setSavingClient(false);
@@ -336,11 +336,7 @@ export default function BillingConfigPage() {
                     </TableCell>
                     <TableCell className="text-right">{client.overrideCount}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openClientDialog(client)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openClientDialog(client)}>
                         <Settings2 className="mr-2 h-4 w-4" />
                         Configure
                       </Button>

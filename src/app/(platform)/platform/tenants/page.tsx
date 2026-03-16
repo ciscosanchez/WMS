@@ -61,26 +61,20 @@ const columns: ColumnDef<Tenant>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Name" />,
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "slug",
     header: "Slug",
     cell: ({ row }) => (
-      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-        {row.original.slug}
-      </code>
+      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.original.slug}</code>
     ),
   },
   {
     accessorKey: "schema",
     header: "Schema",
     cell: ({ row }) => (
-      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-        {row.original.schema}
-      </code>
+      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.original.schema}</code>
     ),
   },
   {
@@ -94,8 +88,7 @@ const columns: ColumnDef<Tenant>[] = [
     cell: ({ row }) => {
       const plan = row.original.plan;
       const label = plan.charAt(0).toUpperCase() + plan.slice(1);
-      const colorClass =
-        planColors[plan] ?? "bg-gray-100 text-gray-700 border-gray-200";
+      const colorClass = planColors[plan] ?? "bg-gray-100 text-gray-700 border-gray-200";
       return (
         <Badge variant="outline" className={`font-medium ${colorClass}`}>
           {label}
@@ -132,17 +125,13 @@ const columns: ColumnDef<Tenant>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onSelect={() =>
-                alert(`View tenant: ${tenant.name} (not yet implemented)`)
-              }
+              onSelect={() => alert(`View tenant: ${tenant.name} (not yet implemented)`)}
             >
               <Eye className="mr-2 h-4 w-4" />
               View
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={() =>
-                alert(`Suspend tenant: ${tenant.name} (not yet implemented)`)
-              }
+              onSelect={() => alert(`Suspend tenant: ${tenant.name} (not yet implemented)`)}
             >
               <Ban className="mr-2 h-4 w-4" />
               Suspend
@@ -150,9 +139,7 @@ const columns: ColumnDef<Tenant>[] = [
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onSelect={() =>
-                alert(`Delete tenant: ${tenant.name} (not yet implemented)`)
-              }
+              onSelect={() => alert(`Delete tenant: ${tenant.name} (not yet implemented)`)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
@@ -167,10 +154,7 @@ const columns: ColumnDef<Tenant>[] = [
 export default function TenantsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Tenants"
-        description="Manage all tenants on the platform"
-      >
+      <PageHeader title="Tenants" description="Manage all tenants on the platform">
         <Button asChild>
           <Link href="/platform/tenants/new">
             <Plus className="mr-2 h-4 w-4" />

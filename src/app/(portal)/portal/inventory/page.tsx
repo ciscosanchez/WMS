@@ -122,10 +122,7 @@ const columns: ColumnDef<PortalInventory>[] = [
 export default function PortalInventoryPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="My Inventory"
-        description="Current stock levels for your products"
-      />
+      <PageHeader title="My Inventory" description="Current stock levels for your products" />
 
       <DataTable
         columns={columns}

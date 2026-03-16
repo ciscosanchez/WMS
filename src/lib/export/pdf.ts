@@ -2,15 +2,11 @@
  * Open a styled HTML table in a new window and invoke the browser
  * print dialog so the user can save as PDF or send to a printer.
  */
-export function exportTableToPdf(
-  title: string,
-  headers: string[],
-  rows: string[][],
-) {
+export function exportTableToPdf(title: string, headers: string[], rows: string[][]) {
   const headerCells = headers
     .map(
       (h) =>
-        `<th style="border:1px solid #cbd5e1;padding:8px 12px;background:#f1f5f9;text-align:left;font-weight:600;">${escapeHtml(h)}</th>`,
+        `<th style="border:1px solid #cbd5e1;padding:8px 12px;background:#f1f5f9;text-align:left;font-weight:600;">${escapeHtml(h)}</th>`
     )
     .join("");
 
@@ -20,9 +16,9 @@ export function exportTableToPdf(
         `<tr>${row
           .map(
             (cell) =>
-              `<td style="border:1px solid #cbd5e1;padding:8px 12px;">${escapeHtml(cell)}</td>`,
+              `<td style="border:1px solid #cbd5e1;padding:8px 12px;">${escapeHtml(cell)}</td>`
           )
-          .join("")}</tr>`,
+          .join("")}</tr>`
     )
     .join("");
 

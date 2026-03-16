@@ -81,9 +81,7 @@ export default function PickingPage() {
 
   function handleAssignToMe(taskId: string) {
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, assignedTo: "You", status: "in_progress" } : t,
-      ),
+      prev.map((t) => (t.id === taskId ? { ...t, assignedTo: "You", status: "in_progress" } : t))
     );
     toast.success("Task assigned to you");
   }
@@ -135,10 +133,7 @@ export default function PickingPage() {
                 <TableRow key={task.id}>
                   <TableCell className="font-medium">{task.taskNumber}</TableCell>
                   <TableCell>
-                    <Link
-                      href={`/orders/${task.orderId}`}
-                      className="text-primary hover:underline"
-                    >
+                    <Link href={`/orders/${task.orderId}`} className="text-primary hover:underline">
                       {task.orderNumber}
                     </Link>
                   </TableCell>
@@ -149,9 +144,7 @@ export default function PickingPage() {
                   </TableCell>
                   <TableCell>{task.items}</TableCell>
                   <TableCell>
-                    {task.assignedTo || (
-                      <span className="text-muted-foreground">Unassigned</span>
-                    )}
+                    {task.assignedTo || <span className="text-muted-foreground">Unassigned</span>}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={task.status} />
@@ -159,11 +152,7 @@ export default function PickingPage() {
                   <TableCell>{task.startedAt || "-"}</TableCell>
                   <TableCell>
                     {!task.assignedTo && task.status === "pending" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleAssignToMe(task.id)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => handleAssignToMe(task.id)}>
                         <UserPlus className="mr-1 h-3 w-3" />
                         Assign to me
                       </Button>

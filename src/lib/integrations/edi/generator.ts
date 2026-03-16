@@ -9,12 +9,7 @@
  *   - EDI 944: Warehouse Stock Transfer Receipt (confirmation of receiving)
  */
 
-import type {
-  EDI945Data,
-  EDI945LineItem,
-  EDI944Data,
-  EDI944LineItem,
-} from "./types";
+import type { EDI945Data, EDI945LineItem, EDI944Data, EDI944LineItem } from "./types";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -35,11 +30,7 @@ const SEGMENT_TERM = "~";
  *
  * ISA*00*          *00*          *ZZ*senderId       *ZZ*receiverId     *date*time*U*00401*controlNum*0*P*:~
  */
-function buildISA(
-  senderId: string,
-  receiverId: string,
-  controlNumber: string
-): string {
+function buildISA(senderId: string, receiverId: string, controlNumber: string): string {
   const now = new Date();
   const date = formatDate6(now); // YYMMDD
   const time = formatTime4(now); // HHMM
@@ -129,9 +120,7 @@ export function generate945(data: EDI945Data): string {
   lines.push(buildISA(data.senderId, data.receiverId, data.controlNumber));
 
   // GS — Functional Group Header (SW = Warehouse Shipping Advice)
-  lines.push(
-    buildGS("SW", data.senderId, data.receiverId, data.groupControlNumber)
-  );
+  lines.push(buildGS("SW", data.senderId, data.receiverId, data.groupControlNumber));
 
   // Build the transaction set content (between ST and SE)
   const txLines: string[] = [];
@@ -155,11 +144,7 @@ export function generate945(data: EDI945Data): string {
   if (data.header.shipToAddress) {
     txLines.push(seg("N1", "ST", data.header.shipToAddress.name ?? "Ship To"));
     txLines.push(
-      seg(
-        "N3",
-        data.header.shipToAddress.street1,
-        data.header.shipToAddress.street2 ?? ""
-      )
+      seg("N3", data.header.shipToAddress.street1, data.header.shipToAddress.street2 ?? "")
     );
     txLines.push(
       seg(
@@ -244,9 +229,7 @@ export function generate944(data: EDI944Data): string {
   lines.push(buildISA(data.senderId, data.receiverId, data.controlNumber));
 
   // GS — Functional Group Header (RE = Warehouse Stock Transfer Receipt Advice)
-  lines.push(
-    buildGS("RE", data.senderId, data.receiverId, data.groupControlNumber)
-  );
+  lines.push(buildGS("RE", data.senderId, data.receiverId, data.groupControlNumber));
 
   // Build the transaction set content
   const txLines: string[] = [];

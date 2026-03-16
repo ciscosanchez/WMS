@@ -62,9 +62,7 @@ export default function InviteUserPage() {
                 {...register("email", { required: "Email is required" })}
                 placeholder="user@company.com"
               />
-              {errors.email && (
-                <p className="text-xs text-destructive">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
@@ -73,9 +71,7 @@ export default function InviteUserPage() {
                 {...register("name", { required: "Name is required" })}
                 placeholder="John Doe"
               />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>Role *</Label>

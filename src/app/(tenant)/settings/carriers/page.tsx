@@ -154,8 +154,8 @@ export default function CarrierAccountsPage() {
                 credentials: { ...formValues },
                 accountNumber: formValues.accountNumber || formValues.userId || c.accountNumber,
               }
-            : c,
-        ),
+            : c
+        )
       );
 
       setSaving(false);

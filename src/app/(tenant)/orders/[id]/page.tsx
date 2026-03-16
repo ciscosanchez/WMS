@@ -73,7 +73,11 @@ const mockOrder = {
   timeline: [
     { event: "Order received from Amazon", at: new Date("2026-03-15T14:22:00"), by: "System" },
     { event: "Inventory allocated", at: new Date("2026-03-15T14:22:05"), by: "System" },
-    { event: "Pick task PICK-2026-0012 created", at: new Date("2026-03-16T09:00:00"), by: "System" },
+    {
+      event: "Pick task PICK-2026-0012 created",
+      at: new Date("2026-03-16T09:00:00"),
+      by: "System",
+    },
     {
       event: "Pick task assigned to Carlos M.",
       at: new Date("2026-03-16T10:30:00"),
@@ -115,7 +119,8 @@ export default function OrderDetailPage() {
     toast.success("Order cancelled");
   }
 
-  const isShipByOverdue = order.shipByDate < new Date() && !["shipped", "delivered", "cancelled"].includes(order.status);
+  const isShipByOverdue =
+    order.shipByDate < new Date() && !["shipped", "delivered", "cancelled"].includes(order.status);
 
   return (
     <div className="space-y-6">
@@ -193,7 +198,9 @@ export default function OrderDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
-              <Clock className={`h-4 w-4 ${isShipByOverdue ? "text-red-500" : "text-muted-foreground"}`} />
+              <Clock
+                className={`h-4 w-4 ${isShipByOverdue ? "text-red-500" : "text-muted-foreground"}`}
+              />
               <span className="text-sm text-muted-foreground">Ship By</span>
             </div>
             <p className={`mt-1 font-medium ${isShipByOverdue ? "text-red-600" : ""}`}>

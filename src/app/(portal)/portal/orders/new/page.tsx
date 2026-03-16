@@ -78,9 +78,7 @@ export default function NewOrderPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-8">
             <p className="text-lg font-medium text-green-600">Order submitted successfully!</p>
-            <p className="text-muted-foreground">
-              You will receive a confirmation email shortly.
-            </p>
+            <p className="text-muted-foreground">You will receive a confirmation email shortly.</p>
             <Button asChild variant="outline">
               <Link href="/portal/orders">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -129,9 +127,7 @@ export default function NewOrderPage() {
                 placeholder="Street address"
                 {...register("address", { required: "Address is required" })}
               />
-              {errors.address && (
-                <p className="text-xs text-red-500">{errors.address.message}</p>
-              )}
+              {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="grid gap-2">

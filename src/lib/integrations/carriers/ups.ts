@@ -102,9 +102,7 @@ export class UPSAdapter implements CarrierAdapter {
               StateProvinceCode: request.to.state,
               PostalCode: request.to.zip,
               CountryCode: request.to.country,
-              ...(request.to.isResidential
-                ? { ResidentialAddressIndicator: "" }
-                : {}),
+              ...(request.to.isResidential ? { ResidentialAddressIndicator: "" } : {}),
             },
           },
           Package: request.packages.map((pkg) => ({

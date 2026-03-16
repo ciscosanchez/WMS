@@ -21,7 +21,8 @@ async function getContext() {
 }
 
 export async function getShipments(status?: string) {
-  if (config.useMockData) return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
+  if (config.useMockData)
+    return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
 
   const { tenant } = await getContext();
   return tenant.db.inboundShipment.findMany({
@@ -52,7 +53,8 @@ export async function getShipment(id: string) {
 }
 
 export async function createShipment(data: unknown) {
-  if (config.useMockData) return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
+  if (config.useMockData)
+    return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
 
   const { user, tenant } = await getContext();
   const parsed = inboundShipmentSchema.parse(data);

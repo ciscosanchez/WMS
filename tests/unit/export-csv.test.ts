@@ -30,7 +30,14 @@ describe("CSV export utility", () => {
   });
 
   it("creates a CSV with headers and rows", () => {
-    exportToCsv("test.csv", ["Name", "Age"], [["Alice", "30"], ["Bob", "25"]]);
+    exportToCsv(
+      "test.csv",
+      ["Name", "Age"],
+      [
+        ["Alice", "30"],
+        ["Bob", "25"],
+      ]
+    );
 
     expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
     expect(anchorEl.download).toBe("test.csv");

@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  CreditCard,
-  Shield,
-} from "lucide-react";
+import { LayoutDashboard, Building2, Users, CreditCard, Shield } from "lucide-react";
 
 const platformNav = [
   { title: "Dashboard", href: "/platform", icon: LayoutDashboard },
@@ -18,11 +12,7 @@ const platformNav = [
   { title: "Billing", href: "/platform/billing", icon: CreditCard },
 ];
 
-export default function PlatformLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
@@ -35,19 +25,15 @@ export default function PlatformLayout({
               <Shield className="h-4 w-4 text-white" />
             </div>
             <span className="text-lg font-semibold">Ramola Platform</span>
-            <Badge className="bg-purple-600 text-white hover:bg-purple-600">
-              Platform
-            </Badge>
+            <Badge className="bg-purple-600 text-white hover:bg-purple-600">Platform</Badge>
           </Link>
 
           <nav className="ml-8 flex items-center gap-1">
             {platformNav.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/platform" &&
-                  pathname.startsWith(item.href + "/"));
-              const isExactDashboard =
-                item.href === "/platform" && pathname === "/platform";
+                (item.href !== "/platform" && pathname.startsWith(item.href + "/"));
+              const isExactDashboard = item.href === "/platform" && pathname === "/platform";
               const active = isActive || isExactDashboard;
 
               return (

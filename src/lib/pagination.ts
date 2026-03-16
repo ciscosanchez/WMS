@@ -11,10 +11,7 @@ export type PaginatedResult<T> = {
 /**
  * Converts a 1-based page number + pageSize into Prisma-compatible skip/take values.
  */
-export function paginateQuery(
-  page: number,
-  pageSize: number
-): { skip: number; take: number } {
+export function paginateQuery(page: number, pageSize: number): { skip: number; take: number } {
   const safePage = Math.max(1, page);
   return {
     skip: (safePage - 1) * pageSize,

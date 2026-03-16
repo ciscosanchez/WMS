@@ -188,18 +188,14 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
             </div>
             <div>
               <span className="text-muted-foreground">Expected:</span>{" "}
-              {shipment.expectedDate
-                ? format(new Date(shipment.expectedDate), "MMM d, yyyy")
-                : "-"}
+              {shipment.expectedDate ? format(new Date(shipment.expectedDate), "MMM d, yyyy") : "-"}
             </div>
             <div>
               <span className="text-muted-foreground">Created:</span>{" "}
               {format(new Date(shipment.createdAt), "MMM d, yyyy")}
             </div>
           </div>
-          {shipment.notes && (
-            <p className="mt-4 text-sm text-muted-foreground">{shipment.notes}</p>
-          )}
+          {shipment.notes && <p className="mt-4 text-sm text-muted-foreground">{shipment.notes}</p>}
         </CardContent>
       </Card>
 
@@ -295,9 +291,7 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
                     </TableCell>
                     <TableCell>{tx.bin?.barcode || "-"}</TableCell>
                     <TableCell>{tx.lotNumber || "-"}</TableCell>
-                    <TableCell>
-                      {format(new Date(tx.receivedAt), "MMM d, yyyy HH:mm")}
-                    </TableCell>
+                    <TableCell>{format(new Date(tx.receivedAt), "MMM d, yyyy HH:mm")}</TableCell>
                   </TableRow>
                 ))}
                 {(!shipment.transactions || shipment.transactions.length === 0) && (

@@ -7,12 +7,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { SortableHeader } from "@/components/data-table/sortable-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
-import {
-  DollarSign,
-  TrendingUp,
-  CreditCard,
-  BarChart3,
-} from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, BarChart3 } from "lucide-react";
 
 interface BillingTenant {
   id: string;
@@ -58,9 +53,7 @@ const columns: ColumnDef<BillingTenant>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Tenant" />,
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "plan",
@@ -68,8 +61,7 @@ const columns: ColumnDef<BillingTenant>[] = [
     cell: ({ row }) => {
       const plan = row.original.plan;
       const label = plan.charAt(0).toUpperCase() + plan.slice(1);
-      const colorClass =
-        planColors[plan] ?? "bg-gray-100 text-gray-700 border-gray-200";
+      const colorClass = planColors[plan] ?? "bg-gray-100 text-gray-700 border-gray-200";
       return (
         <Badge variant="outline" className={`font-medium ${colorClass}`}>
           {label}
@@ -79,9 +71,7 @@ const columns: ColumnDef<BillingTenant>[] = [
   },
   {
     accessorKey: "monthlyFee",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Monthly Fee" />
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Monthly Fee" />,
     cell: ({ row }) => {
       const fee = row.original.monthlyFee;
       return `$${fee.toLocaleString()}`;
@@ -94,9 +84,7 @@ const columns: ColumnDef<BillingTenant>[] = [
   },
   {
     accessorKey: "nextBillingDate",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Next Billing" />
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Next Billing" />,
     cell: ({ row }) => {
       const date = new Date(row.original.nextBillingDate);
       return date.toLocaleDateString("en-US", {

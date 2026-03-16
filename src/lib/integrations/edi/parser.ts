@@ -221,9 +221,7 @@ export function parse940(segments: EDISegment[]): EDIParsingResult<EDI940> {
   const shipToName = extractN1Name(segments, "ST");
 
   // G62 — Date/Time reference. Qualifier "10" = requested ship date
-  const g62 = segments.find(
-    (s) => s.id === "G62" && s.elements[0] === "10"
-  );
+  const g62 = segments.find((s) => s.id === "G62" && s.elements[0] === "10");
   const requestedShipDate = g62?.elements[1] || undefined;
 
   // TD5 — Carrier details
@@ -324,15 +322,11 @@ export function parse856(segments: EDISegment[]): EDIParsingResult<EDI856> {
   const carrierName = td5?.elements[4] || undefined;
 
   // REF — Reference numbers. Qualifier "BM" = Bill of Lading
-  const bolRef = segments.find(
-    (s) => s.id === "REF" && s.elements[0] === "BM"
-  );
+  const bolRef = segments.find((s) => s.id === "REF" && s.elements[0] === "BM");
   const bolNumber = bolRef?.elements[1] || undefined;
 
   // DTM — Date/Time reference. Qualifier "017" = estimated delivery
-  const dtm = segments.find(
-    (s) => s.id === "DTM" && s.elements[0] === "017"
-  );
+  const dtm = segments.find((s) => s.id === "DTM" && s.elements[0] === "017");
   const estimatedDeliveryDate = dtm?.elements[1] || undefined;
 
   // Addresses
@@ -415,10 +409,7 @@ export function parse856(segments: EDISegment[]): EDIParsingResult<EDI856> {
  * Segments are positional: after an N1 with the matching qualifier,
  * the next N3 and N4 segments provide the address.
  */
-function extractAddress(
-  segments: EDISegment[],
-  qualifier: string
-): EDIAddress | null {
+function extractAddress(segments: EDISegment[], qualifier: string): EDIAddress | null {
   let found = false;
   let street1 = "";
   let street2: string | undefined;
@@ -457,12 +448,7 @@ function extractAddress(
 }
 
 /** Extract the name from an N1 segment matching the given qualifier. */
-function extractN1Name(
-  segments: EDISegment[],
-  qualifier: string
-): string | null {
-  const n1 = segments.find(
-    (s) => s.id === "N1" && s.elements[0] === qualifier
-  );
+function extractN1Name(segments: EDISegment[], qualifier: string): string | null {
+  const n1 = segments.find((s) => s.id === "N1" && s.elements[0] === qualifier);
   return n1?.elements[1] ?? null;
 }

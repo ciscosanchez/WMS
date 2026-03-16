@@ -43,10 +43,7 @@ const mockShipments = [
 export default function PortalShipmentsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Shipments"
-        description="Track shipments for your orders"
-      />
+      <PageHeader title="Shipments" description="Track shipments for your orders" />
 
       <div className="rounded-md border">
         <Table>
@@ -73,9 +70,7 @@ export default function PortalShipmentsPage() {
                   <StatusBadge status={shipment.status} />
                 </TableCell>
                 <TableCell>
-                  {shipment.shippedDate
-                    ? format(shipment.shippedDate, "MMM d, yyyy")
-                    : "--"}
+                  {shipment.shippedDate ? format(shipment.shippedDate, "MMM d, yyyy") : "--"}
                 </TableCell>
               </TableRow>
             ))}

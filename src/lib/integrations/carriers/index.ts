@@ -5,7 +5,15 @@
  * to create a RateShopEngine from configuration.
  */
 
-export type { CarrierAdapter, RateRequest, RateQuote, LabelRequest, LabelResult, TrackingResult, TrackingEvent } from "./types";
+export type {
+  CarrierAdapter,
+  RateRequest,
+  RateQuote,
+  LabelRequest,
+  LabelResult,
+  TrackingResult,
+  TrackingEvent,
+} from "./types";
 export { RateShopEngine } from "./rate-shop";
 export { UPSAdapter } from "./ups";
 export type { UPSConfig } from "./ups";
@@ -69,7 +77,7 @@ export function createRateShopEngine(configs: CarrierConfig[]): RateShopEngine {
             userId: config.credentials.userId ?? "",
             password: config.credentials.password ?? "",
             useSandbox: config.credentials.useSandbox === "true",
-          }),
+          })
         );
         break;
 
@@ -80,7 +88,7 @@ export function createRateShopEngine(configs: CarrierConfig[]): RateShopEngine {
             clientSecret: config.credentials.clientSecret ?? "",
             accountNumber: config.credentials.accountNumber ?? "",
             useSandbox: config.credentials.useSandbox === "true",
-          }),
+          })
         );
         break;
 
@@ -89,7 +97,7 @@ export function createRateShopEngine(configs: CarrierConfig[]): RateShopEngine {
           new USPSAdapter({
             userId: config.credentials.userId ?? "",
             useSandbox: config.credentials.useSandbox === "true",
-          }),
+          })
         );
         break;
 

@@ -44,9 +44,7 @@ const columns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "quantity",
     header: "Qty",
-    cell: ({ row }) => (
-      <span className="text-right tabular-nums">{row.original.quantity}</span>
-    ),
+    cell: ({ row }) => <span className="text-right tabular-nums">{row.original.quantity}</span>,
   },
   {
     accessorKey: "lotNumber",
@@ -56,9 +54,7 @@ const columns: ColumnDef<TransactionRow>[] = [
   {
     accessorKey: "referenceType",
     header: "Reference",
-    cell: ({ row }) => (
-      <span className="text-xs">{row.original.referenceType || "-"}</span>
-    ),
+    cell: ({ row }) => <span className="text-xs">{row.original.referenceType || "-"}</span>,
   },
   {
     id: "date",

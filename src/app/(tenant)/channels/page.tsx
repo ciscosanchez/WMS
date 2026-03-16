@@ -130,17 +130,13 @@ export default function ChannelsPage() {
                 <Badge variant="outline" className={channelLogos[channel.type]}>
                   {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {channel.orderCount} orders
-                </span>
+                <span className="text-sm text-muted-foreground">{channel.orderCount} orders</span>
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <SyncStatusDot minutes={channel.lastSyncMinutes} />
                   {channel.lastSync ? (
-                    <p className="text-xs text-muted-foreground">
-                      Last synced {channel.lastSync}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Last synced {channel.lastSync}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">No sync history</p>
                   )}

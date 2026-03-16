@@ -4,11 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BarChartCard,
-  PieChartCard,
-  LineChartCard,
-} from "@/components/shared/charts";
+import { BarChartCard, PieChartCard, LineChartCard } from "@/components/shared/charts";
 import { Download } from "lucide-react";
 import { ExportButtons } from "@/components/shared/export-buttons";
 import { exportToCsv } from "@/lib/export/csv";
@@ -61,16 +57,10 @@ const ordersPerDay = [
 // --- Export data helpers ---
 
 const receivingHeaders = ["Client", "Receiving Volume"];
-const receivingRows = receivingByClient.map((d) => [
-  d.name,
-  String(d.value),
-]);
+const receivingRows = receivingByClient.map((d) => [d.name, String(d.value)]);
 
 const inventoryHeaders = ["Category", "Quantity"];
-const inventoryRows = inventoryByCategory.map((d) => [
-  d.name,
-  String(d.value),
-]);
+const inventoryRows = inventoryByCategory.map((d) => [d.name, String(d.value)]);
 
 const billingHeaders = ["Service", "Revenue ($)"];
 const billingRows = billingByService.map((d) => [d.name, String(d.value)]);
@@ -117,15 +107,8 @@ export default function ReportsPage() {
               color="hsl(160, 60%, 45%)"
             />
             <PieChartCard title="Revenue by Service" data={billingByService} />
-            <BarChartCard
-              title="Receiving Volume by Client"
-              data={receivingByClient}
-            />
-            <BarChartCard
-              title="Orders per Day"
-              data={ordersPerDay}
-              color="hsl(220, 70%, 55%)"
-            />
+            <BarChartCard title="Receiving Volume by Client" data={receivingByClient} />
+            <BarChartCard title="Orders per Day" data={ordersPerDay} color="hsl(220, 70%, 55%)" />
           </div>
         </TabsContent>
 
@@ -138,31 +121,22 @@ export default function ReportsPage() {
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <BarChartCard
-              title="Receiving Volume by Client"
-              data={receivingByClient}
-            />
+            <BarChartCard title="Receiving Volume by Client" data={receivingByClient} />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Receiving Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Total Shipments (MTD)
-                  </span>
+                  <span className="text-muted-foreground">Total Shipments (MTD)</span>
                   <span className="font-medium">34</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Total Items Received
-                  </span>
+                  <span className="text-muted-foreground">Total Items Received</span>
                   <span className="font-medium">2,847</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Avg Dock-to-Stock Time
-                  </span>
+                  <span className="text-muted-foreground">Avg Dock-to-Stock Time</span>
                   <span className="font-medium">2.4 hrs</span>
                 </div>
                 <div className="flex justify-between">
@@ -187,10 +161,7 @@ export default function ReportsPage() {
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <PieChartCard
-              title="Inventory by Category"
-              data={inventoryByCategory}
-            />
+            <PieChartCard title="Inventory by Category" data={inventoryByCategory} />
             <LineChartCard
               title="Storage Utilization Trend (%)"
               data={storageUtilTrend}
@@ -206,9 +177,7 @@ export default function ReportsPage() {
                   <span className="font-medium">47</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Total Units on Hand
-                  </span>
+                  <span className="text-muted-foreground">Total Units on Hand</span>
                   <span className="font-medium">7,305</span>
                 </div>
                 <div className="flex justify-between">
@@ -220,24 +189,18 @@ export default function ReportsPage() {
                   <span className="font-medium">76%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Low Stock Alerts
-                  </span>
+                  <span className="text-muted-foreground">Low Stock Alerts</span>
                   <span className="font-medium text-orange-600">2</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Inventory Accuracy
-                  </span>
+                  <span className="text-muted-foreground">Inventory Accuracy</span>
                   <span className="font-medium text-green-600">99.2%</span>
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
-                  Top Products by Volume
-                </CardTitle>
+                <CardTitle className="text-base">Top Products by Volume</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -274,11 +237,7 @@ export default function ReportsPage() {
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <BarChartCard
-              title="Orders per Day"
-              data={ordersPerDay}
-              color="hsl(220, 70%, 55%)"
-            />
+            <BarChartCard title="Orders per Day" data={ordersPerDay} color="hsl(220, 70%, 55%)" />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Fulfillment Summary</CardTitle>
@@ -297,9 +256,7 @@ export default function ReportsPage() {
                   <span className="font-medium">4.2 min</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Ship-by Compliance
-                  </span>
+                  <span className="text-muted-foreground">Ship-by Compliance</span>
                   <span className="font-medium text-green-600">97.4%</span>
                 </div>
                 <div className="flex justify-between">
@@ -307,9 +264,7 @@ export default function ReportsPage() {
                   <span className="font-medium">3 (1.1%)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Avg Shipping Cost
-                  </span>
+                  <span className="text-muted-foreground">Avg Shipping Cost</span>
                   <span className="font-medium">$8.42</span>
                 </div>
               </CardContent>
@@ -319,22 +274,13 @@ export default function ReportsPage() {
 
         <TabsContent value="billing" className="space-y-4 pt-4">
           <div className="flex justify-end">
-            <ExportButtons
-              title="Billing Report"
-              headers={billingHeaders}
-              rows={billingRows}
-            />
+            <ExportButtons title="Billing Report" headers={billingHeaders} rows={billingRows} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <PieChartCard
-              title="Revenue by Service"
-              data={billingByService}
-            />
+            <PieChartCard title="Revenue by Service" data={billingByService} />
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
-                  Billing Summary (MTD)
-                </CardTitle>
+                <CardTitle className="text-base">Billing Summary (MTD)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -342,27 +288,19 @@ export default function ReportsPage() {
                   <span className="font-medium">$12,400</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Handling Revenue
-                  </span>
+                  <span className="text-muted-foreground">Handling Revenue</span>
                   <span className="font-medium">$8,200</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Receiving Revenue
-                  </span>
+                  <span className="text-muted-foreground">Receiving Revenue</span>
                   <span className="font-medium">$3,100</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Shipping Revenue
-                  </span>
+                  <span className="text-muted-foreground">Shipping Revenue</span>
                   <span className="font-medium">$5,600</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Value-Add Revenue
-                  </span>
+                  <span className="text-muted-foreground">Value-Add Revenue</span>
                   <span className="font-medium">$1,800</span>
                 </div>
                 <div className="flex justify-between border-t pt-2">

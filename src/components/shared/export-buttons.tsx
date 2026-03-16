@@ -16,19 +16,11 @@ export function ExportButtons({ title, headers, rows }: ExportButtonsProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => exportToCsv(csvFilename, headers, rows)}
-      >
+      <Button variant="outline" size="sm" onClick={() => exportToCsv(csvFilename, headers, rows)}>
         <Download className="mr-2 h-4 w-4" />
         Export CSV
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => exportTableToPdf(title, headers, rows)}
-      >
+      <Button variant="outline" size="sm" onClick={() => exportTableToPdf(title, headers, rows)}>
         <Printer className="mr-2 h-4 w-4" />
         Print PDF
       </Button>

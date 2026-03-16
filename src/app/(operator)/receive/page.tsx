@@ -31,9 +31,7 @@ const mockPendingShipments = [
 
 export default function OperatorReceivePage() {
   function handleScan(value: string) {
-    const match = mockPendingShipments.find(
-      (s) => s.number === value || value.includes(s.number)
-    );
+    const match = mockPendingShipments.find((s) => s.number === value || value.includes(s.number));
     if (match) {
       toast.success(`Found shipment ${match.number}`);
     } else {
