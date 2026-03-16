@@ -1,37 +1,48 @@
-# Armstrong WMS — Full Roadmap to Production
+# Ramola WMS — Full Roadmap to Production
+
+*Last updated: 2026-03-16*
 
 ## Current State Summary
 
-The WMS has **31 routes**, a complete UI scaffold with mock data, two Prisma schemas, and server action stubs. No database is connected yet — all pages render from hardcoded mock data.
+The WMS has **49 routes across 4 apps** (WMS back-office, Operator App, Client Portal, Superadmin Platform). Postgres is running in Docker on port 5433 with Prisma pg driver adapter. Pages support both mock data and real DB queries via the `USE_MOCK_DATA` toggle.
 
 ### What's Built
 
 | Area | Status | Details |
 |------|--------|---------|
-| UI Shell | Done | Sidebar nav, topbar, breadcrumbs, responsive layout |
-| Dashboard | UI only | 5 KPI cards, recent activity feed (mock) |
-| Clients CRUD | UI only | List (DataTable), create form |
-| Products CRUD | UI only | List (DataTable), create form with UOM/tracking |
-| Warehouse | UI only | Warehouse cards, bulk location generator form |
-| Receiving | UI only | Shipment list, detail view, receive/add-line dialogs |
-| Fulfillment Orders | UI only | Order table with channels, priorities, statuses |
-| Picking | UI only | Pick task list with KPIs |
-| Shipping | UI only | Outbound shipment table with carrier/tracking |
-| Inventory Browser | UI only | Stock table with location/lot/availability |
-| Movements Ledger | UI only | Transaction history table |
-| Adjustments | UI only | Adjustment list |
-| Cycle Counts | UI only | Placeholder |
-| Channels | UI only | Sales channel cards |
-| Reports | Placeholder | Report type cards, no actual reports |
-| Settings | Placeholder | Setting category cards |
-| Operator App | UI only | Receive, pick, pack, move, count (mobile layout) |
-| Prisma Schemas | Done | Public + tenant schemas with all models |
-| Server Actions | Stubs | All CRUD + business logic, not connected |
-| Auth | Bypassed | NextAuth configured but bypassed with mock user |
+| UI Shell | Done | Sidebar nav, topbar, breadcrumbs, search (Cmd+K), notifications |
+| Dashboard | Done | 5 KPI cards, 4 charts (recharts), recent activity feed |
+| Clients CRUD | Done | List, create, edit, delete with DataTable |
+| Products CRUD | Done | List, create, edit, delete with UOM/tracking |
+| Warehouse | Done | Cards, detail page with zones/aisles, bulk generator, add zone |
+| Receiving | Done | Shipment list, detail with tabs, receive dialog, add line, document upload |
+| Fulfillment Orders | Done | Order list, detail with timeline, create form with line items |
+| Picking | Done | Pick task list with KPIs, assignment |
+| Shipping | Done | Outbound table, detail with tracking timeline, reprint label |
+| Inventory Browser | Done | Stock table with location/lot/availability |
+| Movements Ledger | Done | Transaction history table |
+| Adjustments | Done | List page, create form with variance calculation |
+| Cycle Counts | Done | Plans table with KPIs, create dialog, start count |
+| Channels | Done | Sales channel cards |
+| Reports | Done | 5 tabs with charts + summary metrics, CSV export |
+| Settings | Done | General config, operational modes, sequence prefixes, user management, invite |
+| Operator App | Done | Receive, pick, pack, move, count (5 mobile-optimized pages) |
+| Client Portal | Done | Inventory, orders, shipments, billing, reports (6 pages) |
+| Superadmin Platform | Done | Dashboard, tenant management, billing overview (4 pages) |
+| Database | Done | Docker Postgres 16 on port 5433, Prisma pg adapter, seeded |
+| Auth | Done | Login page with mock/real toggle, SessionProvider restored |
+| Prisma Schemas | Done | Public + tenant with fulfillment models, driver adapters |
+| Server Actions | Done | All CRUD with mock/real toggle per function |
 | RBAC | Done | 4 roles, permission map, helpers |
-| Audit Logging | Done | Utility functions, not wired |
-| Sequence Numbers | Done | Auto-number generator utility |
+| Integration Layer | Stubs | NetSuite client, carrier types, rate shop engine, marketplace types |
+| Audit Logging | Done | Utility functions |
+| Sequence Numbers | Done | Auto-number generator |
+| File Upload | Done | Pre-signed URL upload API, file upload component, document panel |
+| CSV/PDF Export | Done | CSV download utility, print-to-PDF, export buttons |
+| Error Handling | Done | Error boundary, 404, loading skeletons |
+| Dockerfile | Done | Multi-stage build, standalone output |
 | Tests | Started | 4 unit test files, Playwright config |
+| Docs | Done | Architecture, data model, ecosystem, flows, deployment, competitive analysis |
 
 ---
 
@@ -364,17 +375,58 @@ The WMS has **31 routes**, a complete UI scaffold with mock data, two Prisma sch
 
 ---
 
-## Estimated Effort (Rough)
+## Updated Priority List (2026-03-16)
 
-| Phase | Effort | Depends On |
-|-------|--------|------------|
-| A. Wire Up Database | 1-2 weeks | Docker, Postgres access |
-| B. Complete CRUD & Workflows | 2-3 weeks | Phase A |
-| C. Client Portal | 1-2 weeks | Phase A |
-| D. Integrations | 3-5 weeks | Phase A, API access to NetSuite/DispatchPro |
-| E. Operator App Polish | 1-2 weeks | Phase B |
-| F. Dashboard & Reporting | 1-2 weeks | Phase A |
-| G. Settings & Admin | 1 week | Phase A |
-| H. Hardening | 2-3 weeks | All phases |
+```
+✅ COMPLETED                          🔲 REMAINING
+──────────────────────────────────    ──────────────────────────────────
+✅ A1. Database (Docker+PG+Prisma)   🔲 B2. Full receiving workflow loop
+✅ A2. Auth (login/mock toggle)      🔲 B3. Full inventory workflow loop
+✅ A3. Tenant resolution             🔲 B4. Full fulfillment workflow loop
+✅ A4. Server actions (mock+real)    🔲 D1. NetSuite bridge (real API)
+✅ A5. Audit + sequences             🔲 D2. DispatchPro bridge
+✅ B1. Edit pages                    🔲 D3. Carrier integrations (UPS/FedEx)
+✅ B5. Document upload (MinIO)       🔲 D4. Marketplace connectors (Shopify)
+✅ C1-C3. Client Portal (6 pages)   🔲 D5. EDI 940/945
+✅ D stubs. Integration contracts    🔲 E1. PWA / offline
+✅ E. Operator App (5 pages)         🔲 E2. Scanner integration
+✅ F1. Dashboard KPIs + charts       🔲 G3. Billing config (rate cards)
+✅ F2. Reports (5 tabs + export)     🔲 H2. Testing (unit + integration)
+✅ F3. CSV/PDF export                🔲 H3. Security hardening
+✅ F4. Global search (Cmd+K)         🔲 H4. Performance (pagination)
+✅ F5. Notifications                 🔲 H5. Mobile responsive polish
+✅ G1. User management + invite
+✅ G2. Tenant settings
+✅ G4. Superadmin platform
+✅ H1. Error handling + skeletons
+✅ Cycle count plans + create
+✅ Adjustment creation form
+✅ Shipping detail + timeline
+✅ Order detail + timeline
+✅ Warehouse detail + zone mgmt
+```
 
-**Total to production-ready MVP: ~12-20 weeks** depending on integration complexity and team size.
+### Next Up (Priority Order)
+1. **B2. Receiving workflow** — Complete status flow with real DB mutations
+2. **B4. Fulfillment workflow** — Allocation → pick → pack → ship with DB
+3. **B3. Inventory workflow** — Putaway rules, adjustment approval
+4. **G3. Billing config** — Rate cards per client
+5. **H2. Testing** — Unit + integration tests for workflows
+6. **D1-D4. Integrations** — Need API credentials
+
+---
+
+## Estimated Remaining Effort
+
+| Phase | Effort | Status |
+|-------|--------|--------|
+| A. Database Foundation | ~~1-2 weeks~~ | ✅ Complete |
+| B. Complete Workflows | 2-3 weeks | 🔲 Remaining |
+| C. Client Portal | ~~1-2 weeks~~ | ✅ Complete |
+| D. Integrations | 3-5 weeks | 🔲 Stubs done, real APIs remaining |
+| E. Operator App Polish | 1 week | 🔲 PWA + scanner |
+| F. Dashboard & Reporting | ~~1-2 weeks~~ | ✅ Complete |
+| G. Settings & Admin | ~~1 week~~ | ✅ Complete (billing config remaining) |
+| H. Hardening | 2-3 weeks | 🔲 Testing + security |
+
+**Remaining to production: ~8-12 weeks** (down from 12-20)

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { updateShipmentStatus } from "@/modules/receiving/actions";
+import { DocumentPanel } from "./document-panel";
 import { ReceiveLineDialog } from "./receive-line-dialog";
 import { AddLineDialog } from "./add-line-dialog";
 import { toast } from "sonner";
@@ -275,11 +276,7 @@ export function ShipmentDetail({ shipment }: ShipmentDetailProps) {
         </TabsContent>
 
         <TabsContent value="documents">
-          <p className="text-sm text-muted-foreground">
-            {shipment.documents.length === 0
-              ? "No documents uploaded"
-              : `${shipment.documents.length} document(s)`}
-          </p>
+          <DocumentPanel shipmentId={shipment.id} />
         </TabsContent>
       </Tabs>
 
