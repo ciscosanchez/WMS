@@ -31,6 +31,7 @@ import {
   ScanLine,
   Truck,
   Store,
+  ArrowDownToLine,
 } from "lucide-react";
 
 const navigation = [
@@ -57,6 +58,7 @@ const navigation = [
     label: "Inventory",
     items: [
       { title: "Stock Browser", href: "/inventory", icon: Boxes },
+      { title: "Putaway", href: "/inventory/putaway", icon: ArrowDownToLine },
       { title: "Movements", href: "/inventory/movements", icon: ArrowLeftRight },
       { title: "Adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
       { title: "Cycle Counts", href: "/inventory/cycle-counts", icon: ListChecks },

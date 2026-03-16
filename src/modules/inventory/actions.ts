@@ -8,6 +8,11 @@ import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
 import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
+import {
+  type PaginatedResult,
+  paginateQuery,
+  buildPaginatedResult,
+} from "@/lib/pagination";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -64,6 +69,83 @@ export async function getInventory(filters?: {
   });
 }
 
+export async function getInventoryPaginated(opts: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  productId?: string;
+  binId?: string;
+}): Promise<PaginatedResult<any>> {
+  const page = opts.page ?? 1;
+  const pageSize = opts.pageSize ?? 20;
+
+  if (config.useMockData) {
+    let filtered = [...mockInventory];
+    if (opts.search) {
+      const q = opts.search.toLowerCase();
+      filtered = filtered.filter(
+        (i: any) =>
+          i.product?.sku?.toLowerCase().includes(q) ||
+          i.product?.name?.toLowerCase().includes(q)
+      );
+    }
+    const total = filtered.length;
+    const { skip, take } = paginateQuery(page, pageSize);
+    return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
+  }
+
+  const { tenant } = await getContext();
+
+  const where = {
+    ...(opts.productId ? { productId: opts.productId } : {}),
+    ...(opts.binId ? { binId: opts.binId } : {}),
+    ...(opts.search
+      ? {
+          product: {
+            OR: [
+              { sku: { contains: opts.search, mode: "insensitive" as const } },
+              { name: { contains: opts.search, mode: "insensitive" as const } },
+            ],
+          },
+        }
+      : {}),
+  };
+
+  const { skip, take } = paginateQuery(page, pageSize);
+
+  const [data, total] = await Promise.all([
+    tenant.db.inventory.findMany({
+      where,
+      include: {
+        product: { include: { client: true } },
+        bin: {
+          include: {
+            shelf: {
+              include: {
+                rack: {
+                  include: {
+                    aisle: {
+                      include: {
+                        zone: { include: { warehouse: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take,
+    }),
+    tenant.db.inventory.count({ where }),
+  ]);
+
+  return buildPaginatedResult(data, total, page, pageSize);
+}
+
 export async function getInventoryTransactions(filters?: { productId?: string; type?: string }) {
   if (config.useMockData) return filters?.type ? mockTransactions.filter((t) => t.type === filters.type) : mockTransactions;
 
@@ -82,6 +164,68 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
     orderBy: { performedAt: "desc" },
     take: 100,
   });
+}
+
+export async function getInventoryTransactionsPaginated(opts: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  productId?: string;
+  type?: string;
+}): Promise<PaginatedResult<any>> {
+  const page = opts.page ?? 1;
+  const pageSize = opts.pageSize ?? 20;
+
+  if (config.useMockData) {
+    let filtered = [...mockTransactions];
+    if (opts.type) {
+      filtered = filtered.filter((t: any) => t.type === opts.type);
+    }
+    if (opts.search) {
+      const q = opts.search.toLowerCase();
+      filtered = filtered.filter(
+        (t: any) =>
+          t.product?.sku?.toLowerCase().includes(q) ||
+          t.referenceType?.toLowerCase().includes(q)
+      );
+    }
+    const total = filtered.length;
+    const { skip, take } = paginateQuery(page, pageSize);
+    return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
+  }
+
+  const { tenant } = await getContext();
+
+  const where = {
+    ...(opts.productId ? { productId: opts.productId } : {}),
+    ...(opts.type ? { type: opts.type as any } : {}),
+    ...(opts.search
+      ? {
+          product: {
+            sku: { contains: opts.search, mode: "insensitive" as const },
+          },
+        }
+      : {}),
+  };
+
+  const { skip, take } = paginateQuery(page, pageSize);
+
+  const [data, total] = await Promise.all([
+    tenant.db.inventoryTransaction.findMany({
+      where,
+      include: {
+        product: true,
+        fromBin: true,
+        toBin: true,
+      },
+      orderBy: { performedAt: "desc" },
+      skip,
+      take,
+    }),
+    tenant.db.inventoryTransaction.count({ where }),
+  ]);
+
+  return buildPaginatedResult(data, total, page, pageSize);
 }
 
 export async function moveInventory(data: unknown) {

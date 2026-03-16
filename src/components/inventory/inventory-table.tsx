@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/data-table/data-table";
+import { ServerDataTable } from "@/components/data-table/server-data-table";
 import { SortableHeader } from "@/components/data-table/sortable-header";
 import { Badge } from "@/components/ui/badge";
 
@@ -82,8 +82,30 @@ const columns: ColumnDef<InventoryRow>[] = [
   },
 ];
 
-export function InventoryTable({ data }: { data: InventoryRow[] }) {
+interface InventoryTableProps {
+  data: InventoryRow[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  searchValue?: string;
+}
+
+export function InventoryTable({
+  data,
+  totalCount,
+  currentPage,
+  pageSize,
+  searchValue,
+}: InventoryTableProps) {
   return (
-    <DataTable columns={columns} data={data} searchKey="sku" searchPlaceholder="Search by SKU..." />
+    <ServerDataTable
+      columns={columns}
+      data={data}
+      totalCount={totalCount}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      searchValue={searchValue}
+      searchPlaceholder="Search by SKU or product name..."
+    />
   );
 }
