@@ -168,10 +168,13 @@ wms/
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Data Model](docs/data-model.md)
-- [Receiving Flow](docs/flow-receiving.md)
-- [Fulfillment Flow](docs/flow-fulfillment.md)
+- [Architecture](docs/architecture.md) — System design, multi-tenancy, auth, dual-mode operations
+- [Data Model](docs/data-model.md) — Full ER diagrams for all schemas
+- [Ecosystem](docs/ecosystem.md) — All Armstrong systems and how they connect
+- [Identification to Cash](docs/flow-identification-to-cash.md) — Complete user flow from lead gen to revenue collection
+- [Receiving Flow](docs/flow-receiving.md) — Freight/3PL inbound workflow
+- [Fulfillment Flow](docs/flow-fulfillment.md) — DTC/e-commerce order-to-ship workflow
+- [Competitive Analysis](docs/competitive-analysis.md) — Armstrong vs Logiwa, NetSuite, Magaya, Extensiv
 
 ## Roadmap
 
