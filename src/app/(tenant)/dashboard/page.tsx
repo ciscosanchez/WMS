@@ -1,6 +1,7 @@
 import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { KpiCard } from "@/components/shared/kpi-card";
+import { DashboardCharts } from "@/components/shared/dashboard-charts";
 import { PackageOpen, PackageCheck, Boxes, MapPin, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -138,6 +139,9 @@ export default async function DashboardPage() {
           icon={AlertTriangle}
         />
       </div>
+
+      {/* Charts */}
+      <DashboardCharts />
 
       <Card>
         <CardHeader>

@@ -10,8 +10,8 @@ function createClient() {
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
   });
-  const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+  const adapter = new PrismaPg(pool as any);
+  return new PrismaClient({ adapter } as any);
 }
 
 export const publicDb = globalForPrisma.publicPrisma ?? createClient();

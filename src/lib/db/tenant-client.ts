@@ -50,8 +50,8 @@ export function getTenantDb(schema: string): PrismaClient {
     return client;
   } as any;
 
-  const adapter = new PrismaPg(pgPool, { schema });
-  const prismaClient = new PrismaClient({ adapter });
+  const adapter = new PrismaPg(pgPool as any, { schema });
+  const prismaClient = new PrismaClient({ adapter } as any);
 
   pool.set(schema, { client: prismaClient, lastUsed: Date.now() });
   return prismaClient;

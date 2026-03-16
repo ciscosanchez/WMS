@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Breadcrumbs } from "./breadcrumbs";
+import { SearchCommand } from "./search-command";
+import { NotificationBell } from "./notification-bell";
 
 export function Topbar() {
   return (
@@ -20,6 +22,8 @@ export function Topbar() {
       <Separator orientation="vertical" className="mr-2 h-4" />
       <Breadcrumbs />
       <div className="ml-auto flex items-center gap-2">
+        <SearchCommand />
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full">
             <Avatar className="h-8 w-8">
@@ -30,9 +34,7 @@ export function Topbar() {
             <DropdownMenuLabel>
               <div className="flex flex-col">
                 <span>Admin User</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  admin@ramola.io
-                </span>
+                <span className="text-xs font-normal text-muted-foreground">admin@ramola.io</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
