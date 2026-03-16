@@ -3,6 +3,8 @@ import { exportToCsv } from "@/lib/export/csv";
 describe("CSV export utility", () => {
   let clickSpy: jest.Mock;
   let anchorEl: Partial<HTMLAnchorElement>;
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
 
   beforeEach(() => {
     clickSpy = jest.fn();
@@ -16,12 +18,15 @@ describe("CSV export utility", () => {
     jest.spyOn(document, "createElement").mockReturnValue(anchorEl as HTMLAnchorElement);
     jest.spyOn(document.body, "appendChild").mockImplementation((node) => node);
     jest.spyOn(document.body, "removeChild").mockImplementation((node) => node);
-    jest.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-url");
-    jest.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    // jsdom does not implement URL.createObjectURL/revokeObjectURL, so assign directly
+    URL.createObjectURL = jest.fn().mockReturnValue("blob:mock-url");
+    URL.revokeObjectURL = jest.fn();
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it("creates a CSV with headers and rows", () => {
