@@ -174,6 +174,7 @@ wms/
 - [Identification to Cash](docs/flow-identification-to-cash.md) — Complete user flow from lead gen to revenue collection
 - [Receiving Flow](docs/flow-receiving.md) — Freight/3PL inbound workflow
 - [Fulfillment Flow](docs/flow-fulfillment.md) — DTC/e-commerce order-to-ship workflow
+- [Document Intelligence](docs/document-intelligence.md) — AI-powered BOL/packing list OCR, eliminating manual keying
 - [Competitive Analysis](docs/competitive-analysis.md) — Armstrong vs Logiwa, NetSuite, Magaya, Extensiv
 
 ## Roadmap

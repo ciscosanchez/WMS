@@ -15,6 +15,7 @@ Armstrong operates multiple systems that together support the full lifecycle fro
 | **Client Portal** | Needs building | Customer self-service inventory/orders/billing |
 | **Marketplace Connectors** | Needs building | Shopify, Amazon, Walmart, EDI 940/945 |
 | **Carrier Integrations** | Needs building | UPS/FedEx/USPS APIs, rate shopping, labels |
+| **Document Intelligence** | Needs building | AI-powered BOL/packing list OCR (Claude Vision API) |
 | **Sales CRM** | Gap — NetSuite CRM or HubSpot? | Lead management, quoting, contract mgmt |
 | **Yard Management** | Gap | Dock scheduling, trailer tracking, gate check-in |
 | **Billing Engine** | Gap (WMS → NetSuite bridge) | Activity-based billing calc from WMS events |

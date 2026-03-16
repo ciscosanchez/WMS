@@ -131,6 +131,24 @@ Permission check:
 
 Both modes share the same inventory, warehouse, and client infrastructure. A single tenant can have both modes enabled simultaneously — e.g., receiving containers from overseas (freight) and shipping DTC orders from the same warehouse (fulfillment).
 
+### Document Intelligence (AI-Powered OCR)
+
+Paper BOLs, packing lists, and commercial invoices are the biggest bottleneck in warehouse receiving. Armstrong uses AI vision (Claude API) to eliminate manual keying:
+
+```
+  Paper BOL / Packing List / Invoice
+       │
+       ▼
+  ┌─ CAPTURE ──────┐     ┌─ EXTRACT ────────┐     ┌─ VERIFY ─────┐     ┌─ POST ──────┐
+  │ Phone camera    │────►│ Claude Vision API│────►│ Side-by-side │────►│ Create ASN  │
+  │ Scanner         │     │ Structured JSON  │     │ review UI    │     │ Add lines   │
+  │ Email attach    │     │ + confidence     │     │ Fix low-conf │     │ Attach doc  │
+  │ Upload          │     │ scores per field │     │ fields       │     │ Audit trail │
+  └─────────────────┘     └──────────────────┘     └──────────────┘     └─────────────┘
+```
+
+Reduces BOL processing from 10-15 min manual keying to 1-2 min review. See [docs/document-intelligence.md](document-intelligence.md) for full design.
+
 ### Immutable Transaction Ledger
 
 Every inventory change creates an `inventory_transaction` record:
