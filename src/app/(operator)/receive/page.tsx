@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { ScanLine, Camera, Package, Check } from "lucide-react";
+import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
+import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 const mockPendingShipments = [
   {
@@ -30,7 +30,16 @@ const mockPendingShipments = [
 ];
 
 export default function OperatorReceivePage() {
-  const [scanInput, setScanInput] = useState("");
+  function handleScan(value: string) {
+    const match = mockPendingShipments.find(
+      (s) => s.number === value || value.includes(s.number)
+    );
+    if (match) {
+      toast.success(`Found shipment ${match.number}`);
+    } else {
+      toast.error(`No shipment found for: ${value}`);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -39,28 +48,14 @@ export default function OperatorReceivePage() {
         <p className="text-sm text-muted-foreground">Scan BOL or select shipment</p>
       </div>
 
-      {/* Scan input — large, optimized for barcode scanners */}
-      <div className="relative">
-        <ScanLine className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
-        <Input
-          placeholder="Scan BOL or ASN barcode..."
-          className="h-12 pl-10 text-lg"
-          value={scanInput}
-          onChange={(e) => setScanInput(e.target.value)}
-          autoFocus
-        />
-      </div>
+      {/* Scan input — supports hardware scanner + camera */}
+      <BarcodeScannerInput
+        placeholder="Scan BOL or ASN barcode..."
+        onScan={handleScan}
+        showFeedback
+      />
 
-      <div className="flex gap-2">
-        <Button variant="outline" className="flex-1 h-12">
-          <Camera className="mr-2 h-5 w-5" />
-          Scan BOL Photo
-        </Button>
-        <Button variant="outline" className="flex-1 h-12">
-          <Package className="mr-2 h-5 w-5" />
-          Manual Entry
-        </Button>
-      </div>
+      {/* Camera button integrated into BarcodeScannerInput */}
 
       {/* Pending shipments */}
       <div>
