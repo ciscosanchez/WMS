@@ -43,6 +43,12 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader title="Settings" description="Manage your warehouse configuration">
         <Button asChild variant="outline">
+          <Link href="/settings/integrations">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Integrations
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
           <Link href="/settings/billing">
             <DollarSign className="mr-2 h-4 w-4" />
             Billing

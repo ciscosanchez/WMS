@@ -1,11 +1,25 @@
+"use client";
+
+import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { toast } from "sonner";
 
-const mockChannels = [
+interface Channel {
+  id: string;
+  name: string;
+  type: string;
+  isActive: boolean;
+  orderCount: number;
+  lastSync: string | null;
+  lastSyncMinutes: number | null;
+}
+
+const mockChannels: Channel[] = [
   {
     id: "1",
     name: "Acme Shopify Store",
@@ -13,6 +27,7 @@ const mockChannels = [
     isActive: true,
     orderCount: 142,
     lastSync: "2 min ago",
+    lastSyncMinutes: 2,
   },
   {
     id: "2",
@@ -21,6 +36,7 @@ const mockChannels = [
     isActive: true,
     orderCount: 89,
     lastSync: "5 min ago",
+    lastSyncMinutes: 5,
   },
   {
     id: "3",
@@ -29,6 +45,7 @@ const mockChannels = [
     isActive: true,
     orderCount: 34,
     lastSync: "15 min ago",
+    lastSyncMinutes: 15,
   },
   {
     id: "4",
@@ -37,8 +54,17 @@ const mockChannels = [
     isActive: true,
     orderCount: 23,
     lastSync: null,
+    lastSyncMinutes: null,
   },
-  { id: "5", name: "Initech API", type: "api", isActive: false, orderCount: 0, lastSync: null },
+  {
+    id: "5",
+    name: "Initech API",
+    type: "api",
+    isActive: false,
+    orderCount: 0,
+    lastSync: "2 hours ago",
+    lastSyncMinutes: 120,
+  },
 ];
 
 const channelLogos: Record<string, string> = {
@@ -49,7 +75,38 @@ const channelLogos: Record<string, string> = {
   api: "bg-purple-100 text-purple-700",
 };
 
+function SyncStatusDot({ minutes }: { minutes: number | null }) {
+  if (minutes === null) return null;
+
+  let color: string;
+  let title: string;
+
+  if (minutes <= 15) {
+    color = "bg-green-500";
+    title = "Synced recently";
+  } else if (minutes <= 60) {
+    color = "bg-yellow-500";
+    title = "Last sync > 15 min ago";
+  } else {
+    color = "bg-red-500";
+    title = "Last sync > 1 hour ago";
+  }
+
+  return <span className={`inline-block h-2 w-2 rounded-full ${color}`} title={title} />;
+}
+
 export default function ChannelsPage() {
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  function handleSync(channel: Channel) {
+    if (syncingId) return;
+    setSyncingId(channel.id);
+    setTimeout(() => {
+      setSyncingId(null);
+      toast.success(`${channel.name} synced successfully`);
+    }, 1200);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Sales Channels" description="Connect marketplaces and order sources">
@@ -73,11 +130,37 @@ export default function ChannelsPage() {
                 <Badge variant="outline" className={channelLogos[channel.type]}>
                   {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
                 </Badge>
-                <span className="text-sm text-muted-foreground">{channel.orderCount} orders</span>
+                <span className="text-sm text-muted-foreground">
+                  {channel.orderCount} orders
+                </span>
               </div>
-              {channel.lastSync && (
-                <p className="mt-2 text-xs text-muted-foreground">Last synced {channel.lastSync}</p>
-              )}
+              <div className="mt-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SyncStatusDot minutes={channel.lastSyncMinutes} />
+                  {channel.lastSync ? (
+                    <p className="text-xs text-muted-foreground">
+                      Last synced {channel.lastSync}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No sync history</p>
+                  )}
+                </div>
+                {channel.isActive && channel.type !== "manual" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={syncingId === channel.id}
+                    onClick={() => handleSync(channel)}
+                  >
+                    {syncingId === channel.id ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-1 h-3 w-3" />
+                    )}
+                    Sync Now
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

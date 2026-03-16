@@ -36,7 +36,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-6">
           {/* Logo */}
@@ -99,7 +99,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl p-6">{children}</main>
+      <main className="mx-auto max-w-7xl flex-1 p-6">{children}</main>
+
+      <footer className="border-t py-4">
+        <p className="text-center text-xs text-muted-foreground">
+          Powered by Ramola WMS &copy; {new Date().getFullYear()}
+        </p>
+      </footer>
     </div>
   );
 }
