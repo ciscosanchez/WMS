@@ -127,3 +127,29 @@
     @apply font-sans;
   }
 }
+
+/* Mobile responsive utilities */
+@layer utilities {
+  /* Hide scrollbar but keep scroll */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  nav, header, .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
