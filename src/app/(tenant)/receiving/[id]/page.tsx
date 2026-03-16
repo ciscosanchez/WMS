@@ -1,0 +1,98 @@
+import { ShipmentDetail } from "@/components/receiving/shipment-detail";
+
+const mockShipment = {
+  id: "2",
+  shipmentNumber: "ASN-2026-0002",
+  clientId: "2",
+  status: "receiving",
+  carrier: "XPO Logistics",
+  trackingNumber: "XPO-789456123",
+  bolNumber: "BOL-2026-0042",
+  poNumber: "PO-GLX-1234",
+  expectedDate: "2026-03-15",
+  arrivedDate: "2026-03-15",
+  completedDate: null,
+  notes: "Fragile items — handle with care. Dock door 3.",
+  createdAt: "2026-03-12",
+  client: { code: "GLOBEX", name: "Globex Industries" },
+  lines: [
+    {
+      id: "l1",
+      productId: "4",
+      expectedQty: 500,
+      receivedQty: 300,
+      uom: "EA",
+      lotNumber: "LOT-2026-003",
+      serialNumber: null,
+      product: { sku: "BOLT-M8X40", name: "M8x40 Hex Bolt" },
+      transactions: [],
+    },
+    {
+      id: "l2",
+      productId: "5",
+      expectedQty: 200,
+      receivedQty: 200,
+      uom: "FT",
+      lotNumber: "LOT-2026-005",
+      serialNumber: null,
+      product: { sku: "PIPE-SCH40", name: "Schedule 40 Steel Pipe 2in" },
+      transactions: [],
+    },
+    {
+      id: "l3",
+      productId: "4",
+      expectedQty: 100,
+      receivedQty: 0,
+      uom: "EA",
+      lotNumber: "LOT-2026-004",
+      serialNumber: null,
+      product: { sku: "BOLT-M8X40", name: "M8x40 Hex Bolt (Stainless)" },
+      transactions: [],
+    },
+  ],
+  transactions: [
+    {
+      id: "t1",
+      quantity: 200,
+      condition: "good",
+      lotNumber: "LOT-2026-003",
+      receivedAt: "2026-03-15T10:30:00",
+      bin: { barcode: "WH1-B-02-01-01-05" },
+      line: { product: { sku: "BOLT-M8X40" } },
+    },
+    {
+      id: "t2",
+      quantity: 100,
+      condition: "good",
+      lotNumber: "LOT-2026-003",
+      receivedAt: "2026-03-15T11:00:00",
+      bin: { barcode: "WH1-B-02-01-01-06" },
+      line: { product: { sku: "BOLT-M8X40" } },
+    },
+    {
+      id: "t3",
+      quantity: 200,
+      condition: "good",
+      lotNumber: "LOT-2026-005",
+      receivedAt: "2026-03-15T11:30:00",
+      bin: { barcode: "WH1-B-02-02-01-01" },
+      line: { product: { sku: "PIPE-SCH40" } },
+    },
+  ],
+  discrepancies: [
+    {
+      id: "d1",
+      type: "shortage",
+      description: "Missing 5 units of BOLT-M8X40 from pallet 3",
+      expectedQty: 100,
+      actualQty: 95,
+      status: "open",
+      createdAt: "2026-03-15",
+    },
+  ],
+  documents: [],
+};
+
+export default function ShipmentDetailPage() {
+  return <ShipmentDetail shipment={mockShipment} />;
+}
