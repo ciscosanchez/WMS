@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Building2, Users, Save } from "lucide-react";
+import { Building2, DollarSign, Users, Save } from "lucide-react";
 
 export default function SettingsPage() {
   const [companyName, setCompanyName] = useState("Armstrong Warehouse");
@@ -42,6 +42,12 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Settings" description="Manage your warehouse configuration">
+        <Button asChild variant="outline">
+          <Link href="/settings/billing">
+            <DollarSign className="mr-2 h-4 w-4" />
+            Billing
+          </Link>
+        </Button>
         <Button asChild variant="outline">
           <Link href="/settings/users">
             <Users className="mr-2 h-4 w-4" />

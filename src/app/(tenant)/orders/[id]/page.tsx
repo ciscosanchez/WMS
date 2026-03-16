@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +18,18 @@ import {
 } from "@/components/ui/table";
 import { ShoppingCart, Package, Truck, MapPin, User, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+
+const orderStatusFlow: Record<string, { next: string; label: string; confirm?: string }> = {
+  pending: { next: "awaiting_fulfillment", label: "Accept Order" },
+  awaiting_fulfillment: { next: "allocated", label: "Allocate Inventory" },
+  allocated: { next: "picking", label: "Generate Pick Task" },
+  picking: { next: "picked", label: "Mark Picked" },
+  picked: { next: "packing", label: "Start Packing" },
+  packing: { next: "packed", label: "Mark Packed" },
+  packed: { next: "shipped", label: "Ship Order", confirm: "Create shipment and mark as shipped?" },
+  shipped: { next: "delivered", label: "Mark Delivered" },
+};
 
 const mockOrder = {
   id: "2",
@@ -53,19 +69,11 @@ const mockOrder = {
     assignedTo: "Carlos M.",
     startedAt: new Date("2026-03-16T10:30:00"),
   },
-  shipments: [],
+  shipments: [] as any[],
   timeline: [
     { event: "Order received from Amazon", at: new Date("2026-03-15T14:22:00"), by: "System" },
-    {
-      event: "Inventory allocated",
-      at: new Date("2026-03-15T14:22:05"),
-      by: "System",
-    },
-    {
-      event: "Pick task PICK-2026-0012 created",
-      at: new Date("2026-03-16T09:00:00"),
-      by: "System",
-    },
+    { event: "Inventory allocated", at: new Date("2026-03-15T14:22:05"), by: "System" },
+    { event: "Pick task PICK-2026-0012 created", at: new Date("2026-03-16T09:00:00"), by: "System" },
     {
       event: "Pick task assigned to Carlos M.",
       at: new Date("2026-03-16T10:30:00"),
@@ -75,8 +83,39 @@ const mockOrder = {
 };
 
 export default function OrderDetailPage() {
-  const order = mockOrder;
+  const router = useRouter();
+  const [order, setOrder] = useState(mockOrder);
+  const [processing, setProcessing] = useState(false);
+
+  const flow = orderStatusFlow[order.status];
   const total = order.lines.reduce((s, l) => s + l.quantity * (l.unitPrice || 0), 0);
+
+  async function handleStatusChange() {
+    if (!flow) return;
+    if (flow.confirm && !confirm(flow.confirm)) return;
+
+    setProcessing(true);
+    const newTimeline = [
+      ...order.timeline,
+      { event: flow.label, at: new Date(), by: "Admin User" },
+    ];
+
+    setOrder((prev) => ({ ...prev, status: flow.next, timeline: newTimeline }));
+    toast.success(flow.label);
+    setProcessing(false);
+  }
+
+  async function handleCancel() {
+    if (!confirm("Cancel this order? Allocated inventory will be released.")) return;
+    setOrder((prev) => ({
+      ...prev,
+      status: "cancelled",
+      timeline: [...prev.timeline, { event: "Order cancelled", at: new Date(), by: "Admin User" }],
+    }));
+    toast.success("Order cancelled");
+  }
+
+  const isShipByOverdue = order.shipByDate < new Date() && !["shipped", "delivered", "cancelled"].includes(order.status);
 
   return (
     <div className="space-y-6">
@@ -86,12 +125,39 @@ export default function OrderDetailPage() {
           {order.externalId && (
             <span className="text-sm text-muted-foreground">{order.externalId}</span>
           )}
-          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+          <Badge
+            variant="outline"
+            className={
+              order.priority === "rush"
+                ? "bg-orange-100 text-orange-700 border-orange-200"
+                : order.priority === "expedited"
+                  ? "bg-blue-100 text-blue-700 border-blue-200"
+                  : ""
+            }
+          >
             {order.priority}
           </Badge>
           <StatusBadge status={order.status} />
+          {flow && !["cancelled", "delivered"].includes(order.status) && (
+            <>
+              <Button onClick={handleStatusChange} disabled={processing}>
+                {processing ? "Processing..." : flow.label}
+              </Button>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       </PageHeader>
+
+      {/* Ship-by warning */}
+      {isShipByOverdue && (
+        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          <strong>Overdue!</strong> This order was due to ship by{" "}
+          {format(order.shipByDate, "MMM d, yyyy")}
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -127,10 +193,12 @@ export default function OrderDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className={`h-4 w-4 ${isShipByOverdue ? "text-red-500" : "text-muted-foreground"}`} />
               <span className="text-sm text-muted-foreground">Ship By</span>
             </div>
-            <p className="mt-1 font-medium">{format(order.shipByDate, "MMM d, yyyy")}</p>
+            <p className={`mt-1 font-medium ${isShipByOverdue ? "text-red-600" : ""}`}>
+              {format(order.shipByDate, "MMM d, yyyy")}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -219,7 +287,9 @@ export default function OrderDetailPage() {
 
         <TabsContent value="shipments">
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No shipments yet — order is still being picked
+            {order.status === "shipped" || order.status === "delivered"
+              ? "Shipment created"
+              : "No shipments yet — order is still being processed"}
           </p>
         </TabsContent>
 
@@ -228,7 +298,9 @@ export default function OrderDetailPage() {
             {order.timeline.map((event, i) => (
               <div key={i} className="flex gap-4">
                 <div className="flex flex-col items-center">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
+                  <div
+                    className={`h-2 w-2 rounded-full ${i === order.timeline.length - 1 ? "bg-primary" : "bg-muted-foreground/50"}`}
+                  />
                   {i < order.timeline.length - 1 && <div className="w-px flex-1 bg-border" />}
                 </div>
                 <div className="pb-4">
@@ -253,11 +325,6 @@ export default function OrderDetailPage() {
           </CardContent>
         </Card>
       )}
-
-      <div className="flex gap-2">
-        <Button>Generate Pick Task</Button>
-        <Button variant="outline">Cancel Order</Button>
-      </div>
     </div>
   );
 }
