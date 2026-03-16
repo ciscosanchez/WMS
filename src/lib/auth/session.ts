@@ -14,7 +14,7 @@ export interface SessionUser {
 
 const MOCK_USER: SessionUser = {
   id: "mock-user-1",
-  email: "admin@armstrong.dev",
+  email: "admin@ramola.io",
   name: "Admin User",
   isSuperadmin: true,
   tenants: [{ tenantId: "mock-tenant-1", slug: "demo", role: "admin" }],

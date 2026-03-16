@@ -19,16 +19,16 @@ async function main() {
   // 1. Create superadmin user
   const passwordHash = await hash("admin123", 12);
   const admin = await prisma.user.upsert({
-    where: { email: "admin@armstrong.dev" },
+    where: { email: "admin@ramola.io" },
     update: {},
     create: {
-      email: "admin@armstrong.dev",
+      email: "admin@ramola.io",
       name: "Admin",
       passwordHash,
       isSuperadmin: true,
     },
   });
-  console.log(`  Superadmin: admin@armstrong.dev / admin123`);
+  console.log(`  Superadmin: admin@ramola.io / admin123`);
 
   // 2. Create demo tenant
   const dbSchema = "tenant_demo";

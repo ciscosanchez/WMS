@@ -1,12 +1,14 @@
-# Armstrong WMS
+# Ramola WMS
 
-A modern, multi-tenant Warehouse Management System built for **Freight/3PL** and **DTC/E-Commerce Fulfillment** operations. Armstrong combines freight-native workflows (BOL processing, customs compliance, container receiving) with high-volume fulfillment capabilities (order management, wave picking, rate shopping) — in a single unified platform.
+A modern, multi-tenant Warehouse Management System built for **Freight/3PL** and **DTC/E-Commerce Fulfillment** operations. Ramola WMS combines freight-native workflows (BOL processing, customs compliance, container receiving) with high-volume fulfillment capabilities (order management, wave picking, rate shopping) — in a single unified platform.
 
-## Why Armstrong?
+**Built by Ramola. Powered by your warehouse.**
+
+## Why Ramola?
 
 Most WMS platforms force you to choose: **Magaya** covers freight but not fulfillment. **Logiwa** covers DTC fulfillment but not freight. **NetSuite WMS** is an ERP add-on, not purpose-built for 3PL.
 
-Armstrong gives you both — one inventory, one warehouse, two operational modes.
+Ramola gives you both — one inventory, one warehouse, two operational modes.
 
 ## Stack
 
@@ -24,7 +26,7 @@ Armstrong gives you both — one inventory, one warehouse, two operational modes
 
 ## Multi-Tenancy
 
-Armstrong uses **schema-per-tenant** isolation — each tenant gets their own PostgreSQL schema with complete data separation at the database level.
+Ramola uses **schema-per-tenant** isolation — each tenant gets their own PostgreSQL schema with complete data separation at the database level.
 
 - **Public schema**: tenants registry, users, auth sessions
 - **Tenant schemas** (`tenant_acme`, `tenant_demo`, etc.): all WMS tables
@@ -100,7 +102,7 @@ npm run dev
 ```
 
 Open **http://localhost:3000** and log in with:
-- Email: `admin@armstrong.dev`
+- Email: `admin@ramola.io`
 - Password: `admin123`
 
 ### Dev Mode (No Database)
@@ -192,4 +194,4 @@ wms/
 
 ## License
 
-Proprietary — Armstrong Logistics Technology
+Proprietary — Ramola

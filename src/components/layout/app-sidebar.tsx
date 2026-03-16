@@ -90,7 +90,7 @@ export function AppSidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Warehouse className="h-4 w-4" />
           </div>
-          <span className="text-lg font-semibold">Armstrong</span>
+          <span className="text-lg font-semibold">Ramola</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>

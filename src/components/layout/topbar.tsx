@@ -31,7 +31,7 @@ export function Topbar() {
               <div className="flex flex-col">
                 <span>Admin User</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  admin@armstrong.dev
+                  admin@ramola.io
                 </span>
               </div>
             </DropdownMenuLabel>

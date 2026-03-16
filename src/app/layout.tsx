@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Armstrong WMS",
+  title: "Ramola WMS",
   description: "Warehouse Management System for Freight & 3PL Operations",
 };
 

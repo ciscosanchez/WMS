@@ -41,7 +41,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-6">
           {/* Logo */}
           <Link href="/portal/inventory" className="flex items-center gap-2">
-            <span className="text-lg font-bold tracking-tight">Armstrong WMS</span>
+            <span className="text-lg font-bold tracking-tight">Ramola WMS</span>
             <Badge variant="outline" className="text-xs font-normal">
               Portal
             </Badge>

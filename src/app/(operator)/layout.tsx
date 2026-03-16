@@ -25,7 +25,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Warehouse className="h-4 w-4" />
           </div>
-          <span className="text-lg font-semibold">Armstrong</span>
+          <span className="text-lg font-semibold">Ramola</span>
           <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
             Floor
           </span>
