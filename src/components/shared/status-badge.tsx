@@ -33,8 +33,9 @@ const statusColors: Record<string, string> = {
   passed: "bg-green-100 text-green-700 border-green-200",
   failed: "bg-red-100 text-red-700 border-red-200",
   waived: "bg-gray-100 text-gray-700 border-gray-200",
-  // Tenant
+  // Tenant / Billing
   active: "bg-green-100 text-green-700 border-green-200",
+  past_due: "bg-red-100 text-red-700 border-red-200",
   invited: "bg-blue-100 text-blue-700 border-blue-200",
   suspended: "bg-red-100 text-red-700 border-red-200",
   provisioning: "bg-yellow-100 text-yellow-700 border-yellow-200",

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +83,14 @@ export default function ShippingPage() {
           <TableBody>
             {mockShipments.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="font-medium">{s.shipmentNumber}</TableCell>
+                <TableCell>
+                  <Link
+                    href={`/shipping/${s.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {s.shipmentNumber}
+                  </Link>
+                </TableCell>
                 <TableCell>{s.orderNumber}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{s.carrier}</Badge>
