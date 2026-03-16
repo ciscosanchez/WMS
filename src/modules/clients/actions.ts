@@ -30,6 +30,7 @@ export async function getClient(id: string) {
 }
 
 export async function createClient(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -51,6 +52,7 @@ export async function createClient(data: unknown) {
 }
 
 export async function updateClient(id: string, data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id, ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -62,6 +64,7 @@ export async function updateClient(id: string, data: unknown) {
     data: { ...parsed, contactEmail: parsed.contactEmail || null },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const changes = diffChanges(existing as any, parsed as any);
   if (changes) {
     await logAudit(tenant.db, {

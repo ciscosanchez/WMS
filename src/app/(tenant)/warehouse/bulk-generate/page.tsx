@@ -11,19 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+const INITIAL_WAREHOUSES = [
+  { id: "1", code: "WH1", name: "Main Warehouse" },
+  { id: "2", code: "WH2", name: "Cold Storage Annex" },
+];
 
 export default function BulkGeneratePage() {
   const router = useRouter();
-  const [warehouses, setWarehouses] = useState<{ id: string; code: string; name: string }[]>([]);
-
-  useEffect(() => {
-    // Mock data until DB is connected
-    setWarehouses([
-      { id: "1", code: "WH1", name: "Main Warehouse" },
-      { id: "2", code: "WH2", name: "Cold Storage Annex" },
-    ]);
-  }, []);
+  const [warehouses] = useState(INITIAL_WAREHOUSES);
 
   const {
     register,
@@ -53,8 +50,8 @@ export default function BulkGeneratePage() {
       const result = await generateBulkLocations(data);
       toast.success(`Generated ${result.binCount} bins`);
       router.push("/warehouse");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to generate locations");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate locations");
     }
   }
 

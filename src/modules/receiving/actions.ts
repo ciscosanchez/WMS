@@ -26,6 +26,7 @@ export async function getShipments(status?: string) {
 
   const { tenant } = await getContext();
   return tenant.db.inboundShipment.findMany({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: status ? { status: status as any } : undefined,
     include: {
       client: true,
@@ -54,6 +55,7 @@ export async function getShipment(id: string) {
 
 export async function createShipment(data: unknown) {
   if (config.useMockData)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -81,6 +83,7 @@ export async function createShipment(data: unknown) {
 }
 
 export async function addShipmentLine(shipmentId: string, data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -136,6 +139,7 @@ export async function updateShipmentStatus(
 }
 
 export async function receiveLine(shipmentId: string, data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -242,6 +246,7 @@ async function finalizeReceiving(
 }
 
 export async function createDiscrepancy(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
   const { user, tenant } = await getContext();

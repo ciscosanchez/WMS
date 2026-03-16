@@ -82,7 +82,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
    * POST /admin/api/2024-10/inventory_levels/set.json
    * { location_id, inventory_item_id, available }
    */
-  async syncInventory(updates: InventoryUpdate[]): Promise<void> {
+  async syncInventory(_updates: InventoryUpdate[]): Promise<void> {
     // TODO: Replace with real Shopify API calls
     // for (const update of updates) {
     //   // First: look up inventory_item_id from SKU via products endpoint
@@ -106,7 +106,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
    * Push fulfillment to Shopify
    * POST /admin/api/2024-10/orders/{order_id}/fulfillments.json
    */
-  async pushFulfillment(update: FulfillmentUpdate): Promise<void> {
+  async pushFulfillment(_update: FulfillmentUpdate): Promise<void> {
     // TODO: Replace with real Shopify API call
     // await fetch(`${this.baseUrl}/orders/${update.externalOrderId}/fulfillments.json`, {
     //   method: "POST",

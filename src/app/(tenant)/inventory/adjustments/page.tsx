@@ -56,6 +56,7 @@ export default async function AdjustmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {adjustments.map((adj: any) => (
                 <TableRow key={adj.id}>
                   <TableCell className="font-medium">{adj.adjustmentNumber}</TableCell>

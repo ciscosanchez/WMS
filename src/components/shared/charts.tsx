@@ -81,6 +81,7 @@ export function PieChartCard({ title, data }: PieChartCardProps) {
               outerRadius={90}
               paddingAngle={4}
               dataKey="value"
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               label={(props: any) => `${props.name} ${((props.percent || 0) * 100).toFixed(0)}%`}
             >
               {data.map((_, i) => (

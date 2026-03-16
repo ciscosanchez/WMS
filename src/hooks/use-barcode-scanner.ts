@@ -147,6 +147,7 @@ export function useBarcodeScanner(options: ScannerOptions = {}): UseBarcodeScann
 
       // If BarcodeDetector API is available, use it
       if ("BarcodeDetector" in window) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const detector = new (window as any).BarcodeDetector({
           formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "qr_code"],
         });

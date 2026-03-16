@@ -68,6 +68,7 @@ export async function getWarehouse(id: string) {
 }
 
 export async function createWarehouse(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -87,6 +88,7 @@ export async function createWarehouse(data: unknown) {
 }
 
 export async function createZone(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
   const { user, tenant } = await getContext();

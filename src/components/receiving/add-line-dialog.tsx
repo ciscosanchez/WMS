@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,21 +15,21 @@ interface AddLineDialogProps {
   onClose: () => void;
 }
 
-export function AddLineDialog({ shipmentId, clientId, open, onClose }: AddLineDialogProps) {
-  const [products, setProducts] = useState<{ id: string; sku: string; name: string }[]>([]);
+export function AddLineDialog({
+  shipmentId,
+  clientId: _clientId,
+  open,
+  onClose,
+}: AddLineDialogProps) {
+  const [products] = useState([
+    { id: "4", sku: "BOLT-M8X40", name: "M8x40 Hex Bolt" },
+    { id: "5", sku: "PIPE-SCH40", name: "Schedule 40 Steel Pipe 2in" },
+    { id: "6", sku: "VALVE-BV2", name: "2in Ball Valve" },
+  ]);
   const [productId, setProductId] = useState("");
   const [expectedQty, setExpectedQty] = useState(1);
   const [lotNumber, setLotNumber] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Mock data until DB is connected
-    setProducts([
-      { id: "4", sku: "BOLT-M8X40", name: "M8x40 Hex Bolt" },
-      { id: "5", sku: "PIPE-SCH40", name: "Schedule 40 Steel Pipe 2in" },
-      { id: "6", sku: "VALVE-BV2", name: "2in Ball Valve" },
-    ]);
-  }, [clientId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,8 +43,8 @@ export function AddLineDialog({ shipmentId, clientId, open, onClose }: AddLineDi
       });
       toast.success("Line added");
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to add line");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to add line");
     } finally {
       setLoading(false);
     }

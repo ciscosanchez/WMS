@@ -48,9 +48,12 @@ export function getTenantDb(schema: string): PrismaClient {
     const client = await originalConnect();
     await client.query(`SET search_path TO "${schema}"`);
     return client;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaPg(pgPool as any, { schema });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prismaClient = new PrismaClient({ adapter } as any);
 
   pool.set(schema, { client: prismaClient, lastUsed: Date.now() });

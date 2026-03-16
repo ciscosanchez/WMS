@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,12 +32,6 @@ export function BarcodeScannerInput({
   const [manualInput, setManualInput] = useState("");
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
 
-  const { barcode, clear, cameraSupported, startCamera, cameraActive } = useBarcodeScanner({
-    onScan: (scanned) => {
-      handleScanned(scanned);
-    },
-  });
-
   function handleScanned(value: string) {
     if (showFeedback) {
       if (expectedValue && value !== expectedValue) {
@@ -57,6 +51,12 @@ export function BarcodeScannerInput({
     }
   }
 
+  const { barcode, clear, cameraSupported, startCamera, cameraActive } = useBarcodeScanner({
+    onScan: (scanned) => {
+      handleScanned(scanned);
+    },
+  });
+
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (manualInput.trim()) {
@@ -66,11 +66,11 @@ export function BarcodeScannerInput({
   }
 
   // Sync external value to manual input
-  useEffect(() => {
-    if (externalValue !== undefined) {
-      setManualInput(externalValue);
-    }
-  }, [externalValue]);
+  const prevExternalValue = useRef(externalValue);
+  if (externalValue !== undefined && externalValue !== prevExternalValue.current) {
+    prevExternalValue.current = externalValue;
+    setManualInput(externalValue);
+  }
 
   return (
     <div className={cn("space-y-2", className)}>

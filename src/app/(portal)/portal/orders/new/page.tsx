@@ -67,7 +67,7 @@ export default function NewOrderPage() {
 
   const onSubmit = (data: OrderForm) => {
     // Mock submission
-    console.log("Order submitted:", data);
+    // Mock submission — will be replaced with real API call
     setSubmitted(true);
   };
 

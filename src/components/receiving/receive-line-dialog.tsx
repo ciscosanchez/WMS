@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 interface ReceiveLineDialogProps {
   shipmentId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   lines: any[];
   open: boolean;
   onClose: () => void;
@@ -25,17 +26,12 @@ export function ReceiveLineDialog({ shipmentId, lines, open, onClose }: ReceiveL
   const [serialNumber, setSerialNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bins, setBins] = useState<{ id: string; barcode: string }[]>([]);
-
-  useEffect(() => {
-    // Mock data until DB is connected
-    setBins([
-      { id: "b1", barcode: "WH1-A-01-01-01-01" },
-      { id: "b2", barcode: "WH1-A-01-01-01-02" },
-      { id: "b3", barcode: "WH1-B-02-01-01-05" },
-      { id: "b4", barcode: "WH1-B-02-02-01-01" },
-    ]);
-  }, []);
+  const [bins] = useState([
+    { id: "b1", barcode: "WH1-A-01-01-01-01" },
+    { id: "b2", barcode: "WH1-A-01-01-01-02" },
+    { id: "b3", barcode: "WH1-B-02-01-01-05" },
+    { id: "b4", barcode: "WH1-B-02-02-01-01" },
+  ]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,8 +49,8 @@ export function ReceiveLineDialog({ shipmentId, lines, open, onClose }: ReceiveL
       });
       toast.success("Items received");
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to receive");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to receive");
     } finally {
       setLoading(false);
     }
@@ -74,6 +70,7 @@ export function ReceiveLineDialog({ shipmentId, lines, open, onClose }: ReceiveL
               onChange={(e) => setLineId(e.target.value)}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
             >
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {lines.map((l: any) => (
                 <option key={l.id} value={l.id}>
                   {l.product.sku} — {l.receivedQty}/{l.expectedQty} received
@@ -112,7 +109,7 @@ export function ReceiveLineDialog({ shipmentId, lines, open, onClose }: ReceiveL
               <Label>Condition</Label>
               <select
                 value={condition}
-                onChange={(e) => setCondition(e.target.value as any)}
+                onChange={(e) => setCondition(e.target.value as "good" | "damaged" | "quarantine")}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
                 <option value="good">Good</option>

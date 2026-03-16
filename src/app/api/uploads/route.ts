@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
       key,
       fileUrl: `/${key}`,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Upload failed" },
+      { status: 500 }
+    );
   }
 }

@@ -39,7 +39,7 @@ export default function InviteUserPage() {
 
   function onSubmit(data: InviteFormData) {
     // Mock invite
-    console.log("Invite sent:", data);
+    // Mock invite — will be replaced with real API call
     toast.success(`Invitation sent to ${data.email}`);
     router.push("/settings/users");
   }

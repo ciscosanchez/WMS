@@ -28,8 +28,8 @@ export default function NewWarehousePage() {
       await createWarehouse(data);
       toast.success("Warehouse created");
       router.push("/warehouse");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create warehouse");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create warehouse");
     }
   }
 

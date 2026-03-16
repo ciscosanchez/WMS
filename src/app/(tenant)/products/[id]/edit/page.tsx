@@ -131,8 +131,8 @@ export default function EditProductPage() {
       await updateProduct(params.id, data);
       toast.success("Product updated");
       router.push("/products");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to update product");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to update product");
     }
   }
 
@@ -142,8 +142,8 @@ export default function EditProductPage() {
       await deleteProduct(params.id);
       toast.success("Product deleted");
       router.push("/products");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to delete product");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete product");
     } finally {
       setDeleting(false);
     }

@@ -13,18 +13,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+const INITIAL_CLIENTS = [
+  { id: "1", code: "ACME", name: "Acme Corporation" },
+  { id: "2", code: "GLOBEX", name: "Globex Industries" },
+  { id: "3", code: "INITECH", name: "Initech Logistics" },
+];
+
 export default function NewProductPage() {
   const router = useRouter();
-  const [clients, setClients] = useState<{ id: string; code: string; name: string }[]>([]);
-
-  useEffect(() => {
-    setClients([
-      { id: "1", code: "ACME", name: "Acme Corporation" },
-      { id: "2", code: "GLOBEX", name: "Globex Industries" },
-      { id: "3", code: "INITECH", name: "Initech Logistics" },
-    ]);
-  }, []);
+  const [clients] = useState(INITIAL_CLIENTS);
 
   const {
     register,
@@ -49,8 +48,8 @@ export default function NewProductPage() {
       await createProduct(data);
       toast.success("Product created");
       router.push("/products");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create product");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create product");
     }
   }
 

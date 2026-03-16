@@ -29,8 +29,8 @@ export default function NewClientPage() {
       await createClient(data);
       toast.success("Client created");
       router.push("/clients");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create client");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create client");
     }
   }
 

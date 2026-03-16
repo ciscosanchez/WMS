@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +68,7 @@ const mockOrder = {
     assignedTo: "Carlos M.",
     startedAt: new Date("2026-03-16T10:30:00"),
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shipments: [] as any[],
   timeline: [
     { event: "Order received from Amazon", at: new Date("2026-03-15T14:22:00"), by: "System" },
@@ -87,7 +87,6 @@ const mockOrder = {
 };
 
 export default function OrderDetailPage() {
-  const router = useRouter();
   const [order, setOrder] = useState(mockOrder);
   const [processing, setProcessing] = useState(false);
 

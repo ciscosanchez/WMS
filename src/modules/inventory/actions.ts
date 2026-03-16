@@ -71,6 +71,7 @@ export async function getInventoryPaginated(opts: {
   search?: string;
   productId?: string;
   binId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }): Promise<PaginatedResult<any>> {
   const page = opts.page ?? 1;
   const pageSize = opts.pageSize ?? 20;
@@ -80,6 +81,7 @@ export async function getInventoryPaginated(opts: {
     if (opts.search) {
       const q = opts.search.toLowerCase();
       filtered = filtered.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (i: any) =>
           i.product?.sku?.toLowerCase().includes(q) || i.product?.name?.toLowerCase().includes(q)
       );
@@ -152,6 +154,7 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
   return tenant.db.inventoryTransaction.findMany({
     where: {
       ...(filters?.productId ? { productId: filters.productId } : {}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(filters?.type ? { type: filters.type as any } : {}),
     },
     include: {
@@ -170,6 +173,7 @@ export async function getInventoryTransactionsPaginated(opts: {
   search?: string;
   productId?: string;
   type?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }): Promise<PaginatedResult<any>> {
   const page = opts.page ?? 1;
   const pageSize = opts.pageSize ?? 20;
@@ -177,11 +181,13 @@ export async function getInventoryTransactionsPaginated(opts: {
   if (config.useMockData) {
     let filtered = [...mockTransactions];
     if (opts.type) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       filtered = filtered.filter((t: any) => t.type === opts.type);
     }
     if (opts.search) {
       const q = opts.search.toLowerCase();
       filtered = filtered.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (t: any) =>
           t.product?.sku?.toLowerCase().includes(q) || t.referenceType?.toLowerCase().includes(q)
       );
@@ -195,6 +201,7 @@ export async function getInventoryTransactionsPaginated(opts: {
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(opts.type ? { type: opts.type as any } : {}),
     ...(opts.search
       ? {
@@ -226,6 +233,7 @@ export async function getInventoryTransactionsPaginated(opts: {
 }
 
 export async function moveInventory(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", type: "move", ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -318,6 +326,7 @@ export async function createAdjustment(headerData: unknown, lines: unknown[]) {
       id: "mock-new",
       adjustmentNumber: "ADJ-MOCK-0001",
       status: "draft",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(headerData as any),
     };
 

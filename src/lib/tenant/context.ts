@@ -37,6 +37,7 @@ export async function resolveTenant(): Promise<TenantContext | null> {
       tenantId: "mock-tenant-1",
       slug: "demo",
       dbSchema: "tenant_demo",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       db: null as any,
     };
   }

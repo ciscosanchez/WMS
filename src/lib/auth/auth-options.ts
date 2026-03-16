@@ -46,7 +46,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         token.isSuperadmin = (user as any).isSuperadmin;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         token.tenants = (user as any).tenants;
       }
       return token;
@@ -54,7 +56,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).isSuperadmin = token.isSuperadmin;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).tenants = token.tenants;
       }
       return session;

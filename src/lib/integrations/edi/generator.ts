@@ -9,7 +9,7 @@
  *   - EDI 944: Warehouse Stock Transfer Receipt (confirmation of receiving)
  */
 
-import type { EDI945Data, EDI945LineItem, EDI944Data, EDI944LineItem } from "./types";
+import type { EDI945Data, EDI944Data } from "./types";
 
 // ---------------------------------------------------------------------------
 // Constants

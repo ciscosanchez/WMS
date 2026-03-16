@@ -104,8 +104,8 @@ export default function EditClientPage() {
       await updateClient(params.id, data);
       toast.success("Client updated");
       router.push("/clients");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to update client");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to update client");
     }
   }
 
@@ -115,8 +115,8 @@ export default function EditClientPage() {
       await deleteClient(params.id);
       toast.success("Client deleted");
       router.push("/clients");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to delete client");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete client");
     } finally {
       setDeleting(false);
     }

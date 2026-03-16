@@ -37,6 +37,7 @@ export async function getProduct(id: string) {
 }
 
 export async function createProduct(data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -56,6 +57,7 @@ export async function createProduct(data: unknown) {
 }
 
 export async function updateProduct(id: string, data: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id, ...(data as any) };
 
   const { user, tenant } = await getContext();
@@ -67,6 +69,7 @@ export async function updateProduct(id: string, data: unknown) {
     data: parsed,
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const changes = diffChanges(existing as any, parsed as any);
   if (changes) {
     await logAudit(tenant.db, {
