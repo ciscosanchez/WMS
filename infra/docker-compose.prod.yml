@@ -25,7 +25,7 @@ services:
     networks:
       - ramola
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ping"]
       interval: 30s
       timeout: 5s
       retries: 3
