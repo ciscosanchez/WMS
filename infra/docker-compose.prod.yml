@@ -1,0 +1,167 @@
+version: "3.8"
+
+services:
+  # ── Reverse Proxy ──────────────────────────────────────────
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - letsencrypt:/letsencrypt
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ramola}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ramola}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ramola}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── WMS ────────────────────────────────────────────────────
+  wms:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: https://wms.ramola.com
+      TENANT_RESOLUTION: subdomain
+      DOCAI_URL: http://docai:3002
+      DOCAI_API_KEY: ${DOCAI_API_KEY}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wms.rule=Host(`wms.ramola.com`)"
+      - "traefik.http.routers.wms.entrypoints=websecure"
+      - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
+      - "traefik.http.services.wms.loadbalancer.server.port=3000"
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── DocAI ──────────────────────────────────────────────────
+  docai:
+    build:
+      context: ../../docai
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
+      CORS_ORIGIN: https://wms.ramola.com
+      DOCAI_API_KEY: ${DOCAI_API_KEY}
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Not exposed via Traefik — internal only (WMS calls it directly)
+
+  # ── DispatchPro ────────────────────────────────────────────
+  dispatch:
+    build:
+      context: ../../dispatch-pro
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      WMS_API_URL: http://wms:3000
+      WMS_API_KEY: ${WMS_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dispatch.rule=Host(`dispatch.ramola.com`)"
+      - "traefik.http.routers.dispatch.entrypoints=websecure"
+      - "traefik.http.routers.dispatch.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dispatch.loadbalancer.server.port=3001"
+    networks:
+      - ramola
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  ramola:
+    name: ramola
+
+volumes:
+  pgdata:
+  redisdata:
+  letsencrypt:
