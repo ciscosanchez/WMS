@@ -96,11 +96,11 @@ services:
     networks:
       - ramola
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ── DocAI ──────────────────────────────────────────────────
   docai:
@@ -123,11 +123,11 @@ services:
     networks:
       - ramola
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/api/v1/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3002/api/v1/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     # Not exposed via Traefik — internal only (WMS calls it directly)
 
   # ── DispatchPro ────────────────────────────────────────────
@@ -160,11 +160,11 @@ services:
     networks:
       - ramola
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 networks:
   ramola:
