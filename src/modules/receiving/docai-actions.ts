@@ -49,7 +49,7 @@ export async function processDocument(opts: {
       fileUrl: opts.fileKey,
       fileName: opts.fileName,
       mimeType: opts.mimeType,
-      tenantId: tenant.id,
+      tenantId: tenant.tenantId,
       ...(opts.shipmentId && {
         document: {
           create: {
@@ -81,7 +81,7 @@ export async function processDocument(opts: {
     result = await extractForReceipt({
       fileBase64,
       mimeType: opts.mimeType,
-      tenantId: tenant.id,
+      tenantId: tenant.tenantId,
       context: {
         clientName: opts.clientName,
       },
