@@ -1,7 +1,7 @@
 import { getShipments } from "@/modules/receiving/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus, PackageOpen } from "lucide-react";
+import { Plus, PackageOpen, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ShipmentsTable } from "@/components/receiving/shipments-table";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -12,12 +12,20 @@ export default async function ReceivingPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Inbound Shipments" description="Manage ASNs and receiving">
-        <Button asChild>
-          <Link href="/receiving/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Shipment
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/receiving/smart">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Smart Receiving
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/receiving/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Shipment
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       {shipments.length === 0 ? (
