@@ -15,14 +15,8 @@ export async function POST(request: NextRequest) {
     const key = `${entityType}/${entityId}/${uuid()}.${ext}`;
 
     await ensureBucket();
-    let uploadUrl = await getPresignedUploadUrl(key);
-
-    // Rewrite internal MinIO hostname to public URL for browser uploads
+    const uploadUrl = await getPresignedUploadUrl(key);
     const publicUrl = process.env.S3_PUBLIC_URL;
-    if (publicUrl) {
-      const internal = `http://${process.env.S3_ENDPOINT}:${process.env.S3_PORT || "9000"}`;
-      uploadUrl = uploadUrl.replace(internal, publicUrl);
-    }
 
     return NextResponse.json({
       uploadUrl,
