@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { orderSchema, orderLineSchema } from "./schemas";
 import { mockOrders } from "@/lib/mock-data";
+import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -88,6 +89,12 @@ export async function updateOrderStatus(id: string, status: string) {
 
   const { user, tenant } = await getContext();
 
+  // Fetch order before update so we have full data for dispatch
+  const existing = await tenant.db.order.findUnique({
+    where: { id },
+    include: { lines: { include: { product: true } } },
+  });
+
   const order = await tenant.db.order.update({
     where: { id },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,8 +106,33 @@ export async function updateOrderStatus(id: string, status: string) {
     action: "update",
     entityType: "order",
     entityId: id,
-    changes: { status: { old: null, new: status } },
+    changes: { status: { old: existing?.status ?? null, new: status } },
   });
+
+  // When order is packed, send to DispatchPro for dispatch
+  if (status === "packed" && existing) {
+    const dispatchResult = await createDispatchOrder({
+      tenantSlug: tenant.slug,
+      wmsOrderId: existing.id,
+      wmsOrderNumber: existing.orderNumber,
+      customer: existing.shipToName,
+      address: existing.shipToAddress1,
+      city: existing.shipToCity,
+      state: existing.shipToState ?? "",
+      zip: existing.shipToZip,
+      items: existing.lines.map((line) => ({
+        sku: line.product.sku,
+        description: line.product.name,
+        quantity: line.quantity,
+        weight: line.product.weight ? Number(line.product.weight) : undefined,
+      })),
+    });
+
+    if ("error" in dispatchResult) {
+      // Log but don't block — order status is already updated
+      console.error("[DispatchPro] Failed to create dispatch order:", dispatchResult.error);
+    }
+  }
 
   revalidatePath("/orders");
   return order;

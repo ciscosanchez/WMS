@@ -7,4 +7,9 @@ export const config = {
   useMockData: process.env.USE_MOCK_DATA !== "false",
   useMockAuth: process.env.USE_MOCK_AUTH !== "false",
   isProduction: process.env.NODE_ENV === "production",
+  dispatchPro: {
+    url: process.env.DISPATCH_PRO_URL ?? "http://dispatch:3001",
+    apiKey: process.env.DISPATCH_PRO_API_KEY ?? "",
+    enabled: !!process.env.DISPATCH_PRO_API_KEY,
+  },
 } as const;

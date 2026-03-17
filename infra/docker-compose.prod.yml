@@ -89,6 +89,10 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       S3_BUCKET: armstrong-wms
       S3_PUBLIC_URL: https://storage.wms.ramola.app
+      # DispatchPro integration
+      WMS_API_KEY: ${WMS_API_KEY:-}
+      DISPATCH_PRO_URL: http://dispatch:3001
+      DISPATCH_PRO_API_KEY: ${WMS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
