@@ -4,7 +4,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, type ProductFormData } from "@/modules/products/schemas";
-import { updateProduct, deleteProduct } from "@/modules/products/actions";
+import { getProduct, updateProduct, deleteProduct } from "@/modules/products/actions";
+import { getClients } from "@/modules/clients/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,64 +27,14 @@ import {
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
-// Mock data — will be replaced with a real fetch once the DB layer is wired up
-const MOCK_PRODUCTS: Record<string, ProductFormData & { id: string }> = {
-  "1": {
-    id: "1",
-    clientId: "1",
-    sku: "WDG-1000",
-    name: "Industrial Widget",
-    description: "Heavy-duty industrial widget for assembly lines",
-    hsCode: "8479.89",
-    barcode: "012345678901",
-    weight: 2.5,
-    weightUnit: "lb",
-    length: 12,
-    width: 8,
-    height: 4,
-    dimUnit: "in",
-    baseUom: "EA",
-    trackLot: true,
-    trackSerial: false,
-    minStock: 100,
-    maxStock: 5000,
-    isActive: true,
-  },
-  "2": {
-    id: "2",
-    clientId: "2",
-    sku: "BOLT-A2",
-    name: "Stainless Bolt A2",
-    description: "M10 stainless steel hex bolt",
-    hsCode: "7318.15",
-    barcode: "012345678902",
-    weight: 0.15,
-    weightUnit: "lb",
-    length: 3,
-    width: 1,
-    height: 1,
-    dimUnit: "in",
-    baseUom: "EA",
-    trackLot: false,
-    trackSerial: false,
-    minStock: 500,
-    maxStock: 20000,
-    isActive: true,
-  },
-};
-
-const MOCK_CLIENTS = [
-  { id: "1", code: "ACME", name: "Acme Corporation" },
-  { id: "2", code: "GLOBEX", name: "Globex Industries" },
-  { id: "3", code: "INITECH", name: "Initech Logistics" },
-];
-
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [clients] = useState(MOCK_CLIENTS);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [clients, setClients] = useState<any[]>([]);
 
   const {
     register,
@@ -97,31 +48,43 @@ export default function EditProductPage() {
   });
 
   useEffect(() => {
-    // Simulate fetching product data
-    const product = MOCK_PRODUCTS[params.id];
-    if (product) {
-      reset({
-        clientId: product.clientId,
-        sku: product.sku,
-        name: product.name,
-        description: product.description,
-        hsCode: product.hsCode,
-        barcode: product.barcode,
-        weight: product.weight,
-        weightUnit: product.weightUnit,
-        length: product.length,
-        width: product.width,
-        height: product.height,
-        dimUnit: product.dimUnit,
-        baseUom: product.baseUom,
-        trackLot: product.trackLot,
-        trackSerial: product.trackSerial,
-        minStock: product.minStock,
-        maxStock: product.maxStock,
-        isActive: product.isActive,
-      });
+    async function load() {
+      try {
+        const [rawProduct, clientList] = await Promise.all([getProduct(params.id), getClients()]);
+        setClients(clientList);
+        if (!rawProduct) {
+          setNotFound(true);
+          return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const product = rawProduct as any;
+        reset({
+          clientId: product.clientId,
+          sku: product.sku,
+          name: product.name,
+          description: product.description ?? "",
+          hsCode: product.hsCode ?? "",
+          barcode: product.barcode ?? "",
+          weight: product.weight ? Number(product.weight) : undefined,
+          weightUnit: product.weightUnit ?? "lb",
+          length: product.length ? Number(product.length) : undefined,
+          width: product.width ? Number(product.width) : undefined,
+          height: product.height ? Number(product.height) : undefined,
+          dimUnit: product.dimUnit ?? "in",
+          baseUom: product.baseUom,
+          trackLot: product.trackLot,
+          trackSerial: product.trackSerial,
+          minStock: product.minStock ?? undefined,
+          maxStock: product.maxStock ?? undefined,
+          isActive: product.isActive,
+        });
+      } catch {
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+    load();
   }, [params.id, reset]);
 
   async function onSubmit(data: ProductFormData) {
@@ -149,6 +112,10 @@ export default function EditProductPage() {
 
   if (loading) {
     return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  if (notFound) {
+    return <div className="py-10 text-center text-muted-foreground">Product not found</div>;
   }
 
   return (

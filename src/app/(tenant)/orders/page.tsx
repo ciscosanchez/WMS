@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ShoppingCart } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/shared/empty-state";
 import {
   Table,
   TableBody,
@@ -13,99 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-
-const mockOrders = [
-  {
-    id: "1",
-    orderNumber: "ORD-2026-0001",
-    externalId: "#SH-4521",
-    channel: "Shopify",
-    clientCode: "ACME",
-    status: "shipped",
-    priority: "standard",
-    shipToName: "Jane Cooper",
-    shipToCity: "Austin",
-    shipToState: "TX",
-    totalItems: 3,
-    orderDate: new Date("2026-03-10"),
-    shipByDate: new Date("2026-03-12"),
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-2026-0002",
-    externalId: "#AMZ-9982",
-    channel: "Amazon",
-    clientCode: "ACME",
-    status: "picking",
-    priority: "expedited",
-    shipToName: "Robert Fox",
-    shipToCity: "Denver",
-    shipToState: "CO",
-    totalItems: 1,
-    orderDate: new Date("2026-03-15"),
-    shipByDate: new Date("2026-03-16"),
-  },
-  {
-    id: "3",
-    orderNumber: "ORD-2026-0003",
-    externalId: null,
-    channel: "Manual",
-    clientCode: "GLOBEX",
-    status: "awaiting_fulfillment",
-    priority: "standard",
-    shipToName: "Acme Retail Store #12",
-    shipToCity: "Phoenix",
-    shipToState: "AZ",
-    totalItems: 12,
-    orderDate: new Date("2026-03-15"),
-    shipByDate: new Date("2026-03-18"),
-  },
-  {
-    id: "4",
-    orderNumber: "ORD-2026-0004",
-    externalId: "#SH-4530",
-    channel: "Shopify",
-    clientCode: "STARK",
-    status: "awaiting_fulfillment",
-    priority: "rush",
-    shipToName: "Emily Wilson",
-    shipToCity: "Seattle",
-    shipToState: "WA",
-    totalItems: 2,
-    orderDate: new Date("2026-03-16"),
-    shipByDate: new Date("2026-03-16"),
-  },
-  {
-    id: "5",
-    orderNumber: "ORD-2026-0005",
-    externalId: "#WM-1122",
-    channel: "Walmart",
-    clientCode: "ACME",
-    status: "pending",
-    priority: "standard",
-    shipToName: "Michael Brown",
-    shipToCity: "Portland",
-    shipToState: "OR",
-    totalItems: 5,
-    orderDate: new Date("2026-03-16"),
-    shipByDate: new Date("2026-03-19"),
-  },
-  {
-    id: "6",
-    orderNumber: "ORD-2026-0006",
-    externalId: null,
-    channel: "API",
-    clientCode: "INITECH",
-    status: "packed",
-    priority: "standard",
-    shipToName: "Warehouse Direct LLC",
-    shipToCity: "Dallas",
-    shipToState: "TX",
-    totalItems: 8,
-    orderDate: new Date("2026-03-16"),
-    shipByDate: new Date("2026-03-18"),
-  },
-];
+import { getOrders } from "@/modules/orders/actions";
 
 const priorityColors: Record<string, string> = {
   standard: "bg-gray-100 text-gray-700",
@@ -114,7 +23,9 @@ const priorityColors: Record<string, string> = {
   same_day: "bg-red-100 text-red-700",
 };
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const orders = await getOrders();
+
   return (
     <div className="space-y-6">
       <PageHeader title="Orders" description="Manage fulfillment orders from all channels">
@@ -126,63 +37,80 @@ export default function OrdersPage() {
         </Button>
       </PageHeader>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order #</TableHead>
-              <TableHead>Channel</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Ship To</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ship By</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockOrders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>
-                  <div>
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {order.orderNumber}
-                    </Link>
-                    {order.externalId && (
-                      <span className="ml-2 text-xs text-muted-foreground">{order.externalId}</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{order.channel}</Badge>
-                </TableCell>
-                <TableCell>{order.clientCode}</TableCell>
-                <TableCell>
-                  <div>
-                    <div className="text-sm">{order.shipToName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {order.shipToCity}, {order.shipToState}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{order.totalItems}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={priorityColors[order.priority]}>
-                    {order.priority}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={order.status} />
-                </TableCell>
-                <TableCell>{format(order.shipByDate, "MMM d")}</TableCell>
+      {orders.length === 0 ? (
+        <EmptyState
+          icon={ShoppingCart}
+          title="No orders yet"
+          description="Create your first fulfillment order to get started."
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order #</TableHead>
+                <TableHead>Channel</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Ship To</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ship By</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {orders.map((order: any) => (
+                <TableRow key={order.id}>
+                  <TableCell>
+                    <div>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                      {order.externalId && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {order.externalId}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {order.channel?.name ?? order.channel ?? "Manual"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{order.client?.code ?? order.clientCode ?? "-"}</TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="text-sm">{order.shipToName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {order.shipToCity}, {order.shipToState ?? ""}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {order._count?.lines ?? order.lines?.length ?? order.totalItems ?? 0}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={priorityColors[order.priority] ?? ""}>
+                      {order.priority}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={order.status} />
+                  </TableCell>
+                  <TableCell>
+                    {order.shipByDate ? format(new Date(order.shipByDate), "MMM d") : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,13 +44,13 @@ export interface ShipmentData {
 }
 
 export type DocumentType =
-  | 'bol'
-  | 'packing_list'
-  | 'commercial_invoice'
-  | 'purchase_order'
-  | 'warehouse_receipt'
-  | 'receiving_report'
-  | 'shipping_label';
+  | "bol"
+  | "packing_list"
+  | "commercial_invoice"
+  | "purchase_order"
+  | "warehouse_receipt"
+  | "receiving_report"
+  | "shipping_label";
 
 export interface UsageInfo {
   inputTokens: number;
@@ -80,15 +80,15 @@ export interface ExtractForReceiptResponse {
 export interface ClassifyResponse {
   requestId?: string;
   tenantId?: string;
-  documentType: DocumentType | 'unknown';
+  documentType: DocumentType | "unknown";
   confidence: number;
 }
 
 export interface HealthResponse {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   model: string;
   version: string;
-  claudeApi?: 'ok' | 'error' | 'degraded';
+  claudeApi?: "ok" | "error" | "degraded";
 }
 
 export interface DocAIError {

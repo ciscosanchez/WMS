@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ShoppingCart, Package, Truck, MapPin, User, Clock } from "lucide-react";
+import { ShoppingCart, Package, Truck, MapPin, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { getOrder, updateOrderStatus } from "@/modules/orders/actions";
 
 const orderStatusFlow: Record<string, { next: string; label: string; confirm?: string }> = {
   pending: { next: "awaiting_fulfillment", label: "Accept Order" },
@@ -30,102 +32,74 @@ const orderStatusFlow: Record<string, { next: string; label: string; confirm?: s
   shipped: { next: "delivered", label: "Mark Delivered" },
 };
 
-const mockOrder = {
-  id: "2",
-  orderNumber: "ORD-2026-0002",
-  externalId: "#AMZ-9982",
-  channel: "Amazon",
-  clientCode: "ACME",
-  clientName: "Acme Corporation",
-  status: "picking",
-  priority: "expedited",
-  shipToName: "Robert Fox",
-  shipToAddress: "456 Oak Ave",
-  shipToCity: "Denver",
-  shipToState: "CO",
-  shipToZip: "80202",
-  shipToCountry: "US",
-  shipToPhone: "555-0199",
-  shipToEmail: "robert@example.com",
-  shippingMethod: "2-Day",
-  orderDate: new Date("2026-03-15"),
-  shipByDate: new Date("2026-03-16"),
-  notes: "Gift wrap requested",
-  lines: [
-    {
-      id: "ol1",
-      sku: "VALVE-BV2",
-      name: '2" Ball Valve',
-      quantity: 1,
-      pickedQty: 0,
-      packedQty: 0,
-      unitPrice: 24.99,
-    },
-  ],
-  pickTask: {
-    taskNumber: "PICK-2026-0012",
-    status: "in_progress",
-    assignedTo: "Carlos M.",
-    startedAt: new Date("2026-03-16T10:30:00"),
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  shipments: [] as any[],
-  timeline: [
-    { event: "Order received from Amazon", at: new Date("2026-03-15T14:22:00"), by: "System" },
-    { event: "Inventory allocated", at: new Date("2026-03-15T14:22:05"), by: "System" },
-    {
-      event: "Pick task PICK-2026-0012 created",
-      at: new Date("2026-03-16T09:00:00"),
-      by: "System",
-    },
-    {
-      event: "Pick task assigned to Carlos M.",
-      at: new Date("2026-03-16T10:30:00"),
-      by: "Carlos M.",
-    },
-  ],
-};
-
 export default function OrderDetailPage() {
-  const [order, setOrder] = useState(mockOrder);
+  const params = useParams<{ id: string }>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
+  useEffect(() => {
+    getOrder(params.id)
+      .then(setOrder)
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  if (loading) {
+    return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  if (!order) {
+    return <div className="py-10 text-center text-muted-foreground">Order not found</div>;
+  }
+
   const flow = orderStatusFlow[order.status];
-  const total = order.lines.reduce((s, l) => s + l.quantity * (l.unitPrice || 0), 0);
+  const total = (order.lines ?? []).reduce(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (s: number, l: any) => s + l.quantity * (parseFloat(l.unitPrice) || 0),
+    0
+  );
 
   async function handleStatusChange() {
     if (!flow) return;
     if (flow.confirm && !confirm(flow.confirm)) return;
 
     setProcessing(true);
-    const newTimeline = [
-      ...order.timeline,
-      { event: flow.label, at: new Date(), by: "Admin User" },
-    ];
-
-    setOrder((prev) => ({ ...prev, status: flow.next, timeline: newTimeline }));
-    toast.success(flow.label);
-    setProcessing(false);
+    try {
+      const updated = await updateOrderStatus(order.id, flow.next);
+      setOrder((prev: typeof order) => ({ ...prev, status: updated.status ?? flow.next }));
+      toast.success(flow.label);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to update status");
+    } finally {
+      setProcessing(false);
+    }
   }
 
   async function handleCancel() {
     if (!confirm("Cancel this order? Allocated inventory will be released.")) return;
-    setOrder((prev) => ({
-      ...prev,
-      status: "cancelled",
-      timeline: [...prev.timeline, { event: "Order cancelled", at: new Date(), by: "Admin User" }],
-    }));
-    toast.success("Order cancelled");
+    setProcessing(true);
+    try {
+      await updateOrderStatus(order.id, "cancelled");
+      setOrder((prev: typeof order) => ({ ...prev, status: "cancelled" }));
+      toast.success("Order cancelled");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to cancel order");
+    } finally {
+      setProcessing(false);
+    }
   }
 
+  const shipByDate = order.shipByDate ? new Date(order.shipByDate) : null;
   const isShipByOverdue =
-    order.shipByDate < new Date() && !["shipped", "delivered", "cancelled"].includes(order.status);
+    shipByDate &&
+    shipByDate < new Date() &&
+    !["shipped", "delivered", "cancelled"].includes(order.status);
 
   return (
     <div className="space-y-6">
       <PageHeader title={order.orderNumber}>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">{order.channel}</Badge>
           {order.externalId && (
             <span className="text-sm text-muted-foreground">{order.externalId}</span>
           )}
@@ -147,7 +121,7 @@ export default function OrderDetailPage() {
               <Button onClick={handleStatusChange} disabled={processing}>
                 {processing ? "Processing..." : flow.label}
               </Button>
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} disabled={processing}>
                 Cancel
               </Button>
             </>
@@ -155,15 +129,13 @@ export default function OrderDetailPage() {
         </div>
       </PageHeader>
 
-      {/* Ship-by warning */}
       {isShipByOverdue && (
         <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
           <strong>Overdue!</strong> This order was due to ship by{" "}
-          {format(order.shipByDate, "MMM d, yyyy")}
+          {format(shipByDate, "MMM d, yyyy")}
         </div>
       )}
 
-      {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
@@ -171,7 +143,7 @@ export default function OrderDetailPage() {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Client</span>
             </div>
-            <p className="mt-1 font-medium">{order.clientName}</p>
+            <p className="mt-1 font-medium">{order.client?.name ?? order.clientName ?? "-"}</p>
           </CardContent>
         </Card>
         <Card>
@@ -181,7 +153,11 @@ export default function OrderDetailPage() {
               <span className="text-sm text-muted-foreground">Items</span>
             </div>
             <p className="mt-1 font-medium">
-              {order.lines.reduce((s, l) => s + l.quantity, 0)} items &middot; ${total.toFixed(2)}
+              {(order.lines ?? []).reduce(
+                (s: number, l: { quantity: number }) => s + l.quantity,
+                0
+              )}{" "}
+              items{total > 0 ? ` \u00b7 $${total.toFixed(2)}` : ""}
             </p>
           </CardContent>
         </Card>
@@ -191,7 +167,9 @@ export default function OrderDetailPage() {
               <Truck className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Shipping</span>
             </div>
-            <p className="mt-1 font-medium">{order.shippingMethod}</p>
+            <p className="mt-1 font-medium">
+              {order.requestedService ?? order.shippingMethod ?? "Best available"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -203,13 +181,12 @@ export default function OrderDetailPage() {
               <span className="text-sm text-muted-foreground">Ship By</span>
             </div>
             <p className={`mt-1 font-medium ${isShipByOverdue ? "text-red-600" : ""}`}>
-              {format(order.shipByDate, "MMM d, yyyy")}
+              {shipByDate ? format(shipByDate, "MMM d, yyyy") : "No deadline"}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Ship-to + Pick Task */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -220,40 +197,21 @@ export default function OrderDetailPage() {
           </CardHeader>
           <CardContent className="text-sm space-y-1">
             <p className="font-medium">{order.shipToName}</p>
-            <p>{order.shipToAddress}</p>
+            <p>{order.shipToAddress1}</p>
+            {order.shipToAddress2 && <p>{order.shipToAddress2}</p>}
             <p>
-              {order.shipToCity}, {order.shipToState} {order.shipToZip}
+              {order.shipToCity}, {order.shipToState ?? ""} {order.shipToZip}
             </p>
             {order.shipToPhone && <p>{order.shipToPhone}</p>}
             {order.shipToEmail && <p>{order.shipToEmail}</p>}
           </CardContent>
         </Card>
-
-        {order.pickTask && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Pick Task
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{order.pickTask.taskNumber}</span>
-                <StatusBadge status={order.pickTask.status} />
-              </div>
-              <p>Assigned to: {order.pickTask.assignedTo}</p>
-              <p>Started: {format(order.pickTask.startedAt, "MMM d, HH:mm")}</p>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <Tabs defaultValue="lines">
         <TabsList>
-          <TabsTrigger value="lines">Lines ({order.lines.length})</TabsTrigger>
-          <TabsTrigger value="shipments">Shipments ({order.shipments.length})</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline ({order.timeline.length})</TabsTrigger>
+          <TabsTrigger value="lines">Lines ({(order.lines ?? []).length})</TabsTrigger>
+          <TabsTrigger value="shipments">Shipments ({(order.shipments ?? []).length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lines">
@@ -271,18 +229,21 @@ export default function OrderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.lines.map((line) => (
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {(order.lines ?? []).map((line: any) => (
                   <TableRow key={line.id}>
-                    <TableCell className="font-mono">{line.sku}</TableCell>
-                    <TableCell>{line.name}</TableCell>
+                    <TableCell className="font-mono">
+                      {line.product?.sku ?? line.sku ?? "-"}
+                    </TableCell>
+                    <TableCell>{line.product?.name ?? line.name ?? "-"}</TableCell>
                     <TableCell className="text-right">{line.quantity}</TableCell>
-                    <TableCell className="text-right">{line.pickedQty}</TableCell>
-                    <TableCell className="text-right">{line.packedQty}</TableCell>
+                    <TableCell className="text-right">{line.pickedQty ?? 0}</TableCell>
+                    <TableCell className="text-right">{line.packedQty ?? 0}</TableCell>
                     <TableCell className="text-right">
-                      ${(line.unitPrice || 0).toFixed(2)}
+                      ${(parseFloat(line.unitPrice) || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      ${(line.quantity * (line.unitPrice || 0)).toFixed(2)}
+                      ${(line.quantity * (parseFloat(line.unitPrice) || 0)).toFixed(2)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -292,32 +253,39 @@ export default function OrderDetailPage() {
         </TabsContent>
 
         <TabsContent value="shipments">
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            {order.status === "shipped" || order.status === "delivered"
-              ? "Shipment created"
-              : "No shipments yet — order is still being processed"}
-          </p>
-        </TabsContent>
-
-        <TabsContent value="timeline">
-          <div className="space-y-4 py-4">
-            {order.timeline.map((event, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`h-2 w-2 rounded-full ${i === order.timeline.length - 1 ? "bg-primary" : "bg-muted-foreground/50"}`}
-                  />
-                  {i < order.timeline.length - 1 && <div className="w-px flex-1 bg-border" />}
-                </div>
-                <div className="pb-4">
-                  <p className="text-sm font-medium">{event.event}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(event.at, "MMM d, yyyy HH:mm")} &middot; {event.by}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {(order.shipments ?? []).length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No shipments yet — order is still being processed
+            </p>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Shipment #</TableHead>
+                    <TableHead>Carrier</TableHead>
+                    <TableHead>Tracking</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {order.shipments.map((s: any) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.shipmentNumber}</TableCell>
+                      <TableCell>{s.carrier ?? "-"}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {s.trackingNumber ?? "Pending"}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={s.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

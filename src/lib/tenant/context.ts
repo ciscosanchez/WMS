@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { config } from "@/lib/config";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 
 export interface TenantContext {
@@ -10,8 +9,6 @@ export interface TenantContext {
 }
 
 export async function getTenantFromHeaders(): Promise<string | null> {
-  if (config.useMockData) return "demo";
-
   const headersList = await headers();
 
   if (process.env.TENANT_RESOLUTION === "header") {
@@ -20,7 +17,10 @@ export async function getTenantFromHeaders(): Promise<string | null> {
     // Cookie fallback for browser
     const cookieHeader = headersList.get("cookie") || "";
     const match = cookieHeader.match(/tenant-slug=([^;]+)/);
-    return match ? match[1] : null;
+    if (match) return match[1];
+    // Dev default — avoids needing to set cookie manually
+    if (process.env.DEFAULT_TENANT_SLUG) return process.env.DEFAULT_TENANT_SLUG;
+    return null;
   }
 
   // Production: extract from subdomain
@@ -32,16 +32,6 @@ export async function getTenantFromHeaders(): Promise<string | null> {
 }
 
 export async function resolveTenant(): Promise<TenantContext | null> {
-  if (config.useMockData) {
-    return {
-      tenantId: "mock-tenant-1",
-      slug: "demo",
-      dbSchema: "tenant_demo",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      db: null as any,
-    };
-  }
-
   const slug = await getTenantFromHeaders();
   if (!slug) return null;
 

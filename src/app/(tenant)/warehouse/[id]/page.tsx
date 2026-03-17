@@ -103,11 +103,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
   }
 
   if (!wh) {
-    return (
-      <div className="text-center py-24 text-muted-foreground">
-        Warehouse not found.
-      </div>
-    );
+    return <div className="text-center py-24 text-muted-foreground">Warehouse not found.</div>;
   }
 
   // Compute totals from real nested data
@@ -119,7 +115,8 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
   );
   const totalAvail = (wh.zones ?? []).reduce(
     (s: number, z: any) =>
-      s + (z.aisles ?? []).reduce((as2: number, a: any) => as2 + countBinsByStatus(a, "available"), 0),
+      s +
+      (z.aisles ?? []).reduce((as2: number, a: any) => as2 + countBinsByStatus(a, "available"), 0),
     0
   );
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -254,7 +251,10 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                       const aisleReserved = countBinsByStatus(aisle, "reserved");
                       const aisleRacks = countRacksInAisle(aisle);
                       const aisleShelves = countShelvesInAisle(aisle);
-                      const utilization = aisleBins > 0 ? Math.round(((aisleBins - aisleAvailable) / aisleBins) * 100) : 0;
+                      const utilization =
+                        aisleBins > 0
+                          ? Math.round(((aisleBins - aisleAvailable) / aisleBins) * 100)
+                          : 0;
                       return (
                         <TableRow key={aisle.code ?? aisle.id}>
                           <TableCell className="font-medium">
@@ -276,9 +276,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                                   }}
                                 />
                               </div>
-                              <span className="text-xs text-muted-foreground">
-                                {utilization}%
-                              </span>
+                              <span className="text-xs text-muted-foreground">{utilization}%</span>
                             </div>
                           </TableCell>
                         </TableRow>

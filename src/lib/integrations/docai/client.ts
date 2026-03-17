@@ -11,18 +11,18 @@ import type {
   HealthResponse,
   DocumentType,
   DocAIError,
-} from './types';
+} from "./types";
 
-const DOCAI_URL = process.env.DOCAI_URL || 'http://localhost:3001';
-const DOCAI_API_KEY = process.env.DOCAI_API_KEY || '';
-const DOCAI_TIMEOUT = parseInt(process.env.DOCAI_TIMEOUT_MS || '120000');
+const DOCAI_URL = process.env.DOCAI_URL || "http://localhost:3001";
+const DOCAI_API_KEY = process.env.DOCAI_API_KEY || "";
+const DOCAI_TIMEOUT = parseInt(process.env.DOCAI_TIMEOUT_MS || "120000");
 
 function headers(tenantId?: string): Record<string, string> {
   const h: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  if (DOCAI_API_KEY) h['x-api-key'] = DOCAI_API_KEY;
-  if (tenantId) h['x-tenant-id'] = tenantId;
+  if (DOCAI_API_KEY) h["x-api-key"] = DOCAI_API_KEY;
+  if (tenantId) h["x-tenant-id"] = tenantId;
   return h;
 }
 
@@ -43,7 +43,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
 
     return (await res.json()) as T;
   } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
+    if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(`DocAI request timed out after ${DOCAI_TIMEOUT}ms`);
     }
     throw err;
@@ -59,7 +59,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
 export async function extractForReceipt(opts: {
   fileBase64: string;
   mimeType: string;
-  documentType?: DocumentType | 'auto';
+  documentType?: DocumentType | "auto";
   tenantId?: string;
   context?: {
     clientName?: string;
@@ -68,13 +68,13 @@ export async function extractForReceipt(opts: {
     consigneeName?: string;
   };
 }): Promise<ExtractForReceiptResponse> {
-  return request<ExtractForReceiptResponse>('/api/v1/extract-for-receipt', {
-    method: 'POST',
+  return request<ExtractForReceiptResponse>("/api/v1/extract-for-receipt", {
+    method: "POST",
     headers: headers(opts.tenantId),
     body: JSON.stringify({
       image: opts.fileBase64,
       mimeType: opts.mimeType,
-      documentType: opts.documentType || 'auto',
+      documentType: opts.documentType || "auto",
       context: opts.context,
     }),
   });
@@ -88,8 +88,8 @@ export async function classify(opts: {
   mimeType: string;
   tenantId?: string;
 }): Promise<ClassifyResponse> {
-  return request<ClassifyResponse>('/api/v1/classify', {
-    method: 'POST',
+  return request<ClassifyResponse>("/api/v1/classify", {
+    method: "POST",
     headers: headers(opts.tenantId),
     body: JSON.stringify({
       image: opts.fileBase64,
@@ -102,8 +102,8 @@ export async function classify(opts: {
  * Health check — verifies DocAI service and Claude API are reachable.
  */
 export async function healthCheck(): Promise<HealthResponse> {
-  return request<HealthResponse>('/api/v1/health', {
-    method: 'GET',
+  return request<HealthResponse>("/api/v1/health", {
+    method: "GET",
     headers: headers(),
   });
 }

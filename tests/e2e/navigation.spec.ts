@@ -1,11 +1,4 @@
-import { test, expect } from "@playwright/test";
-
-// Set tenant cookie before each test so pages resolve correctly
-test.beforeEach(async ({ context }) => {
-  await context.addCookies([
-    { name: "tenant-slug", value: "armstrong", domain: "localhost", path: "/" },
-  ]);
-});
+import { test, expect } from "./auth.setup";
 
 test.describe("Navigation", () => {
   test("redirects root to dashboard", async ({ page }) => {
@@ -42,7 +35,7 @@ test.describe("Navigation", () => {
 
   test("can navigate to orders page", async ({ page }) => {
     await page.goto("/orders");
-    await expect(page.getByRole("heading", { name: "Orders" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Orders", exact: true })).toBeVisible();
   });
 
   test("can navigate to picking page", async ({ page }) => {

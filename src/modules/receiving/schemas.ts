@@ -6,7 +6,10 @@ export const inboundShipmentSchema = z.object({
   trackingNumber: z.string().optional().nullable(),
   bolNumber: z.string().optional().nullable(),
   poNumber: z.string().optional().nullable(),
-  expectedDate: z.coerce.date().optional().nullable(),
+  expectedDate: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? null : v),
+    z.coerce.date().optional().nullable()
+  ),
   notes: z.string().optional().nullable(),
 });
 

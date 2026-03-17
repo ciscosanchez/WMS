@@ -42,15 +42,7 @@ export function getTenantDb(schema: string): PrismaClient {
     connectionString: buildConnectionString(schema),
   });
 
-  // Set search_path to the tenant schema on every new connection
-  const originalConnect = pgPool.connect.bind(pgPool);
-  pgPool.connect = async function () {
-    const client = await originalConnect();
-    await client.query(`SET search_path TO "${schema}"`);
-    return client;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
-
+  // PrismaPg handles search_path automatically via the { schema } option
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaPg(pgPool as any, { schema });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

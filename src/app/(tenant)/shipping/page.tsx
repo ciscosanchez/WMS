@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/shared/empty-state";
 import { KpiCard } from "@/components/shared/kpi-card";
 import {
   Table,
@@ -13,103 +14,100 @@ import {
 } from "@/components/ui/table";
 import { Truck, Package, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
+import { getShipments } from "@/modules/shipping/actions";
 
-const mockShipments = [
-  {
-    id: "1",
-    shipmentNumber: "SHP-2026-0008",
-    orderNumber: "ORD-2026-0001",
-    carrier: "FedEx",
-    service: "Ground",
-    tracking: "794644790132",
-    status: "shipped",
-    weight: "2.4 lb",
-    cost: "$8.95",
-    shippedAt: new Date("2026-03-12"),
-  },
-  {
-    id: "2",
-    shipmentNumber: "SHP-2026-0009",
-    orderNumber: "ORD-2026-0006",
-    carrier: "UPS",
-    service: "2nd Day Air",
-    tracking: null,
-    status: "label_created",
-    weight: "15.2 lb",
-    cost: "$24.50",
-    shippedAt: null,
-  },
-  {
-    id: "3",
-    shipmentNumber: "SHP-2026-0007",
-    orderNumber: "ORD-2026-0001",
-    carrier: "USPS",
-    service: "Priority",
-    tracking: "9400111899223456789012",
-    status: "delivered",
-    weight: "0.8 lb",
-    cost: "$7.15",
-    shippedAt: new Date("2026-03-11"),
-  },
-];
+export default async function ShippingPage() {
+  const shipments = await getShipments();
 
-export default function ShippingPage() {
+  const readyToShip = shipments.filter((s) => s.status === "label_created").length;
+  const shippedToday = shipments.filter((s) => {
+    if (!s.shippedAt) return false;
+    const today = new Date();
+    const shipped = new Date(s.shippedAt);
+    return shipped.toDateString() === today.toDateString();
+  }).length;
+  const inTransit = shipments.filter((s) => s.status === "shipped").length;
+  const delivered = shipments.filter((s) => s.status === "delivered").length;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Shipping" description="Outbound shipments, labels, and tracking" />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <KpiCard title="Ready to Ship" value={3} description="Labels pending" icon={Package} />
-        <KpiCard title="Shipped Today" value={5} description="Out the door" icon={Truck} />
-        <KpiCard title="In Transit" value={12} description="With carriers" icon={Clock} />
-        <KpiCard title="Delivered" value={47} description="This week" icon={CheckCircle} />
+        <KpiCard
+          title="Ready to Ship"
+          value={readyToShip}
+          description="Labels pending"
+          icon={Package}
+        />
+        <KpiCard
+          title="Shipped Today"
+          value={shippedToday}
+          description="Out the door"
+          icon={Truck}
+        />
+        <KpiCard title="In Transit" value={inTransit} description="With carriers" icon={Clock} />
+        <KpiCard title="Delivered" value={delivered} description="Total" icon={CheckCircle} />
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Shipment #</TableHead>
-              <TableHead>Order</TableHead>
-              <TableHead>Carrier</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Tracking</TableHead>
-              <TableHead>Weight</TableHead>
-              <TableHead>Cost</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Shipped</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockShipments.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>
-                  <Link
-                    href={`/shipping/${s.id}`}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {s.shipmentNumber}
-                  </Link>
-                </TableCell>
-                <TableCell>{s.orderNumber}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{s.carrier}</Badge>
-                </TableCell>
-                <TableCell>{s.service}</TableCell>
-                <TableCell className="font-mono text-xs">
-                  {s.tracking || <span className="text-muted-foreground">Pending</span>}
-                </TableCell>
-                <TableCell>{s.weight}</TableCell>
-                <TableCell>{s.cost}</TableCell>
-                <TableCell>
-                  <StatusBadge status={s.status} />
-                </TableCell>
-                <TableCell>{s.shippedAt ? format(s.shippedAt, "MMM d") : "-"}</TableCell>
+      {shipments.length === 0 ? (
+        <EmptyState
+          icon={Truck}
+          title="No shipments yet"
+          description="Shipments will appear here when orders are fulfilled."
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Shipment #</TableHead>
+                <TableHead>Order</TableHead>
+                <TableHead>Carrier</TableHead>
+                <TableHead>Service</TableHead>
+                <TableHead>Tracking</TableHead>
+                <TableHead>Weight</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Shipped</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {shipments.map((s: any) => (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    <Link
+                      href={`/shipping/${s.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {s.shipmentNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{s.order?.orderNumber ?? "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{s.carrier ?? "-"}</Badge>
+                  </TableCell>
+                  <TableCell>{s.service ?? "-"}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {s.trackingNumber || <span className="text-muted-foreground">Pending</span>}
+                  </TableCell>
+                  <TableCell>{s.packageWeight ? `${s.packageWeight} lb` : "-"}</TableCell>
+                  <TableCell>
+                    {s.shippingCost ? `$${parseFloat(s.shippingCost).toFixed(2)}` : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={s.status} />
+                  </TableCell>
+                  <TableCell>
+                    {s.shippedAt ? format(new Date(s.shippedAt), "MMM d") : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

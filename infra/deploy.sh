@@ -17,9 +17,6 @@ echo "==> Running WMS Prisma migrations..."
 docker compose -f docker-compose.prod.yml exec wms npx prisma migrate deploy --schema=prisma/schema.prisma
 docker compose -f docker-compose.prod.yml exec wms npx prisma migrate deploy --schema=prisma/tenant-schema.prisma
 
-echo "==> Running DispatchPro Drizzle migrations..."
-docker compose -f docker-compose.prod.yml exec dispatch npx drizzle-kit migrate
-
 echo "==> Health check..."
 sleep 5
 for svc in wms docai dispatch; do

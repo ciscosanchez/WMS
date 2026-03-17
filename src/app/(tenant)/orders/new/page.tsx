@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,22 +19,9 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
-const mockClients = [
-  { id: "1", code: "ACME", name: "Acme Corporation" },
-  { id: "2", code: "GLOBEX", name: "Globex Industries" },
-  { id: "3", code: "INITECH", name: "Initech Logistics" },
-  { id: "5", code: "STARK", name: "Stark Shipping Co" },
-];
-
-const mockProducts = [
-  { id: "1", sku: "WIDGET-001", name: "Standard Widget", clientId: "1" },
-  { id: "2", sku: "GADGET-001", name: "Premium Gadget", clientId: "1" },
-  { id: "3", sku: "PART-A100", name: "Component Part A-100", clientId: "1" },
-  { id: "4", sku: "BOLT-M8X40", name: "M8x40 Hex Bolt", clientId: "2" },
-  { id: "5", sku: "PIPE-SCH40", name: 'Schedule 40 Steel Pipe 2"', clientId: "2" },
-  { id: "6", sku: "VALVE-BV2", name: '2" Ball Valve', clientId: "3" },
-];
+import { getClients } from "@/modules/clients/actions";
+import { getProducts } from "@/modules/products/actions";
+import { createOrder } from "@/modules/orders/actions";
 
 interface OrderLine {
   id: string;
@@ -46,6 +33,10 @@ interface OrderLine {
 
 export default function NewOrderPage() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [clients, setClients] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [products, setProducts] = useState<any[]>([]);
   const [clientId, setClientId] = useState("");
   const [priority, setPriority] = useState("standard");
   const [shipToName, setShipToName] = useState("");
@@ -53,7 +44,6 @@ export default function NewOrderPage() {
   const [shipToCity, setShipToCity] = useState("");
   const [shipToState, setShipToState] = useState("");
   const [shipToZip, setShipToZip] = useState("");
-  const [_shipToCountry, _setShipToCountry] = useState("US");
   const [shipToPhone, setShipToPhone] = useState("");
   const [shipToEmail, setShipToEmail] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
@@ -63,12 +53,17 @@ export default function NewOrderPage() {
   const [addQty, setAddQty] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
-  const availableProducts = mockProducts.filter(
+  useEffect(() => {
+    getClients().then(setClients);
+    getProducts().then(setProducts);
+  }, []);
+
+  const availableProducts = products.filter(
     (p) => p.clientId === clientId && !lines.find((l) => l.productId === p.id)
   );
 
   function addLine() {
-    const product = mockProducts.find((p) => p.id === addProductId);
+    const product = products.find((p) => p.id === addProductId);
     if (!product) return;
     setLines([
       ...lines,
@@ -91,10 +86,33 @@ export default function NewOrderPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    // Simulated — will wire to server action when DB is connected
-    await new Promise((r) => setTimeout(r, 500));
-    toast.success("Order created");
-    router.push("/orders");
+    try {
+      const orderData = {
+        clientId,
+        priority,
+        shipToName,
+        shipToAddress1: shipToAddress,
+        shipToCity,
+        shipToState,
+        shipToZip,
+        shipToCountry: "US",
+        shipToPhone: shipToPhone || null,
+        shipToEmail: shipToEmail || null,
+        requestedService: shippingMethod || null,
+        notes: notes || null,
+      };
+      const orderLines = lines.map((l) => ({
+        productId: l.productId,
+        quantity: l.quantity,
+      }));
+      const order = await createOrder(orderData, orderLines);
+      toast.success(`Order ${order.orderNumber} created`);
+      router.push("/orders");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create order");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -120,7 +138,7 @@ export default function NewOrderPage() {
                 required
               >
                 <option value="">Select client...</option>
-                {mockClients.map((c) => (
+                {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} - {c.name}
                   </option>

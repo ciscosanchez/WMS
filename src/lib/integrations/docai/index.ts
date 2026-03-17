@@ -2,7 +2,7 @@
  * DocAI Integration — Barrel Export
  */
 
-export { extractForReceipt, classify, healthCheck } from './client';
+export { extractForReceipt, classify, healthCheck } from "./client";
 export type {
   ExtractForReceiptResponse,
   ClassifyResponse,
@@ -14,4 +14,4 @@ export type {
   UsageInfo,
   MatchingResults,
   DocAIError,
-} from './types';
+} from "./types";

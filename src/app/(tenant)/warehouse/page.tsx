@@ -25,7 +25,9 @@ function computeZoneBinCount(zone: any): number {
           0
         ) ?? 0),
       0
-    ) ?? zone.binCount ?? 0
+    ) ??
+    zone.binCount ??
+    0
   );
 }
 
@@ -35,10 +37,7 @@ export default async function WarehousePage() {
   if (!warehouses || warehouses.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Warehouse Locations"
-          description="No warehouses configured"
-        >
+        <PageHeader title="Warehouse Locations" description="No warehouses configured">
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <Link href="/warehouse/bulk-generate">Bulk Generate</Link>
@@ -88,11 +87,12 @@ export default async function WarehousePage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {warehouses.map((wh: any) => {
-          const binCount = wh.zones?.reduce(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (s: number, z: any) => s + computeZoneBinCount(z),
-            0
-          ) ?? 0;
+          const binCount =
+            wh.zones?.reduce(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (s: number, z: any) => s + computeZoneBinCount(z),
+              0
+            ) ?? 0;
           return (
             <Link key={wh.id} href={`/warehouse/${wh.id}`}>
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer">

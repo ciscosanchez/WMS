@@ -23,7 +23,7 @@ const MOCK_USER: SessionUser = {
 };
 
 export async function getSession(): Promise<{ user: SessionUser } | null> {
-  if (config.useMockData) {
+  if (config.useMockAuth) {
     return { user: MOCK_USER };
   }
 
@@ -35,7 +35,7 @@ export async function getSession(): Promise<{ user: SessionUser } | null> {
 }
 
 export async function requireAuth(): Promise<SessionUser> {
-  if (config.useMockData) {
+  if (config.useMockAuth) {
     return MOCK_USER;
   }
 
@@ -49,7 +49,7 @@ export async function requireAuth(): Promise<SessionUser> {
 }
 
 export async function requireTenantAccess(tenantSlug: string) {
-  if (config.useMockData) {
+  if (config.useMockAuth) {
     return { user: MOCK_USER, role: "admin" as TenantRole };
   }
 
@@ -64,7 +64,7 @@ export async function requireTenantAccess(tenantSlug: string) {
 }
 
 export async function requirePermission(tenantSlug: string, _permission: string) {
-  if (config.useMockData) {
+  if (config.useMockAuth) {
     return { user: MOCK_USER, role: "admin" as TenantRole };
   }
 

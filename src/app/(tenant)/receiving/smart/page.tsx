@@ -124,7 +124,9 @@ export default function SmartReceivingPage() {
             {processing ? (
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-                <span className="text-sm text-muted-foreground">Processing with Claude Vision...</span>
+                <span className="text-sm text-muted-foreground">
+                  Processing with Claude Vision...
+                </span>
               </div>
             ) : (
               <div className="flex gap-3">

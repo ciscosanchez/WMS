@@ -4,7 +4,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clientSchema, type ClientFormData } from "@/modules/clients/schemas";
-import { updateClient, deleteClient } from "@/modules/clients/actions";
+import { getClient, updateClient, deleteClient } from "@/modules/clients/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,46 +25,11 @@ import {
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
-// Mock data — will be replaced with a real fetch once the DB layer is wired up
-const MOCK_CLIENTS: Record<string, ClientFormData & { id: string }> = {
-  "1": {
-    id: "1",
-    code: "ACME",
-    name: "Acme Corporation",
-    contactName: "John Smith",
-    contactEmail: "john@acme.com",
-    contactPhone: "+1 305-555-0100",
-    taxId: "12-3456789",
-    address: "100 Industrial Blvd",
-    city: "Miami",
-    state: "FL",
-    country: "US",
-    zipCode: "33101",
-    notes: "Primary import client. Prefers morning deliveries.",
-    isActive: true,
-  },
-  "2": {
-    id: "2",
-    code: "GLOBEX",
-    name: "Globex Industries",
-    contactName: "Jane Doe",
-    contactEmail: "jane@globex.com",
-    contactPhone: "+1 305-555-0200",
-    taxId: "98-7654321",
-    address: "200 Commerce Ave",
-    city: "Doral",
-    state: "FL",
-    country: "US",
-    zipCode: "33178",
-    notes: null,
-    isActive: true,
-  },
-};
-
 export default function EditClientPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const {
@@ -77,26 +42,35 @@ export default function EditClientPage() {
   });
 
   useEffect(() => {
-    // Simulate fetching client data — replace with getClient(params.id) later
-    const client = MOCK_CLIENTS[params.id];
-    if (client) {
-      reset({
-        code: client.code,
-        name: client.name,
-        contactName: client.contactName,
-        contactEmail: client.contactEmail,
-        contactPhone: client.contactPhone,
-        taxId: client.taxId,
-        address: client.address,
-        city: client.city,
-        state: client.state,
-        country: client.country,
-        zipCode: client.zipCode,
-        notes: client.notes,
-        isActive: client.isActive,
-      });
+    async function load() {
+      try {
+        const client = await getClient(params.id);
+        if (!client) {
+          setNotFound(true);
+          return;
+        }
+        reset({
+          code: client.code,
+          name: client.name,
+          contactName: client.contactName ?? "",
+          contactEmail: client.contactEmail ?? "",
+          contactPhone: client.contactPhone ?? "",
+          taxId: client.taxId ?? "",
+          address: client.address ?? "",
+          city: client.city ?? "",
+          state: client.state ?? "",
+          country: client.country ?? "",
+          zipCode: client.zipCode ?? "",
+          notes: client.notes ?? "",
+          isActive: client.isActive,
+        });
+      } catch {
+        setNotFound(true);
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+    load();
   }, [params.id, reset]);
 
   async function onSubmit(data: ClientFormData) {
@@ -124,6 +98,10 @@ export default function EditClientPage() {
 
   if (loading) {
     return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+  }
+
+  if (notFound) {
+    return <div className="py-10 text-center text-muted-foreground">Client not found</div>;
   }
 
   return (

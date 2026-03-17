@@ -18,15 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import {
-  CheckCircle,
-  AlertTriangle,
-  XCircle,
-  FileText,
-  Loader2,
-  Pencil,
-  Save,
-} from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, FileText, Loader2, Pencil, Save } from "lucide-react";
 import { saveReview, createShipmentFromExtraction } from "@/modules/receiving/docai-actions";
 import type { ShipmentData, ExtractedField } from "@/lib/integrations/docai";
 
@@ -211,7 +203,9 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
               <FileText className="h-4 w-4" />
               {job.fileName}
             </CardTitle>
-            <Badge variant="outline">{DOC_TYPE_LABELS[job.documentType || ""] || job.documentType}</Badge>
+            <Badge variant="outline">
+              {DOC_TYPE_LABELS[job.documentType || ""] || job.documentType}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -249,7 +243,11 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
               )}
               {editing && (
                 <Button size="sm" onClick={handleSaveReview} disabled={saving}>
-                  {saving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
+                  {saving ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="h-3 w-3 mr-1" />
+                  )}
                   Save
                 </Button>
               )}
@@ -261,15 +259,51 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
             <div className="space-y-0">
               {fieldRow("Shipper", data.shipper, edits.shipper, updateEdit("shipper"), editing)}
               {fieldRow("Carrier", data.carrier, edits.carrier, updateEdit("carrier"), editing)}
-              {fieldRow("Consignee", data.consignee, edits.consignee, updateEdit("consignee"), editing)}
+              {fieldRow(
+                "Consignee",
+                data.consignee,
+                edits.consignee,
+                updateEdit("consignee"),
+                editing
+              )}
               {fieldRow("Supplier", data.supplier, edits.supplier, updateEdit("supplier"), editing)}
-              {fieldRow("Tracking #", data.trackingNumber, edits.trackingNumber, updateEdit("trackingNumber"), editing)}
+              {fieldRow(
+                "Tracking #",
+                data.trackingNumber,
+                edits.trackingNumber,
+                updateEdit("trackingNumber"),
+                editing
+              )}
               {fieldRow("PRO #", data.proNumber, edits.proNumber, updateEdit("proNumber"), editing)}
               {fieldRow("PO #s", data.poNumbers, edits.poNumbers, updateEdit("poNumbers"), editing)}
-              {fieldRow("Invoice #", data.invoiceNumber, edits.invoiceNumber, updateEdit("invoiceNumber"), editing)}
-              {fieldRow("Customer Ref", data.customerReference, edits.customerReference, updateEdit("customerReference"), editing)}
-              {fieldRow("Total Pieces", data.totalPieces, edits.totalPieces, updateEdit("totalPieces"), editing)}
-              {fieldRow("Weight (lb)", data.totalWeightLb, edits.totalWeightLb, updateEdit("totalWeightLb"), editing)}
+              {fieldRow(
+                "Invoice #",
+                data.invoiceNumber,
+                edits.invoiceNumber,
+                updateEdit("invoiceNumber"),
+                editing
+              )}
+              {fieldRow(
+                "Customer Ref",
+                data.customerReference,
+                edits.customerReference,
+                updateEdit("customerReference"),
+                editing
+              )}
+              {fieldRow(
+                "Total Pieces",
+                data.totalPieces,
+                edits.totalPieces,
+                updateEdit("totalPieces"),
+                editing
+              )}
+              {fieldRow(
+                "Weight (lb)",
+                data.totalWeightLb,
+                edits.totalWeightLb,
+                updateEdit("totalWeightLb"),
+                editing
+              )}
               {editing ? (
                 <div className="py-2">
                   <Label className="text-sm text-muted-foreground">Notes</Label>

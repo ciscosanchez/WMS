@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, type ProductFormData } from "@/modules/products/schemas";
 import { createProduct } from "@/modules/products/actions";
+import { getClients } from "@/modules/clients/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,17 +14,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useState } from "react";
-
-const INITIAL_CLIENTS = [
-  { id: "1", code: "ACME", name: "Acme Corporation" },
-  { id: "2", code: "GLOBEX", name: "Globex Industries" },
-  { id: "3", code: "INITECH", name: "Initech Logistics" },
-];
+import { useState, useEffect } from "react";
 
 export default function NewProductPage() {
   const router = useRouter();
-  const [clients] = useState(INITIAL_CLIENTS);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [clients, setClients] = useState<any[]>([]);
+
+  useEffect(() => {
+    getClients().then(setClients);
+  }, []);
 
   const {
     register,

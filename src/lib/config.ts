@@ -5,5 +5,6 @@
  */
 export const config = {
   useMockData: process.env.USE_MOCK_DATA !== "false",
+  useMockAuth: process.env.USE_MOCK_AUTH !== "false",
   isProduction: process.env.NODE_ENV === "production",
 } as const;
