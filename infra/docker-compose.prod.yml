@@ -76,7 +76,9 @@ services:
       REDIS_URL: redis://redis:6379
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: https://wms.ramola.app
-      TENANT_RESOLUTION: subdomain
+      USE_MOCK_AUTH: "false"
+      TENANT_RESOLUTION: header
+      DEFAULT_TENANT_SLUG: armstrong
       DOCAI_URL: http://docai:3002
       DOCAI_API_KEY: ${DOCAI_API_KEY}
       S3_ENDPOINT: ${S3_ENDPOINT:-}
