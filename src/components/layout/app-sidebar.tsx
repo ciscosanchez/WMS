@@ -9,6 +9,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -32,6 +33,7 @@ import {
   Truck,
   Store,
   ArrowDownToLine,
+  Smartphone,
 } from "lucide-react";
 
 const navigation = [
@@ -117,6 +119,16 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter className="border-t p-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton render={<Link href="/receive" />}>
+              <Smartphone className="h-4 w-4" />
+              <span>Floor App</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
