@@ -8,8 +8,8 @@
  *   warehouse@armstrong.com / warehouse123  → Warehouse Worker (inventory focus)
  */
 
-import { PrismaClient } from "../../node_modules/.prisma/public-client";
-import { PrismaClient as TenantPrismaClient } from "../../node_modules/.prisma/tenant-client";
+import { PrismaClient } from "../node_modules/.prisma/public-client";
+import { PrismaClient as TenantPrismaClient } from "../node_modules/.prisma/tenant-client";
 import { hash } from "bcryptjs";
 import { exec } from "child_process";
 import { promisify } from "util";
