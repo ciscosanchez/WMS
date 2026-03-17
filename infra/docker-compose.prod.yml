@@ -1,9 +1,7 @@
-version: "3.8"
-
 services:
   # ── Reverse Proxy ──────────────────────────────────────────
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.4
     restart: unless-stopped
     ports:
       - "80:80"
