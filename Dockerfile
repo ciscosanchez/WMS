@@ -13,6 +13,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_PUBLIC_USE_MOCK_DATA=false
 ENV NEXT_PUBLIC_USE_MOCK_AUTH=false
+ENV USE_MOCK_DATA=false
+ENV USE_MOCK_AUTH=false
 RUN npx prisma generate --schema=prisma/schema.prisma && \
     npx prisma generate --schema=prisma/tenant-schema.prisma && \
     npm run build
