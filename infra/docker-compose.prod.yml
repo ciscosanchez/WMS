@@ -120,6 +120,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_SERVER_URL: https://storage.wms.ramola.app
+      MINIO_API_CORS_ALLOW_ORIGIN: https://wms.ramola.app
     volumes:
       - miniodata:/data
     networks:
