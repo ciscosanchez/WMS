@@ -104,7 +104,7 @@ export async function processDocument(opts: {
     data: {
       status: "review",
       documentType: result.sourceDocumentType,
-      extractedData: result.receipt as unknown as Record<string, unknown>,
+      extractedData: JSON.parse(JSON.stringify(result.receipt)),
       confidence: result.overallConfidence,
       aiModel: "claude-sonnet",
       aiCost: result.usage?.estimatedCostUsd ?? null,
