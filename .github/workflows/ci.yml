@@ -60,5 +60,3 @@ jobs:
             git pull origin main
             cd /root/apps/wms/infra
             docker compose -f docker-compose.prod.yml up -d --build --remove-orphans wms
-            docker compose -f docker-compose.prod.yml exec -T wms npx prisma migrate deploy --schema=prisma/schema.prisma
-            docker compose -f docker-compose.prod.yml exec -T wms npx prisma migrate deploy --schema=prisma/tenant-schema.prisma
