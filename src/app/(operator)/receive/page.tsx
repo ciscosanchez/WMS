@@ -1,42 +1,56 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getShipments } from "@/modules/receiving/actions";
+import { getShipmentByBarcode } from "@/modules/operator/actions";
 
-const mockPendingShipments = [
-  {
-    id: "2",
-    number: "ASN-2026-0002",
-    client: "GLOBEX",
-    carrier: "XPO",
-    status: "arrived",
-    lines: 5,
-    received: 2,
-  },
-  {
-    id: "3",
-    number: "ASN-2026-0003",
-    client: "INITECH",
-    carrier: "SAIA",
-    status: "arrived",
-    lines: 2,
-    received: 0,
-  },
-];
+interface Shipment {
+  id: string;
+  shipmentNumber: string;
+  status: string;
+  carrier: string | null;
+  client: { name: string };
+  lines: Array<{ id: string; receivedQty: number; expectedQty: number }>;
+  _count: { lines: number };
+}
 
 export default function OperatorReceivePage() {
-  function handleScan(value: string) {
-    const match = mockPendingShipments.find((s) => s.number === value || value.includes(s.number));
-    if (match) {
-      toast.success(`Found shipment ${match.number}`);
+  const router = useRouter();
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getShipments("arrived")
+      .then((data) => setShipments(data as unknown as Shipment[]))
+      .catch(() => toast.error("Failed to load shipments"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleScan(value: string) {
+    const local = shipments.find(
+      (s) => s.shipmentNumber === value || value.includes(s.shipmentNumber)
+    );
+    if (local) {
+      router.push(`/receive/${local.id}`);
+      return;
+    }
+
+    const found = await getShipmentByBarcode(value);
+    if (found) {
+      router.push(`/receive/${found.id}`);
     } else {
       toast.error(`No shipment found for: ${value}`);
     }
   }
+
+  const completed = shipments.filter((s) => s.status === "completed");
 
   return (
     <div className="space-y-6">
@@ -45,59 +59,83 @@ export default function OperatorReceivePage() {
         <p className="text-sm text-muted-foreground">Scan BOL or select shipment</p>
       </div>
 
-      {/* Scan input — supports hardware scanner + camera */}
       <BarcodeScannerInput
         placeholder="Scan BOL or ASN barcode..."
         onScan={handleScan}
         showFeedback
       />
 
-      {/* Camera button integrated into BarcodeScannerInput */}
-
-      {/* Pending shipments */}
       <div>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
           ARRIVED — READY TO RECEIVE
         </h2>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading shipments...
+          </div>
+        )}
+
+        {!loading && shipments.length === 0 && (
+          <p className="text-sm text-muted-foreground">No shipments ready to receive.</p>
+        )}
+
         <div className="space-y-3">
-          {mockPendingShipments.map((s) => (
-            <Card key={s.id}>
-              <CardContent className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-semibold">{s.number}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {s.client} &middot; {s.carrier}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <StatusBadge status={s.status} />
-                    <span className="text-xs text-muted-foreground">
-                      {s.received}/{s.lines} lines received
-                    </span>
-                  </div>
-                </div>
-                <Button size="lg">{s.received > 0 ? "Continue" : "Start"}</Button>
-              </CardContent>
-            </Card>
-          ))}
+          {shipments
+            .filter((s) => s.status === "arrived" || s.status === "receiving")
+            .map((s) => {
+              const receivedLines = s.lines.filter(
+                (l) => l.receivedQty >= l.expectedQty
+              ).length;
+              return (
+                <Card key={s.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <p className="font-semibold">{s.shipmentNumber}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {s.client.name} &middot; {s.carrier ?? "—"}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <StatusBadge status={s.status} />
+                        <span className="text-xs text-muted-foreground">
+                          {receivedLines}/{s._count.lines} lines received
+                        </span>
+                      </div>
+                    </div>
+                    <Button size="lg" onClick={() => router.push(`/receive/${s.id}`)}>
+                      {receivedLines > 0 ? "Continue" : "Start"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
       </div>
 
-      {/* Recent completions */}
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">COMPLETED TODAY</h2>
-        <Card>
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-semibold">ASN-2026-0001</p>
-              <p className="text-sm text-muted-foreground">ACME &middot; FedEx Freight</p>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <Check className="h-4 w-4" />
-              <span className="text-sm font-medium">Done</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {completed.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">COMPLETED TODAY</h2>
+          <div className="space-y-3">
+            {completed.slice(0, 5).map((s) => (
+              <Card key={s.id}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="font-semibold">{s.shipmentNumber}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {s.client.name} &middot; {s.carrier ?? "—"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Done</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
