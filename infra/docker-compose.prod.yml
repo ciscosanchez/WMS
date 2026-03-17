@@ -65,7 +65,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_URL: https://wms.ramola.com
+      AUTH_URL: https://wms.ramola.app
       TENANT_RESOLUTION: subdomain
       DOCAI_URL: http://docai:3002
       DOCAI_API_KEY: ${DOCAI_API_KEY}
@@ -80,7 +80,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wms.rule=Host(`wms.ramola.com`)"
+      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`)"
       - "traefik.http.routers.wms.entrypoints=websecure"
       - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
@@ -104,7 +104,7 @@ services:
       PORT: 3002
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-4-6}
-      CORS_ORIGIN: https://wms.ramola.com
+      CORS_ORIGIN: https://wms.ramola.app
       DOCAI_API_KEY: ${DOCAI_API_KEY}
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -144,7 +144,7 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dispatch.rule=Host(`dispatch.ramola.com`)"
+      - "traefik.http.routers.dispatch.rule=Host(`dispatch.ramola.app`)"
       - "traefik.http.routers.dispatch.entrypoints=websecure"
       - "traefik.http.routers.dispatch.tls.certresolver=letsencrypt"
       - "traefik.http.services.dispatch.loadbalancer.server.port=3001"

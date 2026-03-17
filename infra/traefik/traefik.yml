@@ -18,7 +18,7 @@ entryPoints:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: cisco@ramola.com
+      email: cisco@ramola.app
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web

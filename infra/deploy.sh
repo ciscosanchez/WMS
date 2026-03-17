@@ -29,6 +29,6 @@ done
 
 echo ""
 echo "==> Deploy complete!"
-echo "  WMS:      https://wms.ramola.com"
-echo "  Dispatch: https://dispatch.ramola.com"
+echo "  WMS:      https://wms.ramola.app"
+echo "  Dispatch: https://dispatch.ramola.app"
 echo "  DocAI:    internal (http://docai:3002)"
