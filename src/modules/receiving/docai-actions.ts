@@ -146,7 +146,7 @@ export async function getProcessingJobsForShipment(shipmentId: string) {
   const { tenant } = await getContext();
   return tenant.db.documentProcessingJob.findMany({
     where: {
-      document: { shipmentId },
+      document: { entityId: shipmentId, entityType: "shipment" },
     },
     include: { document: true },
     orderBy: { createdAt: "desc" },
@@ -178,7 +178,7 @@ export async function saveReview(jobId: string, reviewedData: Record<string, unk
   const job = await tenant.db.documentProcessingJob.update({
     where: { id: jobId },
     data: {
-      reviewedData,
+      reviewedData: JSON.parse(JSON.stringify(reviewedData)),
       reviewedBy: user.id,
       reviewedAt: new Date(),
       status: "completed",
@@ -250,7 +250,7 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
   if (job.documentId) {
     await tenant.db.document.update({
       where: { id: job.documentId },
-      data: { shipmentId: shipment.id },
+      data: { entityId: shipment.id, entityType: "shipment" },
     });
   }
 
