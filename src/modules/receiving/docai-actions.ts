@@ -28,7 +28,7 @@ export async function processDocument(opts: {
   sourceType: "upload" | "email" | "camera" | "scanner";
   shipmentId?: string;
   clientName?: string;
-}) {
+}): Promise<{ error: string } | Record<string, unknown>> {
   if (config.useMockData) {
     return {
       id: "mock-job",
@@ -37,6 +37,8 @@ export async function processDocument(opts: {
       confidence: 0.95,
     };
   }
+
+  try {
 
   const { user, tenant } = await getContext();
 
@@ -94,7 +96,7 @@ export async function processDocument(opts: {
         processedAt: new Date(),
       },
     });
-    throw err;
+    return { error: err instanceof Error ? err.message : "Document processing failed" };
   }
 
   // Update job with extraction results
@@ -121,6 +123,9 @@ export async function processDocument(opts: {
 
   revalidatePath("/receiving");
   return updated;
+  } catch (outerErr) {
+    return { error: outerErr instanceof Error ? outerErr.message : "Unexpected error" };
+  }
 }
 
 /**

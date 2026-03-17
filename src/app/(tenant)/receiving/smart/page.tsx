@@ -63,8 +63,12 @@ export default function SmartReceivingPage() {
         sourceType: "upload",
       });
 
-      setJob(result);
-      toast.success("Extraction complete — review the results below");
+      if ("error" in result) {
+        toast.error(result.error as string);
+      } else {
+        setJob(result);
+        toast.success("Extraction complete — review the results below");
+      }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Processing failed");
     } finally {
