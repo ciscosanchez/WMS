@@ -365,7 +365,8 @@ model Document {
   uploadedBy String   @map("uploaded_by")
   uploadedAt DateTime @default(now()) @map("uploaded_at")
 
-  shipment InboundShipment? @relation(fields: [entityId], references: [id])
+  shipment       InboundShipment?       @relation(fields: [entityId], references: [id])
+  processingJobs DocumentProcessingJob[]
 
   @@map("documents")
 }
@@ -769,4 +770,49 @@ model SequenceCounter {
 
   @@unique([prefix, year])
   @@map("sequence_counters")
+}
+
+// ─── Document Intelligence (DocAI) ─────────────────────
+
+model DocumentProcessingJob {
+  id            String   @id @default(cuid())
+  documentId    String?  @map("document_id")
+  sourceType    String   @map("source_type")    // upload, email, camera, scanner
+  documentType  String?  @map("document_type")   // bol, packing_list, invoice, etc.
+  status        String   @default("pending")     // pending, processing, review, completed, failed
+  fileUrl       String   @map("file_url")
+  fileName      String   @map("file_name")
+  mimeType      String?  @map("mime_type")
+
+  // AI extraction results
+  extractedData Json?    @map("extracted_data")  // structured JSON from DocAI
+  confidence    Float?                            // overall confidence 0-1
+  aiModel       String?  @map("ai_model")        // which model was used
+  aiCost        Float?   @map("ai_cost")         // API cost for tracking
+
+  // Human review
+  reviewedData  Json?    @map("reviewed_data")   // corrected data after review
+  reviewedBy    String?  @map("reviewed_by")
+  reviewedAt    DateTime? @map("reviewed_at")
+
+  // Result
+  resultType    String?  @map("result_type")     // shipment, order, product_update
+  resultId      String?  @map("result_id")       // ID of created entity
+
+  // Metadata
+  requestId     String?  @map("request_id")      // DocAI request ID for tracing
+  tenantId      String?  @map("tenant_id")       // for multi-tenant scoping
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  processedAt   DateTime? @map("processed_at")
+
+  // Relations
+  document      Document? @relation(fields: [documentId], references: [id])
+
+  @@index([status])
+  @@index([documentType])
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("document_processing_jobs")
 }
