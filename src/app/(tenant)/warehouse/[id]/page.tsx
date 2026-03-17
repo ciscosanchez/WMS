@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -17,91 +17,135 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, MapPin, Boxes } from "lucide-react";
+import { Plus, MapPin, Boxes, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getWarehouse, createZone } from "@/modules/warehouse/actions";
 
-const mockWarehouse = {
-  id: "1",
-  code: "WH1",
-  name: "Main Warehouse",
-  address: "123 Logistics Ave, Houston TX 77001",
-  isActive: true,
-  zones: [
-    {
-      id: "z1",
-      code: "A",
-      name: "Zone A - General Storage",
-      type: "storage",
-      aisles: [
-        {
-          code: "01",
-          racks: 4,
-          shelves: 4,
-          bins: 64,
-          available: 42,
-          full: 20,
-          reserved: 2,
-        },
-        {
-          code: "02",
-          racks: 2,
-          shelves: 4,
-          bins: 16,
-          available: 10,
-          full: 5,
-          reserved: 1,
-        },
-      ],
-    },
-    {
-      id: "z2",
-      code: "B",
-      name: "Zone B - Bulk Storage",
-      type: "storage",
-      aisles: [
-        {
-          code: "01",
-          racks: 4,
-          shelves: 2,
-          bins: 32,
-          available: 18,
-          full: 14,
-          reserved: 0,
-        },
-      ],
-    },
-    {
-      id: "z3",
-      code: "S",
-      name: "Staging Area",
-      type: "staging",
-      aisles: [
-        {
-          code: "01",
-          racks: 2,
-          shelves: 1,
-          bins: 16,
-          available: 12,
-          full: 3,
-          reserved: 1,
-        },
-      ],
-    },
-  ],
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function countBinsInAisle(aisle: any): number {
+  return (
+    aisle.racks?.reduce(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (rs: number, r: any) =>
+        rs +
+        (r.shelves?.reduce(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (ss: number, sh: any) => ss + (sh.bins?.length ?? 0),
+          0
+        ) ?? 0),
+      0
+    ) ?? 0
+  );
+}
 
-export default function WarehouseDetailPage() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function countBinsByStatus(aisle: any, status: string): number {
+  let count = 0;
+  for (const rack of aisle.racks ?? []) {
+    for (const shelf of rack.shelves ?? []) {
+      for (const bin of shelf.bins ?? []) {
+        if (bin.status === status) count++;
+      }
+    }
+  }
+  return count;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function countRacksInAisle(aisle: any): number {
+  return aisle.racks?.length ?? 0;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function countShelvesInAisle(aisle: any): number {
+  return (
+    aisle.racks?.reduce(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: number, r: any) => s + (r.shelves?.length ?? 0),
+      0
+    ) ?? 0
+  );
+}
+
+export default function WarehouseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [wh, setWh] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [addingZone, setAddingZone] = useState(false);
   const [zoneName, setZoneName] = useState("");
   const [zoneCode, setZoneCode] = useState("");
   const [zoneType, setZoneType] = useState("storage");
-  const wh = mockWarehouse;
+  const [creating, setCreating] = useState(false);
 
-  const totalBins = wh.zones.reduce((s, z) => s + z.aisles.reduce((as, a) => as + a.bins, 0), 0);
-  const totalAvail = wh.zones.reduce(
-    (s, z) => s + z.aisles.reduce((as, a) => as + a.available, 0),
+  async function loadWarehouse() {
+    try {
+      const data = await getWarehouse(id);
+      setWh(data);
+    } catch {
+      setWh(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadWarehouse();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!wh) {
+    return (
+      <div className="text-center py-24 text-muted-foreground">
+        Warehouse not found.
+      </div>
+    );
+  }
+
+  // Compute totals from real nested data
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const totalBins = (wh.zones ?? []).reduce(
+    (s: number, z: any) =>
+      s + (z.aisles ?? []).reduce((as2: number, a: any) => as2 + countBinsInAisle(a), 0),
     0
   );
+  const totalAvail = (wh.zones ?? []).reduce(
+    (s: number, z: any) =>
+      s + (z.aisles ?? []).reduce((as2: number, a: any) => as2 + countBinsByStatus(a, "available"), 0),
+    0
+  );
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  async function handleCreateZone() {
+    setCreating(true);
+    try {
+      await createZone({
+        warehouseId: wh.id,
+        code: zoneCode,
+        name: zoneName,
+        type: zoneType,
+      });
+      toast.success(`Zone ${zoneCode} created`);
+      setAddingZone(false);
+      setZoneCode("");
+      setZoneName("");
+      setZoneType("storage");
+      // Refresh warehouse data
+      await loadWarehouse();
+    } catch (err) {
+      toast.error(`Failed to create zone: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -121,7 +165,7 @@ export default function WarehouseDetailPage() {
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Zones</span>
             </div>
-            <p className="mt-1 text-2xl font-bold">{wh.zones.length}</p>
+            <p className="mt-1 text-2xl font-bold">{(wh.zones ?? []).length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -141,9 +185,11 @@ export default function WarehouseDetailPage() {
             </div>
             <p className="mt-1 text-2xl font-bold text-green-600">
               {totalAvail}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                ({Math.round((totalAvail / totalBins) * 100)}%)
-              </span>
+              {totalBins > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({Math.round((totalAvail / totalBins) * 100)}%)
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -159,9 +205,18 @@ export default function WarehouseDetailPage() {
       </div>
 
       <div className="space-y-4">
-        {wh.zones.map((zone) => {
-          const zoneBins = zone.aisles.reduce((s, a) => s + a.bins, 0);
-          const zoneAvail = zone.aisles.reduce((s, a) => s + a.available, 0);
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(wh.zones ?? []).map((zone: any) => {
+          const zoneBins = (zone.aisles ?? []).reduce(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (s: number, a: any) => s + countBinsInAisle(a),
+            0
+          );
+          const zoneAvail = (zone.aisles ?? []).reduce(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (s: number, a: any) => s + countBinsByStatus(a, "available"),
+            0
+          );
           return (
             <Card key={zone.id}>
               <CardHeader>
@@ -191,34 +246,44 @@ export default function WarehouseDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {zone.aisles.map((aisle) => (
-                      <TableRow key={aisle.code}>
-                        <TableCell className="font-medium">
-                          {wh.code}-{zone.code}-{aisle.code}
-                        </TableCell>
-                        <TableCell>{aisle.racks}</TableCell>
-                        <TableCell>{aisle.shelves}</TableCell>
-                        <TableCell>{aisle.bins}</TableCell>
-                        <TableCell className="text-green-600">{aisle.available}</TableCell>
-                        <TableCell className="text-red-600">{aisle.full}</TableCell>
-                        <TableCell className="text-yellow-600">{aisle.reserved}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-20 rounded-full bg-muted">
-                              <div
-                                className="h-2 rounded-full bg-primary"
-                                style={{
-                                  width: `${Math.round(((aisle.bins - aisle.available) / aisle.bins) * 100)}%`,
-                                }}
-                              />
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {(zone.aisles ?? []).map((aisle: any) => {
+                      const aisleBins = countBinsInAisle(aisle);
+                      const aisleAvailable = countBinsByStatus(aisle, "available");
+                      const aisleFull = countBinsByStatus(aisle, "full");
+                      const aisleReserved = countBinsByStatus(aisle, "reserved");
+                      const aisleRacks = countRacksInAisle(aisle);
+                      const aisleShelves = countShelvesInAisle(aisle);
+                      const utilization = aisleBins > 0 ? Math.round(((aisleBins - aisleAvailable) / aisleBins) * 100) : 0;
+                      return (
+                        <TableRow key={aisle.code ?? aisle.id}>
+                          <TableCell className="font-medium">
+                            {wh.code}-{zone.code}-{aisle.code}
+                          </TableCell>
+                          <TableCell>{aisleRacks}</TableCell>
+                          <TableCell>{aisleShelves}</TableCell>
+                          <TableCell>{aisleBins}</TableCell>
+                          <TableCell className="text-green-600">{aisleAvailable}</TableCell>
+                          <TableCell className="text-red-600">{aisleFull}</TableCell>
+                          <TableCell className="text-yellow-600">{aisleReserved}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-20 rounded-full bg-muted">
+                                <div
+                                  className="h-2 rounded-full bg-primary"
+                                  style={{
+                                    width: `${utilization}%`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {utilization}%
+                              </span>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {Math.round(((aisle.bins - aisle.available) / aisle.bins) * 100)}%
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -270,12 +335,8 @@ export default function WarehouseDetailPage() {
                 <Button variant="outline" onClick={() => setAddingZone(false)}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => {
-                    toast.success(`Zone ${zoneCode} created`);
-                    setAddingZone(false);
-                  }}
-                >
+                <Button onClick={handleCreateZone} disabled={creating}>
+                  {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Zone
                 </Button>
               </div>

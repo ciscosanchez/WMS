@@ -4,34 +4,65 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getWarehouses } from "@/modules/warehouse/actions";
 
-const mockWarehouses = [
-  {
-    id: "1",
-    code: "WH1",
-    name: "Main Warehouse",
-    address: "123 Logistics Ave, Houston TX",
-    zones: [
-      { id: "z1", code: "A", name: "Zone A - General Storage", type: "storage", binCount: 80 },
-      { id: "z2", code: "B", name: "Zone B - Bulk Storage", type: "storage", binCount: 32 },
-      { id: "z3", code: "S", name: "Staging Area", type: "staging", binCount: 16 },
-    ],
-  },
-  {
-    id: "2",
-    code: "WH2",
-    name: "Cold Storage Annex",
-    address: "125 Logistics Ave, Houston TX",
-    zones: [
-      { id: "z4", code: "C", name: "Cold Zone", type: "storage", binCount: 48 },
-      { id: "z5", code: "D", name: "Dock Area", type: "dock", binCount: 8 },
-    ],
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function computeZoneBinCount(zone: any): number {
+  return (
+    zone.aisles?.reduce(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: number, a: any) =>
+        s +
+        (a.racks?.reduce(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (rs: number, r: any) =>
+            rs +
+            (r.shelves?.reduce(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (ss: number, sh: any) => ss + (sh.bins?.length ?? 0),
+              0
+            ) ?? 0),
+          0
+        ) ?? 0),
+      0
+    ) ?? zone.binCount ?? 0
+  );
+}
 
-export default function WarehousePage() {
-  const totalBins = mockWarehouses.reduce(
-    (sum, wh) => sum + wh.zones.reduce((zs, z) => zs + z.binCount, 0),
+export default async function WarehousePage() {
+  const warehouses = await getWarehouses();
+
+  if (!warehouses || warehouses.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Warehouse Locations"
+          description="No warehouses configured"
+        >
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link href="/warehouse/bulk-generate">Bulk Generate</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/warehouse/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Warehouse
+              </Link>
+            </Button>
+          </div>
+        </PageHeader>
+        <div className="text-center py-12 text-muted-foreground">
+          No warehouses found. Create your first warehouse to get started.
+        </div>
+      </div>
+    );
+  }
+
+  const totalBins = warehouses.reduce(
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    (sum: number, wh: any) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sum + (wh.zones?.reduce((zs: number, z: any) => zs + computeZoneBinCount(z), 0) ?? 0),
     0
   );
 
@@ -39,7 +70,7 @@ export default function WarehousePage() {
     <div className="space-y-6">
       <PageHeader
         title="Warehouse Locations"
-        description={`${mockWarehouses.length} warehouses, ${totalBins} bins`}
+        description={`${warehouses.length} warehouses, ${totalBins} bins`}
       >
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -55,8 +86,13 @@ export default function WarehousePage() {
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {mockWarehouses.map((wh) => {
-          const binCount = wh.zones.reduce((s, z) => s + z.binCount, 0);
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {warehouses.map((wh: any) => {
+          const binCount = wh.zones?.reduce(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (s: number, z: any) => s + computeZoneBinCount(z),
+            0
+          ) ?? 0;
           return (
             <Link key={wh.id} href={`/warehouse/${wh.id}`}>
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
@@ -71,7 +107,7 @@ export default function WarehousePage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Zones</p>
-                      <p className="text-lg font-semibold">{wh.zones.length}</p>
+                      <p className="text-lg font-semibold">{wh.zones?.length ?? 0}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Bins</p>
@@ -79,7 +115,8 @@ export default function WarehousePage() {
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-1">
-                    {wh.zones.map((z) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {wh.zones?.map((z: any) => (
                       <Badge key={z.id} variant="secondary">
                         {z.code} - {z.name}
                       </Badge>

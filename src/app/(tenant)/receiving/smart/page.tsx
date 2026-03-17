@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Upload, Camera, FileText, Loader2, Sparkles } from "lucide-react";
 
 export default function SmartReceivingPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

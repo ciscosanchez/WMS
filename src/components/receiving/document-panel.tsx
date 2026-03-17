@@ -104,7 +104,7 @@ export function DocumentPanel({
   clientName,
 }: DocumentPanelProps) {
   const router = useRouter();
-  const [extracting, setExtracting] = useState<string | null>(null);
+  const [_extracting, setExtracting] = useState<string | null>(null);
 
   async function handleExtract(doc: { key: string; fileName: string; fileUrl: string }) {
     setExtracting(doc.key);
