@@ -4,7 +4,7 @@ services:
     image: traefik:v2.11
     restart: unless-stopped
     command:
-      - "--log.level=DEBUG"
+      - "--log.level=WARN"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=ramola"
@@ -15,6 +15,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=cisco@ramola.app"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--ping=true"
     ports:
       - "80:80"
       - "443:443"
