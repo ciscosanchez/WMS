@@ -1,10 +1,10 @@
 # Ramola WMS — Full Roadmap to Production
 
-*Last updated: 2026-03-16*
+*Last updated: 2026-03-16 (end of session)*
 
 ## Current State Summary
 
-The WMS has **49 routes across 4 apps** (WMS back-office, Operator App, Client Portal, Superadmin Platform). Postgres is running in Docker on port 5433 with Prisma pg driver adapter. Pages support both mock data and real DB queries via the `USE_MOCK_DATA` toggle.
+The WMS has **56 routes across 4 apps**, **140 tests** (124 unit + 16 E2E), **zero lint errors/warnings**, and a **live Shopify integration**. Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push. All quality checks pass.
 
 ### What's Built
 
@@ -25,24 +25,33 @@ The WMS has **49 routes across 4 apps** (WMS back-office, Operator App, Client P
 | Cycle Counts | Done | Plans table with KPIs, create dialog, start count |
 | Channels | Done | Sales channel cards |
 | Reports | Done | 5 tabs with charts + summary metrics, CSV export |
-| Settings | Done | General config, operational modes, sequence prefixes, user management, invite |
-| Operator App | Done | Receive, pick, pack, move, count (5 mobile-optimized pages) |
-| Client Portal | Done | Inventory, orders, shipments, billing, reports (6 pages) |
+| Settings | Done | General config, operational modes, sequences, users, invite, billing rates, carriers, integrations, EDI |
+| Operator App | Done | Receive, pick, pack, move, count (5 mobile-optimized pages, barcode scanner) |
+| Client Portal | Done | Inventory, orders, shipments, billing, reports (6 pages, "Powered by Ramola" footer) |
 | Superadmin Platform | Done | Dashboard, tenant management, billing overview (4 pages) |
 | Database | Done | Docker Postgres 16 on port 5433, Prisma pg adapter, seeded |
 | Auth | Done | Login page with mock/real toggle, SessionProvider restored |
 | Prisma Schemas | Done | Public + tenant with fulfillment models, driver adapters |
 | Server Actions | Done | All CRUD with mock/real toggle per function |
 | RBAC | Done | 4 roles, permission map, helpers |
-| Integration Layer | Stubs | NetSuite client, carrier types, rate shop engine, marketplace types |
+| Integrations | Done | UPS/FedEx/USPS adapters, Shopify (LIVE), Amazon, NetSuite, DispatchPro, EDI 940/945 |
+| Carrier Rate Shop | Done | Multi-carrier parallel rate comparison engine |
+| Marketplace Connectors | Done | Shopify LIVE (ramola-dev.myshopify.com), Amazon adapter |
+| EDI | Done | Parser + generator for 940/945/856/944, trading partner config, test tool |
+| Barcode Scanner | Done | Hardware (keyboard wedge) + camera (BarcodeDetector API), audio/vibration feedback |
+| Putaway Engine | Done | 4 strategies (fixed, zone, closest_empty, consolidate), rules config |
+| Server Pagination | Done | ServerDataTable component, URL-based pagination for large tables |
 | Audit Logging | Done | Utility functions |
 | Sequence Numbers | Done | Auto-number generator |
 | File Upload | Done | Pre-signed URL upload API, file upload component, document panel |
-| CSV/PDF Export | Done | CSV download utility, print-to-PDF, export buttons |
-| Error Handling | Done | Error boundary, 404, loading skeletons |
+| CSV/PDF Export | Done | CSV download utility, print-to-PDF, export buttons per report tab |
+| Error Handling | Done | Error boundary, 404, loading skeletons for all detail pages |
+| Security | Done | Headers (CSP, XSS, etc.), sanitization, rate limiting, poweredByHeader disabled |
 | Dockerfile | Done | Multi-stage build, standalone output |
-| Tests | Started | 4 unit test files, Playwright config |
-| Docs | Done | Architecture, data model, ecosystem, flows, deployment, competitive analysis |
+| CI/CD | Done | GitHub Actions: typecheck → eslint → prettier → jest → build on every push |
+| Tests | Done | 124 unit tests (11 suites) + 16 E2E tests (Playwright) = 140 total |
+| PWA | Done | Web app manifest, viewport config, Apple web app meta |
+| Docs | Done | 10 docs: architecture, data model, ecosystem, flows, deployment, competitive analysis, roadmap, session summary, DocAI handoff |
 
 ---
 

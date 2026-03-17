@@ -179,18 +179,23 @@ wms/
 - [Deployment](docs/deployment.md) — Local Docker setup, AWS architecture, environment config, cost estimates
 - [Document Intelligence](docs/document-intelligence.md) — AI-powered BOL/packing list OCR, eliminating manual keying
 - [Competitive Analysis](docs/competitive-analysis.md) — Armstrong vs Logiwa, NetSuite, Magaya, Extensiv
+- [WMS Roadmap](docs/wms-roadmap.md) — Full priority tracker with completion status
+- [Session Summary](docs/session-summary.md) — Build log, learnings, architecture decisions
+- [DocAI Handoff](docs/docai-handoff.md) — Separate repo spec for Document Intelligence service
 
 ## Roadmap
 
 - [x] Phase 0 — Bootstrap (Next.js, Prisma, auth, layout, RBAC)
 - [x] Phase 1 — Core entities (clients, products, warehouse, locations)
 - [x] Phase 2 — Receiving module (ASN, line receiving, discrepancies)
-- [x] Phase 3 — Inventory module (stock browser, movements, adjustments)
+- [x] Phase 3 — Inventory module (stock browser, movements, adjustments, putaway engine)
 - [x] Phase 4 — Fulfillment module (orders, picking, packing, shipping)
-- [ ] Phase 5 — Dashboard KPIs, global search, notifications
-- [ ] Phase 6 — Connect to real database, wire up server actions
-- [ ] Phase 7 — Integration tests, E2E tests, security hardening
-- [ ] Future — Billing, customs/compliance, cross-docking, returns, mobile app, EDI
+- [x] Phase 5 — Dashboard KPIs + charts, global search (Cmd+K), notifications
+- [x] Phase 6 — Database connected (Docker Postgres), server actions wired
+- [x] Phase 7 — 140 tests (124 unit + 16 E2E), security hardening, CI/CD
+- [x] Phase 8 — Integrations (Shopify LIVE, UPS/FedEx/USPS, NetSuite, EDI 940/945)
+- [x] Phase 9 — Operator App (PWA, barcode scanner), Client Portal, Superadmin Platform
+- [ ] Next — Wire remaining API credentials, AWS deployment, email notifications
 
 ## License
 
