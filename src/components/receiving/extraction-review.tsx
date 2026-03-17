@@ -322,51 +322,15 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
         </CardContent>
       </Card>
 
-      {/* Right bottom: Line items + actions */}
+      {/* Right bottom: Actions + Line items */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">
-            Line Items ({data.lineItems?.value?.length || 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data.lineItems?.value && data.lineItems.value.length > 0 ? (
-            <ScrollArea className="max-h-[250px]">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Pcs</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>PO</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.lineItems.value.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{item.pieces}</TableCell>
-                        <TableCell>{item.packageType || "-"}</TableCell>
-                        <TableCell>{item.poNumber || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </ScrollArea>
-          ) : (
-            <p className="text-sm text-muted-foreground">No line items extracted</p>
-          )}
-
-          {/* Create Shipment */}
+        <CardContent className="pt-4 space-y-4">
+          {/* Create Shipment — always visible at top */}
           {(job.status === "review" || job.status === "completed") && (
-            <div className="mt-4 pt-4 border-t space-y-3">
+            <div className="space-y-3 pb-4 border-b">
               {clients && clients.length > 0 && (
                 <div>
-                  <Label className="text-sm">Client</Label>
+                  <Label className="text-sm">Whose freight is this? (Client)</Label>
                   <select
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
@@ -391,10 +355,45 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
                 ) : (
                   <CheckCircle className="h-4 w-4 mr-2" />
                 )}
-                Create Shipment
+                Create Inbound Shipment
               </Button>
             </div>
           )}
+
+          {/* Line items */}
+          <div>
+            <p className="text-sm font-medium mb-2">Line Items ({data.lineItems?.value?.length || 0})</p>
+            {data.lineItems?.value && data.lineItems.value.length > 0 ? (
+              <ScrollArea className="max-h-[250px]">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Pcs</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>PO</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.lineItems.value.map((item, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">{item.pieces}</TableCell>
+                          <TableCell>{item.packageType || "-"}</TableCell>
+                          <TableCell>{item.poNumber || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </ScrollArea>
+            ) : (
+              <p className="text-sm text-muted-foreground">No line items extracted</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
