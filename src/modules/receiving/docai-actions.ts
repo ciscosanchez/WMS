@@ -9,6 +9,7 @@ import { nextSequence } from "@/lib/sequences";
 import { extractForReceipt } from "@/lib/integrations/docai";
 import type { ExtractForReceiptResponse, ShipmentData } from "@/lib/integrations/docai";
 import { getS3Client, getPresignedDownloadUrl } from "@/lib/s3/client";
+import { PDFDocument } from "pdf-lib";
 
 async function getContext() {
   const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
@@ -236,7 +237,6 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
       trackingNumber: data.trackingNumber?.value || null,
       bolNumber: data.proNumber?.value || null,
       poNumber: data.poNumbers?.value?.[0] || null,
-      notes: data.notes?.value || null,
     },
   });
 
@@ -250,12 +250,51 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
     },
   });
 
-  // If the job has a document, link it to the shipment
+  // Attach document to shipment — create if it wasn't created yet (Smart Receiving flow)
   if (job.documentId) {
     await tenant.db.document.update({
       where: { id: job.documentId },
       data: { entityId: shipment.id, entityType: "shipment" },
     });
+  } else {
+    await tenant.db.document.create({
+      data: {
+        type: job.documentType || "other",
+        fileName: job.fileName,
+        fileUrl: job.fileUrl,
+        mimeType: job.mimeType || undefined,
+        entityType: "shipment",
+        entityId: shipment.id,
+        uploadedBy: user.id,
+        processingJobs: { connect: { id: job.id } },
+      },
+    });
+  }
+
+  // Auto-create line items from extracted data by matching SKU
+  const lineItems = data.lineItems?.value ?? [];
+  if (lineItems.length > 0) {
+    const skus = lineItems.map((item) => item.sku).filter(Boolean) as string[];
+    const products = skus.length > 0
+      ? await tenant.db.product.findMany({
+          where: { clientId, sku: { in: skus } },
+          select: { id: true, sku: true },
+        })
+      : [];
+    const productBySku = new Map(products.map((p) => [p.sku, p.id]));
+
+    const linesToCreate = lineItems
+      .filter((item) => item.sku && productBySku.has(item.sku))
+      .map((item) => ({
+        shipmentId: shipment.id,
+        productId: productBySku.get(item.sku!)!,
+        expectedQty: item.quantity ?? item.pieces ?? 1,
+        uom: item.uom || "EA",
+      }));
+
+    if (linesToCreate.length > 0) {
+      await tenant.db.inboundShipmentLine.createMany({ data: linesToCreate });
+    }
   }
 
   await logAudit(tenant.db, {
@@ -277,5 +316,116 @@ export async function getFileViewUrl(fileKey: string): Promise<string | null> {
     return await getPresignedDownloadUrl(fileKey);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Merge all documents and photos for a shipment into a single master PDF.
+ * Downloads each file from S3, embeds PDFs/images, uploads the result,
+ * and creates a Document record of type "master_pdf".
+ */
+export async function finalizeShipmentPdf(
+  shipmentId: string
+): Promise<{ error: string } | { documentId: string; fileKey: string }> {
+  try {
+    const { user, tenant } = await getContext();
+
+    const documents = await tenant.db.document.findMany({
+      where: { entityId: shipmentId, entityType: "shipment" },
+      orderBy: { uploadedAt: "asc" },
+    });
+
+    if (documents.length === 0) {
+      return { error: "No documents found for this shipment" };
+    }
+
+    const s3 = getS3Client();
+    const bucket = process.env.S3_BUCKET || "armstrong-wms";
+    const merged = await PDFDocument.create();
+
+    for (const doc of documents) {
+      // Skip already-generated master PDFs to avoid recursion
+      if (doc.type === "master_pdf") continue;
+
+      let fileBuffer: Buffer;
+      try {
+        const stream = await s3.getObject(bucket, doc.fileUrl);
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        fileBuffer = Buffer.concat(chunks);
+      } catch {
+        // Skip files that can't be fetched
+        continue;
+      }
+
+      const mime = doc.mimeType || "";
+
+      if (mime === "application/pdf") {
+        try {
+          const src = await PDFDocument.load(fileBuffer);
+          const pages = await merged.copyPages(src, src.getPageIndices());
+          pages.forEach((p) => merged.addPage(p));
+        } catch {
+          // Corrupted PDF — skip
+        }
+      } else if (mime === "image/jpeg" || mime === "image/jpg") {
+        try {
+          const img = await merged.embedJpg(fileBuffer);
+          const page = merged.addPage([img.width, img.height]);
+          page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+        } catch {
+          // Skip
+        }
+      } else if (mime === "image/png") {
+        try {
+          const img = await merged.embedPng(fileBuffer);
+          const page = merged.addPage([img.width, img.height]);
+          page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+        } catch {
+          // Skip
+        }
+      }
+      // Other types (xlsx, csv, etc.) are skipped
+    }
+
+    if (merged.getPageCount() === 0) {
+      return { error: "No PDF or image documents could be merged" };
+    }
+
+    const pdfBytes = await merged.save();
+    const pdfBuffer = Buffer.from(pdfBytes);
+    const timestamp = Date.now();
+    const fileKey = `shipment/${shipmentId}/master-${timestamp}.pdf`;
+
+    await s3.putObject(bucket, fileKey, pdfBuffer, pdfBuffer.length, {
+      "Content-Type": "application/pdf",
+    });
+
+    const masterDoc = await tenant.db.document.create({
+      data: {
+        type: "master_pdf",
+        fileName: `master-${timestamp}.pdf`,
+        fileUrl: fileKey,
+        mimeType: "application/pdf",
+        fileSize: pdfBuffer.length,
+        entityType: "shipment",
+        entityId: shipmentId,
+        uploadedBy: user.id,
+      },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "create",
+      entityType: "document",
+      entityId: masterDoc.id,
+    });
+
+    revalidatePath(`/receiving/${shipmentId}`);
+    return { documentId: masterDoc.id, fileKey };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to generate master PDF" };
   }
 }

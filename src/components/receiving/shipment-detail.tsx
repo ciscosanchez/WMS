@@ -21,7 +21,8 @@ import { ReceiveLineDialog } from "./receive-line-dialog";
 import { AddLineDialog } from "./add-line-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Truck, Package, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { Truck, Package, ClipboardCheck, AlertTriangle, FileArchive } from "lucide-react";
+import { finalizeShipmentPdf } from "@/modules/receiving/docai-actions";
 
 interface ShipmentDetailProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +51,7 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
   const [receiving, setReceiving] = useState(false);
   const [addingLine, setAddingLine] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   const flow = statusFlow[shipment.status];
 
@@ -77,6 +79,24 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
       toast.error(e instanceof Error ? e.message : "Failed to update status");
     } finally {
       setProcessing(false);
+    }
+  }
+
+  async function handleFinalizePdf() {
+    if (!confirm("Generate master PDF combining all documents and photos for this shipment?")) return;
+    setFinalizing(true);
+    try {
+      const result = await finalizeShipmentPdf(shipment.id);
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success("Master PDF created — see Documents tab");
+        router.refresh();
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate PDF");
+    } finally {
+      setFinalizing(false);
     }
   }
 
@@ -111,6 +131,10 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
           {shipment.status === "completed" && (
             <Badge className="bg-green-100 text-green-700">Finalized</Badge>
           )}
+          <Button variant="outline" onClick={handleFinalizePdf} disabled={finalizing}>
+            <FileArchive className="h-4 w-4 mr-1" />
+            {finalizing ? "Generating..." : "Close & Finalize PDF"}
+          </Button>
         </div>
       </PageHeader>
 
@@ -200,7 +224,6 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
               {format(new Date(shipment.createdAt), "MMM d, yyyy")}
             </div>
           </div>
-          {shipment.notes && <p className="mt-4 text-sm text-muted-foreground">{shipment.notes}</p>}
         </CardContent>
       </Card>
 
