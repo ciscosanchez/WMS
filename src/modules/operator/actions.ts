@@ -2,15 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
-import { resolveTenant } from "@/lib/tenant/context";
-import { requireAuth } from "@/lib/auth/session";
+import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences/index";
 
 async function getContext() {
-  const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
-  if (!tenant) throw new Error("Tenant not found");
-  return { user, tenant };
+  return requireTenantContext();
 }
 
 const binInclude = {

@@ -2,17 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
-import { resolveTenant } from "@/lib/tenant/context";
-import { requireAuth } from "@/lib/auth/session";
+import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit, diffChanges } from "@/lib/audit";
 import { clientSchema } from "./schemas";
 import { mockClients } from "@/lib/mock-data";
 
 async function getContext() {
-  const user = await requireAuth();
-  const tenant = await resolveTenant();
-  if (!tenant) throw new Error("Tenant not found");
-  return { user, tenant };
+  return requireTenantContext();
 }
 
 export async function getClients() {

@@ -1,14 +1,10 @@
 import { publicDb } from "./public-client";
-import { exec } from "child_process";
-import { promisify } from "util";
-import path from "path";
-
-const execAsync = promisify(exec);
+import { runTenantMigrations } from "./tenant-migrations";
 
 export async function provisionTenant(name: string, slug: string): Promise<string> {
   const dbSchema = `tenant_${slug.replace(/-/g, "_")}`;
 
-  // Create tenant record
+  // Create tenant record in provisioning state
   const tenant = await publicDb.tenant.create({
     data: {
       name,
@@ -19,19 +15,11 @@ export async function provisionTenant(name: string, slug: string): Promise<strin
   });
 
   try {
-    // Create schema
+    // Create the Postgres schema
     await publicDb.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${dbSchema}"`);
 
-    // Run tenant migrations
-    const schemaPath = path.resolve(process.cwd(), "prisma/tenant-schema.prisma");
-    const dbUrl = `${process.env.DATABASE_URL!.split("?")[0]}?schema=${dbSchema}`;
-
-    await execAsync(
-      `npx prisma db push --schema="${schemaPath}" --skip-generate --accept-data-loss`,
-      {
-        env: { ...process.env, DATABASE_URL: dbUrl },
-      }
-    );
+    // Apply all versioned tenant migrations
+    await runTenantMigrations(dbSchema);
 
     // Mark as active
     await publicDb.tenant.update({
@@ -41,7 +29,7 @@ export async function provisionTenant(name: string, slug: string): Promise<strin
 
     return tenant.id;
   } catch (error) {
-    // Mark as failed, don't delete so we can debug
+    // Mark as failed so we can inspect and retry — don't delete the record
     await publicDb.tenant.update({
       where: { id: tenant.id },
       data: { status: "suspended" },

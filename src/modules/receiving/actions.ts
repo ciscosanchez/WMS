@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
-import { resolveTenant } from "@/lib/tenant/context";
-import { requireAuth } from "@/lib/auth/session";
+import { requireTenantContext, type TenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import {
@@ -15,9 +14,7 @@ import {
 import { mockShipments } from "@/lib/mock-data";
 
 async function getContext() {
-  const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
-  if (!tenant) throw new Error("Tenant not found");
-  return { user, tenant };
+  return requireTenantContext();
 }
 
 export async function getShipments(status?: string) {
@@ -183,7 +180,7 @@ export async function receiveLine(shipmentId: string, data: unknown) {
 }
 
 async function finalizeReceiving(
-  tenant: Awaited<ReturnType<typeof resolveTenant>> & {},
+  tenant: TenantContext,
   shipmentId: string,
   userId: string
 ) {

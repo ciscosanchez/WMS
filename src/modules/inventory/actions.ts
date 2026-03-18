@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
-import { resolveTenant } from "@/lib/tenant/context";
-import { requireAuth } from "@/lib/auth/session";
+import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
@@ -11,9 +10,7 @@ import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-dat
 import { type PaginatedResult, paginateQuery, buildPaginatedResult } from "@/lib/pagination";
 
 async function getContext() {
-  const [user, tenant] = await Promise.all([requireAuth(), resolveTenant()]);
-  if (!tenant) throw new Error("Tenant not found");
-  return { user, tenant };
+  return requireTenantContext();
 }
 
 export async function getInventory(filters?: {

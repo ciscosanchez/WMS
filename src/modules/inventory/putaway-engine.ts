@@ -1,5 +1,5 @@
 import { config } from "@/lib/config";
-import { resolveTenant } from "@/lib/tenant/context";
+import { requireTenantContext } from "@/lib/tenant/context";
 
 export type PutawayStrategy = "fixed" | "zone" | "closest_empty" | "consolidate";
 
@@ -186,8 +186,7 @@ export async function suggestPutawayLocation(
   }
 
   // ── Real DB mode ────────────────────────────────────
-  const tenant = await resolveTenant();
-  if (!tenant) throw new Error("Tenant not found");
+  const { tenant } = await requireTenantContext();
 
   const suggestions: BinSuggestion[] = [];
 
