@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -23,4 +24,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Only upload source maps in CI/production builds
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  sourcemaps: { disable: false },
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});

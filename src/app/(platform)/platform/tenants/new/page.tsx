@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { createTenant } from "@/modules/platform/actions";
 
 function slugify(text: string): string {
   return text
@@ -15,16 +18,16 @@ function slugify(text: string): string {
 }
 
 export default function NewTenantPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("starter");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleNameChange = (value: string) => {
     setName(value);
-    if (!slugTouched) {
-      setSlug(slugify(value));
-    }
+    if (!slugTouched) setSlug(slugify(value));
   };
 
   const handleSlugChange = (value: string) => {
@@ -32,12 +35,23 @@ export default function NewTenantPage() {
     setSlug(slugify(value));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    alert(
-      `Provision tenant:\nName: ${name}\nSlug: ${slug}\nSchema: tenant_${slug.replace(/-/g, "_")}\nPlan: ${plan}\n\n(Not yet implemented)`
-    );
-  };
+    setLoading(true);
+    try {
+      const result = await createTenant(name, slug, plan);
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success(`Tenant "${name}" provisioned`);
+        router.push("/platform/tenants");
+      }
+    } catch {
+      toast.error("Provisioning failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -102,19 +116,26 @@ export default function NewTenantPage() {
                     <div className="space-y-1 text-sm">
                       <p className="font-medium text-blue-900">Schema Creation</p>
                       <p className="text-blue-700">
-                        Provisioning will create a new PostgreSQL schema{" "}
+                        Provisioning will create PostgreSQL schema{" "}
                         <code className="rounded bg-blue-100 px-1 py-0.5 text-xs font-mono">
                           tenant_{slug.replace(/-/g, "_")}
                         </code>{" "}
-                        and run all migrations. This may take a few seconds.
+                        and run all migrations. This takes a few seconds.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={!name || !slug}>
-                Provision Tenant
+              <Button type="submit" className="w-full" disabled={!name || !slug || loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Provisioning...
+                  </>
+                ) : (
+                  "Provision Tenant"
+                )}
               </Button>
             </form>
           </CardContent>
