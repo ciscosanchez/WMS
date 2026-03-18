@@ -1,13 +1,34 @@
 services:
+  # ── Socket Proxy (limits Docker API exposure to Traefik) ───
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest@sha256:1f3a6f303320723d199d2316a3e82b2e2685d86c275d5e3deeaf182573b47476
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 1
+      TASKS: 1
+      INFO: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
+          memory: 32M
+
   # ── Reverse Proxy ──────────────────────────────────────────
   traefik:
-    image: traefik:v2.11
+    image: traefik:v2.11@sha256:2a2460731a47e9406dfdee0c52734b9b86509fe7e82e96ce06e91a49b83b1c71
     restart: unless-stopped
     command:
       - "--log.level=WARN"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=ramola"
+      - "--providers.docker.endpoint=tcp://socket-proxy:2375"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -20,19 +41,41 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
     networks:
       - ramola
+      - socket-proxy
+    depends_on:
+      - socket-proxy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/ping"]
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
       timeout: 5s
       retries: 3
+    labels:
+      - "traefik.enable=true"
+      # Security headers middleware
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      # Rate limiting middleware
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+      - "traefik.http.middlewares.rate-limit.ratelimit.period=1s"
 
   # ── PostgreSQL ─────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:20edbde7749f822887a1a022ad526fde0a47d6b2be9a8364433605cf65099416
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ramola}
@@ -42,6 +85,11 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ramola}"]
       interval: 10s
@@ -50,13 +98,18 @@ services:
 
   # ── Redis ──────────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
     restart: unless-stopped
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redisdata:/data
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -89,7 +142,6 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       S3_BUCKET: armstrong-wms
       S3_PUBLIC_URL: https://storage.wms.ramola.app
-      # DispatchPro integration
       WMS_API_KEY: ${WMS_API_KEY:-}
       DISPATCH_PRO_URL: http://dispatch:3001
       DISPATCH_PRO_API_KEY: ${WMS_API_KEY:-}
@@ -106,8 +158,14 @@ services:
       - "traefik.http.routers.wms.entrypoints=websecure"
       - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
+      - "traefik.http.routers.wms.middlewares=security-headers@docker,rate-limit@docker"
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
       interval: 10s
@@ -117,7 +175,7 @@ services:
 
   # ── MinIO (S3-compatible object storage) ───────────────────
   minio:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -129,6 +187,11 @@ services:
       - miniodata:/data
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.minio.rule=Host(`storage.wms.ramola.app`)"
@@ -161,13 +224,17 @@ services:
         condition: service_healthy
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3002/api/v1/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    # Not exposed via Traefik — internal only (WMS calls it directly)
 
   # ── DispatchPro ────────────────────────────────────────────
   dispatch:
@@ -196,8 +263,14 @@ services:
       - "traefik.http.routers.dispatch.entrypoints=websecure"
       - "traefik.http.routers.dispatch.tls.certresolver=letsencrypt"
       - "traefik.http.services.dispatch.loadbalancer.server.port=3001"
+      - "traefik.http.routers.dispatch.middlewares=security-headers@docker,rate-limit@docker"
     networks:
       - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
       interval: 10s
@@ -208,6 +281,8 @@ services:
 networks:
   ramola:
     name: ramola
+  socket-proxy:
+    internal: true
 
 volumes:
   pgdata:

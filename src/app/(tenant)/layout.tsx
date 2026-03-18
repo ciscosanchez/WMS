@@ -1,8 +1,11 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { requireAuth } from "@/lib/auth/session";
 
-export default function TenantLayout({ children }: { children: React.ReactNode }) {
+export default async function TenantLayout({ children }: { children: React.ReactNode }) {
+  await requireAuth();
+
   return (
     <SidebarProvider>
       <AppSidebar />
