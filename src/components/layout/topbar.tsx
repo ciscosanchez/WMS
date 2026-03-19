@@ -15,7 +15,7 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { SearchCommand } from "./search-command";
 import { NotificationBell } from "./notification-bell";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return "??";

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export default function LoginPage() {
   const router = useRouter();
