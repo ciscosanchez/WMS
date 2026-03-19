@@ -337,7 +337,7 @@ export class AmazonAdapter implements MarketplaceAdapter {
     // Build TSV fulfillment feed
     const lines = [
       "order-id\torder-item-id\tquantity\tship-date\tcarrier-code\ttracking-number",
-      ...update.lineItems.map((li) =>
+      ...(update.lineItems ?? []).map((li) =>
         [
           update.externalOrderId,
           li.externalLineId,

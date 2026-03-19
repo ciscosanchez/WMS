@@ -378,6 +378,8 @@ export async function approveAdjustment(id: string) {
     include: { lines: true },
   });
 
+  if (adjustment.status === "completed") return; // Already applied — idempotent
+
   // Apply adjustments to inventory
   for (const line of adjustment.lines) {
     const inv = await tenant.db.inventory.findFirst({

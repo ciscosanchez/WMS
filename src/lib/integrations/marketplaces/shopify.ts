@@ -126,7 +126,8 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     );
     if (!open) return; // Nothing to fulfill
 
-    // Step 2: create fulfillment
+    // Step 2: create fulfillment using Shopify's own FO line item IDs (not WMS IDs)
+    // Omitting fulfillment_order_line_items fulfills all remaining items on the FO.
     await this.shopifyFetch("/fulfillments.json", {
       method: "POST",
       body: JSON.stringify({
@@ -134,10 +135,6 @@ export class ShopifyAdapter implements MarketplaceAdapter {
           line_items_by_fulfillment_order: [
             {
               fulfillment_order_id: open.id,
-              fulfillment_order_line_items: update.lineItems.map((li) => ({
-                id: li.externalLineId,
-                quantity: li.quantity,
-              })),
             },
           ],
           tracking_info: {

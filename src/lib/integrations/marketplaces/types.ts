@@ -51,7 +51,7 @@ export interface FulfillmentUpdate {
   carrier: string;
   service?: string;
   shippedAt: Date;
-  lineItems: Array<{
+  lineItems?: Array<{
     externalLineId: string;
     quantity: number;
   }>;

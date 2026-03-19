@@ -110,6 +110,9 @@ export async function updateShipmentStatus(
 
   const { user, tenant } = await requireTenantContext("receiving:write");
 
+  const current = await tenant.db.inboundShipment.findUniqueOrThrow({ where: { id }, select: { status: true } });
+  const wasAlreadyCompleted = current.status === "completed";
+
   const updateData: Record<string, unknown> = { status };
   if (status === "arrived") updateData.arrivedDate = new Date();
   if (status === "completed") updateData.completedDate = new Date();
@@ -124,11 +127,11 @@ export async function updateShipmentStatus(
     action: "update",
     entityType: "inbound_shipment",
     entityId: id,
-    changes: { status: { old: null, new: status } },
+    changes: { status: { old: current.status, new: status } },
   });
 
-  // If completed, create inventory records and capture billing events
-  if (status === "completed") {
+  // If completing for the first time, create inventory records and capture billing events
+  if (status === "completed" && !wasAlreadyCompleted) {
     await finalizeReceiving(tenant, id, user.id);
     await captureBillingOnReceive(tenant, id);
   }

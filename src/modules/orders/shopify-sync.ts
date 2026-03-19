@@ -197,10 +197,7 @@ export async function pushShopifyFulfillment(
       trackingNumber,
       carrier,
       shippedAt: new Date(),
-      lineItems: order.lines.map((li) => ({
-        externalLineId: li.id, // WMS line id (Shopify expects its own line item IDs)
-        quantity: li.packedQty || li.quantity,
-      })),
+      lineItems: [],
     });
 
     return {};
@@ -220,32 +217,29 @@ export async function syncInventoryToShopify(
   try {
     const { tenant } = await requireTenantContext();
 
-    // Get current available inventory per SKU for this client
-    const inventoryRows = await tenant.db.inventory.groupBy({
-      by: ["productId"],
-      where: {
-        product: { clientId },
-        available: { gt: 0 },
-      },
-      _sum: { available: true },
-    });
-
-    if (inventoryRows.length === 0) return { synced: 0 };
-
-    // Load product SKUs
-    const productIds = inventoryRows.map((r) => r.productId);
+    // Load all active products for this client so zero-stock SKUs are pushed as 0
     const products = await tenant.db.product.findMany({
-      where: { id: { in: productIds }, clientId },
+      where: { clientId, isActive: true },
       select: { id: true, sku: true },
     });
-    const skuById = new Map(products.map((p) => [p.id, p.sku]));
+    if (products.length === 0) return { synced: 0 };
 
-    const updates = inventoryRows
-      .map((r) => ({
-        sku: skuById.get(r.productId) ?? "",
-        availableQuantity: r._sum?.available ?? 0,
-      }))
-      .filter((u) => u.sku);
+    // Sum available inventory per product (all rows, including zero)
+    const inventoryRows = await tenant.db.inventory.groupBy({
+      by: ["productId"],
+      where: { product: { clientId } },
+      _sum: { available: true },
+    });
+    const availableById = new Map(
+      inventoryRows.map((r) => [r.productId, Math.max(0, Number(r._sum?.available ?? 0))])
+    );
+
+    const updates = products
+      .filter((p) => p.sku)
+      .map((p) => ({
+        sku: p.sku,
+        availableQuantity: availableById.get(p.id) ?? 0,
+      }));
 
     const adapter = getShopifyAdapter();
     await adapter.syncInventory(updates);
@@ -275,30 +269,28 @@ export async function syncInventoryToAmazon(
 
     const { tenant } = await requireTenantContext();
 
-    const inventoryRows = await tenant.db.inventory.groupBy({
-      by: ["productId"],
-      where: {
-        product: { clientId },
-        available: { gt: 0 },
-      },
-      _sum: { available: true },
-    });
-
-    if (inventoryRows.length === 0) return { synced: 0 };
-
-    const productIds = inventoryRows.map((r) => r.productId);
+    // Load all active products so zero-stock SKUs are pushed as 0
     const products = await tenant.db.product.findMany({
-      where: { id: { in: productIds }, clientId },
+      where: { clientId, isActive: true },
       select: { id: true, sku: true },
     });
-    const skuById = new Map(products.map((p) => [p.id, p.sku]));
+    if (products.length === 0) return { synced: 0 };
 
-    const updates = inventoryRows
-      .map((r) => ({
-        sku: skuById.get(r.productId) ?? "",
-        availableQuantity: Number(r._sum?.available ?? 0),
-      }))
-      .filter((u) => u.sku);
+    const inventoryRows = await tenant.db.inventory.groupBy({
+      by: ["productId"],
+      where: { product: { clientId } },
+      _sum: { available: true },
+    });
+    const availableById = new Map(
+      inventoryRows.map((r) => [r.productId, Math.max(0, Number(r._sum?.available ?? 0))])
+    );
+
+    const updates = products
+      .filter((p) => p.sku)
+      .map((p) => ({
+        sku: p.sku,
+        availableQuantity: availableById.get(p.id) ?? 0,
+      }));
 
     await adapter.syncInventory(updates);
     return { synced: updates.length };

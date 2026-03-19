@@ -58,17 +58,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (dispatchStatus === "delivered") {
       updateData.deliveredDate = order.deliveredDate ?? now;
     }
-    if (trackingNumber) {
-      // Store tracking on the most recent outbound shipment, or in order tags
-      const latestShipment = await db.shipment.findFirst({
-        where: { orderId: wmsOrderId },
-        orderBy: { createdAt: "desc" },
-      });
-      if (latestShipment) {
-        await db.shipment.update({
-          where: { id: latestShipment.id },
-          data: { trackingNumber },
-        });
+    // Update the most recent outbound shipment's tracking + lifecycle fields
+    const latestShipment = await db.shipment.findFirst({
+      where: { orderId: wmsOrderId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (latestShipment) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shipmentUpdate: Record<string, any> = {};
+      if (trackingNumber) shipmentUpdate.trackingNumber = trackingNumber;
+      if (dispatchStatus === "in_transit" || dispatchStatus === "assigned") {
+        shipmentUpdate.status = "shipped";
+        shipmentUpdate.shippedAt = latestShipment.shippedAt ?? now;
+      }
+      if (dispatchStatus === "delivered") {
+        shipmentUpdate.status = "delivered";
+        shipmentUpdate.deliveredAt = latestShipment.deliveredAt ?? now;
+      }
+      if (Object.keys(shipmentUpdate).length > 0) {
+        await db.shipment.update({ where: { id: latestShipment.id }, data: shipmentUpdate });
       }
     }
 
