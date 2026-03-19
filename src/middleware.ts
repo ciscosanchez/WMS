@@ -1,4 +1,6 @@
 import { tenantMiddleware } from "@/lib/tenant/middleware";
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /** Security headers applied to every response. */
@@ -10,8 +12,22 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 };
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // --- /platform/* route protection (superadmin only) ---
+  // Uses next-auth/jwt getToken so we never hit the DB from Edge Runtime.
+  if (pathname.startsWith("/platform")) {
+    const token = await getToken({
+      req: request,
+      secret: process.env.AUTH_SECRET,
+    });
+    if (!token?.isSuperadmin) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
 
   // --- Tenant resolution (existing behaviour) ---
   const response = tenantMiddleware(request);
@@ -19,19 +35,6 @@ export function middleware(request: NextRequest) {
   // --- Security headers ---
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);
-  }
-
-  // --- /platform/* route protection ---
-  // TODO: enforce superadmin check once auth is available in middleware
-  // For now this is a marker so the path-based guard is easy to add later.
-  if (pathname.startsWith("/platform")) {
-    // future: verify superadmin token / session here
-  }
-
-  // --- API rate-limit placeholder headers ---
-  if (pathname.startsWith("/api")) {
-    response.headers.set("X-RateLimit-Limit", "100");
-    response.headers.set("X-RateLimit-Remaining", "99");
   }
 
   return response;

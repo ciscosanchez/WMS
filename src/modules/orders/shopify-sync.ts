@@ -259,6 +259,57 @@ export async function syncInventoryToShopify(
   }
 }
 
+/**
+ * Sync WMS inventory levels back to Amazon for a given client.
+ * Uses the SP-API Feeds API to submit a JSON_LISTINGS_FEED with quantity updates.
+ */
+export async function syncInventoryToAmazon(
+  clientId: string
+): Promise<{ synced: number; error?: string }> {
+  if (config.useMockData) return { synced: 0 };
+
+  try {
+    const { getAmazonAdapter } = await import("@/lib/integrations/marketplaces/amazon");
+    const adapter = getAmazonAdapter();
+    if (!adapter) return { synced: 0, error: "Amazon not configured" };
+
+    const { tenant } = await requireTenantContext();
+
+    const inventoryRows = await tenant.db.inventory.groupBy({
+      by: ["productId"],
+      where: {
+        product: { clientId },
+        available: { gt: 0 },
+      },
+      _sum: { available: true },
+    });
+
+    if (inventoryRows.length === 0) return { synced: 0 };
+
+    const productIds = inventoryRows.map((r) => r.productId);
+    const products = await tenant.db.product.findMany({
+      where: { id: { in: productIds }, clientId },
+      select: { id: true, sku: true },
+    });
+    const skuById = new Map(products.map((p) => [p.id, p.sku]));
+
+    const updates = inventoryRows
+      .map((r) => ({
+        sku: skuById.get(r.productId) ?? "",
+        availableQuantity: Number(r._sum?.available ?? 0),
+      }))
+      .filter((u) => u.sku);
+
+    await adapter.syncInventory(updates);
+    return { synced: updates.length };
+  } catch (err) {
+    return {
+      synced: 0,
+      error: err instanceof Error ? err.message : "Amazon inventory sync failed",
+    };
+  }
+}
+
 // ─── Internal helper ─────────────────────────────────────────────────────────
 
 /**

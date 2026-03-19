@@ -50,7 +50,7 @@ export async function createOrder(data: unknown, lines: unknown[]) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { id: "mock-new", orderNumber: "ORD-MOCK-0001", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("orders:write");
   const parsed = orderSchema.parse(data);
   const parsedLines = lines.map((l) => orderLineSchema.parse(l));
 
@@ -84,9 +84,9 @@ export async function createOrder(data: unknown, lines: unknown[]) {
 export async function updateOrderStatus(id: string, status: string) {
   if (config.useMockData) return { id, status };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("orders:write");
 
-  // Fetch order before update so we have full data for dispatch
+  // Fetch order before update so we have full data for dispatch + pick tasks
   const existing = await tenant.db.order.findUnique({
     where: { id },
     include: { lines: { include: { product: true } } },
@@ -97,6 +97,11 @@ export async function updateOrderStatus(id: string, status: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: { status: status as any },
   });
+
+  // When transitioning to "picking", auto-generate a pick task
+  if (status === "picking" && existing) {
+    await generatePickTasksForOrder(tenant.db, existing, user.id);
+  }
 
   await logAudit(tenant.db, {
     userId: user.id,
@@ -135,10 +140,60 @@ export async function updateOrderStatus(id: string, status: string) {
   return order;
 }
 
+/** Internal helper — creates a PickTask + PickTaskLines for an order. */
+async function generatePickTasksForOrder(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  order: { id: string; lines: Array<{ productId: string; quantity: number; id: string }> },
+  userId: string
+) {
+  try {
+    const taskNumber = await nextSequence(db, "PICK");
+
+    // For each line, find the best bin (most available stock first)
+    const lineData = await Promise.all(
+      order.lines.map(async (line) => {
+        const inv = await db.inventory.findFirst({
+          where: { productId: line.productId, available: { gt: 0 } },
+          orderBy: { available: "desc" },
+        });
+        return {
+          productId: line.productId,
+          binId: inv?.binId ?? null,
+          quantity: line.quantity,
+          pickedQty: 0,
+        };
+      })
+    );
+
+    const task = await db.pickTask.create({
+      data: {
+        taskNumber,
+        orderId: order.id,
+        method: "single_order",
+        status: "pending",
+        lines: { create: lineData },
+      },
+    });
+
+    await logAudit(db, {
+      userId,
+      action: "create",
+      entityType: "pick_task",
+      entityId: task.id,
+      changes: { source: { old: null, new: "auto_generated" } },
+    });
+  } catch (err) {
+    // Don't block the status transition — just log
+    console.error("[PickTask] Failed to auto-generate pick task:", err);
+  }
+}
+
 export async function deleteOrder(id: string) {
   if (config.useMockData) return { id, deleted: true };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("orders:write");
 
   // Delete lines first, then order
   await tenant.db.orderLine.deleteMany({ where: { orderId: id } });

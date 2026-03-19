@@ -3,6 +3,25 @@ import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import type { SessionUser } from "@/lib/auth/session";
 
+const ROLE_LEVEL: Record<TenantRole, number> = {
+  admin: 40,
+  manager: 30,
+  warehouse_worker: 20,
+  viewer: 10,
+};
+
+const PERMISSION_LEVEL: Record<string, number> = {
+  "clients:read": 10, "clients:write": 40,
+  "products:read": 10, "products:write": 30,
+  "receiving:read": 10, "receiving:write": 20,
+  "inventory:read": 10, "inventory:write": 20, "inventory:adjust": 30,
+  "orders:read": 10, "orders:write": 30,
+  "warehouse:read": 10, "warehouse:write": 30,
+  "shipping:read": 10, "shipping:write": 20,
+  "operator:write": 20,
+  "settings:write": 40,
+};
+
 export interface TenantContext {
   tenantId: string;
   slug: string;
@@ -64,7 +83,7 @@ export async function resolveTenant(): Promise<TenantContext | null> {
  * - No tenant in request context
  * - User is not a member of this tenant (and is not a superadmin)
  */
-export async function requireTenantContext(): Promise<{
+export async function requireTenantContext(permission?: string): Promise<{
   user: SessionUser;
   role: TenantRole;
   tenant: TenantContext;
@@ -75,6 +94,15 @@ export async function requireTenantContext(): Promise<{
   // requireTenantAccess does auth + membership check together
   const { requireTenantAccess } = await import("@/lib/auth/session");
   const { user, role } = await requireTenantAccess(slug);
+
+  // Optional permission check — uses the already-resolved role (no extra DB call)
+  if (permission && !user.isSuperadmin) {
+    const userLevel = ROLE_LEVEL[role] ?? 0;
+    const requiredLevel = PERMISSION_LEVEL[permission] ?? 0;
+    if (userLevel < requiredLevel) {
+      throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
+    }
+  }
 
   const { publicDb } = await import("@/lib/db/public-client");
   const { getTenantDb } = await import("@/lib/db/tenant-client");

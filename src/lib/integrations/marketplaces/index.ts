@@ -30,6 +30,8 @@ export function createAdapter(config: ChannelConfig): MarketplaceAdapter | null 
         refreshToken: config.credentials.refreshToken || "",
         clientId: config.credentials.clientId || "",
         clientSecret: config.credentials.clientSecret || "",
+        awsAccessKeyId: config.credentials.awsAccessKeyId || "",
+        awsSecretAccessKey: config.credentials.awsSecretAccessKey || "",
         region: "us-east-1",
       });
     default:

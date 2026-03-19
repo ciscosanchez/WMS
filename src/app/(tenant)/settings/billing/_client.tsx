@@ -22,10 +22,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Settings2 } from "lucide-react";
-import { saveDefaultRateCard, saveClientRateCard } from "@/modules/billing/actions";
+import { ArrowLeft, Save, Settings2, FileText, Loader2 } from "lucide-react";
+import { saveDefaultRateCard, saveClientRateCard, generateInvoice, getInvoices } from "@/modules/billing/actions";
+import { format } from "date-fns";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -42,9 +51,21 @@ interface ClientRow {
   rateCard: { monthlyMinimum: number; lines: Array<{ serviceType: string; unitRate: number; uom: string }> } | null;
 }
 
+interface InvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+  periodStart: Date | string;
+  periodEnd: Date | string;
+  total: number | string;
+  dueDate: Date | string | null;
+  client: { name: string };
+}
+
 interface Props {
   defaultRateCard: { monthlyMinimum: number; lines: Array<{ serviceType: string; unitRate: number; uom: string }> } | null;
   clients: ClientRow[];
+  invoices: InvoiceRow[];
 }
 
 // ─── Service type display config ─────────────────────────
@@ -89,7 +110,7 @@ function buildRateLines(
 
 // ─── Component ───────────────────────────────────────────
 
-export default function BillingConfigClient({ defaultRateCard, clients }: Props) {
+export default function BillingConfigClient({ defaultRateCard, clients, invoices: initialInvoices }: Props) {
   const [defaultRates, setDefaultRates] = useState<RateLine[]>(
     buildRateLines(defaultRateCard?.lines)
   );
@@ -104,6 +125,14 @@ export default function BillingConfigClient({ defaultRateCard, clients }: Props)
 
   const [pendingDefault, startDefault] = useTransition();
   const [pendingClient, startClient] = useTransition();
+
+  // Invoice generation state
+  const [invoiceClientId, setInvoiceClientId] = useState<string>("");
+  const [invoiceMonth, setInvoiceMonth] = useState<string>(
+    new Date().toISOString().slice(0, 7) // "YYYY-MM"
+  );
+  const [pendingInvoice, startInvoice] = useTransition();
+  const [invoices, setInvoices] = useState<InvoiceRow[]>(initialInvoices);
 
   // ─── Default rates ───────────────────────────────────
 
@@ -149,6 +178,27 @@ export default function BillingConfigClient({ defaultRateCard, clients }: Props)
       );
       toast.success(`Rates saved for ${activeClient.name}`);
       setDialogOpen(false);
+    });
+  }
+
+  // ─── Invoice generation ──────────────────────────────
+
+  function handleGenerateInvoice() {
+    if (!invoiceClientId) { toast.error("Select a client"); return; }
+    const [year, month] = invoiceMonth.split("-").map(Number);
+    const fromDate = new Date(year, month - 1, 1);
+    const toDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
+
+    startInvoice(async () => {
+      try {
+        await generateInvoice(invoiceClientId, fromDate, toDate);
+        toast.success("Invoice generated");
+        // Refresh invoice list
+        const fresh = await getInvoices();
+        setInvoices(fresh);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to generate invoice");
+      }
     });
   }
 
@@ -278,6 +328,85 @@ export default function BillingConfigClient({ defaultRateCard, clients }: Props)
                       </TableRow>
                     );
                   })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Invoice Generation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="h-4 w-4" />
+            Generate Invoice
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="space-y-1">
+              <Label>Client</Label>
+              <Select value={invoiceClientId} onValueChange={(v) => setInvoiceClientId(v ?? "")}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select client…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Billing Month</Label>
+              <Input
+                type="month"
+                className="w-40"
+                value={invoiceMonth}
+                onChange={(e) => setInvoiceMonth(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleGenerateInvoice} disabled={pendingInvoice || !invoiceClientId}>
+              {pendingInvoice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              {pendingInvoice ? "Generating…" : "Generate Invoice"}
+            </Button>
+          </div>
+
+          {invoices.length > 0 && (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Due</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoices.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
+                      <TableCell>{inv.client.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(inv.periodStart), "MMM d")} – {format(new Date(inv.periodEnd), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={inv.status === "paid" ? "default" : inv.status === "sent" ? "secondary" : "outline"}>
+                          {inv.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        ${Number(inv.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {inv.dueDate ? format(new Date(inv.dueDate), "MMM d, yyyy") : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

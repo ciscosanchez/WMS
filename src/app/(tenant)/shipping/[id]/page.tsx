@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,12 +12,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Truck, Package, MapPin, DollarSign, Printer, ExternalLink } from "lucide-react";
+import { Truck, Package, MapPin, DollarSign, ExternalLink } from "lucide-react";
+import { MarkShippedForm } from "@/components/shipping/mark-shipped-form";
+import { RateShoppingCard } from "@/components/shipping/rate-shopping-card";
+import { GenerateLabelButton, ReprintLabelButton } from "@/components/shipping/label-buttons";
 
 export default async function ShipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const s = await getShipment(id);
   if (!s) notFound();
+
+  const canGenerateLabel =
+    s.status !== "shipped" &&
+    s.status !== "delivered" &&
+    !!s.carrier &&
+    !s.labelUrl;
+
+  const hasLabel = !!s.labelUrl;
 
   return (
     <div className="space-y-6">
@@ -28,10 +38,8 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
             {s.carrier ?? "No carrier"} {s.service ?? ""}
           </Badge>
           <StatusBadge status={s.status} />
-          <Button variant="outline" size="sm">
-            <Printer className="mr-2 h-4 w-4" />
-            Reprint Label
-          </Button>
+          {canGenerateLabel && <GenerateLabelButton shipmentId={s.id} />}
+          {hasLabel && <ReprintLabelButton shipmentId={s.id} />}
         </div>
       </PageHeader>
 
@@ -78,10 +86,23 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Tracking</span>
             </div>
-            <p className="mt-1 font-mono text-sm font-medium">{s.trackingNumber ?? "Pending"}</p>
+            <p className="mt-1 font-mono text-sm font-medium">
+              {s.trackingNumber ?? "Pending"}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Rate shopping + label generation + mark shipped */}
+      {s.status !== "shipped" && s.status !== "delivered" && (
+        <div className="space-y-4">
+          {/* Show rate shopping if no carrier selected yet */}
+          {!s.carrier && <RateShoppingCard shipmentId={s.id} />}
+          {/* Show rate shopping again if carrier selected but no label (to change selection) */}
+          {s.carrier && !s.labelUrl && <RateShoppingCard shipmentId={s.id} />}
+          <MarkShippedForm shipmentId={s.id} currentCarrier={s.carrier} />
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

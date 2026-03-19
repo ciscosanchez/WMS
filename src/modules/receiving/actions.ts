@@ -56,7 +56,7 @@ export async function createShipment(data: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = inboundShipmentSchema.parse(data);
 
   const shipmentNumber = await nextSequence(tenant.db, "ASN");
@@ -84,7 +84,7 @@ export async function addShipmentLine(shipmentId: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = shipmentLineSchema.parse(data);
 
   const line = await tenant.db.inboundShipmentLine.create({
@@ -108,7 +108,7 @@ export async function updateShipmentStatus(
 ) {
   if (config.useMockData) return { id, status };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
 
   const updateData: Record<string, unknown> = { status };
   if (status === "arrived") updateData.arrivedDate = new Date();
@@ -141,7 +141,7 @@ export async function receiveLine(shipmentId: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = receiveLineSchema.parse(data);
 
   const transaction = await tenant.db.receivingTransaction.create({
@@ -278,7 +278,7 @@ export async function createDiscrepancy(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = discrepancySchema.parse(data);
 
   const disc = await tenant.db.receivingDiscrepancy.create({
@@ -299,7 +299,7 @@ export async function createDiscrepancy(data: unknown) {
 export async function resolveDiscrepancy(id: string, resolution: string) {
   if (config.useMockData) return { id, status: "resolved", resolution };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("receiving:write");
 
   const disc = await tenant.db.receivingDiscrepancy.update({
     where: { id },

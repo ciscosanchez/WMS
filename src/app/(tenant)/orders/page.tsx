@@ -17,6 +17,8 @@ import { format } from "date-fns";
 import { getOrders } from "@/modules/orders/actions";
 import { getClients } from "@/modules/clients/actions";
 import { ShopifySyncButton } from "./_shopify-sync-button";
+import { ShopifyInventorySyncButton } from "./_shopify-inventory-sync-button";
+import { AmazonInventorySyncButton } from "./_amazon-inventory-sync-button";
 
 const priorityColors: Record<string, string> = {
   standard: "bg-gray-100 text-gray-700",
@@ -32,13 +34,20 @@ export default async function OrdersPage() {
   const shopifyEnabled = !!(
     process.env.SHOPIFY_SHOP_DOMAIN && process.env.SHOPIFY_ACCESS_TOKEN
   );
+  const amazonEnabled = !!(process.env.AMAZON_CLIENT_ID && process.env.AMAZON_REFRESH_TOKEN);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Orders" description="Manage fulfillment orders from all channels">
         <div className="flex gap-2">
+          {amazonEnabled && defaultClient && (
+            <AmazonInventorySyncButton clientId={defaultClient.id} />
+          )}
           {shopifyEnabled && defaultClient && (
-            <ShopifySyncButton clientId={defaultClient.id} />
+            <>
+              <ShopifyInventorySyncButton clientId={defaultClient.id} />
+              <ShopifySyncButton clientId={defaultClient.id} />
+            </>
           )}
           <Button asChild>
             <Link href="/orders/new">

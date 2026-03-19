@@ -68,7 +68,7 @@ export async function createWarehouse(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("warehouse:write");
   const parsed = warehouseSchema.parse(data);
 
   const warehouse = await tenant.db.warehouse.create({ data: parsed });
@@ -88,7 +88,7 @@ export async function createZone(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("warehouse:write");
   const parsed = zoneSchema.parse(data);
 
   const zone = await tenant.db.zone.create({ data: parsed });
@@ -107,7 +107,7 @@ export async function createZone(data: unknown) {
 export async function generateBulkLocations(data: unknown) {
   if (config.useMockData) return { zoneId: "mock-zone", binCount: 0 };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("warehouse:write");
   const parsed = bulkLocationSchema.parse(data);
 
   // Get or create warehouse

@@ -22,13 +22,15 @@ import { logAudit } from "@/lib/audit";
 // ─── Signature verification ──────────────────────────────────────────────────
 
 function verifyShopifyHmac(body: string, hmacHeader: string): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (!secret) return false; // If no secret configured, skip verification in dev
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET!;
   const computed = crypto
     .createHmac("sha256", secret)
     .update(body, "utf8")
     .digest("base64");
-  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(hmacHeader));
+  const a = Buffer.from(computed);
+  const b = Buffer.from(hmacHeader);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 // ─── Main handler ────────────────────────────────────────────────────────────
@@ -39,8 +41,8 @@ export async function POST(req: NextRequest) {
   const topic = req.headers.get("x-shopify-topic") ?? "";
   const shopDomain = req.headers.get("x-shopify-shop-domain") ?? "";
 
-  // Verify signature (skip if SHOPIFY_WEBHOOK_SECRET not set — dev/test only)
-  if (process.env.SHOPIFY_WEBHOOK_SECRET && !verifyShopifyHmac(body, hmacHeader)) {
+  // Verify signature — fail closed: require secret to be configured
+  if (!process.env.SHOPIFY_WEBHOOK_SECRET || !verifyShopifyHmac(body, hmacHeader)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 

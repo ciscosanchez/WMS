@@ -1,12 +1,13 @@
 /**
  * USPS Carrier Adapter
  *
- * Implements the CarrierAdapter interface for USPS shipping services.
- * Uses the USPS Web Tools API (XML-based) and the newer USPS REST API v3.
+ * Uses the USPS REST API v3 (OAuth 2.0 client credentials) for rating, shipping,
+ * tracking, and void. Makes parallel rate calls for each main mail class.
  *
- * API Documentation:
- *   Legacy: https://www.usps.com/business/web-tools-apis/
- *   REST v3: https://developer.usps.com/api/81
+ * API Documentation: https://developer.usps.com/api
+ *
+ * Required env vars (when live):
+ *   USPS_CLIENT_ID, USPS_CLIENT_SECRET
  */
 
 import type {
@@ -19,255 +20,327 @@ import type {
 } from "./types";
 
 export interface USPSConfig {
-  userId: string;
+  clientId: string;
+  clientSecret: string;
   useSandbox?: boolean;
 }
+
+interface TokenCache {
+  token: string;
+  expiresAt: number;
+}
+
+interface MailClassConfig {
+  mailClass: string;
+  serviceName: string;
+  estimatedDays: number;
+  guaranteed: boolean;
+  processingCategory: string;
+  rateIndicator: string;
+}
+
+const MAIL_CLASSES: MailClassConfig[] = [
+  {
+    mailClass: "USPS_GROUND_ADVANTAGE",
+    serviceName: "USPS Ground Advantage",
+    estimatedDays: 5,
+    guaranteed: false,
+    processingCategory: "MACHINABLE",
+    rateIndicator: "DR",
+  },
+  {
+    mailClass: "PRIORITY_MAIL",
+    serviceName: "USPS Priority Mail",
+    estimatedDays: 2,
+    guaranteed: false,
+    processingCategory: "MACHINABLE",
+    rateIndicator: "DR",
+  },
+  {
+    mailClass: "PRIORITY_MAIL_EXPRESS",
+    serviceName: "USPS Priority Mail Express",
+    estimatedDays: 1,
+    guaranteed: true,
+    processingCategory: "MACHINABLE",
+    rateIndicator: "DR",
+  },
+];
 
 export class USPSAdapter implements CarrierAdapter {
   readonly name = "USPS";
 
   private config: USPSConfig;
   private baseUrl: string;
+  private tokenCache: TokenCache | null = null;
 
   constructor(config: USPSConfig) {
     this.config = config;
     this.baseUrl = config.useSandbox
-      ? "https://secure.shippingapis.com/ShippingAPITest.dll"
-      : "https://secure.shippingapis.com/ShippingAPI.dll";
+      ? "https://api-cat.usps.com"
+      : "https://api.usps.com";
   }
 
-  /**
-   * Get shipping rates from USPS Domestic Rate Calculator.
-   *
-   * Legacy XML API:
-   *   Endpoint: GET {baseUrl}?API=RateV4&XML={xml}
-   *   XML structure:
-   *   <RateV4Request USERID="{userId}">
-   *     <Revision>2</Revision>
-   *     <Package ID="0">
-   *       <Service>ALL</Service>
-   *       <ZipOrigination>{fromZip}</ZipOrigination>
-   *       <ZipDestination>{toZip}</ZipDestination>
-   *       <Pounds>{pounds}</Pounds>
-   *       <Ounces>{ounces}</Ounces>
-   *       <Container>VARIABLE</Container>
-   *       <Width>{width}</Width>
-   *       <Length>{length}</Length>
-   *       <Height>{height}</Height>
-   *       <Machinable>TRUE</Machinable>
-   *     </Package>
-   *   </RateV4Request>
-   *
-   * REST v3 API:
-   *   Endpoint: POST https://api.usps.com/prices/v3/total-rates/search
-   *   Headers: Authorization: Bearer {accessToken}
-   *   Body: {
-   *     originZIPCode, destinationZIPCode,
-   *     weight, length, width, height,
-   *     mailClass: "ALL", processingCategory: "MACHINABLE",
-   *     rateIndicator: "DR", destinationEntryFacilityType: "NONE",
-   *     priceType: "RETAIL"
-   *   }
-   *
-   * Mail Classes: USPS_GROUND_ADVANTAGE, PRIORITY_MAIL, PRIORITY_MAIL_EXPRESS,
-   *   FIRST_CLASS_MAIL, PARCEL_SELECT, MEDIA_MAIL
-   */
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
+  private async getToken(): Promise<string> {
+    if (this.tokenCache && Date.now() < this.tokenCache.expiresAt) {
+      return this.tokenCache.token;
+    }
+
+    const params = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: this.config.clientId,
+      client_secret: this.config.clientSecret,
+    });
+
+    const res = await fetch(`${this.baseUrl}/oauth2/v3/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`USPS auth failed (${res.status}): ${text}`);
+    }
+
+    const data = await res.json();
+    const expiresIn = (data.expires_in ?? 3600) as number;
+    this.tokenCache = {
+      token: data.access_token as string,
+      expiresAt: Date.now() + (expiresIn - 60) * 1000,
+    };
+    return this.tokenCache.token;
+  }
+
+  private async authedFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const token = await this.getToken();
+    return fetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(options.headers ?? {}),
+      },
+    });
+  }
+
+  // ── Rates ──────────────────────────────────────────────────────────────────
+
   async getRates(request: RateRequest): Promise<RateQuote[]> {
-    // TODO: Replace mock with real USPS rate API call
-    // TODO: Build XML request or REST v3 request from `request` parameter
-    // TODO: Parse rate response into RateQuote[]
+    const pkg = request.packages[0];
+    // USPS works with ZIP codes only (no full address needed for rating)
+    const fromZip = request.from.zip.slice(0, 5);
+    const toZip = request.to.zip.slice(0, 5);
 
-    const _xmlRequest = `
-      <RateV4Request USERID="${this.config.userId}">
-        <Revision>2</Revision>
-        ${request.packages
-          .map(
-            (pkg, i) => `
-        <Package ID="${i}">
-          <Service>ALL</Service>
-          <ZipOrigination>${request.from.zip}</ZipOrigination>
-          <ZipDestination>${request.to.zip}</ZipDestination>
-          <Pounds>${Math.floor(pkg.weight)}</Pounds>
-          <Ounces>${Math.round((pkg.weight % 1) * 16)}</Ounces>
-          <Container>VARIABLE</Container>
-          <Width>${pkg.width}</Width>
-          <Length>${pkg.length}</Length>
-          <Height>${pkg.height}</Height>
-          <Machinable>TRUE</Machinable>
-        </Package>`
-          )
-          .join("")}
-      </RateV4Request>`;
+    const weightLbs = pkg.weightUnit === "kg" ? pkg.weight * 2.20462 : pkg.weight;
+    const lengthIn = pkg.dimUnit === "cm" ? pkg.length / 2.54 : pkg.length;
+    const widthIn = pkg.dimUnit === "cm" ? pkg.width / 2.54 : pkg.width;
+    const heightIn = pkg.dimUnit === "cm" ? pkg.height / 2.54 : pkg.height;
 
-    // Mock response — realistic USPS rates
-    return [
-      {
-        carrier: "USPS",
-        service: "USPS Ground Advantage",
-        serviceCode: "USPS_GROUND_ADVANTAGE",
-        totalCost: 5.25,
-        currency: "USD",
-        estimatedDays: 5,
-        guaranteed: false,
-      },
-      {
-        carrier: "USPS",
-        service: "USPS Priority Mail",
-        serviceCode: "PRIORITY_MAIL",
-        totalCost: 7.9,
-        currency: "USD",
-        estimatedDays: 2,
-        guaranteed: false,
-      },
-      {
-        carrier: "USPS",
-        service: "USPS Priority Mail Express",
-        serviceCode: "PRIORITY_MAIL_EXPRESS",
-        totalCost: 26.35,
-        currency: "USD",
-        estimatedDays: 1,
-        guaranteed: true,
-      },
-    ];
+    const results = await Promise.allSettled(
+      MAIL_CLASSES.map(async (mc) => {
+        const body = {
+          originZIPCode: fromZip,
+          destinationZIPCode: toZip,
+          weight: parseFloat(weightLbs.toFixed(2)),
+          length: parseFloat(lengthIn.toFixed(2)),
+          width: parseFloat(widthIn.toFixed(2)),
+          height: parseFloat(heightIn.toFixed(2)),
+          mailClass: mc.mailClass,
+          processingCategory: mc.processingCategory,
+          rateIndicator: mc.rateIndicator,
+          destinationEntryFacilityType: "NONE",
+          priceType: "RETAIL",
+        };
+
+        const res = await this.authedFetch(
+          `${this.baseUrl}/prices/v3/total-rates/search`,
+          { method: "POST", body: JSON.stringify(body) }
+        );
+
+        if (!res.ok) return null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = await res.json() as any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rates: any[] = data.totalRates ?? [];
+        if (rates.length === 0) return null;
+
+        // Pick the base (non-cubic) rate — lowest price entry
+        const baseRate = rates.reduce(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (min: any, r: any) => (r.price < (min?.price ?? Infinity) ? r : min),
+          null
+        );
+
+        if (!baseRate) return null;
+
+        return {
+          carrier: "USPS",
+          service: mc.serviceName,
+          serviceCode: mc.mailClass,
+          totalCost: parseFloat(baseRate.price),
+          currency: "USD",
+          estimatedDays: mc.estimatedDays,
+          guaranteed: mc.guaranteed,
+        } satisfies RateQuote;
+      })
+    );
+
+    return results
+      .filter(
+        (r): r is PromiseFulfilledResult<RateQuote> =>
+          r.status === "fulfilled" && r.value !== null
+      )
+      .map((r) => r.value);
   }
 
-  /**
-   * Create a shipping label via USPS eVS Label API.
-   *
-   * Legacy XML API:
-   *   Endpoint: GET {baseUrl}?API=eVS&XML={xml}
-   *   XML: <eVSRequest USERID="{userId}">
-   *     <Option />
-   *     <Revision>2</Revision>
-   *     <ImageParameters><ImageParameter>4x6LABELL</ImageParameter></ImageParameters>
-   *     <FromName>{name}</FromName>
-   *     <FromFirm>{company}</FromFirm>
-   *     <FromAddress1>{street2}</FromAddress1>
-   *     <FromAddress2>{street1}</FromAddress2>
-   *     <FromCity>{city}</FromCity>
-   *     <FromState>{state}</FromState>
-   *     <FromZip5>{zip5}</FromZip5>
-   *     <ToName>{name}</ToName>
-   *     <ToAddress1>{street2}</ToAddress1>
-   *     <ToAddress2>{street1}</ToAddress2>
-   *     <ToCity>{city}</ToCity>
-   *     <ToState>{state}</ToState>
-   *     <ToZip5>{zip5}</ToZip5>
-   *     <WeightInOunces>{ounces}</WeightInOunces>
-   *     <ServiceType>{serviceCode}</ServiceType>
-   *     <ImageType>PDF</ImageType>
-   *   </eVSRequest>
-   *
-   * REST v3 API:
-   *   Endpoint: POST https://api.usps.com/labels/v3/label
-   *   Body: { imageInfo, fromAddress, toAddress, packageDescription, mailClass }
-   */
-  async createLabel(request: LabelRequest): Promise<LabelResult> {
-    // TODO: Replace mock with real USPS eVS or REST v3 label API call
-    // TODO: Build XML or REST request from `request` parameter
-    // TODO: Parse response for tracking number and base64 label image
+  // ── Label ─────────────────────────────────────────────────────────────────
 
-    // Mock response — realistic USPS label
-    const mockTrackingNumber = `9400${Date.now().toString().slice(-16).padStart(16, "0")}`;
+  async createLabel(request: LabelRequest): Promise<LabelResult> {
+    const pkg = request.packages[0];
+    const weightLbs = pkg.weightUnit === "kg" ? pkg.weight * 2.20462 : pkg.weight;
+    const lengthIn = pkg.dimUnit === "cm" ? pkg.length / 2.54 : pkg.length;
+    const widthIn = pkg.dimUnit === "cm" ? pkg.width / 2.54 : pkg.width;
+    const heightIn = pkg.dimUnit === "cm" ? pkg.height / 2.54 : pkg.height;
+
+    const mc = MAIL_CLASSES.find((m) => m.mailClass === request.serviceCode)
+      ?? MAIL_CLASSES[0];
+
+    const body = {
+      imageInfo: { imageType: "PDF", labelType: "4X6LABEL" },
+      toAddress: {
+        firstName: request.to.name.split(" ")[0],
+        lastName: request.to.name.split(" ").slice(1).join(" ") || " ",
+        firm: request.to.company ?? "",
+        streetAddress: request.to.street1,
+        secondaryAddress: request.to.street2 ?? "",
+        city: request.to.city,
+        state: request.to.state,
+        ZIPCode: request.to.zip.slice(0, 5),
+        ZIPPlus4: request.to.zip.slice(6, 10) || "",
+      },
+      fromAddress: {
+        firstName: request.from.name.split(" ")[0],
+        lastName: request.from.name.split(" ").slice(1).join(" ") || " ",
+        firm: request.from.company ?? "",
+        streetAddress: request.from.street1,
+        secondaryAddress: request.from.street2 ?? "",
+        city: request.from.city,
+        state: request.from.state,
+        ZIPCode: request.from.zip.slice(0, 5),
+        ZIPPlus4: request.from.zip.slice(6, 10) || "",
+        phone: request.from.phone ?? "",
+      },
+      packageDescription: {
+        mailClass: mc.mailClass,
+        processingCategory: mc.processingCategory,
+        rateIndicator: mc.rateIndicator,
+        destinationEntryFacilityType: "NONE",
+        weight: parseFloat(weightLbs.toFixed(2)),
+        length: parseFloat(lengthIn.toFixed(2)),
+        width: parseFloat(widthIn.toFixed(2)),
+        height: parseFloat(heightIn.toFixed(2)),
+        ...(request.reference ? { po: request.reference } : {}),
+      },
+    };
+
+    const res = await this.authedFetch(`${this.baseUrl}/labels/v3/label`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`USPS label failed (${res.status}): ${text}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    const trackingNumber = data.labelMetadata?.trackingNumber ?? data.trackingNumber;
+    const labelData = data.labelImage ?? "";
+    const cost = parseFloat(data.labelMetadata?.postage ?? data.postage ?? "0");
 
     return {
-      trackingNumber: mockTrackingNumber,
+      trackingNumber,
       labelFormat: "PDF",
-      labelData: "JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo+Pg==", // mock base64 PDF
-      totalCost: 5.25,
+      labelData,
+      totalCost: cost,
       carrier: "USPS",
-      service: `USPS ${request.serviceCode}`,
+      service: mc.serviceName,
     };
   }
 
-  /**
-   * Get tracking information from USPS Track API.
-   *
-   * Legacy XML API:
-   *   Endpoint: GET {baseUrl}?API=TrackV2&XML={xml}
-   *   XML: <TrackFieldRequest USERID="{userId}">
-   *     <Revision>1</Revision>
-   *     <ClientIp>127.0.0.1</ClientIp>
-   *     <SourceId>armstrong-wms</SourceId>
-   *     <TrackID ID="{trackingNumber}" />
-   *   </TrackFieldRequest>
-   *
-   * REST v3 API:
-   *   Endpoint: GET https://api.usps.com/tracking/v3/tracking/{trackingNumber}?expand=DETAIL
-   *   Headers: Authorization: Bearer {accessToken}
-   *
-   * Response contains TrackDetail elements with:
-   *   EventDate, EventTime, Event, EventCity, EventState, EventCountry
-   */
+  // ── Tracking ──────────────────────────────────────────────────────────────
+
   async getTracking(trackingNumber: string): Promise<TrackingResult> {
-    // TODO: Replace mock with real USPS Track API call
-    // TODO: Build XML or REST request
-    // TODO: Parse TrackDetail elements into TrackingEvent[]
+    const url = new URL(
+      `${this.baseUrl}/tracking/v3/tracking/${trackingNumber}`
+    );
+    url.searchParams.set("expand", "DETAIL");
 
-    const _xmlRequest = `
-      <TrackFieldRequest USERID="${this.config.userId}">
-        <Revision>1</Revision>
-        <ClientIp>127.0.0.1</ClientIp>
-        <SourceId>armstrong-wms</SourceId>
-        <TrackID ID="${trackingNumber}" />
-      </TrackFieldRequest>`;
+    const res = await this.authedFetch(url.toString());
 
-    const now = new Date();
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`USPS tracking failed (${res.status}): ${text}`);
+    }
 
-    // Mock response — realistic USPS tracking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const events: any[] = data.trackingEvents ?? data.TrackSummary?.TrackDetail ?? [];
+
+    const latestEvent = events[0];
+    const eventType = (latestEvent?.eventType ?? "") as string;
+    const status: TrackingResult["status"] =
+      eventType === "DELIVERED" || eventType.includes("DELIVERY") ? "delivered"
+        : eventType.includes("EXCEPTION") || eventType.includes("ALERT") ? "exception"
+          : "in_transit";
+
+    const mappedEvents = events.map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (e: any) => {
+        const ts = e.eventTimestamp
+          ? new Date(e.eventTimestamp)
+          : new Date(`${e.eventDate} ${e.eventTime}`);
+        return {
+          timestamp: ts,
+          status: e.eventType ?? e.Event ?? "Unknown",
+          location: [e.eventCity, e.eventState]
+            .filter(Boolean)
+            .join(", "),
+          description: e.eventDescription ?? e.EventDescription ?? "",
+        };
+      }
+    );
+
+    const deliveredAt =
+      status === "delivered"
+        ? mappedEvents[0]?.timestamp ?? new Date(data.deliveryDateTime ?? Date.now())
+        : undefined;
+
+    const estimatedDelivery = data.expectedDeliveryDateTime
+      ? new Date(data.expectedDeliveryDateTime)
+      : undefined;
+
     return {
       trackingNumber,
       carrier: "USPS",
-      status: "in_transit",
-      estimatedDelivery: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
-      events: [
-        {
-          timestamp: new Date(now.getTime() - 6 * 60 * 60 * 1000),
-          status: "In Transit",
-          location: "DISTRIBUTION CENTER, Atlanta, GA",
-          description: "In Transit to Next Facility",
-        },
-        {
-          timestamp: new Date(now.getTime() - 18 * 60 * 60 * 1000),
-          status: "In Transit",
-          location: "USPS REGIONAL FACILITY, Charlotte, NC",
-          description: "Departed USPS Regional Facility",
-        },
-        {
-          timestamp: new Date(now.getTime() - 28 * 60 * 60 * 1000),
-          status: "Accepted",
-          location: "POST OFFICE, Miami, FL",
-          description: "Accepted at USPS Origin Facility",
-        },
-      ],
-    };
+      status,
+      ...(deliveredAt ? { deliveredAt } : {}),
+      ...(estimatedDelivery ? { estimatedDelivery } : {}),
+      events: mappedEvents,
+    } as TrackingResult;
   }
 
-  /**
-   * Void/refund a USPS shipping label.
-   *
-   * Legacy XML API:
-   *   Endpoint: GET {baseUrl}?API=eVSCancel&XML={xml}
-   *   XML: <eVSCancelRequest USERID="{userId}">
-   *     <BarcodeNumber>{trackingNumber}</BarcodeNumber>
-   *   </eVSCancelRequest>
-   *
-   * REST v3 API:
-   *   Endpoint: DELETE https://api.usps.com/labels/v3/label/{trackingNumber}
-   *   Headers: Authorization: Bearer {accessToken}
-   *
-   * Note: USPS labels can only be voided within 24 hours of creation.
-   */
+  // ── Void ──────────────────────────────────────────────────────────────────
+
   async voidLabel(trackingNumber: string): Promise<boolean> {
-    // TODO: Replace mock with real USPS void/cancel API call
-    // TODO: Build XML or REST request
-    // TODO: Check response for successful cancellation
-
-    const _xmlRequest = `
-      <eVSCancelRequest USERID="${this.config.userId}">
-        <BarcodeNumber>${trackingNumber}</BarcodeNumber>
-      </eVSCancelRequest>`;
-
-    return true;
+    const res = await this.authedFetch(
+      `${this.baseUrl}/labels/v3/label/${trackingNumber}`,
+      { method: "DELETE" }
+    );
+    return res.ok || res.status === 204;
   }
 }

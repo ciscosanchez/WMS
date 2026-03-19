@@ -29,7 +29,7 @@ export async function createClient(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("clients:write");
   const parsed = clientSchema.parse(data);
 
   const client = await tenant.db.client.create({
@@ -51,7 +51,7 @@ export async function updateClient(id: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id, ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("clients:write");
   const parsed = clientSchema.parse(data);
 
   const existing = await tenant.db.client.findUniqueOrThrow({ where: { id } });
@@ -79,7 +79,7 @@ export async function updateClient(id: string, data: unknown) {
 export async function deleteClient(id: string) {
   if (config.useMockData) return;
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("clients:write");
   await tenant.db.client.delete({ where: { id } });
 
   await logAudit(tenant.db, {

@@ -73,9 +73,8 @@ export function createRateShopEngine(configs: CarrierConfig[]): RateShopEngine {
         engine.registerAdapter(
           new UPSAdapter({
             accountNumber: config.credentials.accountNumber ?? "",
-            accessKey: config.credentials.accessKey ?? "",
-            userId: config.credentials.userId ?? "",
-            password: config.credentials.password ?? "",
+            clientId: config.credentials.clientId ?? "",
+            clientSecret: config.credentials.clientSecret ?? "",
             useSandbox: config.credentials.useSandbox === "true",
           })
         );
@@ -95,7 +94,8 @@ export function createRateShopEngine(configs: CarrierConfig[]): RateShopEngine {
       case "usps":
         engine.registerAdapter(
           new USPSAdapter({
-            userId: config.credentials.userId ?? "",
+            clientId: config.credentials.clientId ?? "",
+            clientSecret: config.credentials.clientSecret ?? "",
             useSandbox: config.credentials.useSandbox === "true",
           })
         );

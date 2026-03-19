@@ -76,6 +76,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Entity ownership check ──────────────────────────────────────────────
+    // Verify the entityId actually exists in this tenant's DB before handing
+    // out a presigned URL — prevents cross-tenant path pollution in MinIO.
+    if (entityType !== "docai") {
+      const { getTenantDb } = await import("@/lib/db/tenant-client");
+      const db = getTenantDb(tenant.dbSchema);
+      let exists = false;
+      if (entityType === "shipment") {
+        exists = !!(await db.shipment.findFirst({ where: { id: entityId }, select: { id: true } }));
+      } else if (entityType === "product") {
+        exists = !!(await db.product.findFirst({ where: { id: entityId }, select: { id: true } }));
+      } else if (entityType === "order") {
+        exists = !!(await db.order.findFirst({ where: { id: entityId }, select: { id: true } }));
+      }
+      if (!exists) {
+        return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+      }
+    }
+
     // Sanitize extension
     const rawExt = fileName.split(".").pop() || "bin";
     const ext = rawExt.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().slice(0, 10);

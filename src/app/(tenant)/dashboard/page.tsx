@@ -2,6 +2,7 @@ import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/components/shared/dashboard-charts";
+import { getDashboardChartData } from "@/modules/dashboard/actions";
 import { PackageOpen, PackageCheck, Boxes, MapPin, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -101,8 +102,18 @@ async function getDashboardData() {
   };
 }
 
+const fallbackCharts = {
+  receivingVolume: [],
+  ordersByStatus: [],
+  zoneUtilization: [],
+  fulfillmentThroughput: [],
+};
+
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, chartData] = await Promise.all([
+    getDashboardData(),
+    getDashboardChartData().catch(() => fallbackCharts),
+  ]);
   if (!data) return <div>Tenant not found</div>;
 
   return (
@@ -146,7 +157,12 @@ export default async function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <DashboardCharts />
+      <DashboardCharts
+        receivingVolume={chartData.receivingVolume}
+        ordersByStatus={chartData.ordersByStatus}
+        zoneUtilization={chartData.zoneUtilization}
+        fulfillmentThroughput={chartData.fulfillmentThroughput}
+      />
 
       <Card>
         <CardHeader>

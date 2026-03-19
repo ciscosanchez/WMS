@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   // Verify the cron secret
   const secret = req.headers.get("x-cron-secret") ?? req.nextUrl.searchParams.get("secret");
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -154,7 +154,19 @@ export async function GET(req: NextRequest) {
     }
 
     console.log(`[Shopify Cron] imported=${imported} skipped=${skipped}`);
-    return NextResponse.json({ imported, skipped });
+
+    // Also push current inventory quantities back to Shopify
+    let inventorySynced = 0;
+    try {
+      const { syncInventoryToShopify } = await import("@/modules/orders/shopify-sync");
+      const invResult = await syncInventoryToShopify(client.id);
+      inventorySynced = invResult.synced;
+      console.log(`[Shopify Cron] inventory synced=${inventorySynced}`);
+    } catch (invErr) {
+      console.error("[Shopify Cron] inventory sync error:", invErr);
+    }
+
+    return NextResponse.json({ imported, skipped, inventorySynced });
   } catch (err) {
     console.error("[Shopify Cron] error:", err);
     return NextResponse.json(

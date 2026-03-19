@@ -282,6 +282,34 @@ services:
       retries: 5
       start_period: 10s
 
+  # ── Cron Runner ────────────────────────────────────────────
+  # Alpine container running crond to call WMS cron endpoints.
+  # Uses wget to avoid needing curl in Alpine base image.
+  cron:
+    image: alpine:3.19@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+      WMS_INTERNAL_URL: http://wms:3000
+    command: >
+      sh -c "
+        echo '*/15 * * * * wget -qO- --header=\"x-cron-secret: $${CRON_SECRET}\" $${WMS_INTERNAL_URL}/api/cron/shopify-sync >> /var/log/cron.log 2>&1' > /etc/crontabs/root &&
+        echo '0 2 * * * wget -qO- --header=\"x-cron-secret: $${CRON_SECRET}\" $${WMS_INTERNAL_URL}/api/cron/storage-billing >> /var/log/cron.log 2>&1' >> /etc/crontabs/root &&
+        echo '0 * * * * wget -qO- --header=\"x-cron-secret: $${CRON_SECRET}\" $${WMS_INTERNAL_URL}/api/cron/tracking-update >> /var/log/cron.log 2>&1' >> /etc/crontabs/root &&
+        echo '0 3 * * * wget -qO- --header=\"x-cron-secret: $${CRON_SECRET}\" $${WMS_INTERNAL_URL}/api/cron/netsuite-sync >> /var/log/cron.log 2>&1' >> /etc/crontabs/root &&
+        crond -f -L /var/log/cron.log
+      "
+    depends_on:
+      wms:
+        condition: service_healthy
+    networks:
+      - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: 16M
+
 networks:
   ramola:
     name: ramola

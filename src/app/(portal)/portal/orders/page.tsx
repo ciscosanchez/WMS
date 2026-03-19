@@ -1,130 +1,22 @@
-"use client";
-
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
-import { DataTable } from "@/components/data-table/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, ShoppingCart } from "lucide-react";
 import { format } from "date-fns";
-import type { ColumnDef } from "@tanstack/react-table";
+import { getPortalOrders } from "@/modules/portal/actions";
 
-type PortalOrder = {
-  id: string;
-  orderNumber: string;
-  status: string;
-  shipToName: string;
-  shipToCity: string;
-  shipToState: string;
-  totalItems: number;
-  trackingNumber: string | null;
-  orderDate: Date;
-  shipByDate: Date;
-};
+export default async function PortalOrdersPage() {
+  const orders = await getPortalOrders();
 
-const mockOrders: PortalOrder[] = [
-  {
-    id: "1",
-    orderNumber: "ORD-2026-0001",
-    status: "shipped",
-    shipToName: "Jane Cooper",
-    shipToCity: "Austin",
-    shipToState: "TX",
-    totalItems: 3,
-    trackingNumber: "1Z999AA10123456784",
-    orderDate: new Date("2026-03-10"),
-    shipByDate: new Date("2026-03-12"),
-  },
-  {
-    id: "2",
-    orderNumber: "ORD-2026-0005",
-    status: "picking",
-    shipToName: "Robert Fox",
-    shipToCity: "Denver",
-    shipToState: "CO",
-    totalItems: 1,
-    trackingNumber: null,
-    orderDate: new Date("2026-03-15"),
-    shipByDate: new Date("2026-03-16"),
-  },
-  {
-    id: "3",
-    orderNumber: "ORD-2026-0008",
-    status: "awaiting_fulfillment",
-    shipToName: "Acme Retail Store #12",
-    shipToCity: "Phoenix",
-    shipToState: "AZ",
-    totalItems: 12,
-    trackingNumber: null,
-    orderDate: new Date("2026-03-15"),
-    shipByDate: new Date("2026-03-18"),
-  },
-  {
-    id: "4",
-    orderNumber: "ORD-2026-0012",
-    status: "delivered",
-    shipToName: "Emily Wilson",
-    shipToCity: "Seattle",
-    shipToState: "WA",
-    totalItems: 2,
-    trackingNumber: "9400111899223100001234",
-    orderDate: new Date("2026-03-08"),
-    shipByDate: new Date("2026-03-10"),
-  },
-];
-
-const columns: ColumnDef<PortalOrder>[] = [
-  {
-    accessorKey: "orderNumber",
-    header: "Order #",
-    cell: ({ row }) => <span className="font-medium">{row.getValue("orderNumber")}</span>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
-  },
-  {
-    accessorKey: "shipToName",
-    header: "Ship To",
-    cell: ({ row }) => (
-      <div>
-        <div className="text-sm">{row.original.shipToName}</div>
-        <div className="text-xs text-muted-foreground">
-          {row.original.shipToCity}, {row.original.shipToState}
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "totalItems",
-    header: "Items",
-  },
-  {
-    accessorKey: "trackingNumber",
-    header: "Tracking",
-    cell: ({ row }) => {
-      const tracking = row.getValue("trackingNumber") as string | null;
-      return tracking ? (
-        <span className="font-mono text-xs">{tracking}</span>
-      ) : (
-        <span className="text-muted-foreground">--</span>
-      );
-    },
-  },
-  {
-    accessorKey: "orderDate",
-    header: "Order Date",
-    cell: ({ row }) => format(row.getValue("orderDate") as Date, "MMM d, yyyy"),
-  },
-  {
-    accessorKey: "shipByDate",
-    header: "Ship By",
-    cell: ({ row }) => format(row.getValue("shipByDate") as Date, "MMM d, yyyy"),
-  },
-];
-
-export default function PortalOrdersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="My Orders" description="View and manage your fulfillment orders">
@@ -136,12 +28,60 @@ export default function PortalOrdersPage() {
         </Button>
       </PageHeader>
 
-      <DataTable
-        columns={columns}
-        data={mockOrders}
-        searchKey="orderNumber"
-        searchPlaceholder="Search orders..."
-      />
+      {orders.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
+          <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No orders yet.</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order #</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ship To</TableHead>
+                <TableHead className="text-right">Items</TableHead>
+                <TableHead>Tracking</TableHead>
+                <TableHead>Order Date</TableHead>
+                <TableHead>Ship By</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order: { id: string; orderNumber: string; status: string; shipToName: string; shipToCity: string; shipToState: string; totalItems: number; trackingNumber: string | null; carrier: string | null; orderDate: Date | string | null; shipByDate: Date | string | null }) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={order.status} />
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">{order.shipToName}</div>
+                    {(order.shipToCity || order.shipToState) && (
+                      <div className="text-xs text-muted-foreground">
+                        {[order.shipToCity, order.shipToState].filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">{order.totalItems}</TableCell>
+                  <TableCell>
+                    {order.trackingNumber ? (
+                      <span className="font-mono text-xs">{order.trackingNumber}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {order.orderDate ? format(new Date(order.orderDate), "MMM d, yyyy") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {order.shipByDate ? format(new Date(order.shipByDate), "MMM d, yyyy") : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

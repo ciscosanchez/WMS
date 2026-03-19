@@ -37,7 +37,7 @@ export async function createProduct(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("products:write");
   const parsed = productSchema.parse(data);
 
   const product = await tenant.db.product.create({ data: parsed });
@@ -57,7 +57,7 @@ export async function updateProduct(id: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id, ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("products:write");
   const parsed = productSchema.parse(data);
 
   const existing = await tenant.db.product.findUniqueOrThrow({ where: { id } });
@@ -85,7 +85,7 @@ export async function updateProduct(id: string, data: unknown) {
 export async function deleteProduct(id: string) {
   if (config.useMockData) return;
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("products:write");
   await tenant.db.product.delete({ where: { id } });
 
   await logAudit(tenant.db, {

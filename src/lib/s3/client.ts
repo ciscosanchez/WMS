@@ -64,3 +64,28 @@ export async function ensureBucket() {
     await client.makeBucket(BUCKET);
   }
 }
+
+/**
+ * Upload a Buffer directly to MinIO.
+ * Returns the stored object key.
+ */
+export async function uploadBuffer(
+  key: string,
+  buffer: Buffer,
+  contentType: string
+): Promise<string> {
+  const client = getS3Client();
+  await ensureBucket();
+  await client.putObject(BUCKET, key, buffer, buffer.length, {
+    "Content-Type": contentType,
+  });
+  return key;
+}
+
+/**
+ * Delete an object from MinIO (e.g. when voiding a label).
+ */
+export async function deleteObject(key: string): Promise<void> {
+  const client = getS3Client();
+  await client.removeObject(BUCKET, key);
+}

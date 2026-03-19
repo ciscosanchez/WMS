@@ -9,74 +9,59 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { getPortalShipments } from "@/modules/portal/actions";
+import { Truck } from "lucide-react";
 
-const mockShipments = [
-  {
-    id: "1",
-    shipmentNumber: "SHP-2026-0010",
-    orderNumber: "ORD-2026-0001",
-    carrier: "UPS",
-    trackingNumber: "1Z999AA10123456784",
-    status: "delivered",
-    shippedDate: new Date("2026-03-11"),
-  },
-  {
-    id: "2",
-    shipmentNumber: "SHP-2026-0014",
-    orderNumber: "ORD-2026-0005",
-    carrier: "FedEx",
-    trackingNumber: "794644790138",
-    status: "shipped",
-    shippedDate: new Date("2026-03-15"),
-  },
-  {
-    id: "3",
-    shipmentNumber: "SHP-2026-0016",
-    orderNumber: "ORD-2026-0012",
-    carrier: "USPS",
-    trackingNumber: "9400111899223100001234",
-    status: "label_created",
-    shippedDate: null,
-  },
-];
+export default async function PortalShipmentsPage() {
+  const shipments = await getPortalShipments();
 
-export default function PortalShipmentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Shipments" description="Track shipments for your orders" />
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Shipment #</TableHead>
-              <TableHead>Order</TableHead>
-              <TableHead>Carrier</TableHead>
-              <TableHead>Tracking Number</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Shipped Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockShipments.map((shipment) => (
-              <TableRow key={shipment.id}>
-                <TableCell className="font-medium">{shipment.shipmentNumber}</TableCell>
-                <TableCell>{shipment.orderNumber}</TableCell>
-                <TableCell>{shipment.carrier}</TableCell>
-                <TableCell>
-                  <span className="font-mono text-xs">{shipment.trackingNumber}</span>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={shipment.status} />
-                </TableCell>
-                <TableCell>
-                  {shipment.shippedDate ? format(shipment.shippedDate, "MMM d, yyyy") : "--"}
-                </TableCell>
+      {shipments.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
+          <Truck className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No shipments yet.</p>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Shipment #</TableHead>
+                <TableHead>Order</TableHead>
+                <TableHead>Carrier</TableHead>
+                <TableHead>Tracking Number</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Shipped Date</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {shipments.map((shipment: { id: string; shipmentNumber: string; orderNumber: string; carrier: string; trackingNumber: string | null; status: string; shippedAt: Date | string | null }) => (
+                <TableRow key={shipment.id}>
+                  <TableCell className="font-medium">{shipment.shipmentNumber}</TableCell>
+                  <TableCell>{shipment.orderNumber}</TableCell>
+                  <TableCell>{shipment.carrier}</TableCell>
+                  <TableCell>
+                    {shipment.trackingNumber ? (
+                      <span className="font-mono text-xs">{shipment.trackingNumber}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={shipment.status} />
+                  </TableCell>
+                  <TableCell>
+                    {shipment.shippedAt ? format(new Date(shipment.shippedAt), "MMM d, yyyy") : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

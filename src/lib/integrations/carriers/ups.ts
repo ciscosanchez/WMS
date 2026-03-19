@@ -1,10 +1,13 @@
 /**
  * UPS Carrier Adapter
  *
- * Implements the CarrierAdapter interface for UPS shipping services.
- * Uses the UPS REST API (OAuth 2.0) for rating, shipping, tracking, and void.
+ * Uses the UPS REST API (OAuth 2.0 client credentials) for rating, shipping,
+ * tracking, and void. Tokens are cached in-memory for their full 4-hour TTL.
  *
  * API Documentation: https://developer.ups.com/api/reference
+ *
+ * Required env vars (when live):
+ *   UPS_CLIENT_ID, UPS_CLIENT_SECRET, UPS_ACCOUNT_NUMBER
  */
 
 import type {
@@ -18,17 +21,44 @@ import type {
 
 export interface UPSConfig {
   accountNumber: string;
-  accessKey: string;
-  userId: string;
-  password: string;
+  clientId: string;
+  clientSecret: string;
   useSandbox?: boolean;
 }
+
+// In-memory token cache (per adapter instance)
+interface TokenCache {
+  token: string;
+  expiresAt: number; // ms timestamp
+}
+
+const UPS_SERVICE_NAMES: Record<string, string> = {
+  "01": "UPS Next Day Air",
+  "02": "UPS 2nd Day Air",
+  "03": "UPS Ground",
+  "12": "UPS 3 Day Select",
+  "13": "UPS Next Day Air Saver",
+  "14": "UPS Next Day Air Early A.M.",
+  "59": "UPS 2nd Day Air A.M.",
+  "65": "UPS Saver",
+};
+
+const UPS_SERVICE_DAYS: Record<string, number> = {
+  "01": 1, "02": 2, "03": 5, "12": 3,
+  "13": 1, "14": 1, "59": 2, "65": 3,
+};
+
+const UPS_GUARANTEED: Record<string, boolean> = {
+  "01": true, "02": true, "03": false, "12": false,
+  "13": true, "14": true, "59": true, "65": true,
+};
 
 export class UPSAdapter implements CarrierAdapter {
   readonly name = "UPS";
 
   private config: UPSConfig;
   private baseUrl: string;
+  private tokenCache: TokenCache | null = null;
 
   constructor(config: UPSConfig) {
     this.config = config;
@@ -37,53 +67,64 @@ export class UPSAdapter implements CarrierAdapter {
       : "https://onlinetools.ups.com/api";
   }
 
-  /**
-   * Get shipping rates from UPS Rating API.
-   *
-   * Endpoint: POST {baseUrl}/rating/v1/Rate
-   * Headers:
-   *   Authorization: Bearer {accessToken}
-   *   Content-Type: application/json
-   *   transId: {uuid}
-   *   transactionSrc: "armstrong-wms"
-   *
-   * Request body structure:
-   * {
-   *   RateRequest: {
-   *     Request: { SubVersion: "2205" },
-   *     Shipment: {
-   *       Shipper: {
-   *         ShipperNumber: "{accountNumber}",
-   *         Address: { AddressLine, City, StateProvinceCode, PostalCode, CountryCode }
-   *       },
-   *       ShipTo: {
-   *         Address: { AddressLine, City, StateProvinceCode, PostalCode, CountryCode, ResidentialAddressIndicator }
-   *       },
-   *       ShipFrom: {
-   *         Address: { AddressLine, City, StateProvinceCode, PostalCode, CountryCode }
-   *       },
-   *       Package: [{
-   *         PackagingType: { Code: "02" },  // Customer Supplied
-   *         Dimensions: { UnitOfMeasurement: { Code: "IN" }, Length, Width, Height },
-   *         PackageWeight: { UnitOfMeasurement: { Code: "LBS" }, Weight }
-   *       }],
-   *       Service: { Code: "03" }  // Optional: filter to specific service
-   *     }
-   *   }
-   * }
-   *
-   * Service Codes: 03=Ground, 02=2nd Day Air, 01=Next Day Air, 12=3 Day Select, 14=Next Day Air Early
-   */
-  async getRates(request: RateRequest): Promise<RateQuote[]> {
-    // TODO: Replace mock with real UPS Rating API call
-    // TODO: Obtain OAuth token via POST /security/v1/oauth/token
-    // TODO: Build request body from `request` parameter using structure above
-    // TODO: Parse RateResponse.RatedShipment[] into RateQuote[]
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
-    const _endpoint = `${this.baseUrl}/rating/v1/Rate`;
-    const _requestBody = {
+  private async getToken(): Promise<string> {
+    if (this.tokenCache && Date.now() < this.tokenCache.expiresAt) {
+      return this.tokenCache.token;
+    }
+
+    const credentials = Buffer.from(
+      `${this.config.clientId}:${this.config.clientSecret}`
+    ).toString("base64");
+
+    const res = await fetch(`${this.baseUrl}/security/v1/oauth/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${credentials}`,
+      },
+      body: "grant_type=client_credentials",
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`UPS auth failed (${res.status}): ${text}`);
+    }
+
+    const data = await res.json();
+    const expiresIn = (data.expires_in ?? 14400) as number; // default 4h
+    this.tokenCache = {
+      token: data.access_token as string,
+      expiresAt: Date.now() + (expiresIn - 60) * 1000, // 1-min buffer
+    };
+    return this.tokenCache.token;
+  }
+
+  private async authedFetch(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const token = await this.getToken();
+    return fetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        transId: crypto.randomUUID(),
+        transactionSrc: "armstrong-wms",
+        ...(options.headers ?? {}),
+      },
+    });
+  }
+
+  // ── Rates ──────────────────────────────────────────────────────────────────
+
+  async getRates(request: RateRequest): Promise<RateQuote[]> {
+    const pkg = request.packages[0];
+    const body = {
       RateRequest: {
-        Request: { SubVersion: "2205" },
+        Request: { SubVersion: "2205", RequestOption: "Shop" },
         Shipment: {
           Shipper: {
             ShipperNumber: this.config.accountNumber,
@@ -105,187 +146,262 @@ export class UPSAdapter implements CarrierAdapter {
               ...(request.to.isResidential ? { ResidentialAddressIndicator: "" } : {}),
             },
           },
-          Package: request.packages.map((pkg) => ({
+          ShipFrom: {
+            Address: {
+              AddressLine: [request.from.street1],
+              City: request.from.city,
+              StateProvinceCode: request.from.state,
+              PostalCode: request.from.zip,
+              CountryCode: request.from.country,
+            },
+          },
+          Package: [{
             PackagingType: { Code: "02" },
             Dimensions: {
               UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
-              Length: String(pkg.length),
-              Width: String(pkg.width),
-              Height: String(pkg.height),
+              Length: String(Math.ceil(pkg.length)),
+              Width: String(Math.ceil(pkg.width)),
+              Height: String(Math.ceil(pkg.height)),
             },
             PackageWeight: {
-              UnitOfMeasurement: {
-                Code: pkg.weightUnit === "lb" ? "LBS" : "KGS",
-              },
-              Weight: String(pkg.weight),
+              UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
+              Weight: String(pkg.weight.toFixed(1)),
             },
-          })),
+          }],
+          ShipmentRatingOptions: { NegotiatedRatesIndicator: "" },
         },
       },
     };
 
-    // Mock response — realistic UPS rates
-    return [
-      {
+    const res = await this.authedFetch(`${this.baseUrl}/rating/v1/Rate`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`UPS rating failed (${res.status}): ${text}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const shipments: any[] = Array.isArray(data.RateResponse?.RatedShipment)
+      ? data.RateResponse.RatedShipment
+      : data.RateResponse?.RatedShipment
+        ? [data.RateResponse.RatedShipment]
+        : [];
+
+    return shipments.map((s) => {
+      const code = s.Service?.Code as string;
+      const negotiated = s.NegotiatedRateCharges?.TotalCharge?.MonetaryValue;
+      const retail = s.TotalCharges?.MonetaryValue;
+      const cost = parseFloat(negotiated ?? retail ?? "0");
+      const daysFromResponse = parseInt(s.GuaranteedDelivery?.BusinessDaysInTransit ?? "0");
+      const days = daysFromResponse || (UPS_SERVICE_DAYS[code] ?? 5);
+
+      return {
         carrier: "UPS",
-        service: "UPS Ground",
-        serviceCode: "03",
-        totalCost: 8.95,
-        currency: "USD",
-        estimatedDays: 5,
-        guaranteed: false,
-      },
-      {
-        carrier: "UPS",
-        service: "UPS 2nd Day Air",
-        serviceCode: "02",
-        totalCost: 18.5,
-        currency: "USD",
-        estimatedDays: 2,
-        guaranteed: true,
-      },
-      {
-        carrier: "UPS",
-        service: "UPS Next Day Air",
-        serviceCode: "01",
-        totalCost: 32.0,
-        currency: "USD",
-        estimatedDays: 1,
-        guaranteed: true,
-      },
-    ];
+        service: UPS_SERVICE_NAMES[code] ?? `UPS Service ${code}`,
+        serviceCode: code,
+        totalCost: cost,
+        currency: s.TotalCharges?.CurrencyCode ?? "USD",
+        estimatedDays: days,
+        guaranteed: UPS_GUARANTEED[code] ?? false,
+      } satisfies RateQuote;
+    });
   }
 
-  /**
-   * Create a shipping label via UPS Shipping API.
-   *
-   * Endpoint: POST {baseUrl}/shipments/v2205/ship
-   * Headers:
-   *   Authorization: Bearer {accessToken}
-   *   Content-Type: application/json
-   *   transId: {uuid}
-   *   transactionSrc: "armstrong-wms"
-   *
-   * Request body structure:
-   * {
-   *   ShipmentRequest: {
-   *     Request: { SubVersion: "2205" },
-   *     Shipment: {
-   *       Description: "Shipment",
-   *       Shipper: { Name, ShipperNumber, Address: {...} },
-   *       ShipTo: { Name, Address: {...} },
-   *       ShipFrom: { Name, Address: {...} },
-   *       PaymentInformation: {
-   *         ShipmentCharge: { Type: "01", BillShipper: { AccountNumber } }
-   *       },
-   *       Service: { Code: "{serviceCode}" },
-   *       Package: [{
-   *         Packaging: { Code: "02" },
-   *         Dimensions: { ... },
-   *         PackageWeight: { ... }
-   *       }],
-   *       ReferenceNumber: { Value: "{reference}" }
-   *     },
-   *     LabelSpecification: {
-   *       LabelImageFormat: { Code: "PDF" },
-   *       LabelStockSize: { Height: "6", Width: "4" }
-   *     }
-   *   }
-   * }
-   */
+  // ── Label ─────────────────────────────────────────────────────────────────
+
   async createLabel(request: LabelRequest): Promise<LabelResult> {
-    // TODO: Replace mock with real UPS Shipping API call
-    // TODO: Obtain OAuth token via POST /security/v1/oauth/token
-    // TODO: Build ShipmentRequest from `request` parameter
-    // TODO: Parse response for tracking number and base64 label image
+    const pkg = request.packages[0];
+    const body = {
+      ShipmentRequest: {
+        Request: { SubVersion: "2205", RequestOption: "nonvalidate" },
+        Shipment: {
+          Description: "Shipment",
+          Shipper: {
+            Name: request.from.company || request.from.name,
+            ShipperNumber: this.config.accountNumber,
+            Address: {
+              AddressLine: [request.from.street1],
+              City: request.from.city,
+              StateProvinceCode: request.from.state,
+              PostalCode: request.from.zip,
+              CountryCode: request.from.country,
+            },
+          },
+          ShipTo: {
+            Name: request.to.name,
+            Address: {
+              AddressLine: [request.to.street1, request.to.street2].filter(Boolean),
+              City: request.to.city,
+              StateProvinceCode: request.to.state,
+              PostalCode: request.to.zip,
+              CountryCode: request.to.country,
+              ...(request.to.isResidential ? { ResidentialAddressIndicator: "" } : {}),
+            },
+            Phone: { Number: request.to.phone ?? "" },
+          },
+          ShipFrom: {
+            Name: request.from.company || request.from.name,
+            Address: {
+              AddressLine: [request.from.street1],
+              City: request.from.city,
+              StateProvinceCode: request.from.state,
+              PostalCode: request.from.zip,
+              CountryCode: request.from.country,
+            },
+          },
+          PaymentInformation: {
+            ShipmentCharge: {
+              Type: "01",
+              BillShipper: { AccountNumber: this.config.accountNumber },
+            },
+          },
+          Service: { Code: request.serviceCode },
+          Package: [{
+            Packaging: { Code: "02" },
+            Dimensions: {
+              UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
+              Length: String(Math.ceil(pkg.length)),
+              Width: String(Math.ceil(pkg.width)),
+              Height: String(Math.ceil(pkg.height)),
+            },
+            PackageWeight: {
+              UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
+              Weight: String(pkg.weight.toFixed(1)),
+            },
+            ReferenceNumber: request.reference
+              ? { Code: "PO", Value: request.reference }
+              : undefined,
+          }],
+        },
+        LabelSpecification: {
+          LabelImageFormat: { Code: "PDF" },
+          LabelStockSize: { Height: "6", Width: "4" },
+        },
+      },
+    };
 
-    const _endpoint = `${this.baseUrl}/shipments/v2205/ship`;
+    const res = await this.authedFetch(`${this.baseUrl}/shipments/v2205/ship`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
 
-    // Mock response — realistic UPS label
-    const mockTrackingNumber = `1Z${this.config.accountNumber.slice(0, 6)}0${Date.now().toString().slice(-9)}`;
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`UPS ship failed (${res.status}): ${text}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    const results = data.ShipmentResponse?.ShipmentResults;
+    // PackageResults can be array or single object
+    const pkgResults = Array.isArray(results?.PackageResults)
+      ? results.PackageResults[0]
+      : results?.PackageResults;
+
+    const trackingNumber =
+      pkgResults?.TrackingNumber ?? results?.ShipmentIdentificationNumber;
+    const labelData = pkgResults?.ShippingLabel?.GraphicImage ?? "";
+    const cost = parseFloat(
+      pkgResults?.BaseServiceCharge?.MonetaryValue ??
+      results?.ShipmentCharges?.TotalCharges?.MonetaryValue ?? "0"
+    );
 
     return {
-      trackingNumber: mockTrackingNumber,
+      trackingNumber,
       labelFormat: "PDF",
-      labelData: "JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo+Pg==", // mock base64 PDF
-      totalCost: 8.95,
+      labelData,
+      totalCost: cost,
       carrier: "UPS",
-      service: `UPS Service ${request.serviceCode}`,
+      service: UPS_SERVICE_NAMES[request.serviceCode] ?? `UPS ${request.serviceCode}`,
     };
   }
 
-  /**
-   * Get tracking information from UPS Tracking API.
-   *
-   * Endpoint: GET {baseUrl}/track/v1/details/{trackingNumber}
-   * Headers:
-   *   Authorization: Bearer {accessToken}
-   *   transId: {uuid}
-   *   transactionSrc: "armstrong-wms"
-   *
-   * Query params:
-   *   locale: "en_US"
-   *   returnSignature: "false"
-   *
-   * Response contains: trackResponse.shipment[0].package[0].activity[]
-   * Each activity: { date, time, location.address, status.type, status.description }
-   */
+  // ── Tracking ──────────────────────────────────────────────────────────────
+
   async getTracking(trackingNumber: string): Promise<TrackingResult> {
-    // TODO: Replace mock with real UPS Tracking API call
-    // TODO: Obtain OAuth token
-    // TODO: Parse trackResponse.shipment[0].package[0].activity[] into TrackingEvent[]
+    const url = new URL(`${this.baseUrl}/track/v1/details/${trackingNumber}`);
+    url.searchParams.set("locale", "en_US");
+    url.searchParams.set("returnSignature", "false");
 
-    const _endpoint = `${this.baseUrl}/track/v1/details/${trackingNumber}`;
+    const res = await this.authedFetch(url.toString());
 
-    const now = new Date();
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`UPS tracking failed (${res.status}): ${text}`);
+    }
 
-    // Mock response — realistic UPS tracking
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pkg = data.trackResponse?.shipment?.[0]?.package?.[0] as any;
+    if (!pkg) throw new Error("UPS: no package data in tracking response");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const activities: any[] = pkg.activity ?? [];
+    const latestActivity = activities[0];
+    const statusType = latestActivity?.status?.type ?? "I";
+    const status: TrackingResult["status"] =
+      statusType === "D" ? "delivered"
+        : statusType === "X" ? "exception"
+          : "in_transit";
+
+    // Parse UPS date "YYYYMMDD" + time "HHmmss" into Date
+    function parseUPSDateTime(date: string, time: string): Date {
+      if (!date) return new Date();
+      const y = parseInt(date.slice(0, 4));
+      const mo = parseInt(date.slice(4, 6)) - 1;
+      const d = parseInt(date.slice(6, 8));
+      const h = time ? parseInt(time.slice(0, 2)) : 0;
+      const m = time ? parseInt(time.slice(2, 4)) : 0;
+      const s = time ? parseInt(time.slice(4, 6)) : 0;
+      return new Date(y, mo, d, h, m, s);
+    }
+
+    const events = activities.map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (a: any) => ({
+        timestamp: parseUPSDateTime(a.date, a.time),
+        status: a.status?.description ?? "Unknown",
+        location: [
+          a.location?.address?.city,
+          a.location?.address?.stateProvince,
+        ]
+          .filter(Boolean)
+          .join(", "),
+        description: a.status?.description ?? "",
+      })
+    );
+
+    const deliveredAt =
+      status === "delivered"
+        ? parseUPSDateTime(latestActivity?.date, latestActivity?.time)
+        : undefined;
+
     return {
       trackingNumber,
       carrier: "UPS",
-      status: "in_transit",
-      estimatedDelivery: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
-      events: [
-        {
-          timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-          status: "In Transit",
-          location: "Memphis, TN",
-          description: "Departed from facility",
-        },
-        {
-          timestamp: new Date(now.getTime() - 12 * 60 * 60 * 1000),
-          status: "In Transit",
-          location: "Louisville, KY",
-          description: "Arrived at UPS hub",
-        },
-        {
-          timestamp: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-          status: "Picked Up",
-          location: "Chicago, IL",
-          description: "Shipment picked up",
-        },
-      ],
-    };
+      status,
+      ...(deliveredAt ? { deliveredAt } : {}),
+      events,
+    } as TrackingResult;
   }
 
-  /**
-   * Void a shipping label via UPS Void API.
-   *
-   * Endpoint: DELETE {baseUrl}/shipments/v2205/void/cancel/{trackingNumber}
-   * Headers:
-   *   Authorization: Bearer {accessToken}
-   *   transId: {uuid}
-   *   transactionSrc: "armstrong-wms"
-   *
-   * Response: VoidShipmentResponse.SummaryResult.Status.Code === "1" means success
-   */
+  // ── Void ──────────────────────────────────────────────────────────────────
+
   async voidLabel(trackingNumber: string): Promise<boolean> {
-    // TODO: Replace mock with real UPS Void API call
-    // TODO: Obtain OAuth token
-    // TODO: Check response SummaryResult.Status.Code === "1"
+    const res = await this.authedFetch(
+      `${this.baseUrl}/shipments/v2205/void/cancel/${trackingNumber}`,
+      { method: "DELETE" }
+    );
 
-    const _endpoint = `${this.baseUrl}/shipments/v2205/void/cancel/${trackingNumber}`;
-
-    return true;
+    if (!res.ok) return false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await res.json() as any;
+    return data.VoidShipmentResponse?.SummaryResult?.Status?.Code === "1";
   }
 }
