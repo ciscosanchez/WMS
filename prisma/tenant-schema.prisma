@@ -32,6 +32,9 @@ model Client {
   products          Product[]
   inboundShipments  InboundShipment[]
   orders            Order[]
+  rateCard          RateCard?
+  billingEvents     BillingEvent[]
+  invoices          Invoice[]
 
   @@map("clients")
 }
@@ -770,6 +773,118 @@ model SequenceCounter {
 
   @@unique([prefix, year])
   @@map("sequence_counters")
+}
+
+// ─── Billing Engine ─────────────────────────────────────
+
+enum BillingServiceType {
+  receiving_pallet
+  receiving_carton
+  storage_pallet
+  storage_sqft
+  handling_order
+  handling_line
+  handling_unit
+  shipping_markup
+  value_add_hour
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  overdue
+  cancelled
+}
+
+// Null clientId = global default rate card
+model RateCard {
+  id             String   @id @default(cuid())
+  clientId       String?  @unique @map("client_id")
+  monthlyMinimum Decimal  @default(0) @db.Decimal(10, 2) @map("monthly_minimum")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  client Client?       @relation(fields: [clientId], references: [id])
+  lines  RateCardLine[]
+
+  @@map("rate_cards")
+}
+
+model RateCardLine {
+  id          String             @id @default(cuid())
+  rateCardId  String             @map("rate_card_id")
+  serviceType BillingServiceType @map("service_type")
+  unitRate    Decimal            @db.Decimal(10, 4) @map("unit_rate")
+  uom         String             @default("$")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  rateCard RateCard @relation(fields: [rateCardId], references: [id], onDelete: Cascade)
+
+  @@unique([rateCardId, serviceType])
+  @@map("rate_card_lines")
+}
+
+model BillingEvent {
+  id            String             @id @default(cuid())
+  clientId      String             @map("client_id")
+  serviceType   BillingServiceType @map("service_type")
+  qty           Decimal            @db.Decimal(10, 4)
+  unitRate      Decimal            @db.Decimal(10, 4) @map("unit_rate")
+  amount        Decimal            @db.Decimal(10, 2)
+  referenceType String?            @map("reference_type")
+  referenceId   String?            @map("reference_id")
+  invoiceId     String?            @map("invoice_id")
+  occurredAt    DateTime           @default(now()) @map("occurred_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([clientId])
+  @@index([occurredAt])
+  @@index([invoiceId])
+  @@map("billing_events")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique @map("invoice_number")
+  clientId      String        @map("client_id")
+  status        InvoiceStatus @default(draft)
+  periodStart   DateTime      @map("period_start")
+  periodEnd     DateTime      @map("period_end")
+  subtotal      Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @default(0) @db.Decimal(10, 2)
+  dueDate       DateTime?     @map("due_date")
+  paidAt        DateTime?     @map("paid_at")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  client        Client        @relation(fields: [clientId], references: [id])
+  lines         InvoiceLine[]
+  billingEvents BillingEvent[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String             @id @default(cuid())
+  invoiceId   String             @map("invoice_id")
+  description String
+  serviceType BillingServiceType @map("service_type")
+  qty         Decimal            @db.Decimal(10, 4)
+  unitRate    Decimal            @db.Decimal(10, 4) @map("unit_rate")
+  amount      Decimal            @db.Decimal(10, 2)
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_lines")
 }
 
 // ─── Document Intelligence (DocAI) ─────────────────────

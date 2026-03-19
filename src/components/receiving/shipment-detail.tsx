@@ -19,9 +19,10 @@ import {
 import { DocumentPanel } from "./document-panel";
 import { ReceiveLineDialog } from "./receive-line-dialog";
 import { AddLineDialog } from "./add-line-dialog";
+import { DocScanModal } from "./doc-scan-modal";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Truck, Package, ClipboardCheck, AlertTriangle, FileArchive } from "lucide-react";
+import { Truck, Package, ClipboardCheck, AlertTriangle, FileArchive, Sparkles } from "lucide-react";
 import { finalizeShipmentPdf } from "@/modules/receiving/docai-actions";
 
 interface ShipmentDetailProps {
@@ -50,6 +51,7 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
   const [shipment, setShipment] = useState(initialShipment);
   const [receiving, setReceiving] = useState(false);
   const [addingLine, setAddingLine] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
@@ -131,6 +133,10 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
           {shipment.status === "completed" && (
             <Badge className="bg-green-100 text-green-700">Finalized</Badge>
           )}
+          <Button variant="outline" onClick={() => setScanning(true)}>
+            <Sparkles className="h-4 w-4 mr-1" />
+            Scan Document
+          </Button>
           <Button variant="outline" onClick={handleFinalizePdf} disabled={finalizing}>
             <FileArchive className="h-4 w-4 mr-1" />
             {finalizing ? "Generating..." : "Close & Finalize PDF"}
@@ -376,7 +382,32 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
         </TabsContent>
 
         <TabsContent value="documents">
-          <DocumentPanel shipmentId={shipment.id} />
+          <DocumentPanel
+            shipmentId={shipment.id}
+            clientName={shipment.client?.name}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            documents={(shipment.documents || []).map((d: any) => ({
+              id: d.id,
+              type: d.type,
+              fileName: d.fileName,
+              fileUrl: d.fileUrl,
+              fileSize: d.fileSize,
+              uploadedAt: d.uploadedAt,
+            }))}
+            processingJobs={
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (shipment.documents || []).flatMap((d: any) =>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (d.processingJobs || []).map((j: any) => ({
+                  id: j.id,
+                  fileName: j.fileName,
+                  status: j.status,
+                  documentType: j.documentType,
+                  confidence: j.confidence,
+                }))
+              )
+            }
+          />
         </TabsContent>
       </Tabs>
 
@@ -397,6 +428,14 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
           onClose={() => setAddingLine(false)}
         />
       )}
+
+      <DocScanModal
+        open={scanning}
+        onClose={() => { setScanning(false); router.refresh(); }}
+        shipmentId={shipment.id}
+        shipmentNumber={shipment.shipmentNumber}
+        clientName={shipment.client?.name}
+      />
     </div>
   );
 }

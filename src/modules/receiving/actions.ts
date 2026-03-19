@@ -12,6 +12,7 @@ import {
   discrepancySchema,
 } from "./schemas";
 import { mockShipments } from "@/lib/mock-data";
+import { captureEvent } from "@/modules/billing/capture";
 
 async function getContext() {
   return requireTenantContext();
@@ -45,7 +46,7 @@ export async function getShipment(id: string) {
       lines: { include: { product: true, transactions: true } },
       transactions: { include: { bin: true, line: { include: { product: true } } } },
       discrepancies: true,
-      documents: true,
+      documents: { include: { processingJobs: true } },
     },
   });
 }
@@ -126,9 +127,10 @@ export async function updateShipmentStatus(
     changes: { status: { old: null, new: status } },
   });
 
-  // If completed, create inventory records
+  // If completed, create inventory records and capture billing events
   if (status === "completed") {
     await finalizeReceiving(tenant, id, user.id);
+    await captureBillingOnReceive(tenant, id);
   }
 
   revalidatePath("/receiving");
@@ -240,6 +242,36 @@ async function finalizeReceiving(
       },
     });
   }
+}
+
+async function captureBillingOnReceive(tenant: TenantContext, shipmentId: string) {
+  const shipment = await tenant.db.inboundShipment.findUnique({
+    where: { id: shipmentId },
+    include: { transactions: true },
+  });
+  if (!shipment) return;
+
+  const totalUnits = shipment.transactions.reduce((sum, tx) => sum + tx.quantity, 0);
+  const totalCartons = shipment.transactions.length; // each transaction = one receive scan
+
+  await Promise.all([
+    // Bill per carton scanned
+    captureEvent(tenant.db, {
+      clientId: shipment.clientId,
+      serviceType: "receiving_carton",
+      qty: totalCartons,
+      referenceType: "shipment",
+      referenceId: shipmentId,
+    }),
+    // Bill per unit received
+    captureEvent(tenant.db, {
+      clientId: shipment.clientId,
+      serviceType: "handling_unit",
+      qty: totalUnits,
+      referenceType: "shipment",
+      referenceId: shipmentId,
+    }),
+  ]);
 }
 
 export async function createDiscrepancy(data: unknown) {

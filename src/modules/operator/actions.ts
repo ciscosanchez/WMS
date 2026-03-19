@@ -5,6 +5,7 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences/index";
+import { captureEvent } from "@/modules/billing/capture";
 
 async function getContext() {
   return requireTenantContext();
@@ -234,6 +235,38 @@ export async function confirmPack(taskId: string, boxCount: number) {
     entityId: shipment.id,
     changes: { boxCount: { old: 0, new: boxCount } },
   });
+
+  // Capture billing events: order handling + per-line + per-unit
+  const order = await tenant.db.order.findUnique({
+    where: { id: task.orderId! },
+    include: { client: true },
+  });
+  if (order) {
+    const totalUnits = task.lines.reduce((sum, l) => sum + l.pickedQty, 0);
+    await Promise.all([
+      captureEvent(tenant.db, {
+        clientId: order.clientId,
+        serviceType: "handling_order",
+        qty: 1,
+        referenceType: "order",
+        referenceId: order.id,
+      }),
+      captureEvent(tenant.db, {
+        clientId: order.clientId,
+        serviceType: "handling_line",
+        qty: task.lines.length,
+        referenceType: "order",
+        referenceId: order.id,
+      }),
+      captureEvent(tenant.db, {
+        clientId: order.clientId,
+        serviceType: "handling_unit",
+        qty: totalUnits,
+        referenceType: "order",
+        referenceId: order.id,
+      }),
+    ]);
+  }
 
   revalidatePath("/pack");
   return shipment;

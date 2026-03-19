@@ -1,13 +1,12 @@
 /**
- * Shopify Marketplace Adapter
+ * Shopify Marketplace Adapter — real implementation
  *
- * Connects to Shopify Admin API (REST or GraphQL) to:
- * - Import orders into WMS
+ * Connects to Shopify Admin REST API to:
+ * - Import unfulfilled orders into WMS
  * - Sync inventory levels back to Shopify
- * - Push tracking/fulfillment info
+ * - Push tracking/fulfillment info when orders ship
  *
  * API Docs: https://shopify.dev/docs/api/admin-rest
- * Auth: OAuth 2.0 or custom app access token
  */
 
 import type {
@@ -18,10 +17,10 @@ import type {
 } from "./types";
 
 export interface ShopifyConfig {
-  shopDomain: string; // e.g., "acme-store.myshopify.com"
-  accessToken: string; // Admin API access token
-  apiVersion: string; // e.g., "2024-10"
-  locationId?: string; // Shopify location ID for inventory
+  shopDomain: string;
+  accessToken: string;
+  apiVersion: string;
+  locationId?: string;
 }
 
 export class ShopifyAdapter implements MarketplaceAdapter {
@@ -34,113 +33,197 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     this.baseUrl = `https://${config.shopDomain}/admin/api/${config.apiVersion}`;
   }
 
-  /**
-   * Fetch orders from Shopify
-   * GET /admin/api/2024-10/orders.json?status=any&updated_at_min={since}
-   */
-  async fetchOrders(_since: Date): Promise<MarketplaceOrder[]> {
-    // TODO: Replace with real Shopify API call
-    // const res = await fetch(`${this.baseUrl}/orders.json?status=unfulfilled&updated_at_min=${since.toISOString()}`, {
-    //   headers: { "X-Shopify-Access-Token": this.config.accessToken }
-    // });
-    // const data = await res.json();
+  private headers() {
+    return {
+      "X-Shopify-Access-Token": this.config.accessToken,
+      "Content-Type": "application/json",
+    };
+  }
 
-    // Mock response
-    return [
-      {
-        externalId: "SH-5001",
-        orderNumber: "#1001",
-        channel: "Shopify",
-        orderDate: new Date(),
-        shipByDate: new Date(Date.now() + 2 * 86400000),
-        priority: "standard",
-        shipTo: {
-          name: "Jane Cooper",
-          address1: "789 Oak Ave",
-          city: "Austin",
-          state: "TX",
-          zip: "78701",
-          country: "US",
-          email: "jane@example.com",
-        },
-        lineItems: [
-          {
-            externalLineId: "li-1001",
-            sku: "WIDGET-001",
-            name: "Standard Widget",
-            quantity: 2,
-            unitPrice: 29.99,
-          },
-        ],
-        shippingMethod: "Standard",
+  private async shopifyFetch(path: string, init?: RequestInit) {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers: { ...this.headers(), ...(init?.headers ?? {}) },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Shopify API ${res.status}: ${text.slice(0, 200)}`);
+    }
+    return res.json();
+  }
+
+  // ─── Fetch unfulfilled orders ───────────────────────────────────────────────
+
+  async fetchOrders(since: Date): Promise<MarketplaceOrder[]> {
+    const params = new URLSearchParams({
+      status: "open",
+      fulfillment_status: "unfulfilled",
+      updated_at_min: since.toISOString(),
+      limit: "250",
+      fields: "id,name,email,created_at,shipping_address,line_items,shipping_lines,note,tags",
+    });
+
+    const data = await this.shopifyFetch(`/orders.json?${params}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data.orders ?? []).map((o: any) => this.mapOrder(o));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private mapOrder(o: any): MarketplaceOrder {
+    const addr = o.shipping_address ?? {};
+    const shippingLine = o.shipping_lines?.[0];
+    return {
+      externalId: String(o.id),
+      orderNumber: o.name,           // "#1001"
+      channel: "Shopify",
+      orderDate: new Date(o.created_at),
+      priority: "standard",
+      shipTo: {
+        name: addr.name ?? "",
+        address1: addr.address1 ?? "",
+        address2: addr.address2 ?? undefined,
+        city: addr.city ?? "",
+        state: addr.province_code ?? addr.province ?? "",
+        zip: addr.zip ?? "",
+        country: addr.country_code ?? "US",
+        phone: addr.phone ?? undefined,
+        email: o.email ?? undefined,
       },
-    ];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      lineItems: (o.line_items ?? []).map((li: any) => ({
+        externalLineId: String(li.id),
+        sku: li.sku ?? "",
+        name: li.title ?? "",
+        quantity: li.quantity ?? 1,
+        unitPrice: parseFloat(li.price ?? "0"),
+      })),
+      shippingMethod: shippingLine?.title ?? undefined,
+      notes: o.note ?? undefined,
+    };
   }
 
-  /**
-   * Sync inventory levels to Shopify
-   * POST /admin/api/2024-10/inventory_levels/set.json
-   * { location_id, inventory_item_id, available }
-   */
-  async syncInventory(_updates: InventoryUpdate[]): Promise<void> {
-    // TODO: Replace with real Shopify API calls
-    // for (const update of updates) {
-    //   // First: look up inventory_item_id from SKU via products endpoint
-    //   // Then: POST inventory_levels/set.json
-    //   await fetch(`${this.baseUrl}/inventory_levels/set.json`, {
-    //     method: "POST",
-    //     headers: {
-    //       "X-Shopify-Access-Token": this.config.accessToken,
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({
-    //       location_id: this.config.locationId,
-    //       inventory_item_id: "lookup-from-sku",
-    //       available: update.availableQuantity,
-    //     }),
-    //   });
-    // }
+  // ─── Push fulfillment (tracking) back to Shopify ───────────────────────────
+
+  async pushFulfillment(update: FulfillmentUpdate): Promise<void> {
+    // Step 1: get fulfillment orders for this Shopify order
+    const foData = await this.shopifyFetch(
+      `/orders/${update.externalOrderId}/fulfillment_orders.json`
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fulfillmentOrders: any[] = foData.fulfillment_orders ?? [];
+    const open = fulfillmentOrders.find((fo: any) =>
+      ["open", "in_progress"].includes(fo.status)
+    );
+    if (!open) return; // Nothing to fulfill
+
+    // Step 2: create fulfillment
+    await this.shopifyFetch("/fulfillments.json", {
+      method: "POST",
+      body: JSON.stringify({
+        fulfillment: {
+          line_items_by_fulfillment_order: [
+            {
+              fulfillment_order_id: open.id,
+              fulfillment_order_line_items: update.lineItems.map((li) => ({
+                id: li.externalLineId,
+                quantity: li.quantity,
+              })),
+            },
+          ],
+          tracking_info: {
+            number: update.trackingNumber,
+            company: update.carrier,
+          },
+          notify_customer: true,
+        },
+      }),
+    });
   }
 
-  /**
-   * Push fulfillment to Shopify
-   * POST /admin/api/2024-10/orders/{order_id}/fulfillments.json
-   */
-  async pushFulfillment(_update: FulfillmentUpdate): Promise<void> {
-    // TODO: Replace with real Shopify API call
-    // await fetch(`${this.baseUrl}/orders/${update.externalOrderId}/fulfillments.json`, {
-    //   method: "POST",
-    //   headers: {
-    //     "X-Shopify-Access-Token": this.config.accessToken,
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({
-    //     fulfillment: {
-    //       tracking_number: update.trackingNumber,
-    //       tracking_company: update.carrier,
-    //       line_items: update.lineItems.map(li => ({
-    //         id: li.externalLineId,
-    //         quantity: li.quantity,
-    //       })),
-    //     },
-    //   }),
-    // });
+  // ─── Sync inventory levels ──────────────────────────────────────────────────
+
+  async syncInventory(updates: InventoryUpdate[]): Promise<void> {
+    const locationId = await this.ensureLocationId();
+
+    // Build SKU → inventory_item_id map by scanning variants
+    const skus = updates.map((u) => u.sku);
+    const skuToItemId = await this.resolveInventoryItemIds(skus);
+
+    for (const update of updates) {
+      const inventoryItemId = skuToItemId.get(update.sku);
+      if (!inventoryItemId) continue; // SKU not in Shopify
+
+      await this.shopifyFetch("/inventory_levels/set.json", {
+        method: "POST",
+        body: JSON.stringify({
+          location_id: locationId,
+          inventory_item_id: inventoryItemId,
+          available: update.availableQuantity,
+        }),
+      });
+    }
   }
 
-  /**
-   * Test connection to Shopify
-   * GET /admin/api/2024-10/shop.json
-   */
+  private async resolveInventoryItemIds(skus: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    // Fetch all products (paginated at 250)
+    const data = await this.shopifyFetch(
+      "/products.json?limit=250&fields=id,variants"
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const product of data.products ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const variant of product.variants ?? []) {
+        if (skus.includes(variant.sku)) {
+          map.set(variant.sku, variant.inventory_item_id);
+        }
+      }
+    }
+    return map;
+  }
+
+  // ─── Location ID ────────────────────────────────────────────────────────────
+
+  private async ensureLocationId(): Promise<number> {
+    if (this.config.locationId) return parseInt(this.config.locationId, 10);
+    // Auto-detect: use the first active location
+    const data = await this.shopifyFetch("/locations.json");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const active = (data.locations ?? []).find((l: any) => l.active);
+    if (!active) throw new Error("No active Shopify location found");
+    this.config.locationId = String(active.id);
+    return active.id;
+  }
+
+  // ─── Connection test ────────────────────────────────────────────────────────
+
   async testConnection(): Promise<boolean> {
     try {
-      // TODO: Replace with real API call
-      // const res = await fetch(`${this.baseUrl}/shop.json`, {
-      //   headers: { "X-Shopify-Access-Token": this.config.accessToken }
-      // });
-      // return res.ok;
-      return true; // Mock success
+      await this.shopifyFetch("/shop.json");
+      return true;
     } catch {
       return false;
     }
   }
+}
+
+// ─── Factory using env vars ──────────────────────────────────────────────────
+
+export function getShopifyAdapter(locationId?: string): ShopifyAdapter {
+  const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+  const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+  const apiVersion = process.env.SHOPIFY_API_VERSION ?? "2026-01";
+
+  if (!shopDomain || !accessToken) {
+    throw new Error(
+      "SHOPIFY_SHOP_DOMAIN and SHOPIFY_ACCESS_TOKEN must be set to use Shopify integration"
+    );
+  }
+
+  return new ShopifyAdapter({
+    shopDomain,
+    accessToken,
+    apiVersion,
+    locationId: locationId ?? process.env.SHOPIFY_LOCATION_ID ?? undefined,
+  });
 }

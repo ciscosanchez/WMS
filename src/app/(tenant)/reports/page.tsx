@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { BarChartCard, PieChartCard, LineChartCard } from "@/components/shared/c
 import { Download } from "lucide-react";
 import { ExportButtons } from "@/components/shared/export-buttons";
 import { exportToCsv } from "@/lib/export/csv";
+import { getBillingSummaryMTD } from "@/modules/billing/actions";
 
 const receivingByClient = [
   { name: "ACME", value: 245 },
@@ -36,7 +38,7 @@ const storageUtilTrend = [
   { name: "Week 8", value: 76 },
 ];
 
-const billingByService = [
+const billingByServiceFallback = [
   { name: "Storage", value: 12400 },
   { name: "Handling", value: 8200 },
   { name: "Receiving", value: 3100 },
@@ -62,25 +64,33 @@ const receivingRows = receivingByClient.map((d) => [d.name, String(d.value)]);
 const inventoryHeaders = ["Category", "Quantity"];
 const inventoryRows = inventoryByCategory.map((d) => [d.name, String(d.value)]);
 
-const billingHeaders = ["Service", "Revenue ($)"];
-const billingRows = billingByService.map((d) => [d.name, String(d.value)]);
-
 const fulfillmentHeaders = ["Day", "Orders"];
 const fulfillmentRows = ordersPerDay.map((d) => [d.name, String(d.value)]);
 
-function handleExportAll() {
-  // Export a combined CSV with all report sections
-  const headers = ["Report", "Name", "Value"];
-  const rows = [
-    ...receivingByClient.map((d) => ["Receiving", d.name, String(d.value)]),
-    ...inventoryByCategory.map((d) => ["Inventory", d.name, String(d.value)]),
-    ...billingByService.map((d) => ["Billing", d.name, String(d.value)]),
-    ...ordersPerDay.map((d) => ["Fulfillment", d.name, String(d.value)]),
-  ];
-  exportToCsv("all-reports", headers, rows);
-}
-
 export default function ReportsPage() {
+  const [billingByService, setBillingByService] = useState(billingByServiceFallback);
+
+  useEffect(() => {
+    getBillingSummaryMTD()
+      .then((data) => { if (data.length > 0) setBillingByService(data); })
+      .catch(() => {});
+  }, []);
+
+  const billingHeaders = ["Service", "Revenue ($)"];
+  const billingRows = billingByService.map((d) => [d.name, String(d.value)]);
+  const billingTotal = billingByService.reduce((sum, d) => sum + d.value, 0);
+
+  function handleExportAll() {
+    const headers = ["Report", "Name", "Value"];
+    const rows = [
+      ...receivingByClient.map((d) => ["Receiving", d.name, String(d.value)]),
+      ...inventoryByCategory.map((d) => ["Inventory", d.name, String(d.value)]),
+      ...billingByService.map((d) => ["Billing", d.name, String(d.value)]),
+      ...ordersPerDay.map((d) => ["Fulfillment", d.name, String(d.value)]),
+    ];
+    exportToCsv("all-reports", headers, rows);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Reports" description="Warehouse analytics and reporting">
@@ -277,35 +287,25 @@ export default function ReportsPage() {
             <ExportButtons title="Billing Report" headers={billingHeaders} rows={billingRows} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <PieChartCard title="Revenue by Service" data={billingByService} />
+            <PieChartCard title="Revenue by Service (MTD)" data={billingByService} />
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Billing Summary (MTD)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Storage Revenue</span>
-                  <span className="font-medium">$12,400</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Handling Revenue</span>
-                  <span className="font-medium">$8,200</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Receiving Revenue</span>
-                  <span className="font-medium">$3,100</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Shipping Revenue</span>
-                  <span className="font-medium">$5,600</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Value-Add Revenue</span>
-                  <span className="font-medium">$1,800</span>
-                </div>
+                {billingByService.map((item) => (
+                  <div key={item.name} className="flex justify-between">
+                    <span className="text-muted-foreground">{item.name}</span>
+                    <span className="font-medium">
+                      ${item.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                ))}
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-medium">Total Revenue</span>
-                  <span className="font-bold">$31,100</span>
+                  <span className="font-bold">
+                    ${billingTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </CardContent>
             </Card>

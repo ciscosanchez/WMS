@@ -306,6 +306,51 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
 }
 
 /**
+ * Update an existing shipment's header fields from extraction results
+ * (carrier, BOL, tracking, PO). Only overwrites fields that were extracted.
+ * Used from the "Scan Document" modal on the shipment detail page.
+ */
+export async function updateShipmentFromExtraction(shipmentId: string, jobId: string) {
+  if (config.useMockData) return { id: shipmentId };
+
+  const { user, tenant } = await getContext();
+
+  const job = await tenant.db.documentProcessingJob.findUnique({ where: { id: jobId } });
+  if (!job) throw new Error("Processing job not found");
+
+  const data = (job.reviewedData ?? job.extractedData) as ShipmentData | null;
+  if (!data) throw new Error("No extraction data available");
+
+  const updateFields: Record<string, unknown> = {};
+  if (data.carrier?.value)           updateFields.carrier        = data.carrier.value;
+  if (data.proNumber?.value)         updateFields.bolNumber      = data.proNumber.value;
+  if (data.trackingNumber?.value)    updateFields.trackingNumber = data.trackingNumber.value;
+  if (data.poNumbers?.value?.[0])    updateFields.poNumber       = data.poNumbers.value[0];
+
+  const shipment = await tenant.db.inboundShipment.update({
+    where: { id: shipmentId },
+    data: updateFields,
+  });
+
+  // Mark the job as completed and linked to this shipment
+  await tenant.db.documentProcessingJob.update({
+    where: { id: jobId },
+    data: { status: "completed", resultType: "shipment", resultId: shipmentId },
+  });
+
+  await logAudit(tenant.db, {
+    userId: user.id,
+    action: "update",
+    entityType: "inbound_shipment",
+    entityId: shipmentId,
+    changes: { source: { old: null, new: "docai_extraction" } },
+  });
+
+  revalidatePath(`/receiving/${shipmentId}`);
+  return shipment;
+}
+
+/**
  * Get a presigned download URL for a file (server action wrapper).
  */
 export async function getFileViewUrl(fileKey: string): Promise<string | null> {

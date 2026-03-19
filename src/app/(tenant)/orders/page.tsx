@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { getOrders } from "@/modules/orders/actions";
+import { getClients } from "@/modules/clients/actions";
+import { ShopifySyncButton } from "./_shopify-sync-button";
 
 const priorityColors: Record<string, string> = {
   standard: "bg-gray-100 text-gray-700",
@@ -24,17 +26,27 @@ const priorityColors: Record<string, string> = {
 };
 
 export default async function OrdersPage() {
-  const orders = await getOrders();
+  const [orders, clients] = await Promise.all([getOrders(), getClients()]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const defaultClient = (clients as any[])[0];
+  const shopifyEnabled = !!(
+    process.env.SHOPIFY_SHOP_DOMAIN && process.env.SHOPIFY_ACCESS_TOKEN
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader title="Orders" description="Manage fulfillment orders from all channels">
-        <Button asChild>
-          <Link href="/orders/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {shopifyEnabled && defaultClient && (
+            <ShopifySyncButton clientId={defaultClient.id} />
+          )}
+          <Button asChild>
+            <Link href="/orders/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Order
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       {orders.length === 0 ? (
