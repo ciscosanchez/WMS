@@ -6,6 +6,8 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { getShopifyAdapter } from "@/lib/integrations/marketplaces/shopify";
+import type { MarketplaceOrder } from "@/lib/integrations/marketplaces/types";
+import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 
 /**
  * Sync unfulfilled Shopify orders into WMS.
@@ -59,7 +61,7 @@ export async function syncShopifyOrders(
     });
     const existingIds = new Set(existing.map((o) => o.externalId));
 
-    // Build a SKU → productId map for this client
+    // Build a SKU → product map for this client
     const skus = [
       ...new Set(
         shopifyOrders.flatMap((o) => o.lineItems.map((li) => li.sku).filter(Boolean))
@@ -69,10 +71,13 @@ export async function syncShopifyOrders(
       skus.length > 0
         ? await tenant.db.product.findMany({
             where: { clientId, sku: { in: skus } },
-            select: { id: true, sku: true },
+            select: { id: true, sku: true, imageUrl: true, weight: true },
           })
         : [];
-    const productBySku = new Map(products.map((p) => [p.sku, p.id]));
+    const productBySku = new Map(products.map((p) => [p.sku, p]));
+
+    // Enrich WMS product records with Shopify data (image, weight, vendor) if blank
+    await enrichProductsFromShopify(tenant.db, clientId, shopifyOrders, productBySku);
 
     let imported = 0;
     let skipped = 0;
@@ -86,7 +91,7 @@ export async function syncShopifyOrders(
       const resolvedLines = so.lineItems
         .map((li) => ({
           sku: li.sku,
-          productId: productBySku.get(li.sku),
+          productId: productBySku.get(li.sku)?.id,
           quantity: li.quantity,
           uom: "EA" as const,
           unitPrice: li.unitPrice,
@@ -251,5 +256,64 @@ export async function syncInventoryToShopify(
       synced: 0,
       error: err instanceof Error ? err.message : "Inventory sync failed",
     };
+  }
+}
+
+// ─── Internal helper ─────────────────────────────────────────────────────────
+
+/**
+ * Enrich WMS product records with data from Shopify line items.
+ * Only updates fields that are currently blank — never overwrites existing data.
+ * Updates: imageUrl, weight (converted from grams), vendor (stored in description prefix)
+ */
+async function enrichProductsFromShopify(
+  db: PrismaClient,
+  clientId: string,
+  orders: MarketplaceOrder[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  productBySku: Map<string, { id: string; imageUrl: string | null; weight: any }>
+): Promise<void> {
+  // Build SKU → enrichment data map from all line items
+  const enrichment = new Map<string, {
+    imageUrl?: string;
+    weightGrams?: number;
+    vendor?: string;
+  }>();
+
+  for (const order of orders) {
+    for (const li of order.lineItems) {
+      if (!li.sku) continue;
+      if (!enrichment.has(li.sku)) {
+        enrichment.set(li.sku, {
+          imageUrl: li.imageUrl,
+          weightGrams: li.weightGrams,
+          vendor: li.vendor,
+        });
+      }
+    }
+  }
+
+  for (const [sku, data] of enrichment) {
+    const product = productBySku.get(sku);
+    if (!product) continue;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updates: Record<string, any> = {};
+
+    if (data.imageUrl && !product.imageUrl) {
+      updates.imageUrl = data.imageUrl;
+    }
+    if (data.weightGrams && data.weightGrams > 0 && !product.weight) {
+      // Convert grams → pounds (WMS uses lb by default)
+      updates.weight = parseFloat((data.weightGrams / 453.592).toFixed(4));
+      updates.weightUnit = "lb";
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.product.update({
+        where: { id: product.id },
+        data: updates,
+      });
+    }
   }
 }

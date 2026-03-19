@@ -64,8 +64,12 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     });
 
     const data = await this.shopifyFetch(`/orders.json?${params}`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data.orders ?? []).map((o: any) => this.mapOrder(o));
+    const orders: import("./types").MarketplaceOrder[] = (data.orders ?? []).map((o: any) => this.mapOrder(o));
+
+    // Enrich line items with product images from the Products API
+    await this.enrichLineItemImages(orders);
+
+    return orders;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,6 +100,12 @@ export class ShopifyAdapter implements MarketplaceAdapter {
         name: li.title ?? "",
         quantity: li.quantity ?? 1,
         unitPrice: parseFloat(li.price ?? "0"),
+        weightGrams: li.grams ?? undefined,
+        imageUrl: li.image?.src ?? undefined,
+        vendor: li.vendor ?? undefined,
+        variantTitle: li.variant_title && li.variant_title !== "Default Title"
+          ? li.variant_title
+          : undefined,
       })),
       shippingMethod: shippingLine?.title ?? undefined,
       notes: o.note ?? undefined,
@@ -161,6 +171,53 @@ export class ShopifyAdapter implements MarketplaceAdapter {
           available: update.availableQuantity,
         }),
       });
+    }
+  }
+
+  // ─── Enrich line items with product images ──────────────────────────────────
+
+  private async enrichLineItemImages(orders: import("./types").MarketplaceOrder[]): Promise<void> {
+    // Collect all unique SKUs that don't already have an image
+    const skusNeedingImage = new Set<string>();
+    for (const order of orders) {
+      for (const li of order.lineItems) {
+        if (li.sku && !li.imageUrl) skusNeedingImage.add(li.sku);
+      }
+    }
+    if (skusNeedingImage.size === 0) return;
+
+    // Fetch products and build SKU → image map
+    try {
+      const data = await this.shopifyFetch(
+        "/products.json?limit=250&fields=id,variants,image,images"
+      );
+      const skuToImage = new Map<string, string>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const product of data.products ?? []) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const variant of product.variants ?? []) {
+          if (variant.sku && skusNeedingImage.has(variant.sku)) {
+            // Use variant image if available, else fall back to first product image
+            const src =
+              variant.image_id
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ? (product.images ?? []).find((img: any) => img.id === variant.image_id)?.src
+                : product.image?.src;
+            if (src) skuToImage.set(variant.sku, src);
+          }
+        }
+      }
+
+      // Apply images back to line items
+      for (const order of orders) {
+        for (const li of order.lineItems) {
+          if (li.sku && !li.imageUrl) {
+            li.imageUrl = skuToImage.get(li.sku) ?? undefined;
+          }
+        }
+      }
+    } catch {
+      // Non-fatal — images are best-effort
     }
   }
 

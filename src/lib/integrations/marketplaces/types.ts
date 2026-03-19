@@ -29,6 +29,11 @@ export interface MarketplaceOrder {
     name: string;
     quantity: number;
     unitPrice: number;
+    // Enrichment fields — populated when available from the marketplace
+    weightGrams?: number;
+    imageUrl?: string;
+    vendor?: string;
+    variantTitle?: string;
   }>;
   shippingMethod?: string;
   notes?: string;

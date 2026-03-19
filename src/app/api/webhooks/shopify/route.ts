@@ -138,14 +138,35 @@ async function handleOrderCreate(order: any) {
   const products = skus.length > 0
     ? await tenantDb.product.findMany({
         where: { clientId: client.id, sku: { in: skus } },
-        select: { id: true, sku: true },
+        select: { id: true, sku: true, imageUrl: true, weight: true },
       })
     : [];
-  const productBySku = new Map(products.map((p: { sku: string; id: string }) => [p.sku, p.id]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const productBySku = new Map(products.map((p: any) => [p.sku, p]));
+
+  // Enrich product records with Shopify data (image, weight) if fields are blank
+  for (const li of mapped.lineItems) {
+    if (!li.sku) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const product = productBySku.get(li.sku) as any;
+    if (!product) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updates: Record<string, any> = {};
+    if (li.imageUrl && !product.imageUrl) updates.imageUrl = li.imageUrl;
+    if (li.weightGrams && li.weightGrams > 0 && !product.weight) {
+      updates.weight = parseFloat((li.weightGrams / 453.592).toFixed(4));
+      updates.weightUnit = "lb";
+    }
+    if (Object.keys(updates).length > 0) {
+      await tenantDb.product.update({ where: { id: product.id }, data: updates });
+    }
+  }
 
   const resolvedLines = mapped.lineItems
-    .map((li: { sku: string; quantity: number; unitPrice: number }) => ({
-      productId: productBySku.get(li.sku),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((li: any) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      productId: (productBySku.get(li.sku) as any)?.id,
       quantity: li.quantity,
       uom: "EA",
       unitPrice: li.unitPrice ?? null,
