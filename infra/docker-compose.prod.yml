@@ -145,6 +145,10 @@ services:
       WMS_API_KEY: ${WMS_API_KEY:-}
       DISPATCH_PRO_URL: http://dispatch:3001
       DISPATCH_PRO_API_KEY: ${WMS_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      SENTRY_ORG: ${SENTRY_ORG:-}
+      SENTRY_PROJECT: ${SENTRY_PROJECT:-}
     depends_on:
       postgres:
         condition: service_healthy
