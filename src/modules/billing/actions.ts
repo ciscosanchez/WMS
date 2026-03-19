@@ -76,7 +76,7 @@ export async function saveDefaultRateCard(
   lines: Array<{ serviceType: string; unitRate: number; uom: string }>,
   monthlyMinimum: number
 ) {
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const existing = await db.rateCard.findFirst({ where: { clientId: null } });
@@ -116,7 +116,7 @@ export async function saveClientRateCard(
   lines: Array<{ serviceType: string; unitRate: number; uom: string }>,
   monthlyMinimum: number
 ) {
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const existing = await db.rateCard.findFirst({ where: { clientId } });
@@ -190,7 +190,7 @@ export async function generateInvoice(
   fromDate: Date,
   toDate: Date
 ) {
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // Fetch uninvoiced events in range

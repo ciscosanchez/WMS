@@ -233,7 +233,7 @@ export async function moveInventory(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", type: "move", ...(data as any) };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("inventory:write");
   const parsed = moveInventorySchema.parse(data);
 
   // Find source inventory
@@ -327,7 +327,7 @@ export async function createAdjustment(headerData: unknown, lines: unknown[]) {
       ...(headerData as any),
     };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("inventory:write");
   const header = adjustmentSchema.parse(headerData);
   const parsedLines = lines.map((l) => adjustmentLineSchema.parse(l));
 
@@ -371,7 +371,7 @@ export async function createAdjustment(headerData: unknown, lines: unknown[]) {
 export async function approveAdjustment(id: string) {
   if (config.useMockData) return;
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("inventory:adjust");
 
   const adjustment = await tenant.db.inventoryAdjustment.findUniqueOrThrow({
     where: { id },

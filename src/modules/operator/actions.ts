@@ -63,7 +63,7 @@ export async function getShipmentByBarcode(barcode: string) {
 export async function getMyPickTasks() {
   if (config.useMockData) return [];
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
   return tenant.db.pickTask.findMany({
     where: {
       assignedTo: user.id,
@@ -94,7 +94,7 @@ export async function getAvailablePickTasks() {
 export async function claimPickTask(taskId: string) {
   if (config.useMockData) return { id: taskId, status: "in_progress" };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
 
   const task = await tenant.db.pickTask.update({
     where: { id: taskId },
@@ -120,7 +120,7 @@ export async function claimPickTask(taskId: string) {
 export async function confirmPickLine(lineId: string, qty: number) {
   if (config.useMockData) return { id: lineId };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
 
   const line = await tenant.db.pickTaskLine.update({
     where: { id: lineId },
@@ -153,7 +153,7 @@ export async function confirmPickLine(lineId: string, qty: number) {
 export async function markPickLineShort(lineId: string, actualQty: number) {
   if (config.useMockData) return { id: lineId };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
 
   const line = await tenant.db.pickTaskLine.update({
     where: { id: lineId },
@@ -196,7 +196,7 @@ export async function getTasksReadyToPack() {
 export async function confirmPack(taskId: string, boxCount: number) {
   if (config.useMockData) return { id: "mock-new" };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
 
   const task = await tenant.db.pickTask.findUniqueOrThrow({
     where: { id: taskId },
@@ -297,7 +297,7 @@ export async function submitCount(
 ) {
   if (config.useMockData) return { id: "mock-new" };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
 
   const adjustmentNumber = await nextSequence(tenant.db, "ADJ");
 
