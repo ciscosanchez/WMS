@@ -119,10 +119,11 @@ async function handleOrderCreate(order: any) {
   });
   if (!channel) return;
 
-  // Find the default client for this tenant
+  // Find the client — prefer SHOPIFY_WMS_CLIENT_CODE env var, fall back to first active
+  const clientCode = process.env.SHOPIFY_WMS_CLIENT_CODE;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = await (tenantDb as any).client.findFirst({
-    where: { isActive: true },
+    where: clientCode ? { code: clientCode, isActive: true } : { isActive: true },
     orderBy: { createdAt: "asc" },
   });
   if (!client) return;
