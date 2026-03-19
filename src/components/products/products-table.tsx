@@ -12,8 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Package } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { deleteProduct } from "@/modules/products/actions";
 
 interface Product {
@@ -24,10 +25,32 @@ interface Product {
   trackLot: boolean;
   trackSerial: boolean;
   isActive: boolean;
+  imageUrl?: string | null;
   client: { code: string; name: string };
 }
 
 const columns: ColumnDef<Product>[] = [
+  {
+    id: "image",
+    header: "",
+    cell: ({ row }) => {
+      const src = row.original.imageUrl;
+      return src ? (
+        <Image
+          src={src}
+          alt={row.original.name}
+          width={40}
+          height={40}
+          className="rounded object-cover"
+          unoptimized
+        />
+      ) : (
+        <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+          <Package className="h-4 w-4 text-muted-foreground" />
+        </div>
+      );
+    },
+  },
   {
     accessorKey: "sku",
     header: ({ column }) => <SortableHeader column={column} title="SKU" />,

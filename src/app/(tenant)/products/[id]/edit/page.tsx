@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ export default function EditProductPage() {
   const [deleting, setDeleting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [clients, setClients] = useState<any[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const {
     register,
@@ -58,6 +60,7 @@ export default function EditProductPage() {
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const product = rawProduct as any;
+        setImageUrl(product.imageUrl ?? null);
         reset({
           clientId: product.clientId,
           sku: product.sku,
@@ -123,6 +126,24 @@ export default function EditProductPage() {
       <PageHeader title="Edit Product" description="Update product details" />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+        {imageUrl && (
+          <Card>
+            <CardContent className="pt-6 flex items-center gap-4">
+              <Image
+                src={imageUrl}
+                alt="Product image"
+                width={80}
+                height={80}
+                className="rounded-md object-cover border"
+                unoptimized
+              />
+              <div className="text-sm text-muted-foreground">
+                Product image synced from Shopify
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>General Information</CardTitle>
@@ -182,7 +203,18 @@ export default function EditProductPage() {
           <CardContent className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="weight">Weight</Label>
-              <Input id="weight" type="number" step="0.01" {...register("weight")} />
+              <div className="flex gap-2">
+                <Input id="weight" type="number" step="0.0001" {...register("weight")} />
+                <select
+                  {...register("weightUnit")}
+                  className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm w-20"
+                >
+                  <option value="lb">lb</option>
+                  <option value="kg">kg</option>
+                  <option value="oz">oz</option>
+                  <option value="g">g</option>
+                </select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="length">Length</Label>
