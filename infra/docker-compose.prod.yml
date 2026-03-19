@@ -121,6 +121,8 @@ services:
     build:
       context: ../
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -135,12 +137,19 @@ services:
       DEFAULT_TENANT_SLUG: armstrong
       DOCAI_URL: http://docai:3002
       DOCAI_API_KEY: ${DOCAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ARMSTRONG_TENANT_SLUG: armstrong
+      SHOPIFY_SHOP_DOMAIN: ${SHOPIFY_SHOP_DOMAIN:-}
+      SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+      SHOPIFY_API_VERSION: "2026-01"
+      SHOPIFY_LOCATION_ID: ${SHOPIFY_LOCATION_ID:-}
+      SHOPIFY_WEBHOOK_SECRET: ${SHOPIFY_WEBHOOK_SECRET:-}
+      SHOPIFY_WMS_CLIENT_CODE: ${SHOPIFY_WMS_CLIENT_CODE:-Armstrong}
       S3_ENDPOINT: minio
       S3_PORT: "9000"
       S3_USE_SSL: "false"
       S3_ACCESS_KEY: ${MINIO_ROOT_USER}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      S3_BUCKET: armstrong-wms
       S3_PUBLIC_URL: https://storage.wms.ramola.app
       WMS_API_KEY: ${WMS_API_KEY:-}
       DISPATCH_PRO_URL: http://dispatch:3001
@@ -245,6 +254,8 @@ services:
     build:
       context: ../../dispatch-pro
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -256,6 +267,8 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       WMS_API_URL: http://wms:3000
       WMS_API_KEY: ${WMS_API_KEY:-}
+      SAMSARA_API_TOKEN: ${SAMSARA_API_TOKEN:-}
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
     depends_on:
       postgres:
         condition: service_healthy
