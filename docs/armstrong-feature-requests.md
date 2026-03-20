@@ -8,7 +8,7 @@ Source: Armstrong operator feedback, March 20 2026
 |---|---------|-------|--------|----------------|
 | 9 | Operator daily dashboard & task visibility | WMS | **Live** | `/my-tasks` (operator), `/operations` (manager) |
 | 3a | Scan-out / release verification | WMS | **Live** | Pick screen + Product schema |
-| 7 | Movement tracking & pick path optimization | WMS | In progress | — |
+| 7 | Movement tracking & pick path optimization | WMS | **Live** | Reports → Movement tab |
 | 3b | TMS rate comparison | DispatchPro | Not started | — |
 | 5 | Email→NetSuite quote automation | Out of scope | — | NetSuite customization |
 
@@ -52,14 +52,20 @@ Source: Armstrong operator feedback, March 20 2026
 
 ---
 
-### #7 — Movement Tracking & Pick Path Optimization 🔧 In Progress
+### #7 — Movement Tracking & Pick Path Optimization ✅ Shipped
 
 **Problem:** Operators pick a pallet, go to the dock, then bring another pallet back to the same location. No routing guidance. No visibility into wasted movement.
 
-**What needs to be built:**
-- **Pick path sorting**: Sort pick task lines by bin location (zone → aisle → rack → shelf) to minimize travel. Bin codes already encode location: `DAL-01-A-01-02-03`.
-- **Putaway suggestions**: When receiving, suggest a bin near existing inventory of the same product.
-- **Movement analytics**: Report showing operator travel patterns (from/to bins per transaction) to identify inefficiency.
+**What was built:**
+- **Pick path sorting**: Pick task lines auto-sorted by bin barcode (zone→aisle→rack→shelf→bin) when tasks are created and when displayed. Operators walk a linear path through the warehouse instead of zigzagging.
+- **Putaway suggestion**: `suggestPutawayBin(productId)` checks putaway rules first, then finds a bin with the same product (consolidation), then nearest empty bin in storage zones.
+- **Movement analytics**: Reports → "Movement" tab showing: moves per day, moves per operator, top bin-to-bin paths, and repeat trip detection (same from→to used multiple times = inefficiency).
+
+**Files:**
+- `src/modules/orders/actions.ts` — pick line sorting by bin barcode
+- `src/modules/operator/actions.ts` — `suggestPutawayBin()`, pick line ordering in queries
+- `src/modules/reports/actions.ts` — `getMovementAnalytics()`
+- `src/app/(tenant)/reports/_client.tsx` — Movement tab UI
 
 ---
 
