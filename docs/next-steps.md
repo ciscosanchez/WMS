@@ -1,6 +1,37 @@
 # Next Steps — Production Setup
 
-*Updated: 2026-03-17*
+*Updated: 2026-03-20*
+
+## Current State (March 20)
+
+Production is live on Hetzner CPX21. All 6 audit findings fixed. 292 unit tests, 35 E2E tests. Armstrong operator features (#9, #3a, #7) shipped and deployed.
+
+### What's Actually Left
+
+| Priority | Item | Blocked on |
+|----------|------|------------|
+| 1 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
+| 2 | NetSuite credentials from Armstrong | Armstrong IT |
+| 3 | Email notifications (shipment updates, invoices) | Choose provider (SES vs SendGrid) |
+| 4 | Hetzner Backups ($1.20/mo) | Enable in console |
+| 5 | Performance tuning (DB indexes, pagination) | Load testing |
+
+### What's Done (no longer "next steps")
+
+- ✅ Database mode live (March 17)
+- ✅ Production deployment on Hetzner (March 18)
+- ✅ Security + data integrity hardening (March 19)
+- ✅ Full production audit — all 6 findings fixed (March 20)
+- ✅ 292 unit tests + 35 E2E tests (March 20)
+- ✅ Multi-tenant integrations (March 20)
+- ✅ Armstrong operator features: dashboard, scan-out, pick path (March 20)
+- ✅ Credential migration to database (March 20)
+
+---
+
+*Below is the original March 17 setup guide, preserved for reference.*
+
+## What Changed Today (March 17)
 
 ## What Changed Today (March 17)
 

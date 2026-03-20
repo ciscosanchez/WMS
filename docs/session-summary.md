@@ -150,3 +150,84 @@ wms/ (56 routes, 124 tests)
 ├── scripts/                       # Provision tenant, seed demo
 └── docs/                          # 10 documentation files
 ```
+
+---
+
+# Session Summary — March 20, 2026
+
+## What Was Done
+
+Picked up from the security/data-integrity state (170 tests, Armstrong live). This session addressed a full production audit, operator feature requests from Armstrong, and deployment.
+
+### Production Audit — All 6 Findings Fixed
+
+| # | Finding | Fix |
+|---|---------|-----|
+| 1 | Single-tenant integrations | Crons/webhooks now iterate all active tenants via `tenant-connectors.ts`. Credentials from SalesChannel.config with env var fallback. |
+| 2 | Portal client isolation | Removed `resolvePortalClient()` fallback to first client (fail-closed). Product ownership validated in `createPortalOrder()`. |
+| 3 | Outbound doesn't consume inventory | `generatePickTasksForOrder()` allocates stock. `markShipmentShipped()` decrements onHand + releases allocation. Ledger entries for both. |
+| 4 | Non-transactional mutations | Wrapped `moveInventory`, `approveAdjustment`, `receiveLine`, `finalizeReceiving`, `markShipmentShipped`, `generatePickTasksForOrder` in `$transaction()`. |
+| 5 | RBAC inconsistency | Synced PERMISSION_LEVEL maps. Added 7 missing permissions. Unknown permissions default to admin-only (level 40). |
+| 6 | API hardening | Sanitized all error responses. Wired rate limiter into uploads. |
+
+### Tests: 170 → 292
+
+5 new test suites covering the audit gaps:
+- `inventory-integrity.test.ts` — transactional mutations, allocation/deallocation
+- `portal-isolation.test.ts` — fail-closed client resolution, product ownership
+- `multi-tenant-crons.test.ts` — tenant iteration for all 4 crons
+- `rbac-consistency.test.ts` — all permissions enforced, unknown = admin-only
+- `api-hardening.test.ts` — error sanitization, rate limiter
+
+### Armstrong Feature Requests — 3 WMS Items Shipped
+
+| # | Feature | Route |
+|---|---------|-------|
+| 9 | Operator daily dashboard | `/my-tasks` (operator), `/operations` (manager board) |
+| 3a | Scan-out verification | Pick screen: product barcode scan, units-per-case display |
+| 7 | Pick path optimization | Pick lines sorted by bin barcode; movement analytics in Reports |
+
+### Infrastructure
+
+- Deployed all changes to prod (Hetzner, Docker Compose)
+- Migrated Shopify credentials from env vars into SalesChannel.config
+- Added CRON_SECRET to WMS container (was missing)
+- Ran schema migration for `units_per_case` and `case_barcode` on Armstrong
+- Cleaned up stale presentation docs
+
+### New Files Created
+
+| File | Purpose |
+|------|---------|
+| `src/lib/integrations/tenant-connectors.ts` | Multi-tenant connector resolution helper |
+| `src/modules/dashboard/operator-actions.ts` | `getMyTasksSummary()` for operator dashboard |
+| `src/modules/dashboard/manager-actions.ts` | `getOperationsBoard()`, `assignTaskToOperator()` |
+| `src/app/(operator)/my-tasks/page.tsx` | Operator daily task dashboard |
+| `src/app/(tenant)/operations/page.tsx` | Manager operations board |
+| `src/app/(tenant)/operations/assign-task-button.tsx` | Task assignment dropdown |
+| `scripts/migrate-credentials.ts` | Move env var creds into DB |
+| `prisma/tenant-migrations/0003_product_packaging.sql` | units_per_case + case_barcode |
+| `docs/armstrong-feature-requests.md` | Feature request tracking (also in DispatchPro repo) |
+
+### Learnings
+
+1. **Turbopack rejects duplicate routes**: `/(operator)/dashboard` and `/(tenant)/dashboard` both resolve to `/dashboard`. Renamed to `/my-tasks`.
+2. **Docker standalone builds strip scripts/**: Can't run `npx tsx scripts/...` inside the container. Ran migration via inline `node -e` or from the host with regenerated Prisma clients.
+3. **CRON_SECRET was on the cron container but not WMS**: The WMS container needs it to validate incoming requests. Easy miss when env vars are split across services.
+4. **Unknown permissions defaulting to level 0 is fail-open**: Changed `PERMISSION_LEVEL[p] ?? 0` to `?? 40` (admin-only) in both session.ts and context.ts.
+5. **Credential migration path**: SalesChannel.config (JSON field) works well for per-tenant marketplace creds. Tenant.settings works for carrier/NetSuite creds. Env vars remain as fallback.
+
+### Commits (this session)
+
+| Hash | Message |
+|------|---------|
+| cb68592 | Fix all 6 production audit findings |
+| 3dc80f1 | Add 122 tests, credential migration script, fail-closed unknown permissions |
+| 28c03ca | Remove stale presentation docs |
+| d212aee | Add CRON_SECRET to WMS container environment |
+| d1f4789 | Add operator daily dashboard and manager operations board (#9) |
+| 0f79dc7 | Rename operator dashboard route to /my-tasks |
+| c15f16f | Add scan-out verification and units-per-case display (#3a) |
+| 3240f00 | Add Armstrong feature request scope & status doc |
+| a1a1b24 | Add pick path optimization, putaway suggestions, and movement analytics (#7) |
+| 355f6a4 | Update Armstrong feature doc: all 3 WMS items shipped |

@@ -190,3 +190,49 @@ Order status workflow:
 │ changes    │  │ link          │  │                   │  │ is_active        │
 └────────────┘  └───────────────┘  └───────────────────┘  └──────────────────┘
 ```
+
+### Billing Module
+
+```
+┌──────────────┐      ┌──────────────────┐      ┌───────────┐
+│  rate_cards  │─────►│ billing_events   │─────►│ invoices  │
+├──────────────┤ 1:M  ├──────────────────┤  M:1 ├───────────┤
+│ client_id    │      │ client_id        │      │ client_id │
+│ service_type │      │ service_type     │      │ period    │
+│ unit_rate    │      │ qty              │      │ total     │
+│ min_qty      │      │ amount           │      │ status    │
+│ is_active    │      │ reference_type/id│      │ due_date  │
+└──────────────┘      │ occurred_at      │      └───────────┘
+                      │ invoice_id       │
+                      └──────────────────┘
+```
+
+### Product Packaging (added 2026-03-20)
+
+Products now include:
+- `units_per_case` (int, optional) — how many units per carton/case
+- `case_barcode` (string, optional) — barcode for case-level scanning
+
+These fields support the scan-out verification feature (#3a) where operators need clarity on whether pick quantities are individual units or full cartons.
+
+### Integration Credentials
+
+Marketplace credentials are stored in `SalesChannel.config` (JSON field per tenant):
+```json
+{
+  "shopDomain": "store.myshopify.com",
+  "accessToken": "shpat_...",
+  "apiVersion": "2026-01",
+  "clientCode": "Armstrong"
+}
+```
+
+Carrier and ERP credentials are stored in `Tenant.settings` (JSON field in public schema):
+```json
+{
+  "ups": { "accountNumber": "...", "clientId": "...", "clientSecret": "..." },
+  "netsuite": { "accountId": "...", "consumerKey": "...", ... }
+}
+```
+
+This replaces the single-tenant pattern of global env vars, enabling multi-tenant credential management.

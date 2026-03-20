@@ -1,10 +1,10 @@
 # Ramola WMS — Full Roadmap to Production
 
-*Last updated: 2026-03-16 (end of session)*
+*Last updated: 2026-03-20*
 
 ## Current State Summary
 
-The WMS has **56 routes across 4 apps**, **140 tests** (124 unit + 16 E2E), **zero lint errors/warnings**, and a **live Shopify integration**. Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push. All quality checks pass.
+The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **zero lint errors/warnings**, and a **live Shopify integration**. Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push. All quality checks pass.
 
 ### What's Built
 
@@ -389,25 +389,31 @@ The WMS has **56 routes across 4 apps**, **140 tests** (124 unit + 16 E2E), **ze
 ```
 ✅ COMPLETED                          🔲 REMAINING
 ──────────────────────────────────    ──────────────────────────────────
-✅ A1. Database (Docker+PG+Prisma)   🔲 B2. Full receiving workflow loop
-✅ A2. Auth (login/mock toggle)      🔲 B3. Full inventory workflow loop
-✅ A3. Tenant resolution             🔲 B4. Full fulfillment workflow loop
-✅ A4. Server actions (mock+real)    🔲 D1. NetSuite bridge (real API)
-✅ A5. Audit + sequences             🔲 D2. DispatchPro bridge
-✅ B1. Edit pages                    🔲 D3. Carrier integrations (UPS/FedEx)
-✅ B5. Document upload (MinIO)       🔲 D4. Marketplace connectors (Shopify)
-✅ C1-C3. Client Portal (6 pages)   🔲 D5. EDI 940/945
-✅ D stubs. Integration contracts    🔲 E1. PWA / offline
-✅ E. Operator App (5 pages)         🔲 E2. Scanner integration
-✅ F1. Dashboard KPIs + charts       🔲 G3. Billing config (rate cards)
-✅ F2. Reports (5 tabs + export)     🔲 H2. Testing (unit + integration)
-✅ F3. CSV/PDF export                🔲 H3. Security hardening
-✅ F4. Global search (Cmd+K)         🔲 H4. Performance (pagination)
-✅ F5. Notifications                 🔲 H5. Mobile responsive polish
+✅ A1. Database (Docker+PG+Prisma)   🔲 D1. NetSuite bridge (need Armstrong credentials)
+✅ A2. Auth (login/mock toggle)      🔲 D2. DispatchPro bridge
+✅ A3. Tenant resolution             🔲 D3. Carrier sandbox credentials (UPS/FedEx/USPS)
+✅ A4. Server actions (mock+real)    🔲 D4. Marketplace connectors (Shopify)
+✅ A5. Audit + sequences             🔲 D5. EDI 940/945
+✅ B1. Edit pages                    🔲 E1. PWA / offline
+✅ B2. Full receiving workflow loop   🔲 H4. Performance (pagination, indexing)
+✅ B3. Full inventory workflow loop   🔲 H5. Mobile responsive polish
+✅ B4. Full fulfillment workflow loop 🔲 Email notifications
+✅ B5. Document upload (MinIO)
+✅ C1-C3. Client Portal (6 pages)
+✅ D stubs. Integration contracts
+✅ E. Operator App (5 pages)
+✅ F1. Dashboard KPIs + charts
+✅ F2. Reports (5 tabs + export)
+✅ F3. CSV/PDF export
+✅ F4. Global search (Cmd+K)
+✅ F5. Notifications
 ✅ G1. User management + invite
 ✅ G2. Tenant settings
+✅ G3. Billing config (rate cards)
 ✅ G4. Superadmin platform
 ✅ H1. Error handling + skeletons
+✅ H2. Testing (292 unit tests, 35 E2E)
+✅ H3. Security hardening (audit, RBAC, fail-closed)
 ✅ Cycle count plans + create
 ✅ Adjustment creation form
 ✅ Shipping detail + timeline
@@ -416,12 +422,25 @@ The WMS has **56 routes across 4 apps**, **140 tests** (124 unit + 16 E2E), **ze
 ```
 
 ### Next Up (Priority Order)
-1. **B2. Receiving workflow** — Complete status flow with real DB mutations
-2. **B4. Fulfillment workflow** — Allocation → pick → pack → ship with DB
-3. **B3. Inventory workflow** — Putaway rules, adjustment approval
-4. **G3. Billing config** — Rate cards per client
-5. **H2. Testing** — Unit + integration tests for workflows
-6. **D1-D4. Integrations** — Need API credentials
+1. **D1. NetSuite bridge** — Need Armstrong credentials
+2. **D3. Carrier sandbox credentials** — UPS/FedEx/USPS live API keys
+3. **H4. Performance** — Pagination, DB indexing for large datasets
+4. **H5. Mobile responsive polish** — Tablet/phone optimization
+5. **E1. PWA / offline** — Service worker, offline queue
+
+### Armstrong Feature Requests (2026-03-20)
+
+All WMS items shipped and deployed to production:
+
+| # | Feature | Status |
+|---|---------|--------|
+| 9 | Operator daily dashboard + manager board | ✅ Live (`/my-tasks`, `/operations`) |
+| 3a | Scan-out verification + units-per-case | ✅ Live (pick screen, product schema) |
+| 7 | Pick path optimization + movement analytics | ✅ Live (bin sort, Reports → Movement tab) |
+| 3b | TMS rate comparison | 🔲 DispatchPro repo |
+| 5 | Email→NetSuite quote automation | — Out of scope (NetSuite customization) |
+
+See `docs/armstrong-feature-requests.md` for full details.
 
 ---
 
@@ -430,12 +449,12 @@ The WMS has **56 routes across 4 apps**, **140 tests** (124 unit + 16 E2E), **ze
 | Phase | Effort | Status |
 |-------|--------|--------|
 | A. Database Foundation | ~~1-2 weeks~~ | ✅ Complete |
-| B. Complete Workflows | 2-3 weeks | 🔲 Remaining |
+| B. Complete Workflows | ~~2-3 weeks~~ | ✅ Complete |
 | C. Client Portal | ~~1-2 weeks~~ | ✅ Complete |
-| D. Integrations | 3-5 weeks | 🔲 Stubs done, real APIs remaining |
+| D. Integrations | 3-5 weeks | 🔲 Stubs done, need credentials (NetSuite, carrier sandboxes) |
 | E. Operator App Polish | 1 week | 🔲 PWA + scanner |
 | F. Dashboard & Reporting | ~~1-2 weeks~~ | ✅ Complete |
-| G. Settings & Admin | ~~1 week~~ | ✅ Complete (billing config remaining) |
-| H. Hardening | 2-3 weeks | 🔲 Testing + security |
+| G. Settings & Admin | ~~1 week~~ | ✅ Complete |
+| H. Hardening | 2-3 weeks | ✅ Testing + security complete. Performance remaining. |
 
-**Remaining to production: ~8-12 weeks** (down from 12-20)
+**Remaining to production: ~3-5 weeks (integrations + polish)** (down from 12-20)

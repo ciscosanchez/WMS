@@ -21,7 +21,7 @@ Ramola gives you both — one inventory, one warehouse, two operational modes.
 | **Storage** | MinIO (S3-compatible) for documents, labels, photos |
 | **Cache/Queue** | Redis |
 | **AI** | Claude Vision API (DocAI) for BOL/packing list OCR |
-| **Testing** | Jest (170 unit tests) · Playwright (E2E) |
+| **Testing** | Jest (292 unit tests) · Playwright (E2E) |
 | **Deployment** | Docker Compose — Traefik + PostgreSQL + Redis + MinIO + App |
 
 ## Multi-Tenancy
@@ -69,13 +69,22 @@ Schema-per-tenant isolation — each tenant gets their own PostgreSQL schema wit
 - Bin barcode generation (Code128)
 
 ### Operator App (Mobile PWA)
-- Pick, pack, move, and cycle count from a phone or tablet
+- Daily task dashboard (`/my-tasks`) — assigned tasks grouped by type, progress tracking
+- Pick with barcode verification (bin OR product scan), pick path optimization (sorted by bin location)
+- Pack with item-by-item scan verification
+- Move, cycle count from a phone or tablet
 - Barcode scanner integration
-- Works offline-capable
+- Units-per-case display for clear carton vs unit guidance
 
 ### Client Portal
 - Clients view their own orders, inventory, shipments, and invoices
 - Read-only access scoped to their data
+
+### Operations Board (Manager)
+- Real-time operator workload visibility (`/operations`)
+- Task assignment — assign pending pick tasks to operators
+- KPIs: completed today, avg completion time, pending tasks, active receiving
+- Movement analytics in Reports tab — moves/day, operator travel patterns, repeat trip detection
 
 ### Platform Admin
 - Superadmin tenant provisioning and user management
@@ -157,7 +166,7 @@ See `infra/.env.prod.example` for the full list.
 | `npm run build` | Production build |
 | `npm run typecheck` | TypeScript type checking |
 | `npm run lint` | Run ESLint |
-| `npm run test` | Run unit tests (170 tests) |
+| `npm run test` | Run unit tests (292 tests) |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:e2e` | Run Playwright E2E tests |
 | `npm run validate` | typecheck + lint + format + test |
@@ -186,6 +195,9 @@ Permissions are enforced on every server action write path via `requireTenantCon
 - **Amazon webhook**: RSA-SHA1 SNS signature verified; `SubscribeURL` validated against `sns.*.amazonaws.com` before fetch (SSRF guard)
 - **Upload API**: entity ownership validated against tenant DB before presigned URL is issued
 - **Platform routes**: superadmin JWT check in middleware (Edge-safe, no DB call)
+- **Rate limiting**: In-memory rate limiter wired into upload endpoint (429 + Retry-After)
+- **Error sanitization**: All API routes return generic error messages; internal details logged server-side only
+- **Unknown permissions**: Default to admin-only (level 40), fail-closed for any permission not in the map
 
 ## Cron Jobs
 
@@ -197,6 +209,8 @@ Scheduled inside a Docker Alpine container via `crond`:
 | Hourly | `/api/cron/tracking-update` | Check carrier tracking, mark delivered |
 | 2 AM daily | `/api/cron/storage-billing` | Capture storage billing events |
 | 3 AM daily | `/api/cron/netsuite-sync` | Push billing events + fulfillments to NetSuite |
+
+All cron jobs iterate every active tenant (multi-tenant). Credentials are read from SalesChannel.config per-tenant, with env var fallback for backward compatibility.
 
 ## Deployment
 
@@ -253,7 +267,9 @@ wms/
 - [x] Amazon (SP-API inventory sync + ORDER_CHANGE webhook)
 - [x] NetSuite TBA OAuth client (active once credentials provided)
 - [x] Operator app (mobile PWA), Client portal, Superadmin platform
-- [x] Security hardening (RBAC, fail-closed auth, webhook verification, 170 tests)
+- [x] Security hardening (RBAC, fail-closed auth, webhook verification, 292 tests)
+- [x] Production audit: transactional inventory, multi-tenant integrations, portal isolation, RBAC consistency, API hardening
+- [x] Operator features: daily task dashboard, scan-out verification, pick path optimization, movement analytics
 - [ ] Carrier sandbox credentials (UPS/FedEx/USPS developer portals)
 - [ ] NetSuite credentials from Armstrong
 - [ ] Email notifications (shipment updates, invoice delivery)
