@@ -250,60 +250,69 @@ export async function moveInventory(data: unknown) {
     throw new Error("Insufficient available inventory");
   }
 
-  // Deduct from source
-  await tenant.db.inventory.update({
-    where: { id: source.id },
-    data: {
-      onHand: { decrement: parsed.quantity },
-      available: { decrement: parsed.quantity },
-    },
-  });
+  // Atomic: deduct source, credit destination, log ledger
+  const tx = await tenant.db.$transaction(async (prisma) => {
+    // Re-check availability inside the transaction to prevent races
+    const locked = await prisma.inventory.findFirst({
+      where: { id: source.id, available: { gte: parsed.quantity } },
+    });
+    if (!locked) throw new Error("Insufficient available inventory (concurrent modification)");
 
-  // Add to destination
-  const destExisting = await tenant.db.inventory.findFirst({
-    where: {
-      productId: parsed.productId,
-      binId: parsed.toBinId,
-      lotNumber: parsed.lotNumber || null,
-      serialNumber: parsed.serialNumber || null,
-    },
-  });
-
-  if (destExisting) {
-    await tenant.db.inventory.update({
-      where: { id: destExisting.id },
+    // Deduct from source
+    await prisma.inventory.update({
+      where: { id: source.id },
       data: {
-        onHand: { increment: parsed.quantity },
-        available: { increment: parsed.quantity },
+        onHand: { decrement: parsed.quantity },
+        available: { decrement: parsed.quantity },
       },
     });
-  } else {
-    await tenant.db.inventory.create({
-      data: {
+
+    // Add to destination
+    const destExisting = await prisma.inventory.findFirst({
+      where: {
         productId: parsed.productId,
         binId: parsed.toBinId,
         lotNumber: parsed.lotNumber || null,
         serialNumber: parsed.serialNumber || null,
-        onHand: parsed.quantity,
-        allocated: 0,
-        available: parsed.quantity,
       },
     });
-  }
 
-  // Log transaction
-  const tx = await tenant.db.inventoryTransaction.create({
-    data: {
-      type: "move",
-      productId: parsed.productId,
-      fromBinId: parsed.fromBinId,
-      toBinId: parsed.toBinId,
-      quantity: parsed.quantity,
-      lotNumber: parsed.lotNumber || null,
-      serialNumber: parsed.serialNumber || null,
-      reason: parsed.reason || null,
-      performedBy: user.id,
-    },
+    if (destExisting) {
+      await prisma.inventory.update({
+        where: { id: destExisting.id },
+        data: {
+          onHand: { increment: parsed.quantity },
+          available: { increment: parsed.quantity },
+        },
+      });
+    } else {
+      await prisma.inventory.create({
+        data: {
+          productId: parsed.productId,
+          binId: parsed.toBinId,
+          lotNumber: parsed.lotNumber || null,
+          serialNumber: parsed.serialNumber || null,
+          onHand: parsed.quantity,
+          allocated: 0,
+          available: parsed.quantity,
+        },
+      });
+    }
+
+    // Log transaction
+    return prisma.inventoryTransaction.create({
+      data: {
+        type: "move",
+        productId: parsed.productId,
+        fromBinId: parsed.fromBinId,
+        toBinId: parsed.toBinId,
+        quantity: parsed.quantity,
+        lotNumber: parsed.lotNumber || null,
+        serialNumber: parsed.serialNumber || null,
+        reason: parsed.reason || null,
+        performedBy: user.id,
+      },
+    });
   });
 
   await logAudit(tenant.db, {
@@ -380,65 +389,74 @@ export async function approveAdjustment(id: string) {
 
   if (adjustment.status === "completed") return; // Already applied — idempotent
 
-  // Apply adjustments to inventory
-  for (const line of adjustment.lines) {
-    const inv = await tenant.db.inventory.findFirst({
-      where: {
-        productId: line.productId,
-        binId: line.binId,
-        lotNumber: line.lotNumber,
-        serialNumber: line.serialNumber,
-      },
+  // Atomic: apply all adjustment lines + mark completed in one transaction
+  await tenant.db.$transaction(async (prisma) => {
+    // Re-check status inside transaction to prevent concurrent approvals
+    const current = await prisma.inventoryAdjustment.findUnique({
+      where: { id },
+      select: { status: true },
     });
+    if (current?.status === "completed") return;
 
-    if (inv) {
-      const newOnHand = line.countedQty;
-      await tenant.db.inventory.update({
-        where: { id: inv.id },
-        data: {
-          onHand: newOnHand,
-          available: newOnHand - inv.allocated,
-        },
-      });
-    } else if (line.countedQty > 0) {
-      await tenant.db.inventory.create({
-        data: {
+    for (const line of adjustment.lines) {
+      const inv = await prisma.inventory.findFirst({
+        where: {
           productId: line.productId,
           binId: line.binId,
           lotNumber: line.lotNumber,
           serialNumber: line.serialNumber,
-          onHand: line.countedQty,
-          allocated: 0,
-          available: line.countedQty,
+        },
+      });
+
+      if (inv) {
+        const newOnHand = line.countedQty;
+        await prisma.inventory.update({
+          where: { id: inv.id },
+          data: {
+            onHand: newOnHand,
+            available: newOnHand - inv.allocated,
+          },
+        });
+      } else if (line.countedQty > 0) {
+        await prisma.inventory.create({
+          data: {
+            productId: line.productId,
+            binId: line.binId,
+            lotNumber: line.lotNumber,
+            serialNumber: line.serialNumber,
+            onHand: line.countedQty,
+            allocated: 0,
+            available: line.countedQty,
+          },
+        });
+      }
+
+      // Log transaction
+      await prisma.inventoryTransaction.create({
+        data: {
+          type: "adjust",
+          productId: line.productId,
+          toBinId: line.binId,
+          quantity: line.variance,
+          lotNumber: line.lotNumber,
+          serialNumber: line.serialNumber,
+          referenceType: "adjustment",
+          referenceId: id,
+          reason: adjustment.reason || null,
+          performedBy: user.id,
         },
       });
     }
 
-    // Log transaction
-    await tenant.db.inventoryTransaction.create({
+    await prisma.inventoryAdjustment.update({
+      where: { id },
       data: {
-        type: "adjust",
-        productId: line.productId,
-        toBinId: line.binId,
-        quantity: line.variance,
-        lotNumber: line.lotNumber,
-        serialNumber: line.serialNumber,
-        referenceType: "adjustment",
-        referenceId: id,
-        reason: adjustment.reason || null,
-        performedBy: user.id,
+        status: "completed",
+        approvedBy: user.id,
+        approvedAt: new Date(),
+        completedAt: new Date(),
       },
     });
-  }
-
-  await tenant.db.inventoryAdjustment.update({
-    where: { id },
-    data: {
-      status: "completed",
-      approvedBy: user.id,
-      approvedAt: new Date(),
-      completedAt: new Date(),
-    },
   });
 
   await logAudit(tenant.db, {

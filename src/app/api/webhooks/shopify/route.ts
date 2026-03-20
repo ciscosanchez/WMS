@@ -6,23 +6,19 @@
  * - orders/updated → update status if relevant
  * - orders/cancelled → mark WMS order cancelled
  *
- * Register via Shopify Admin → Settings → Notifications → Webhooks
- * or via API: POST /admin/api/2026-01/webhooks.json
- *
- * Webhook URL: https://wms.ramola.app/api/webhooks/shopify
- * Secret:     SHOPIFY_WEBHOOK_SECRET env var
+ * Multi-tenant: resolves the target tenant by matching the incoming
+ * x-shopify-shop-domain against SalesChannel configs across all tenants.
+ * Falls back to ARMSTRONG_TENANT_SLUG env var for legacy single-tenant.
  */
 
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getShopifyAdapter } from "@/lib/integrations/marketplaces/shopify";
 import { nextSequence } from "@/lib/sequences";
 import { logAudit } from "@/lib/audit";
 
 // ─── Signature verification ──────────────────────────────────────────────────
 
-function verifyShopifyHmac(body: string, hmacHeader: string): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET!;
+function verifyShopifyHmac(body: string, hmacHeader: string, secret: string): boolean {
   const computed = crypto
     .createHmac("sha256", secret)
     .update(body, "utf8")
@@ -42,7 +38,7 @@ export async function POST(req: NextRequest) {
   const shopDomain = req.headers.get("x-shopify-shop-domain") ?? "";
 
   // Verify signature — fail closed: require secret to be configured
-  if (!process.env.SHOPIFY_WEBHOOK_SECRET || !verifyShopifyHmac(body, hmacHeader)) {
+  if (!process.env.SHOPIFY_WEBHOOK_SECRET || !verifyShopifyHmac(body, hmacHeader, process.env.SHOPIFY_WEBHOOK_SECRET)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -53,60 +49,92 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Validate the shop domain matches our configured store
-  const configuredDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-  if (configuredDomain && shopDomain && shopDomain !== configuredDomain) {
-    return NextResponse.json({ error: "Unknown shop" }, { status: 404 });
+  // Resolve the tenant from the shop domain
+  const { publicDb } = await import("@/lib/db/public-client");
+  const { getTenantDb } = await import("@/lib/db/tenant-client");
+  const { resolveShopifyTenant } = await import("@/lib/integrations/tenant-connectors");
+
+  const connector = await resolveShopifyTenant(publicDb, getTenantDb, shopDomain);
+
+  if (!connector) {
+    // Legacy fallback: if shop domain matches the global env var, use ARMSTRONG_TENANT_SLUG
+    const configuredDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+    if (!shopDomain || !configuredDomain || shopDomain !== configuredDomain) {
+      return NextResponse.json({ error: "Unknown shop" }, { status: 404 });
+    }
   }
 
   // Route by topic
   try {
     switch (topic) {
       case "orders/create":
-        await handleOrderCreate(payload);
+        await handleOrderCreate(payload, connector, shopDomain);
         break;
       case "orders/cancelled":
-        await handleOrderCancelled(payload);
+        await handleOrderCancelled(payload, connector, shopDomain);
         break;
       case "orders/updated":
-        // Only care about fulfilment status changes we didn't trigger
-        await handleOrderUpdated(payload);
+        await handleOrderUpdated(payload, connector, shopDomain);
         break;
       default:
-        // Unknown topic — acknowledge and ignore
         break;
     }
   } catch (err) {
     console.error(`[Shopify Webhook] ${topic} handler error:`, err);
-    // Return 200 so Shopify doesn't retry indefinitely
   }
 
   return NextResponse.json({ ok: true });
 }
 
-// ─── Event handlers ───────────────────────────────────────────────────────────
+// ─── Tenant resolution helper ────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleOrderCreate(order: any) {
-  // Only import unfulfilled orders
-  if (order.fulfillment_status && order.fulfillment_status !== null) return;
-  if (order.financial_status === "pending") return; // Not paid yet
-
-  // Use a system user ID for webhook-triggered imports
-  // We need a tenant DB. For now we use env var to identify the tenant.
-  const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
-  if (!tenantSlug) {
-    console.warn("[Shopify Webhook] ARMSTRONG_TENANT_SLUG not set — cannot import order");
-    return;
+async function resolveTenantDb(
+  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  shopDomain: string
+): Promise<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any;
+  clientCode: string;
+} | null> {
+  if (connector) {
+    return { db: connector.db, clientCode: connector.clientCode };
   }
+
+  // Legacy fallback
+  const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
+  if (!tenantSlug) return null;
 
   const { publicDb } = await import("@/lib/db/public-client");
   const { getTenantDb } = await import("@/lib/db/tenant-client");
 
   const tenantRecord = await publicDb.tenant.findUnique({ where: { slug: tenantSlug } });
-  if (!tenantRecord) return;
+  if (!tenantRecord) return null;
 
-  const tenantDb = getTenantDb(tenantRecord.dbSchema);
+  return {
+    db: getTenantDb(tenantRecord.dbSchema),
+    clientCode: process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong",
+  };
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function handleOrderCreate(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  order: any,
+  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  shopDomain: string
+) {
+  if (order.fulfillment_status && order.fulfillment_status !== null) return;
+  if (order.financial_status === "pending") return;
+
+  const resolved = await resolveTenantDb(connector, shopDomain);
+  if (!resolved) {
+    console.warn("[Shopify Webhook] Could not resolve tenant — cannot import order");
+    return;
+  }
+
+  const { db: tenantDb, clientCode } = resolved;
 
   const externalId = String(order.id);
 
@@ -115,23 +143,33 @@ async function handleOrderCreate(order: any) {
   if (existing) return;
 
   // Find the Shopify sales channel
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const channel = await (tenantDb as any).salesChannel.findFirst({
+  const channel = await tenantDb.salesChannel.findFirst({
     where: { type: "shopify", isActive: true },
   });
   if (!channel) return;
 
-  // Find the client — prefer SHOPIFY_WMS_CLIENT_CODE env var, fall back to first active
-  const clientCode = process.env.SHOPIFY_WMS_CLIENT_CODE;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = await (tenantDb as any).client.findFirst({
+  // Find the client
+  const client = await tenantDb.client.findFirst({
     where: clientCode ? { code: clientCode, isActive: true } : { isActive: true },
     orderBy: { createdAt: "asc" },
   });
   if (!client) return;
 
-  // Map Shopify order to WMS order using the adapter's mapper
-  const adapter = getShopifyAdapter();
+  // Build adapter from connector credentials or env vars
+  const { ShopifyAdapter } = await import("@/lib/integrations/marketplaces/shopify");
+  const adapter = connector
+    ? new ShopifyAdapter({
+        shopDomain: connector.shopDomain,
+        accessToken: connector.accessToken,
+        apiVersion: connector.apiVersion,
+        locationId: connector.locationId,
+      })
+    : new ShopifyAdapter({
+        shopDomain: process.env.SHOPIFY_SHOP_DOMAIN!,
+        accessToken: process.env.SHOPIFY_ACCESS_TOKEN!,
+        apiVersion: process.env.SHOPIFY_API_VERSION ?? "2026-01",
+      });
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapped = (adapter as any).mapOrder(order);
 
@@ -146,7 +184,7 @@ async function handleOrderCreate(order: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const productBySku = new Map(products.map((p: any) => [p.sku, p]));
 
-  // Enrich product records with Shopify data (image, weight) if fields are blank
+  // Enrich product records
   for (const li of mapped.lineItems) {
     if (!li.sku) continue;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -178,28 +216,15 @@ async function handleOrderCreate(order: any) {
   if (resolvedLines.length === 0) return;
 
   const orderNumber = await nextSequence(tenantDb, "ORD");
-
   const addr = mapped.shipTo;
   const created = await tenantDb.order.create({
     data: {
-      orderNumber,
-      externalId,
-      channelId: channel.id,
-      clientId: client.id,
-      status: "pending",
-      priority: mapped.priority,
-      shipToName: addr.name,
-      shipToAddress1: addr.address1,
-      shipToAddress2: addr.address2 ?? null,
-      shipToCity: addr.city,
-      shipToState: addr.state ?? null,
-      shipToZip: addr.zip,
-      shipToCountry: addr.country ?? "US",
-      shipToPhone: addr.phone ?? null,
-      shipToEmail: addr.email ?? null,
-      shippingMethod: mapped.shippingMethod ?? null,
-      orderDate: mapped.orderDate,
-      notes: mapped.notes ?? null,
+      orderNumber, externalId, channelId: channel.id, clientId: client.id,
+      status: "pending", priority: mapped.priority,
+      shipToName: addr.name, shipToAddress1: addr.address1, shipToAddress2: addr.address2 ?? null,
+      shipToCity: addr.city, shipToState: addr.state ?? null, shipToZip: addr.zip,
+      shipToCountry: addr.country ?? "US", shipToPhone: addr.phone ?? null, shipToEmail: addr.email ?? null,
+      shippingMethod: mapped.shippingMethod ?? null, orderDate: mapped.orderDate, notes: mapped.notes ?? null,
       totalItems: resolvedLines.reduce((s: number, li: { quantity: number }) => s + li.quantity, 0),
       lines: { create: resolvedLines },
     },
@@ -214,17 +239,17 @@ async function handleOrderCreate(order: any) {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleOrderCancelled(order: any) {
-  const externalId = String(order.id);
-  const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
-  if (!tenantSlug) return;
+async function handleOrderCancelled(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  order: any,
+  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  shopDomain: string
+) {
+  const resolved = await resolveTenantDb(connector, shopDomain);
+  if (!resolved) return;
 
-  const { publicDb } = await import("@/lib/db/public-client");
-  const { getTenantDb } = await import("@/lib/db/tenant-client");
-  const tenantRecord = await publicDb.tenant.findUnique({ where: { slug: tenantSlug } });
-  if (!tenantRecord) return;
-  const tenantDb = getTenantDb(tenantRecord.dbSchema);
+  const { db: tenantDb } = resolved;
+  const externalId = String(order.id);
 
   const existing = await tenantDb.order.findFirst({ where: { externalId } });
   if (!existing) return;
@@ -245,20 +270,19 @@ async function handleOrderCancelled(order: any) {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleOrderUpdated(order: any) {
-  // Only act if the order became fully fulfilled externally (outside WMS)
+async function handleOrderUpdated(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  order: any,
+  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  shopDomain: string
+) {
   if (order.fulfillment_status !== "fulfilled") return;
 
-  const externalId = String(order.id);
-  const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
-  if (!tenantSlug) return;
+  const resolved = await resolveTenantDb(connector, shopDomain);
+  if (!resolved) return;
 
-  const { publicDb } = await import("@/lib/db/public-client");
-  const { getTenantDb } = await import("@/lib/db/tenant-client");
-  const tenantRecord = await publicDb.tenant.findUnique({ where: { slug: tenantSlug } });
-  if (!tenantRecord) return;
-  const tenantDb = getTenantDb(tenantRecord.dbSchema);
+  const { db: tenantDb } = resolved;
+  const externalId = String(order.id);
 
   const existing = await tenantDb.order.findFirst({ where: { externalId } });
   if (!existing) return;

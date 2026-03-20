@@ -6,19 +6,9 @@
  *   - ORDER_CHANGE → import new/updated order into WMS
  *   - FBA_INBOUND_SHIPMENT_STATUS → log inbound status updates
  *
- * Amazon signs the notification body using SNS message signing (RSA-SHA1).
- * We verify the signature using the SNS SigningCertURL.
- *
- * Register the destination via SP-API:
- *   POST /notifications/v1/destinations
- *   { "name": "armstrong-wms", "destinationResourceSpecification": { "https": { "url": "..." } } }
- *
- * Then subscribe:
- *   POST /notifications/v1/subscriptions/{notificationType}
- *   { "payloadVersion": "1.0", "destinationId": "..." }
- *
- * Webhook URL: https://wms.ramola.app/api/webhooks/amazon
- * Env var needed: AMAZON_WEBHOOK_SECRET (optional — SNS signature is the auth)
+ * Multi-tenant: resolves the target tenant by matching the incoming
+ * SellerId against SalesChannel configs across all tenants.
+ * Falls back to ARMSTRONG_TENANT_SLUG env var for legacy single-tenant.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -65,10 +55,6 @@ async function fetchSigningCert(url: string): Promise<string> {
   return pem;
 }
 
-/**
- * Build the canonical string SNS signs.
- * Field order and inclusion differs by message type — see AWS docs.
- */
 function buildSnsCanonicalString(msg: SnsEnvelope): string {
   let fields: Array<[string, string | undefined]>;
   if (msg.Type === "SubscriptionConfirmation" || msg.Type === "UnsubscribeConfirmation") {
@@ -132,9 +118,6 @@ export async function POST(req: NextRequest) {
   }
 
   // ── SNS Subscription Confirmation ──────────────────────────────────────────
-  // Amazon sends this first when you register the webhook URL.
-  // We auto-confirm by hitting the SubscribeURL — but only after verifying the
-  // SNS signature above and validating the URL is from amazonaws.com (SSRF guard).
   if (envelope.Type === "SubscriptionConfirmation") {
     if (envelope.SubscribeURL) {
       if (!SNS_DOMAIN_RE.test(envelope.SubscribeURL)) {
@@ -181,33 +164,47 @@ export async function POST(req: NextRequest) {
     const orderPayload = notification.Payload?.OrderChangeNotification;
     const amazonOrderId = orderPayload?.AmazonOrderId;
     const orderStatus = orderPayload?.OrderStatus;
+    const sellerId = orderPayload?.SellerId;
 
     if (!amazonOrderId) {
       return NextResponse.json({ error: "No order ID in payload" }, { status: 400 });
     }
 
-    // Only process new orders — updates handled by 15-min cron
     if (orderStatus !== "Unshipped" && orderStatus !== "PartiallyShipped") {
       return NextResponse.json({ skipped: `Status ${orderStatus} not actionable` });
     }
 
     try {
-      const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
-      if (!tenantSlug) {
-        return NextResponse.json({ skipped: "No tenant slug" });
-      }
-
+      // Resolve tenant by seller ID (multi-tenant) or fall back to env var
       const { publicDb } = await import("@/lib/db/public-client");
       const { getTenantDb } = await import("@/lib/db/tenant-client");
+      const { resolveAmazonTenant } = await import("@/lib/integrations/tenant-connectors");
 
-      const tenantRecord = await publicDb.tenant.findUnique({
-        where: { slug: tenantSlug },
-      });
-      if (!tenantRecord) {
-        return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let db: any;
+      let clientCode: string;
+
+      if (sellerId) {
+        const connector = await resolveAmazonTenant(publicDb, getTenantDb, sellerId);
+        if (connector) {
+          db = connector.db;
+          clientCode = connector.clientCode;
+        }
       }
 
-      const db = getTenantDb(tenantRecord.dbSchema);
+      // Legacy fallback
+      if (!db) {
+        const tenantSlug = process.env.ARMSTRONG_TENANT_SLUG;
+        if (!tenantSlug) {
+          return NextResponse.json({ skipped: "No tenant slug" });
+        }
+        const tenantRecord = await publicDb.tenant.findUnique({ where: { slug: tenantSlug } });
+        if (!tenantRecord) {
+          return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+        }
+        db = getTenantDb(tenantRecord.dbSchema);
+        clientCode = process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
+      }
 
       // Skip if already imported
       const existing = await db.order.findFirst({
@@ -218,15 +215,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Fetch full order details from SP-API
-      const { getAmazonAdapter } = await import(
-        "@/lib/integrations/marketplaces/amazon"
-      );
+      const { getAmazonAdapter } = await import("@/lib/integrations/marketplaces/amazon");
       const adapter = getAmazonAdapter();
       if (!adapter) {
         return NextResponse.json({ skipped: "Amazon adapter not configured" });
       }
 
-      // fetchOrders with a 1-day window — the webhook fires immediately on new orders
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const orders = await adapter.fetchOrders(since);
       const order = orders.find((o) => o.externalId === amazonOrderId);
@@ -235,29 +229,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ skipped: "Order not found in SP-API response" });
       }
 
-      // Find the Armstrong client
-      const clientCode = process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const client = await (db as any).client.findFirst({
-        where: { code: clientCode, isActive: true },
+      // Find the client
+      const client = await db.client.findFirst({
+        where: { code: clientCode!, isActive: true },
       });
       if (!client) {
         return NextResponse.json({ error: "Client not found" }, { status: 404 });
       }
 
       // Find or create Amazon sales channel
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let channel = await (db as any).salesChannel.findFirst({
+      let channel = await db.salesChannel.findFirst({
         where: { type: "amazon", isActive: true },
       });
       if (!channel) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        channel = await (db as any).salesChannel.create({
+        channel = await db.salesChannel.create({
           data: {
             name: "Amazon",
             type: "amazon",
             isActive: true,
-            config: { sellerId: process.env.AMAZON_SELLER_ID },
+            config: { sellerId: sellerId ?? process.env.AMAZON_SELLER_ID },
           },
         });
       }
@@ -266,16 +256,13 @@ export async function POST(req: NextRequest) {
       const { logAudit } = await import("@/lib/audit");
 
       // Resolve SKUs
-      const skus = order.lineItems
-        .map((li) => li.sku)
-        .filter((s): s is string => !!s);
-      const products =
-        skus.length > 0
-          ? await db.product.findMany({
-              where: { clientId: client.id, sku: { in: skus } },
-              select: { id: true, sku: true },
-            })
-          : [];
+      const skus = order.lineItems.map((li) => li.sku).filter((s): s is string => !!s);
+      const products = skus.length > 0
+        ? await db.product.findMany({
+            where: { clientId: client.id, sku: { in: skus } },
+            select: { id: true, sku: true },
+          })
+        : [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const productBySku = new Map(products.map((p: any) => [p.sku, p]));
 
@@ -328,19 +315,16 @@ export async function POST(req: NextRequest) {
         changes: { source: { old: null, new: "amazon_webhook" } },
       });
 
-      console.log(
-        `[Amazon Webhook] Imported order ${created.orderNumber} (${amazonOrderId})`
-      );
+      console.log(`[Amazon Webhook] Imported order ${created.orderNumber} (${amazonOrderId})`);
       return NextResponse.json({ imported: created.orderNumber });
     } catch (err) {
       console.error("[Amazon Webhook] Error processing ORDER_CHANGE:", err);
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "Failed" },
+        { error: "Failed to process order" },
         { status: 500 }
       );
     }
   }
 
-  // Other notification types — log and acknowledge
   return NextResponse.json({ received: notificationType });
 }

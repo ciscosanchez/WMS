@@ -140,7 +140,7 @@ export async function updateOrderStatus(id: string, status: string) {
   return order;
 }
 
-/** Internal helper — creates a PickTask + PickTaskLines for an order. */
+/** Internal helper — creates a PickTask + PickTaskLines for an order and allocates inventory. */
 async function generatePickTasksForOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
@@ -151,30 +151,59 @@ async function generatePickTasksForOrder(
   try {
     const taskNumber = await nextSequence(db, "PICK");
 
-    // For each line, find the best bin (most available stock first)
-    const lineData = await Promise.all(
-      order.lines.map(async (line) => {
-        const inv = await db.inventory.findFirst({
-          where: { productId: line.productId, available: { gt: 0 } },
+    // Atomic: find bins, allocate inventory, create pick task in one transaction
+    const task = await db.$transaction(async (prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any) => {
+      const lineData = [];
+
+      for (const line of order.lines) {
+        // Find the best bin with enough available stock
+        const inv = await prisma.inventory.findFirst({
+          where: { productId: line.productId, available: { gte: line.quantity } },
           orderBy: { available: "desc" },
         });
-        return {
+
+        if (inv) {
+          // Allocate: increment allocated, decrement available
+          await prisma.inventory.update({
+            where: { id: inv.id },
+            data: {
+              allocated: { increment: line.quantity },
+              available: { decrement: line.quantity },
+            },
+          });
+
+          // Write allocation ledger entry
+          await prisma.inventoryTransaction.create({
+            data: {
+              type: "allocate",
+              productId: line.productId,
+              fromBinId: inv.binId,
+              quantity: line.quantity,
+              referenceType: "order",
+              referenceId: order.id,
+              performedBy: userId,
+            },
+          });
+        }
+
+        lineData.push({
           productId: line.productId,
           binId: inv?.binId ?? null,
           quantity: line.quantity,
           pickedQty: 0,
-        };
-      })
-    );
+        });
+      }
 
-    const task = await db.pickTask.create({
-      data: {
-        taskNumber,
-        orderId: order.id,
-        method: "single_order",
-        status: "pending",
-        lines: { create: lineData },
-      },
+      return prisma.pickTask.create({
+        data: {
+          taskNumber,
+          orderId: order.id,
+          method: "single_order",
+          status: "pending",
+          lines: { create: lineData },
+        },
+      });
     });
 
     await logAudit(db, {

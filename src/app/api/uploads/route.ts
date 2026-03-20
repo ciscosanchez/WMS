@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPresignedUploadUrl, ensureBucket } from "@/lib/s3/client";
 import { getSession } from "@/lib/auth/session";
 import { resolveTenant } from "@/lib/tenant/context";
+import { rateLimiter } from "@/lib/security/rate-limit";
 import { v4 as uuid } from "uuid";
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -26,6 +27,16 @@ const ALLOWED_ENTITY_TYPES = new Set([
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 export async function POST(request: NextRequest) {
+  // ── Rate limit ──────────────────────────────────────────────────────────────
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rateCheck = rateLimiter.check(`upload:${clientIp}`);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000)) } }
+    );
+  }
+
   // ── Auth ────────────────────────────────────────────────────────────────────
   const session = await getSession();
   if (!session) {
@@ -113,8 +124,9 @@ export async function POST(request: NextRequest) {
         : `/${key}`,
     });
   } catch (error: unknown) {
+    console.error("[API /uploads] error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Upload failed" },
+      { error: "Upload failed" },
       { status: 500 }
     );
   }

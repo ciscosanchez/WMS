@@ -4,7 +4,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { startOfMonth, subDays, format } from "date-fns";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("reports:read");
 }
 
 export async function getReceivingStats() {

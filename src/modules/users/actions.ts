@@ -17,7 +17,7 @@ async function getAdminContext() {
 }
 
 export async function getTenantUsers(tenantId: string) {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("users:read");
   if (tenant.tenantId !== tenantId) throw new Error("Forbidden");
 
   return publicDb.tenantUser.findMany({

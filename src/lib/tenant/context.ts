@@ -13,13 +13,15 @@ const ROLE_LEVEL: Record<TenantRole, number> = {
 const PERMISSION_LEVEL: Record<string, number> = {
   "clients:read": 10, "clients:write": 40,
   "products:read": 10, "products:write": 30,
-  "receiving:read": 10, "receiving:write": 20,
-  "inventory:read": 10, "inventory:write": 20, "inventory:adjust": 30,
+  "receiving:read": 10, "receiving:write": 20, "receiving:complete": 30,
+  "inventory:read": 10, "inventory:write": 20, "inventory:adjust": 30, "inventory:approve": 30, "inventory:count": 20,
   "orders:read": 10, "orders:write": 30,
   "warehouse:read": 10, "warehouse:write": 30,
   "shipping:read": 10, "shipping:write": 20,
   "operator:write": 20,
-  "settings:write": 40,
+  "reports:read": 10,
+  "settings:read": 30, "settings:write": 40,
+  "users:read": 30, "users:write": 40,
 };
 
 export interface TenantContext {

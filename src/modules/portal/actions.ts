@@ -6,15 +6,12 @@ async function getContext() {
   return requireTenantContext();
 }
 
-/** Resolve the portal client: match by contactEmail, fall back to first active client. */
+/** Resolve the portal client: match by contactEmail only. No fallback — fail closed. */
 async function resolvePortalClient(db: any, userEmail: string) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  let client = await db.client.findFirst({
+  if (!userEmail) return null;
+  return db.client.findFirst({
     where: { contactEmail: userEmail, isActive: true },
   });
-  if (!client) {
-    client = await db.client.findFirst({ where: { isActive: true } });
-  }
-  return client;
 }
 
 export async function getPortalInventory() {
@@ -143,6 +140,18 @@ export async function createPortalOrder(data: {
   try {
     const { nextSequence } = await import("@/lib/sequences");
     const { logAudit } = await import("@/lib/audit");
+
+    // Validate all productIds belong to this client — prevent cross-client orders
+    const productIds = data.lineItems.map((li) => li.productId);
+    const validProducts = await db.product.findMany({
+      where: { id: { in: productIds }, clientId: client.id, isActive: true },
+      select: { id: true },
+    });
+    const validIds = new Set(validProducts.map((p: { id: string }) => p.id));
+    const invalidIds = productIds.filter((id: string) => !validIds.has(id));
+    if (invalidIds.length > 0) {
+      return { error: "One or more products are not available" };
+    }
 
     // Find or create manual sales channel
     let channel = await db.salesChannel.findFirst({

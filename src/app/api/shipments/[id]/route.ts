@@ -87,8 +87,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ success: true, order: { id: updated.id, status: updated.status } });
   } catch (err) {
+    console.error("[API /shipments/:id] error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "Internal error" },
       { status: 500 }
     );
   }

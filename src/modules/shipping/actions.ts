@@ -352,26 +352,82 @@ export async function markShipmentShipped(
 
     const shipment = await tenant.db.shipment.findUnique({
       where: { id: shipmentId },
-      include: { order: true },
+      include: { order: true, items: true },
     });
     if (!shipment) throw new Error("Shipment not found");
 
-    // Update shipment
-    await tenant.db.shipment.update({
-      where: { id: shipmentId },
-      data: {
-        trackingNumber,
-        carrier,
-        status: "shipped",
-        shippedAt: new Date(),
-      },
-    });
+    // Atomic: update shipment + order status + decrement inventory + write ledger
+    await tenant.db.$transaction(async (prisma) => {
+      // Update shipment
+      await prisma.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          trackingNumber,
+          carrier,
+          status: "shipped",
+          shippedAt: new Date(),
+        },
+      });
 
-    // Update order status to shipped
-    await tenant.db.order.update({
-      where: { id: shipment.orderId },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { status: "shipped" as any, shippedDate: new Date() },
+      // Update order status to shipped
+      await prisma.order.update({
+        where: { id: shipment.orderId },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { status: "shipped" as any, shippedDate: new Date() },
+      });
+
+      // Decrement inventory: release allocation and reduce onHand for each shipped item
+      for (const item of shipment.items) {
+        // Find the inventory record for this product (use the pick task's bin if available)
+        const pickTask = await prisma.pickTask.findFirst({
+          where: { orderId: shipment.orderId },
+          include: { lines: true },
+        });
+        const pickLine = pickTask?.lines.find(
+          (l) => l.productId === item.productId
+        );
+
+        if (pickLine?.binId) {
+          const inv = await prisma.inventory.findFirst({
+            where: {
+              productId: item.productId,
+              binId: pickLine.binId,
+              lotNumber: item.lotNumber,
+              serialNumber: item.serialNumber,
+            },
+          });
+
+          if (inv) {
+            const decrQty = Math.min(item.quantity, inv.onHand);
+            const deallocQty = Math.min(item.quantity, inv.allocated);
+            await prisma.inventory.update({
+              where: { id: inv.id },
+              data: {
+                onHand: { decrement: decrQty },
+                allocated: { decrement: deallocQty },
+                // available stays the same: (onHand - decrQty) - (allocated - deallocQty)
+                // only adjust if allocated was less than what we're shipping
+                available: inv.available - (decrQty - deallocQty),
+              },
+            });
+
+            // Write ledger entry
+            await prisma.inventoryTransaction.create({
+              data: {
+                type: "deallocate",
+                productId: item.productId,
+                fromBinId: pickLine.binId,
+                quantity: item.quantity,
+                lotNumber: item.lotNumber,
+                serialNumber: item.serialNumber,
+                referenceType: "shipment",
+                referenceId: shipmentId,
+                performedBy: user.id,
+              },
+            });
+          }
+        }
+      }
     });
 
     await logAudit(tenant.db, {

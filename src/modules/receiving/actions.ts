@@ -147,30 +147,35 @@ export async function receiveLine(shipmentId: string, data: unknown) {
   const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = receiveLineSchema.parse(data);
 
-  const transaction = await tenant.db.receivingTransaction.create({
-    data: {
-      shipmentId,
-      lineId: parsed.lineId,
-      binId: parsed.binId || null,
-      quantity: parsed.quantity,
-      condition: parsed.condition,
-      lotNumber: parsed.lotNumber || null,
-      serialNumber: parsed.serialNumber || null,
-      receivedBy: user.id,
-      notes: parsed.notes || null,
-    },
-  });
+  // Atomic: create receiving transaction + update line qty + transition shipment status
+  const transaction = await tenant.db.$transaction(async (prisma) => {
+    const tx = await prisma.receivingTransaction.create({
+      data: {
+        shipmentId,
+        lineId: parsed.lineId,
+        binId: parsed.binId || null,
+        quantity: parsed.quantity,
+        condition: parsed.condition,
+        lotNumber: parsed.lotNumber || null,
+        serialNumber: parsed.serialNumber || null,
+        receivedBy: user.id,
+        notes: parsed.notes || null,
+      },
+    });
 
-  // Update received qty on line
-  await tenant.db.inboundShipmentLine.update({
-    where: { id: parsed.lineId },
-    data: { receivedQty: { increment: parsed.quantity } },
-  });
+    // Update received qty on line
+    await prisma.inboundShipmentLine.update({
+      where: { id: parsed.lineId },
+      data: { receivedQty: { increment: parsed.quantity } },
+    });
 
-  // Update shipment status to receiving if still in arrived
-  await tenant.db.inboundShipment.updateMany({
-    where: { id: shipmentId, status: "arrived" },
-    data: { status: "receiving" },
+    // Update shipment status to receiving if still in arrived
+    await prisma.inboundShipment.updateMany({
+      where: { id: shipmentId, status: "arrived" },
+      data: { status: "receiving" },
+    });
+
+    return tx;
   });
 
   await logAudit(tenant.db, {
@@ -194,57 +199,60 @@ async function finalizeReceiving(
     include: { line: true },
   });
 
-  for (const tx of transactions) {
-    if (!tx.binId) continue;
+  // Atomic: upsert all inventory records + ledger entries in one transaction
+  await tenant.db.$transaction(async (prisma) => {
+    for (const tx of transactions) {
+      if (!tx.binId) continue;
 
-    // Upsert inventory record
-    const existing = await tenant.db.inventory.findFirst({
-      where: {
-        productId: tx.line.productId,
-        binId: tx.binId,
-        lotNumber: tx.lotNumber,
-        serialNumber: tx.serialNumber,
-      },
-    });
-
-    if (existing) {
-      const newOnHand = existing.onHand + tx.quantity;
-      await tenant.db.inventory.update({
-        where: { id: existing.id },
-        data: {
-          onHand: newOnHand,
-          available: newOnHand - existing.allocated,
-        },
-      });
-    } else {
-      await tenant.db.inventory.create({
-        data: {
+      // Upsert inventory record
+      const existing = await prisma.inventory.findFirst({
+        where: {
           productId: tx.line.productId,
           binId: tx.binId,
           lotNumber: tx.lotNumber,
           serialNumber: tx.serialNumber,
-          onHand: tx.quantity,
-          allocated: 0,
-          available: tx.quantity,
+        },
+      });
+
+      if (existing) {
+        const newOnHand = existing.onHand + tx.quantity;
+        await prisma.inventory.update({
+          where: { id: existing.id },
+          data: {
+            onHand: newOnHand,
+            available: newOnHand - existing.allocated,
+          },
+        });
+      } else {
+        await prisma.inventory.create({
+          data: {
+            productId: tx.line.productId,
+            binId: tx.binId,
+            lotNumber: tx.lotNumber,
+            serialNumber: tx.serialNumber,
+            onHand: tx.quantity,
+            allocated: 0,
+            available: tx.quantity,
+          },
+        });
+      }
+
+      // Log inventory transaction
+      await prisma.inventoryTransaction.create({
+        data: {
+          type: "receive",
+          productId: tx.line.productId,
+          toBinId: tx.binId,
+          quantity: tx.quantity,
+          lotNumber: tx.lotNumber,
+          serialNumber: tx.serialNumber,
+          referenceType: "shipment",
+          referenceId: shipmentId,
+          performedBy: userId,
         },
       });
     }
-
-    // Log inventory transaction
-    await tenant.db.inventoryTransaction.create({
-      data: {
-        type: "receive",
-        productId: tx.line.productId,
-        toBinId: tx.binId,
-        quantity: tx.quantity,
-        lotNumber: tx.lotNumber,
-        serialNumber: tx.serialNumber,
-        referenceType: "shipment",
-        referenceId: shipmentId,
-        performedBy: userId,
-      },
-    });
-  }
+  });
 }
 
 async function captureBillingOnReceive(tenant: TenantContext, shipmentId: string) {

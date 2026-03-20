@@ -57,8 +57,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ inventory: result, count: result.length });
   } catch (err) {
+    console.error("[API /inventory] error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "Internal error" },
       { status: 500 }
     );
   }

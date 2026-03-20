@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, wmsOrderId, dispatchOrderId });
   } catch (err) {
+    console.error("[API /shipments] error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "Internal error" },
       { status: 500 }
     );
   }

@@ -318,30 +318,24 @@ export class NetSuiteClient {
 /**
  * Factory: returns a configured NetSuiteClient from env vars, or null if not configured.
  */
-export function getNetSuiteClient(): NetSuiteClient | null {
-  const {
-    NETSUITE_ACCOUNT_ID,
-    NETSUITE_CONSUMER_KEY,
-    NETSUITE_CONSUMER_SECRET,
-    NETSUITE_TOKEN_ID,
-    NETSUITE_TOKEN_SECRET,
-  } = process.env;
+export function getNetSuiteClient(
+  overrides?: Record<string, string>
+): NetSuiteClient | null {
+  const accountId = overrides?.accountId ?? process.env.NETSUITE_ACCOUNT_ID;
+  const consumerKey = overrides?.consumerKey ?? process.env.NETSUITE_CONSUMER_KEY;
+  const consumerSecret = overrides?.consumerSecret ?? process.env.NETSUITE_CONSUMER_SECRET;
+  const tokenId = overrides?.tokenId ?? process.env.NETSUITE_TOKEN_ID;
+  const tokenSecret = overrides?.tokenSecret ?? process.env.NETSUITE_TOKEN_SECRET;
 
-  if (
-    !NETSUITE_ACCOUNT_ID ||
-    !NETSUITE_CONSUMER_KEY ||
-    !NETSUITE_CONSUMER_SECRET ||
-    !NETSUITE_TOKEN_ID ||
-    !NETSUITE_TOKEN_SECRET
-  ) {
+  if (!accountId || !consumerKey || !consumerSecret || !tokenId || !tokenSecret) {
     return null;
   }
 
   return new NetSuiteClient({
-    accountId: NETSUITE_ACCOUNT_ID,
-    consumerKey: NETSUITE_CONSUMER_KEY,
-    consumerSecret: NETSUITE_CONSUMER_SECRET,
-    tokenId: NETSUITE_TOKEN_ID,
-    tokenSecret: NETSUITE_TOKEN_SECRET,
+    accountId,
+    consumerKey,
+    consumerSecret,
+    tokenId,
+    tokenSecret,
   });
 }

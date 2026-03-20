@@ -42,10 +42,13 @@ const PERMISSION_LEVEL: Record<string, number> = {
   // Receiving
   "receiving:read": 10,
   "receiving:write": 20,
+  "receiving:complete": 30,
   // Inventory
   "inventory:read": 10,
   "inventory:write": 20,
   "inventory:adjust": 30,
+  "inventory:approve": 30,
+  "inventory:count": 20,
   // Orders
   "orders:read": 10,
   "orders:write": 30,
@@ -57,8 +60,14 @@ const PERMISSION_LEVEL: Record<string, number> = {
   "shipping:write": 20,
   // Operator floor screens
   "operator:write": 20,
+  // Reports
+  "reports:read": 10,
   // Settings (admin-only)
+  "settings:read": 30,
   "settings:write": 40,
+  // User management
+  "users:read": 30,
+  "users:write": 40,
 };
 
 // ─── Core auth helpers ─────────────────────────────────────────────────────────
