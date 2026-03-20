@@ -100,7 +100,7 @@ export async function requireTenantContext(permission?: string): Promise<{
   // Optional permission check — uses the already-resolved role (no extra DB call)
   if (permission && !user.isSuperadmin) {
     const userLevel = ROLE_LEVEL[role] ?? 0;
-    const requiredLevel = PERMISSION_LEVEL[permission] ?? 0;
+    const requiredLevel = PERMISSION_LEVEL[permission] ?? 40; // Unknown permissions require admin (fail-closed)
     if (userLevel < requiredLevel) {
       throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
     }

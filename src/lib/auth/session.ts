@@ -135,7 +135,7 @@ export async function requirePermission(tenantSlug: string, permission: string) 
   if (user.isSuperadmin) return { user, role };
 
   const userLevel = ROLE_LEVEL[role] ?? 0;
-  const requiredLevel = PERMISSION_LEVEL[permission] ?? 0;
+  const requiredLevel = PERMISSION_LEVEL[permission] ?? 40; // Unknown permissions require admin (fail-closed)
 
   if (userLevel < requiredLevel) {
     throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
