@@ -195,13 +195,27 @@ async function generatePickTasksForOrder(
         });
       }
 
+      // Sort lines by bin barcode for optimal pick path (zone → aisle → rack → shelf → bin)
+      // Resolve barcodes for sorting — bin IDs are cuid strings, barcodes encode location
+      const binIds = lineData.map((l: { binId: string | null }) => l.binId).filter(Boolean) as string[];
+      const bins = binIds.length > 0
+        ? await prisma.bin.findMany({ where: { id: { in: binIds } }, select: { id: true, barcode: true } })
+        : [];
+      const binBarcodeMap = new Map(bins.map((b: { id: string; barcode: string }) => [b.id, b.barcode]));
+
+      const sortedLines = [...lineData].sort((a, b) => {
+        const aKey = (a.binId && binBarcodeMap.get(a.binId)) ?? "zzz";
+        const bKey = (b.binId && binBarcodeMap.get(b.binId)) ?? "zzz";
+        return aKey.localeCompare(bKey);
+      });
+
       return prisma.pickTask.create({
         data: {
           taskNumber,
           orderId: order.id,
           method: "single_order",
           status: "pending",
-          lines: { create: lineData },
+          lines: { create: sortedLines },
         },
       });
     });

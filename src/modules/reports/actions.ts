@@ -198,3 +198,96 @@ export async function getFulfillmentStats() {
     ordersPerDay,
   };
 }
+
+/**
+ * Movement analytics — shows operator travel patterns to identify inefficiency.
+ * Returns top bin-to-bin paths, movement counts per operator, and repeat trips.
+ */
+export async function getMovementAnalytics() {
+  const { tenant } = await getContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+
+  const monthStart = startOfMonth(new Date());
+  const sevenDaysAgo = subDays(new Date(), 6);
+
+  // All move transactions in the last 7 days (with bin barcodes for path analysis)
+  const moves = await db.inventoryTransaction.findMany({
+    where: {
+      type: "move",
+      createdAt: { gte: sevenDaysAgo },
+    },
+    select: {
+      id: true,
+      performedBy: true,
+      fromBin: { select: { barcode: true } },
+      toBin: { select: { barcode: true } },
+      quantity: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  // Resolve operator names
+  const { publicDb } = await import("@/lib/db/public-client");
+  const operatorIds = [...new Set(moves.map((m: { performedBy: string }) => m.performedBy))] as string[];
+  const users = operatorIds.length > 0
+    ? await publicDb.user.findMany({
+        where: { id: { in: operatorIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const nameMap = new Map(users.map((u) => [u.id, u.name]));
+
+  // Count movements per operator
+  const operatorCounts = new Map<string, number>();
+  for (const m of moves) {
+    const name = nameMap.get((m as { performedBy: string }).performedBy) ?? "Unknown";
+    operatorCounts.set(name, (operatorCounts.get(name) ?? 0) + 1);
+  }
+  const movesPerOperator = [...operatorCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Top bin-to-bin paths (identify repeat trips)
+  const pathCounts = new Map<string, number>();
+  for (const m of moves) {
+    const from = (m as { fromBin: { barcode: string } | null }).fromBin?.barcode ?? "?";
+    const to = (m as { toBin: { barcode: string } | null }).toBin?.barcode ?? "?";
+    const key = `${from} → ${to}`;
+    pathCounts.set(key, (pathCounts.get(key) ?? 0) + 1);
+  }
+  const topPaths = [...pathCounts.entries()]
+    .map(([path, count]) => ({ path, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Repeat trips: same from→to path used more than once (inefficiency indicator)
+  const repeatTrips = topPaths.filter((p) => p.count > 1);
+
+  // Movement counts by day for the last 7 days
+  const dayLabels = Array.from({ length: 7 }, (_, i) =>
+    format(subDays(new Date(), 6 - i), "EEE")
+  );
+  const dayMap: Record<string, number> = Object.fromEntries(dayLabels.map((d) => [d, 0]));
+  for (const m of moves) {
+    const label = format(new Date((m as { createdAt: Date }).createdAt), "EEE");
+    if (label in dayMap) dayMap[label] = (dayMap[label] ?? 0) + 1;
+  }
+  const movesPerDay = dayLabels.map((d) => ({ name: d, value: dayMap[d] ?? 0 }));
+
+  // MTD totals
+  const mtdMoves = await db.inventoryTransaction.count({
+    where: { type: "move", createdAt: { gte: monthStart } },
+  });
+
+  return {
+    totalMovesMTD: mtdMoves,
+    totalMovesWeek: moves.length,
+    repeatTrips: repeatTrips.length,
+    movesPerOperator,
+    topPaths,
+    movesPerDay,
+  };
+}

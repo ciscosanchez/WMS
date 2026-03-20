@@ -1,4 +1,4 @@
-import { getReceivingStats, getInventoryStats, getFulfillmentStats } from "@/modules/reports/actions";
+import { getReceivingStats, getInventoryStats, getFulfillmentStats, getMovementAnalytics } from "@/modules/reports/actions";
 import { getBillingSummaryMTD } from "@/modules/billing/actions";
 import { ReportsClient } from "./_client";
 
@@ -22,11 +22,12 @@ const billingFallback = [
 ];
 
 export default async function ReportsPage() {
-  const [receiving, inventory, fulfillment, billing] = await Promise.allSettled([
+  const [receiving, inventory, fulfillment, billing, movement] = await Promise.allSettled([
     getReceivingStats(),
     getInventoryStats(),
     getFulfillmentStats(),
     getBillingSummaryMTD(),
+    getMovementAnalytics(),
   ]);
 
   return (
@@ -48,6 +49,7 @@ export default async function ReportsPage() {
       }
       billing={billing.status === "fulfilled" && billing.value.length > 0 ? billing.value : billingFallback}
       storageUtilTrend={storageUtilTrend}
+      movement={movement.status === "fulfilled" ? movement.value : undefined}
     />
   );
 }

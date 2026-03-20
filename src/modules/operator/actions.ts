@@ -58,6 +58,56 @@ export async function getShipmentByBarcode(barcode: string) {
   });
 }
 
+// ─── Putaway Suggestion ─────────────────────────────────
+
+/**
+ * Suggest the best putaway bin for a product being received.
+ * Strategy: prefer a bin that already holds the same product (consolidation),
+ * then fall back to the nearest empty bin in the same zone.
+ */
+export async function suggestPutawayBin(productId: string) {
+  if (config.useMockData) return null;
+
+  const { tenant } = await getContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+
+  // 1. Check putaway rules first
+  const rule = await db.putawayRule.findFirst({
+    where: { productId, isActive: true },
+    include: { bin: true },
+    orderBy: { priority: "desc" },
+  });
+  if (rule?.bin) {
+    return { binId: rule.bin.id, barcode: rule.bin.barcode, reason: "putaway_rule" as const };
+  }
+
+  // 2. Find a bin that already has this product (consolidation)
+  const existingInv = await db.inventory.findFirst({
+    where: { productId, onHand: { gt: 0 }, bin: { status: "available" } },
+    include: { bin: true },
+    orderBy: { bin: { barcode: "asc" } },
+  });
+  if (existingInv?.bin) {
+    return { binId: existingInv.bin.id, barcode: existingInv.bin.barcode, reason: "consolidation" as const };
+  }
+
+  // 3. Find nearest empty available bin in storage zones
+  const emptyBin = await db.bin.findFirst({
+    where: {
+      status: "available",
+      inventory: { none: {} },
+      shelf: { rack: { aisle: { zone: { type: "storage" } } } },
+    },
+    orderBy: { barcode: "asc" },
+  });
+  if (emptyBin) {
+    return { binId: emptyBin.id, barcode: emptyBin.barcode, reason: "nearest_empty" as const };
+  }
+
+  return null;
+}
+
 // ─── Pick Actions ────────────────────────────────────────
 
 export async function getMyPickTasks() {
@@ -71,7 +121,10 @@ export async function getMyPickTasks() {
     },
     include: {
       order: true,
-      lines: { include: { product: true, bin: true } },
+      lines: {
+        include: { product: true, bin: true },
+        orderBy: { bin: { barcode: "asc" } }, // Pick path order: zone → aisle → rack → shelf
+      },
     },
     orderBy: { createdAt: "asc" },
   });

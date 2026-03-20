@@ -32,6 +32,14 @@ interface ReportsClientProps {
   };
   billing: { name: string; value: number }[];
   storageUtilTrend: { name: string; value: number }[];
+  movement?: {
+    totalMovesMTD: number;
+    totalMovesWeek: number;
+    repeatTrips: number;
+    movesPerOperator: { name: string; count: number }[];
+    topPaths: { path: string; count: number }[];
+    movesPerDay: { name: string; value: number }[];
+  };
 }
 
 export function ReportsClient({
@@ -40,6 +48,7 @@ export function ReportsClient({
   fulfillment,
   billing,
   storageUtilTrend,
+  movement,
 }: ReportsClientProps) {
   const billingTotal = billing.reduce((sum, d) => sum + d.value, 0);
 
@@ -70,6 +79,7 @@ export function ReportsClient({
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="movement">Movement</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4 pt-4">
@@ -260,6 +270,65 @@ export function ReportsClient({
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="movement" className="space-y-4 pt-4">
+          {movement ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Moves (MTD)</CardTitle></CardHeader>
+                  <CardContent><p className="text-3xl font-bold">{movement.totalMovesMTD}</p></CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Moves (7 days)</CardTitle></CardHeader>
+                  <CardContent><p className="text-3xl font-bold">{movement.totalMovesWeek}</p></CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Repeat Trips</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-amber-600">{movement.repeatTrips}</p>
+                    <p className="text-xs text-muted-foreground">Same from→to path used multiple times</p>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <BarChartCard
+                  title="Moves per Day (7 days)"
+                  data={movement.movesPerDay}
+                />
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Moves per Operator</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {movement.movesPerOperator.map((op) => (
+                      <div key={op.name} className="flex justify-between">
+                        <span>{op.name}</span>
+                        <span className="font-medium">{op.count}</span>
+                      </div>
+                    ))}
+                    {movement.movesPerOperator.length === 0 && (
+                      <p className="text-muted-foreground">No movement data.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              {movement.topPaths.length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Top Bin-to-Bin Paths</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {movement.topPaths.map((p) => (
+                      <div key={p.path} className="flex justify-between">
+                        <span className="font-mono text-xs">{p.path}</span>
+                        <span className="font-medium">{p.count}x</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Movement analytics loading...</p>
+          )}
         </TabsContent>
       </Tabs>
     </div>
