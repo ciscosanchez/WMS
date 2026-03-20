@@ -39,7 +39,10 @@ import {
 const navigation = [
   {
     label: "Overview",
-    items: [{ title: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+    items: [
+      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "Operations", href: "/operations", icon: Users },
+    ],
   },
   {
     label: "Inbound",

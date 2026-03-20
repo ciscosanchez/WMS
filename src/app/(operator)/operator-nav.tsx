@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Warehouse,
+  LayoutDashboard,
   PackageOpen,
   ScanLine,
   Package,
@@ -13,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/receive", label: "Receive", icon: PackageOpen },
   { href: "/pick", label: "Pick", icon: ScanLine },
   { href: "/pack", label: "Pack", icon: Package },
@@ -27,7 +29,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b px-4">
-        <Link href="/receive" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Warehouse className="h-4 w-4" />
           </div>
