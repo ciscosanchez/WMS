@@ -49,9 +49,14 @@ export default function OperatorPickPage() {
     }
   }
 
-  async function handleConfirm(line: PickTask["lines"][number], scannedBin: string) {
-    if (scannedBin !== line.bin.barcode) {
-      toast.error(`Wrong bin — expected ${line.bin.barcode}`);
+  async function handleConfirm(line: PickTask["lines"][number], scannedValue: string) {
+    // Accept bin barcode OR product barcode/SKU as verification
+    const isBinMatch = scannedValue === line.bin.barcode;
+    const isProductMatch =
+      scannedValue === line.product.barcode ||
+      scannedValue === line.product.sku;
+    if (!isBinMatch && !isProductMatch) {
+      toast.error(`Wrong scan — expected bin ${line.bin.barcode} or product ${line.product.sku}`);
       return;
     }
     setWorking(true);
@@ -210,16 +215,29 @@ function ActiveTaskCard({
                   <p className="text-sm">
                     {activeLine.product.sku} &mdash; {activeLine.product.name}
                   </p>
-                  <p className="text-2xl font-bold text-primary">
-                    Qty: {activeLine.quantity - activeLine.pickedQty}
-                  </p>
+                  {(() => {
+                    const qty = activeLine.quantity - activeLine.pickedQty;
+                    const upc = (activeLine.product as { unitsPerCase?: number | null }).unitsPerCase;
+                    return (
+                      <>
+                        <p className="text-2xl font-bold text-primary">
+                          Pick {qty} {upc ? "EACH" : (activeLine.product as { baseUom?: string }).baseUom ?? "EA"}
+                        </p>
+                        {upc && upc > 1 && (
+                          <p className="text-sm font-medium text-amber-600">
+                            {upc} units per case — pick individual units, NOT cartons
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
 
             <div className="mt-4">
               <BarcodeScannerInput
-                placeholder="Scan bin to confirm..."
+                placeholder="Scan bin or product to confirm..."
                 onScan={(v) => {
                   setScanInput(v);
                   onConfirm(activeLine, v);
