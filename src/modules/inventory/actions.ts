@@ -621,8 +621,25 @@ export async function confirmPutaway(receivingTxId: string, targetBinId: string)
     include: { line: true },
   });
 
+  // Replay protection: check if this receiving transaction was already put away
+  const existingPutaway = await db.inventoryTransaction.findFirst({
+    where: {
+      type: "putaway",
+      referenceType: "receiving_transaction",
+      referenceId: receivingTxId,
+    },
+  });
+  if (existingPutaway) {
+    return { success: true }; // Idempotent — already processed
+  }
+
   // Atomic: upsert inventory in target bin + log putaway transaction
   await db.$transaction(async (prisma) => {
+    // Re-check inside transaction to prevent concurrent putaway
+    const doubleCheck = await prisma.inventoryTransaction.findFirst({
+      where: { type: "putaway", referenceType: "receiving_transaction", referenceId: receivingTxId },
+    });
+    if (doubleCheck) return; // Already processed concurrently
     const existing = await prisma.inventory.findFirst({
       where: {
         productId: rxTx.line.productId,

@@ -113,20 +113,29 @@ export async function updateShipmentStatus(
 
   const { user, tenant } = await requireTenantContext("receiving:write");
 
-  const current = await tenant.db.inboundShipment.findUniqueOrThrow({ where: { id }, select: { status: true } });
+  const current = await tenant.db.inboundShipment.findUniqueOrThrow({ where: { id }, select: { status: true, shipmentNumber: true } });
 
   // Validate transition before any mutations
   assertTransition("shipment", current.status, status, SHIPMENT_TRANSITIONS);
-
-  const wasAlreadyCompleted = current.status === "completed";
 
   const updateData: Record<string, unknown> = { status };
   if (status === "arrived") updateData.arrivedDate = new Date();
   if (status === "completed") updateData.completedDate = new Date();
 
-  const shipment = await tenant.db.inboundShipment.update({
-    where: { id },
+  // Conditional update: only transition if status hasn't changed since we read it.
+  // This prevents concurrent requests from both succeeding.
+  const result = await tenant.db.inboundShipment.updateMany({
+    where: { id, status: current.status },
     data: updateData,
+  });
+
+  if (result.count === 0) {
+    throw new Error(`Shipment ${id} status was modified concurrently — please retry`);
+  }
+
+  const shipment = await tenant.db.inboundShipment.findUniqueOrThrow({
+    where: { id },
+    select: { id: true, shipmentNumber: true, status: true, clientId: true },
   });
 
   await logAudit(tenant.db, {
@@ -137,8 +146,9 @@ export async function updateShipmentStatus(
     changes: { status: { old: current.status, new: status } },
   });
 
-  // If completing for the first time, create inventory records and capture billing events
-  if (status === "completed" && !wasAlreadyCompleted) {
+  // If completing for the first time, create inventory records and capture billing events.
+  // The conditional update above guarantees only one request reaches this point.
+  if (status === "completed") {
     await finalizeReceiving(tenant, id, user.id);
     await captureBillingOnReceive(tenant, id);
   }
@@ -160,7 +170,7 @@ export async function updateShipmentStatus(
     }).catch(() => {});
   }
 
-  if (status === "completed" && !wasAlreadyCompleted) {
+  if (status === "completed") {
     const txns = await tenant.db.receivingTransaction.findMany({ where: { shipmentId: id } });
     const totalUnits = txns.reduce((s, t) => s + t.quantity, 0);
     notifyWarehouseTeam(tenant.db, {

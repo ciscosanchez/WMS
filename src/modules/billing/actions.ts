@@ -313,14 +313,10 @@ export async function getPortalBillingData() {
   const { user, tenant } = await getContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  // Find client by contact email, fall back to first active client for admins
-  let client = await db.client.findFirst({
+  // Find client strictly by contact email — no fallback to prevent data leaks
+  const client = await db.client.findFirst({
     where: { contactEmail: user.email, isActive: true },
   });
-
-  if (!client) {
-    client = await db.client.findFirst({ where: { isActive: true } });
-  }
 
   if (!client) return null;
 

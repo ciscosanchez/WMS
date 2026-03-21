@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateDispatchApiKey } from "@/lib/integrations/dispatchpro/auth";
+import { validateTenantApiKey } from "@/lib/integrations/dispatchpro/auth";
 import { publicDb } from "@/lib/db/public-client";
 import { getTenantDb } from "@/lib/db/tenant-client";
 
@@ -13,10 +13,6 @@ import { getTenantDb } from "@/lib/db/tenant-client";
  *   clientId    (optional — filter by client)
  */
 export async function GET(request: NextRequest) {
-  if (!validateDispatchApiKey(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const tenantSlug = searchParams.get("tenantSlug");
@@ -29,6 +25,12 @@ export async function GET(request: NextRequest) {
 
     const tenant = await publicDb.tenant.findUnique({ where: { slug: tenantSlug, status: "active" } });
     if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+
+    // Validate API key is authorized for this specific tenant
+    const settings = (tenant.settings ?? {}) as Record<string, unknown>;
+    if (!validateTenantApiKey(request, tenantSlug, settings)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const db = getTenantDb(tenant.dbSchema);
 

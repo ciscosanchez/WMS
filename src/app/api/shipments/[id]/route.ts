@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateDispatchApiKey } from "@/lib/integrations/dispatchpro/auth";
+import { validateTenantApiKey } from "@/lib/integrations/dispatchpro/auth";
 import { publicDb } from "@/lib/db/public-client";
 import { getTenantDb } from "@/lib/db/tenant-client";
 
@@ -15,10 +15,6 @@ import { getTenantDb } from "@/lib/db/tenant-client";
  *   failed      → WMS order "on_hold"
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!validateDispatchApiKey(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
     const { id: wmsOrderId } = await params;
     const body = await request.json();
@@ -30,6 +26,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const tenant = await publicDb.tenant.findUnique({ where: { slug: tenantSlug, status: "active" } });
     if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+
+    const settings = (tenant.settings ?? {}) as Record<string, unknown>;
+    if (!validateTenantApiKey(request, tenantSlug, settings)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const db = getTenantDb(tenant.dbSchema);
     const order = await db.order.findUnique({ where: { id: wmsOrderId } });
