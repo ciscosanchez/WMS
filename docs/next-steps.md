@@ -4,21 +4,21 @@
 
 ## Current State (March 21)
 
-Production is live on Hetzner CPX21. Hardening sprint completed: workflow transition guards, dashboard KPI fixes, demo fallback removal, mock pages wired to real data. 292 unit tests, 35 E2E tests, 0 lint errors.
+Production is live on Hetzner CPX21. Two hardening sprints completed. All operational pages wired to real data. 292 unit tests, 35 E2E tests, 0 lint errors.
 
 ### What's Actually Left
 
+All remaining items are externally blocked or config-level (carriers settings, EDI settings, integrations test buttons still use setTimeout — acceptable for config pages).
+
 | Priority | Item | Blocked on |
 |----------|------|------------|
-| 1 | Wire putaway engine suggestions into putaway page | — (putaway reads real data but doesn't use engine strategies yet) |
-| 2 | Wire channels page to real SalesChannel DB records | — (still inline mock) |
-| 3 | Wire platform billing page to real tenant data | — (still inline mock) |
-| 4 | Multi-tenant credential scoping (Shopify/carriers use global env vars) | Architecture decision |
-| 5 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
-| 6 | NetSuite credentials from Armstrong | Armstrong IT |
-| 7 | Email notifications (shipment updates, invoices) | Choose provider (SES vs SendGrid) |
-| 8 | Hetzner Backups ($1.20/mo) | Enable in console |
-| 9 | Performance tuning (DB indexes, pagination) | Load testing |
+| 1 | Multi-tenant credential scoping (Shopify/carriers use global env vars) | Architecture decision |
+| 2 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
+| 3 | NetSuite credentials from Armstrong | Armstrong IT |
+| 4 | Email notifications (shipment updates, invoices) | Choose provider (SES vs SendGrid) |
+| 5 | Hetzner Backups ($1.20/mo) | Enable in console |
+| 6 | Performance tuning (DB indexes, pagination) | Load testing |
+| 7 | Settings sub-pages (carriers, EDI, integrations) still use setTimeout for test/save | Low priority — config pages, not operator-critical |
 
 ### What's Done (no longer "next steps")
 
@@ -26,7 +26,7 @@ Production is live on Hetzner CPX21. Hardening sprint completed: workflow transi
 - ✅ Production deployment on Hetzner (March 18)
 - ✅ Security + data integrity hardening (March 19)
 - ✅ Armstrong operator features: dashboard, scan-out, pick path (March 20)
-- ✅ Hardening sprint (March 21):
+- ✅ Hardening sprint 1 (March 21):
   - Workflow transition guards for orders + receiving (invalid status jumps rejected)
   - Pick task generation blocks order status change on failure (no more swallowed errors)
   - Dashboard low-stock KPI fixed (was counting products WITH minStock, now counts products BELOW minStock)
@@ -38,6 +38,15 @@ Production is live on Hetzner CPX21. Hardening sprint completed: workflow transi
   - Adjustments form wired to real products + bins from DB
   - All 6 lint errors fixed (0 remaining)
   - Docs updated with honest status vocabulary (demo/wired/hardened)
+- ✅ Hardening sprint 2 (March 21):
+  - Putaway engine suggestions wired into putaway dialog (4 strategies: fixed, zone, consolidate, closest_empty)
+  - Channels page wired to SalesChannel DB with real order counts
+  - Platform billing page wired to real tenant data with computed MRR/ARR
+  - Putaway rules page wired to PutawayRule DB with CRUD (add/delete), real products + zones
+  - Picking page wired to real PickTask DB with KPIs (pending, in_progress, completed today, short picks)
+  - Settings page loads/saves from tenant.settings in public DB (no more setTimeout simulation)
+  - Dashboard mockActivity removed — always uses real inventory transaction queries
+  - All pages now DB-backed — no inline mock arrays remain in operational pages
 
 ---
 

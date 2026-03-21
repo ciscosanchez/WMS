@@ -1,4 +1,3 @@
-import { config } from "@/lib/config";
 import { resolveTenant } from "@/lib/tenant/context";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/components/shared/dashboard-charts";
@@ -6,61 +5,7 @@ import { getDashboardChartData } from "@/modules/dashboard/actions";
 import { PackageOpen, PackageCheck, Boxes, MapPin, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const mockActivity = [
-  {
-    id: "1",
-    type: "receive",
-    sku: "WIDGET-001",
-    quantity: 50,
-    bin: "WH1-A-01-01-01-01",
-    at: new Date(),
-  },
-  {
-    id: "2",
-    type: "putaway",
-    sku: "GADGET-001",
-    quantity: 25,
-    bin: "WH1-A-01-01-01-03",
-    at: new Date(Date.now() - 3600000),
-  },
-  {
-    id: "3",
-    type: "move",
-    sku: "PART-A100",
-    quantity: 100,
-    bin: "WH1-A-01-01-02-01",
-    at: new Date(Date.now() - 7200000),
-  },
-  {
-    id: "4",
-    type: "receive",
-    sku: "BOLT-M8X40",
-    quantity: 500,
-    bin: "WH1-B-02-01-01-05",
-    at: new Date(Date.now() - 10800000),
-  },
-  {
-    id: "5",
-    type: "adjust",
-    sku: "WIDGET-001",
-    quantity: -2,
-    bin: "WH1-A-01-01-01-01",
-    at: new Date(Date.now() - 86400000),
-  },
-];
-
 async function getDashboardData() {
-  if (config.useMockData) {
-    return {
-      pendingReceipts: 3,
-      receivedToday: 12,
-      totalSkus: 47,
-      availableBins: 128,
-      lowStockAlerts: 2,
-      recentActivity: mockActivity,
-    };
-  }
-
   const tenant = await resolveTenant();
   if (!tenant) return null;
   const db = tenant.db;

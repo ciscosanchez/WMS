@@ -17,13 +17,13 @@ The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0
 | Area | Status | Details |
 |------|--------|---------|
 | UI Shell | Hardened | Sidebar nav, topbar, breadcrumbs, search (Cmd+K), notifications |
-| Dashboard | Hardened | 5 KPI cards (real queries, low-stock fixed), 4 charts, activity feed |
+| Dashboard | Hardened | 5 KPI cards (real queries, low-stock fixed), 4 charts, real activity from inventory txns |
 | Clients CRUD | Wired | List, create, edit, delete with DataTable |
 | Products CRUD | Wired | List, create, edit, delete with UOM/tracking |
 | Warehouse | Wired | Cards, detail page with zones/aisles, bulk generator, add zone |
 | Receiving | Hardened | Shipment list, detail, receive dialog, transition guards enforced |
 | Fulfillment Orders | Hardened | Order list, detail, transition guards, pick task gen blocks on failure |
-| Picking | Wired | Pick task list with KPIs, assignment |
+| Picking | Wired | Pick task list with real KPIs from DB, status tracking |
 | Shipping | Hardened | Rate shop + label gen fail-closed (no demo fallbacks) |
 | Inventory Browser | Wired | Stock table with location/lot/availability |
 | Movements Ledger | Wired | Transaction history table |
@@ -31,12 +31,12 @@ The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0
 | Cycle Counts | Wired | DB-backed (queries InventoryAdjustment type=cycle_count) |
 | Putaway | Wired | Pending items from receiving txns, confirm writes inventory + ledger |
 | Discrepancies | Wired | DB-backed (queries ReceivingDiscrepancy table) |
-| Channels | Demo | Sales channel cards (inline mock data, not DB-backed) |
+| Channels | Wired | Sales channel cards from SalesChannel DB, order counts |
 | Reports | Wired | 5 tabs with charts + summary metrics, CSV export |
-| Settings | Wired | General config, operational modes, sequences, users, invite, billing rates, carriers, integrations, EDI |
+| Settings | Wired | General config loads/saves from tenant DB, operational modes, sequences, users, invite, billing rates, carriers, integrations, EDI |
 | Operator App | Wired | Receive, pick, pack, move, count (5 mobile-optimized pages, barcode scanner) |
 | Client Portal | Wired | Inventory, orders, shipments, billing, reports (6 pages) |
-| Superadmin Platform | Demo | Dashboard, tenant management, billing overview (inline mock billing data) |
+| Superadmin Platform | Wired | Dashboard, tenant management, billing from real tenant DB with MRR/ARR |
 | Database | Hardened | Docker Postgres 16 on port 5433, Prisma pg adapter, seeded |
 | Auth | Wired | Login page with mock/real toggle, SessionProvider restored |
 | Prisma Schemas | Hardened | Public + tenant with fulfillment models, driver adapters |
@@ -45,7 +45,8 @@ The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0
 | Integrations | Wired | UPS/FedEx/USPS adapters, Shopify (single-tenant env vars), Amazon, NetSuite, DispatchPro, EDI |
 | Carrier Rate Shop | Wired | Multi-carrier parallel rate comparison (fails closed if no credentials) |
 | Marketplace Connectors | Wired | Shopify (single-tenant), Amazon adapter |
-| Putaway Engine | Wired | 4 strategies exist but page now uses real pending items, not engine suggestions yet |
+| Putaway Engine | Wired | 4 strategies (fixed, zone, closest_empty, consolidate), suggestions shown in putaway dialog |
+| Putaway Rules | Wired | CRUD for putaway rules with real products/zones from DB |
 | Workflow Guards | Hardened | Order + shipment transition maps, invalid jumps rejected |
 | Audit Logging | Wired | Utility functions |
 | Security | Hardened | Headers, sanitization, rate limiting, fail-closed patterns |
