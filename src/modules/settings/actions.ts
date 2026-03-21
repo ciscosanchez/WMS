@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { publicDb } from "@/lib/db/public-client";
 import { logAudit } from "@/lib/audit";
+import { encryptCarrierCreds, decryptCarrierCreds } from "@/lib/crypto/secrets";
 
 interface TenantSettings {
   companyName: string;
@@ -108,6 +109,25 @@ export interface CarrierCredentials {
   useSandbox?: string;
 }
 
+function maskSecret(val?: string): string {
+  if (!val) return "";
+  // Don't try to mask encrypted values — just show "encrypted"
+  if (val.startsWith("enc:")) return "••••••••";
+  if (val.length <= 4) return "••••";
+  return `••••${val.slice(-4)}`;
+}
+
+function maskCreds(creds: Record<string, string>): CarrierCredentials {
+  const result = { ...creds };
+  const sensitiveFields = ["clientSecret", "password", "accessKey"];
+  for (const field of sensitiveFields) {
+    if (result[field]) {
+      result[field] = maskSecret(result[field]);
+    }
+  }
+  return result as unknown as CarrierCredentials;
+}
+
 export async function getCarrierSettings(): Promise<Record<string, CarrierCredentials>> {
   const { tenant } = await requireTenantContext("settings:read");
 
@@ -116,11 +136,11 @@ export async function getCarrierSettings(): Promise<Record<string, CarrierCreden
     select: { settings: true },
   });
 
-  const s = (row?.settings ?? {}) as Record<string, unknown>;
+  const s = (row?.settings ?? {}) as Record<string, Record<string, string>>;
   return {
-    ups: (s.ups as CarrierCredentials) ?? {},
-    fedex: (s.fedex as CarrierCredentials) ?? {},
-    usps: (s.usps as CarrierCredentials) ?? {},
+    ups: maskCreds(s.ups ?? {}),
+    fedex: maskCreds(s.fedex ?? {}),
+    usps: maskCreds(s.usps ?? {}),
   };
 }
 
@@ -136,7 +156,8 @@ export async function saveCarrierCredentials(
       select: { settings: true },
     });
     const settings = { ...((existing?.settings ?? {}) as Record<string, unknown>) };
-    settings[carrier] = creds;
+    // Encrypt sensitive fields before storing
+    settings[carrier] = encryptCarrierCreds(creds as unknown as Record<string, string>);
 
     await publicDb.tenant.update({
       where: { id: tenant.tenantId },

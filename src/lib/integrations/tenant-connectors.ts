@@ -11,6 +11,7 @@
 
 import type { PrismaClient as PublicClient } from "../../../node_modules/.prisma/public-client";
 import type { PrismaClient as TenantClient } from "../../../node_modules/.prisma/tenant-client";
+import { decryptSecret } from "@/lib/crypto/secrets";
 
 export interface TenantEntry {
   id: string;
@@ -198,6 +199,12 @@ export async function resolveAmazonTenant(
  * Get carrier credentials for a tenant.
  * Reads from Tenant.settings, falls back to env vars.
  */
+/** Decrypt a value if encrypted, otherwise return as-is. */
+function dec(val: string | undefined): string {
+  if (!val) return "";
+  return decryptSecret(val);
+}
+
 export function getCarrierCredentials(tenant: TenantEntry): CarrierCredentials {
   const s = tenant.settings as Record<string, Record<string, string>>;
   const creds: CarrierCredentials = {};
@@ -207,7 +214,7 @@ export function getCarrierCredentials(tenant: TenantEntry): CarrierCredentials {
     creds.ups = {
       accountNumber: s.ups?.accountNumber || process.env.UPS_ACCOUNT_NUMBER || "",
       clientId: upsClientId,
-      clientSecret: s.ups?.clientSecret || process.env.UPS_CLIENT_SECRET || "",
+      clientSecret: dec(s.ups?.clientSecret) || process.env.UPS_CLIENT_SECRET || "",
     };
   }
 
@@ -215,7 +222,7 @@ export function getCarrierCredentials(tenant: TenantEntry): CarrierCredentials {
   if (fedexClientId) {
     creds.fedex = {
       clientId: fedexClientId,
-      clientSecret: s.fedex?.clientSecret || process.env.FEDEX_CLIENT_SECRET || "",
+      clientSecret: dec(s.fedex?.clientSecret) || process.env.FEDEX_CLIENT_SECRET || "",
       accountNumber: s.fedex?.accountNumber || process.env.FEDEX_ACCOUNT_NUMBER || "",
     };
   }
@@ -224,7 +231,7 @@ export function getCarrierCredentials(tenant: TenantEntry): CarrierCredentials {
   if (uspsClientId) {
     creds.usps = {
       clientId: uspsClientId,
-      clientSecret: s.usps?.clientSecret || process.env.USPS_CLIENT_SECRET || "",
+      clientSecret: dec(s.usps?.clientSecret) || process.env.USPS_CLIENT_SECRET || "",
     };
   }
 

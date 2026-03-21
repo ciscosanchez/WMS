@@ -56,6 +56,36 @@ export async function sendUserInvite(opts: {
   return { sent: true };
 }
 
+export async function sendPasswordSetLink(opts: {
+  to: string;
+  name: string;
+  tenantName: string;
+  role: string;
+  setPasswordUrl: string;
+}): Promise<SendResult> {
+  const client = getClient();
+  if (!client) {
+    return { sent: false, warning: "RESEND_API_KEY not set — email skipped." };
+  }
+
+  const roleLabel = opts.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  await client.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `Set your password for ${opts.tenantName} on Ramola WMS`,
+    html: `
+      <p>Hi ${opts.name},</p>
+      <p>You've been invited to <strong>${opts.tenantName}</strong> on Ramola WMS as a <strong>${roleLabel}</strong>.</p>
+      <p>Click the link below to set your password:</p>
+      <p><a href="${opts.setPasswordUrl}" style="display:inline-block;padding:10px 24px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Set Your Password</a></p>
+      <p style="color:#888;font-size:12px;">This link expires in 48 hours. If you didn't expect this invitation, you can ignore it.</p>
+    `,
+  });
+
+  return { sent: true };
+}
+
 // ── Warehouse notification emails ───────────────────────────────────────────
 
 const NO_KEY: SendResult = { sent: false, warning: "RESEND_API_KEY not set — email skipped." };

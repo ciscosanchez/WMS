@@ -22,7 +22,6 @@ type InviteFormData = {
 export default function InviteUserPage() {
   const router = useRouter();
   const [result, setResult] = useState<{
-    tempPassword: string | null;
     emailSent: boolean;
     emailWarning?: string;
   } | null>(null);
@@ -41,7 +40,6 @@ export default function InviteUserPage() {
       return;
     }
     setResult({
-      tempPassword: res.tempPassword,
       emailSent: res.emailSent,
       emailWarning: res.emailWarning,
     });
@@ -65,21 +63,18 @@ export default function InviteUserPage() {
           </div>
         )}
 
-        {result.tempPassword && (
+        {result.emailSent && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <KeyRound className="h-4 w-4" />
-                Temporary Password
+                Password Setup
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent>
               <p className="text-sm text-muted-foreground">
-                Share this with the user. They should change it on first login.
+                The user will receive a secure link to set their own password. The link expires in 48 hours.
               </p>
-              <code className="block rounded-md bg-muted px-4 py-3 text-lg font-mono tracking-widest">
-                {result.tempPassword}
-              </code>
             </CardContent>
           </Card>
         )}

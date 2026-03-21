@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { hash } from "bcryptjs";
+import { randomBytes } from "crypto";
 import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { requirePermission } from "@/lib/auth/session";
 import { getTenantFromHeaders } from "@/lib/tenant/context";
-import { sendUserInvite } from "@/lib/email/resend";
+import { sendPasswordSetLink } from "@/lib/email/resend";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 
 async function getAdminContext() {
@@ -31,13 +32,13 @@ export async function inviteUser(opts: {
   email: string;
   name: string;
   role: TenantRole;
-}): Promise<{ error: string } | { userId: string; tempPassword: string | null; emailSent: boolean; emailWarning?: string }> {
+}): Promise<{ error: string } | { userId: string; emailSent: boolean; emailWarning?: string }> {
   const { tenant } = await getAdminContext();
 
   try {
-    // Generate a readable temp password
-    const tempPassword = Math.random().toString(36).slice(2, 8).toUpperCase() +
-      "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+    // Generate a secure one-time token for password setup
+    const passwordSetToken = randomBytes(32).toString("hex");
+    const passwordSetExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
     let userId: string;
     let isNewUser = false;
@@ -53,9 +54,16 @@ export async function inviteUser(opts: {
       if (membership) return { error: `${opts.email} is already a member of this tenant` };
     } else {
       isNewUser = true;
-      const passwordHash = await hash(tempPassword, 12);
+      // Create user with a placeholder password hash (will be set via token)
+      const placeholderHash = await hash(randomBytes(32).toString("hex"), 12);
       const newUser = await publicDb.user.create({
-        data: { email: opts.email, name: opts.name, passwordHash },
+        data: {
+          email: opts.email,
+          name: opts.name,
+          passwordHash: placeholderHash,
+          passwordSetToken,
+          passwordSetExpires,
+        },
       });
       userId = newUser.id;
     }
@@ -64,27 +72,63 @@ export async function inviteUser(opts: {
       data: { tenantId: tenant.tenantId, userId, role: opts.role },
     });
 
-    // Send invite email
-    const loginUrl = `${process.env.NEXTAUTH_URL || "https://wms.ramola.app"}/login`;
-    const emailResult = await sendUserInvite({
+    // Send invite email with password-set link (no plaintext password)
+    const baseUrl = process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+    const setPasswordUrl = isNewUser
+      ? `${baseUrl}/set-password?token=${passwordSetToken}`
+      : `${baseUrl}/login`;
+
+    const emailResult = await sendPasswordSetLink({
       to: opts.email,
       name: opts.name,
       tenantName: tenant.slug,
       role: opts.role,
-      tempPassword: isNewUser ? tempPassword : "(use existing password)",
-      loginUrl,
+      setPasswordUrl,
     });
 
     revalidatePath("/settings/users");
     return {
       userId,
-      tempPassword: isNewUser ? tempPassword : null,
       emailSent: emailResult.sent,
       emailWarning: emailResult.warning,
     };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to invite user" };
   }
+}
+
+/**
+ * Set password using a one-time token (from invite email).
+ * Validates token, checks expiry, hashes password, clears token.
+ */
+export async function setPasswordWithToken(
+  token: string,
+  password: string
+): Promise<{ error?: string }> {
+  if (!token || token.length < 32) return { error: "Invalid token" };
+  if (!password || password.length < 8) return { error: "Password must be at least 8 characters" };
+
+  const user = await publicDb.user.findUnique({
+    where: { passwordSetToken: token },
+  });
+
+  if (!user) return { error: "Invalid or expired token" };
+  if (user.passwordSetExpires && user.passwordSetExpires < new Date()) {
+    return { error: "Token has expired. Please ask your admin for a new invite." };
+  }
+
+  const passwordHash = await hash(password, 12);
+
+  await publicDb.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash,
+      passwordSetToken: null,
+      passwordSetExpires: null,
+    },
+  });
+
+  return {};
 }
 
 export async function updateUserRole(userId: string, role: TenantRole): Promise<{ error: string } | { ok: true }> {

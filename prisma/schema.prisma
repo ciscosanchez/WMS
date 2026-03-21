@@ -42,13 +42,15 @@ model Tenant {
 // ─── Users ──────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  name          String
-  isSuperadmin  Boolean   @default(false) @map("is_superadmin")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  name               String
+  isSuperadmin       Boolean   @default(false) @map("is_superadmin")
+  passwordSetToken   String?   @unique @map("password_set_token")
+  passwordSetExpires DateTime? @map("password_set_expires")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   tenantUsers TenantUser[]
   sessions    Session[]
