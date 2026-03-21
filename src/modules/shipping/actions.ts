@@ -118,14 +118,12 @@ export async function getRatesForShipment(
       }));
     }
 
-    // If no credentials configured, fall back to mock rates for demo
-    const adapters = adapterList.length > 0 ? adapterList : [
-      new UPSAdapter({ accountNumber: "", clientId: "", clientSecret: "", useSandbox: true }),
-      new FedExAdapter({ accountNumber: "", clientId: "", clientSecret: "", useSandbox: true }),
-      new USPSAdapter({ clientId: "", clientSecret: "", useSandbox: true }),
-    ];
+    // Fail closed: no credentials → no rates (don't fake sandbox rates)
+    if (adapterList.length === 0) {
+      return { rates: [], error: "No carrier credentials configured. Add UPS, FedEx, or USPS API keys to enable rate shopping." };
+    }
 
-    const results = await Promise.allSettled(adapters.map((a) => a.getRates(rateRequest)));
+    const results = await Promise.allSettled(adapterList.map((a) => a.getRates(rateRequest)));
     const rates = results
       .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
       .sort((a, b) => a.totalCost - b.totalCost);
@@ -194,10 +192,6 @@ async function getAdapterForCarrier(carrier: string) {
   return null; // No credentials configured for this carrier
 }
 
-// Minimal 4×6 placeholder PDF (base64) — used when carrier creds aren't configured
-const PLACEHOLDER_LABEL_B64 =
-  "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyODggNDMyXQovQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAxMDAgPj4Kc3RyZWFtCkJUCi9GMSAxNiBUZgoxMiA0MDAgVGQKKERFTU8gTEFCRUwpIFRqCi9GMSAxMCBUZgoxMiAzODAgVGQKKENhcnJpZXIgY3JlZHMgbm90IGNvbmZpZ3VyZWQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PCAvVHlwZSAvRm9udCAvU3VidHlwZSAvVHlwZTEgL0Jhc2VGb250IC9IZWx2ZXRpY2EgPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU4IDAwMDAwIG4gCjAwMDAwMDAxMTUgMDAwMDAgbiAKMDAwMDAwMDI2NiAwMDAwMCBuIAowMDAwMDAwNDE4IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKNDkyCiUlRU9GCg==";
-
 /**
  * Generate a shipping label for a shipment that already has carrier/service selected.
  * Calls the carrier API, stores the PDF label in MinIO, saves tracking number.
@@ -260,22 +254,16 @@ export async function generateShipmentLabel(
       reference: shipment.shipmentNumber,
     };
 
-    let trackingNumber: string;
-    let labelBase64: string;
-    let labelCost = shipment.shippingCost ? Number(shipment.shippingCost) : 0;
-
     const adapter = await getAdapterForCarrier(shipment.carrier);
 
-    if (adapter) {
-      const result = await adapter.createLabel(labelRequest);
-      trackingNumber = result.trackingNumber;
-      labelBase64 = result.labelData;
-      if (result.totalCost > 0) labelCost = result.totalCost;
-    } else {
-      // No credentials — use demo placeholder
-      trackingNumber = `DEMO-${shipment.shipmentNumber}-${Date.now().toString(36).toUpperCase()}`;
-      labelBase64 = PLACEHOLDER_LABEL_B64;
+    if (!adapter) {
+      return { error: `No credentials configured for carrier "${shipment.carrier}". Add API keys before generating labels.` };
     }
+
+    const result = await adapter.createLabel(labelRequest);
+    const trackingNumber = result.trackingNumber;
+    const labelBase64 = result.labelData;
+    const labelCost = result.totalCost > 0 ? result.totalCost : (shipment.shippingCost ? Number(shipment.shippingCost) : 0);
 
     // Store PDF in MinIO
     const labelKey = `labels/${shipment.shipmentNumber}.pdf`;

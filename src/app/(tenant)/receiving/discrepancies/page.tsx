@@ -9,31 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { getDiscrepancies } from "@/modules/receiving/actions";
 
-const mockDiscrepancies = [
-  {
-    id: "1",
-    shipmentNumber: "ASN-2026-0002",
-    type: "shortage",
-    description: "Missing 5 units of BOLT-M8X40 from pallet 3",
-    expectedQty: 100,
-    actualQty: 95,
-    status: "open",
-    createdAt: new Date("2026-03-15"),
-  },
-  {
-    id: "2",
-    shipmentNumber: "ASN-2026-0001",
-    type: "damage",
-    description: "Water damage on 3 units of WIDGET-001",
-    expectedQty: null,
-    actualQty: null,
-    status: "resolved",
-    createdAt: new Date("2026-03-10"),
-  },
-];
+export default async function DiscrepanciesPage() {
+  const discrepancies = await getDiscrepancies();
 
-export default function DiscrepanciesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
@@ -55,21 +35,31 @@ export default function DiscrepanciesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockDiscrepancies.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell className="font-medium">{d.shipmentNumber}</TableCell>
-                <TableCell>
-                  <StatusBadge status={d.type} />
+            {discrepancies.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  No discrepancies recorded
                 </TableCell>
-                <TableCell>{d.description}</TableCell>
-                <TableCell>{d.expectedQty ?? "-"}</TableCell>
-                <TableCell>{d.actualQty ?? "-"}</TableCell>
-                <TableCell>
-                  <StatusBadge status={d.status} />
-                </TableCell>
-                <TableCell>{format(d.createdAt, "MMM d, yyyy")}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              discrepancies.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-medium">
+                    {d.shipment?.shipmentNumber ?? "-"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={d.type} />
+                  </TableCell>
+                  <TableCell>{d.description}</TableCell>
+                  <TableCell>{d.expectedQty ?? "-"}</TableCell>
+                  <TableCell>{d.actualQty ?? "-"}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={d.status} />
+                  </TableCell>
+                  <TableCell>{format(d.createdAt, "MMM d, yyyy")}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

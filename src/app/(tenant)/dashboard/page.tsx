@@ -75,9 +75,16 @@ async function getDashboardData() {
       }),
       db.product.count({ where: { isActive: true } }),
       db.bin.count({ where: { status: "available" } }),
-      db.product.count({
-        where: { isActive: true, minStock: { not: null }, inventory: { some: {} } },
-      }),
+      // Low-stock: products where total available inventory < minStock
+      db.product.findMany({
+        where: { isActive: true, minStock: { not: null } },
+        select: { id: true, minStock: true, inventory: { select: { available: true } } },
+      }).then((products) =>
+        products.filter((p) => {
+          const totalAvailable = p.inventory.reduce((sum, inv) => sum + inv.available, 0);
+          return totalAvailable < (p.minStock ?? 0);
+        }).length
+      ),
       db.inventoryTransaction.findMany({
         include: { product: true, toBin: true },
         orderBy: { performedAt: "desc" },

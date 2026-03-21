@@ -47,13 +47,12 @@ export async function getDashboardChartData() {
       },
     }),
 
-    // Fulfillment throughput: shipped orders per day for last 7 days
-    db.order.findMany({
+    // Fulfillment throughput: shipments per day for last 7 days (by actual ship date)
+    db.shipment.findMany({
       where: {
-        status: { in: ["shipped", "delivered"] },
-        updatedAt: { gte: subDays(startOfDay(now), 6) },
+        shippedAt: { not: null, gte: subDays(startOfDay(now), 6) },
       },
-      select: { updatedAt: true },
+      select: { shippedAt: true },
     }),
   ]);
 
@@ -79,7 +78,7 @@ export async function getDashboardChartData() {
     cancelled: "Cancelled",
     on_hold: "On Hold",
   };
-  const ordersByStatus = orderStatusCounts
+  const ordersByStatus = (orderStatusCounts as Array<{ status: string; _count: { _all: number } }>)
     .map((row) => ({
       name: STATUS_LABELS[row.status] ?? row.status,
       value: row._count._all,
@@ -104,8 +103,9 @@ export async function getDashboardChartData() {
     const key = format(subDays(now, i), "EEE");
     throughputByDay[key] = 0;
   }
-  for (const order of fulfillmentRows) {
-    const key = format(new Date(order.updatedAt), "EEE");
+  for (const shipment of fulfillmentRows) {
+    if (!shipment.shippedAt) continue;
+    const key = format(new Date(shipment.shippedAt), "EEE");
     if (key in throughputByDay) throughputByDay[key]++;
   }
   const fulfillmentThroughput = Object.entries(throughputByDay).map(([name, value]) => ({

@@ -13,6 +13,7 @@ import {
 } from "./schemas";
 import { mockShipments } from "@/lib/mock-data";
 import { captureEvent } from "@/modules/billing/capture";
+import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 
 async function getContext() {
   return requireTenantContext();
@@ -111,6 +112,10 @@ export async function updateShipmentStatus(
   const { user, tenant } = await requireTenantContext("receiving:write");
 
   const current = await tenant.db.inboundShipment.findUniqueOrThrow({ where: { id }, select: { status: true } });
+
+  // Validate transition before any mutations
+  assertTransition("shipment", current.status, status, SHIPMENT_TRANSITIONS);
+
   const wasAlreadyCompleted = current.status === "completed";
 
   const updateData: Record<string, unknown> = { status };
@@ -283,6 +288,18 @@ async function captureBillingOnReceive(tenant: TenantContext, shipmentId: string
       referenceId: shipmentId,
     }),
   ]);
+}
+
+export async function getDiscrepancies() {
+  if (config.useMockData) return [];
+
+  const { tenant } = await getContext();
+  return tenant.db.receivingDiscrepancy.findMany({
+    include: {
+      shipment: { select: { shipmentNumber: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function createDiscrepancy(data: unknown) {

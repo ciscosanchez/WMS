@@ -65,6 +65,41 @@ export async function createTenant(
   }
 }
 
+const PLAN_FEES: Record<string, number> = {
+  starter: 99,
+  professional: 299,
+  enterprise: 999,
+};
+
+export async function getBillingData() {
+  await requireSuperadmin();
+
+  const tenants = await publicDb.tenant.findMany({
+    include: { _count: { select: { tenantUsers: true } } },
+    orderBy: { name: "asc" },
+  });
+
+  const billingTenants = tenants.map((t) => ({
+    id: t.id,
+    name: t.name,
+    plan: t.plan,
+    status: t.status,
+    monthlyFee: PLAN_FEES[t.plan] ?? 0,
+    createdAt: t.createdAt.toISOString(),
+  }));
+
+  const activeTenants = billingTenants.filter((t) => t.status === "active");
+  const mrr = activeTenants.reduce((sum, t) => sum + t.monthlyFee, 0);
+
+  return {
+    tenants: billingTenants,
+    mrr,
+    arr: mrr * 12,
+    activeCount: activeTenants.length,
+    avgRevenue: activeTenants.length > 0 ? Math.round(mrr / activeTenants.length) : 0,
+  };
+}
+
 export async function suspendTenant(id: string): Promise<{ error: string } | { ok: true }> {
   await requireSuperadmin();
   try {

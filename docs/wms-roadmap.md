@@ -1,57 +1,55 @@
 # Ramola WMS — Full Roadmap to Production
 
-*Last updated: 2026-03-20*
+*Last updated: 2026-03-21*
 
 ## Current State Summary
 
-The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **zero lint errors/warnings**, and a **live Shopify integration**. Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push. All quality checks pass.
+The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0 lint errors**, and a **live Shopify integration** (single-tenant). Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push.
+
+### Status Vocabulary
+
+- **Hardened** = DB-backed, transition guards, error handling, tested
+- **Wired** = reads/writes real data, but limited validation
+- **Demo** = UI exists with mock data or no backend wiring
 
 ### What's Built
 
 | Area | Status | Details |
 |------|--------|---------|
-| UI Shell | Done | Sidebar nav, topbar, breadcrumbs, search (Cmd+K), notifications |
-| Dashboard | Done | 5 KPI cards, 4 charts (recharts), recent activity feed |
-| Clients CRUD | Done | List, create, edit, delete with DataTable |
-| Products CRUD | Done | List, create, edit, delete with UOM/tracking |
-| Warehouse | Done | Cards, detail page with zones/aisles, bulk generator, add zone |
-| Receiving | Done | Shipment list, detail with tabs, receive dialog, add line, document upload |
-| Fulfillment Orders | Done | Order list, detail with timeline, create form with line items |
-| Picking | Done | Pick task list with KPIs, assignment |
-| Shipping | Done | Outbound table, detail with tracking timeline, reprint label |
-| Inventory Browser | Done | Stock table with location/lot/availability |
-| Movements Ledger | Done | Transaction history table |
-| Adjustments | Done | List page, create form with variance calculation |
-| Cycle Counts | Done | Plans table with KPIs, create dialog, start count |
-| Channels | Done | Sales channel cards |
-| Reports | Done | 5 tabs with charts + summary metrics, CSV export |
-| Settings | Done | General config, operational modes, sequences, users, invite, billing rates, carriers, integrations, EDI |
-| Operator App | Done | Receive, pick, pack, move, count (5 mobile-optimized pages, barcode scanner) |
-| Client Portal | Done | Inventory, orders, shipments, billing, reports (6 pages, "Powered by Ramola" footer) |
-| Superadmin Platform | Done | Dashboard, tenant management, billing overview (4 pages) |
-| Database | Done | Docker Postgres 16 on port 5433, Prisma pg adapter, seeded |
-| Auth | Done | Login page with mock/real toggle, SessionProvider restored |
-| Prisma Schemas | Done | Public + tenant with fulfillment models, driver adapters |
-| Server Actions | Done | All CRUD with mock/real toggle per function |
-| RBAC | Done | 4 roles, permission map, helpers |
-| Integrations | Done | UPS/FedEx/USPS adapters, Shopify (LIVE), Amazon, NetSuite, DispatchPro, EDI 940/945 |
-| Carrier Rate Shop | Done | Multi-carrier parallel rate comparison engine |
-| Marketplace Connectors | Done | Shopify LIVE (ramola-dev.myshopify.com), Amazon adapter |
-| EDI | Done | Parser + generator for 940/945/856/944, trading partner config, test tool |
-| Barcode Scanner | Done | Hardware (keyboard wedge) + camera (BarcodeDetector API), audio/vibration feedback |
-| Putaway Engine | Done | 4 strategies (fixed, zone, closest_empty, consolidate), rules config |
-| Server Pagination | Done | ServerDataTable component, URL-based pagination for large tables |
-| Audit Logging | Done | Utility functions |
-| Sequence Numbers | Done | Auto-number generator |
-| File Upload | Done | Pre-signed URL upload API, file upload component, document panel |
-| CSV/PDF Export | Done | CSV download utility, print-to-PDF, export buttons per report tab |
-| Error Handling | Done | Error boundary, 404, loading skeletons for all detail pages |
-| Security | Done | Headers (CSP, XSS, etc.), sanitization, rate limiting, poweredByHeader disabled |
-| Dockerfile | Done | Multi-stage build, standalone output |
-| CI/CD | Done | GitHub Actions: typecheck → eslint → prettier → jest → build on every push |
-| Tests | Done | 124 unit tests (11 suites) + 16 E2E tests (Playwright) = 140 total |
-| PWA | Done | Web app manifest, viewport config, Apple web app meta |
-| Docs | Done | 10 docs: architecture, data model, ecosystem, flows, deployment, competitive analysis, roadmap, session summary, DocAI handoff |
+| UI Shell | Hardened | Sidebar nav, topbar, breadcrumbs, search (Cmd+K), notifications |
+| Dashboard | Hardened | 5 KPI cards (real queries, low-stock fixed), 4 charts, activity feed |
+| Clients CRUD | Wired | List, create, edit, delete with DataTable |
+| Products CRUD | Wired | List, create, edit, delete with UOM/tracking |
+| Warehouse | Wired | Cards, detail page with zones/aisles, bulk generator, add zone |
+| Receiving | Hardened | Shipment list, detail, receive dialog, transition guards enforced |
+| Fulfillment Orders | Hardened | Order list, detail, transition guards, pick task gen blocks on failure |
+| Picking | Wired | Pick task list with KPIs, assignment |
+| Shipping | Hardened | Rate shop + label gen fail-closed (no demo fallbacks) |
+| Inventory Browser | Wired | Stock table with location/lot/availability |
+| Movements Ledger | Wired | Transaction history table |
+| Adjustments | Wired | List page, create form wired to DB with real products/bins |
+| Cycle Counts | Wired | DB-backed (queries InventoryAdjustment type=cycle_count) |
+| Putaway | Wired | Pending items from receiving txns, confirm writes inventory + ledger |
+| Discrepancies | Wired | DB-backed (queries ReceivingDiscrepancy table) |
+| Channels | Demo | Sales channel cards (inline mock data, not DB-backed) |
+| Reports | Wired | 5 tabs with charts + summary metrics, CSV export |
+| Settings | Wired | General config, operational modes, sequences, users, invite, billing rates, carriers, integrations, EDI |
+| Operator App | Wired | Receive, pick, pack, move, count (5 mobile-optimized pages, barcode scanner) |
+| Client Portal | Wired | Inventory, orders, shipments, billing, reports (6 pages) |
+| Superadmin Platform | Demo | Dashboard, tenant management, billing overview (inline mock billing data) |
+| Database | Hardened | Docker Postgres 16 on port 5433, Prisma pg adapter, seeded |
+| Auth | Wired | Login page with mock/real toggle, SessionProvider restored |
+| Prisma Schemas | Hardened | Public + tenant with fulfillment models, driver adapters |
+| Server Actions | Wired | All CRUD with mock/real toggle per function |
+| RBAC | Hardened | 4 roles, permission map, helpers |
+| Integrations | Wired | UPS/FedEx/USPS adapters, Shopify (single-tenant env vars), Amazon, NetSuite, DispatchPro, EDI |
+| Carrier Rate Shop | Wired | Multi-carrier parallel rate comparison (fails closed if no credentials) |
+| Marketplace Connectors | Wired | Shopify (single-tenant), Amazon adapter |
+| Putaway Engine | Wired | 4 strategies exist but page now uses real pending items, not engine suggestions yet |
+| Workflow Guards | Hardened | Order + shipment transition maps, invalid jumps rejected |
+| Audit Logging | Wired | Utility functions |
+| Security | Hardened | Headers, sanitization, rate limiting, fail-closed patterns |
+| Tests | Wired | 292 unit + 35 E2E, 0 lint errors |
 
 ---
 

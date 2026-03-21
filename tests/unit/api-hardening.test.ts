@@ -85,6 +85,7 @@ describe("API error sanitization", () => {
 describe("Rate limiter", () => {
   it("tracks requests per key and enforces limits", () => {
     // Import the actual rate limiter module
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { RateLimiter } = require("@/lib/security/rate-limit");
 
     const limiter = new RateLimiter(3, 60_000); // 3 requests per minute
@@ -112,6 +113,7 @@ describe("Rate limiter", () => {
   });
 
   it("resets after window expires", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { RateLimiter } = require("@/lib/security/rate-limit");
 
     const limiter = new RateLimiter(1, 50); // 1 request per 50ms

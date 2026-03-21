@@ -17,6 +17,7 @@ export async function setTenantCookie(context: BrowserContext, slug = "armstrong
 export const test = base.extend({
   context: async ({ context }, use) => {
     await setTenantCookie(context);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(context);
   },
 });

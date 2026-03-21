@@ -77,6 +77,7 @@ jest.mock("@/lib/tenant/context", () => ({
         dbSchema: "test_schema",
         get db() {
           // Lazy reference to avoid hoisting issues
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
           return require("@/lib/db/tenant-client").getTenantDb();
         },
       },

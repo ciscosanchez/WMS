@@ -27,6 +27,9 @@ const mockTxPrisma = {
     findFirst: jest.fn(),
     create: jest.fn(),
   },
+  bin: {
+    findMany: jest.fn().mockResolvedValue([]),
+  },
   order: { update: jest.fn() },
   shipment: { update: jest.fn() },
 };
@@ -58,6 +61,7 @@ const mockDb = {
   },
   order: {
     findUnique: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
     update: jest.fn(),
   },
   orderLine: { deleteMany: jest.fn() },
@@ -541,7 +545,7 @@ describe("Transactional inventory integrity", () => {
     const orderId = "order-1";
     const existingOrder = {
       id: orderId,
-      status: "pending",
+      status: "allocated",
       orderNumber: "ORD-0001",
       shipToName: "Customer",
       shipToAddress1: "123 Main",
@@ -555,7 +559,7 @@ describe("Transactional inventory integrity", () => {
     };
 
     it("uses $transaction for inventory allocation", async () => {
-      mockDb.order.findUnique.mockResolvedValue(existingOrder);
+      mockDb.order.findUniqueOrThrow.mockResolvedValue(existingOrder);
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       // Inside tx: find bins with stock
@@ -573,7 +577,7 @@ describe("Transactional inventory integrity", () => {
     });
 
     it("increments allocated and decrements available for each line", async () => {
-      mockDb.order.findUnique.mockResolvedValue(existingOrder);
+      mockDb.order.findUniqueOrThrow.mockResolvedValue(existingOrder);
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       mockTxPrisma.inventory.findFirst
@@ -610,7 +614,7 @@ describe("Transactional inventory integrity", () => {
     });
 
     it("writes allocation ledger entries for each line", async () => {
-      mockDb.order.findUnique.mockResolvedValue(existingOrder);
+      mockDb.order.findUniqueOrThrow.mockResolvedValue(existingOrder);
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       mockTxPrisma.inventory.findFirst
@@ -651,7 +655,7 @@ describe("Transactional inventory integrity", () => {
     });
 
     it("skips allocation when no bin has enough stock (no crash)", async () => {
-      mockDb.order.findUnique.mockResolvedValue(existingOrder);
+      mockDb.order.findUniqueOrThrow.mockResolvedValue(existingOrder);
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       // No inventory found for either line
