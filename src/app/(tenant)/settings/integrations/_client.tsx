@@ -39,9 +39,19 @@ export function IntegrationsClient({ shopify, amazon, netsuite, dispatchpro }: P
 
   async function handleTest(name: string) {
     setTesting(name);
-    await new Promise((r) => setTimeout(r, 1200));
-    setTesting(null);
-    toast.success(`${name} connection verified`);
+    try {
+      const { testIntegrationConnection } = await import("@/modules/settings/actions");
+      const result = await testIntegrationConnection(name.toLowerCase());
+      if (result.success) {
+        toast.success(`${name} connection verified`);
+      } else {
+        toast.error(result.error ?? `${name} connection failed`);
+      }
+    } catch {
+      toast.error(`${name} connection test failed`);
+    } finally {
+      setTesting(null);
+    }
   }
 
   const marketplaces = [

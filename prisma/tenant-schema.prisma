@@ -229,6 +229,9 @@ model InboundShipment {
   discrepancies ReceivingDiscrepancy[]
   documents    Document[]
 
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
   @@map("inbound_shipments")
 }
 
@@ -247,6 +250,7 @@ model InboundShipmentLine {
   product      Product              @relation(fields: [productId], references: [id])
   transactions ReceivingTransaction[]
 
+  @@index([shipmentId])
   @@map("inbound_shipment_lines")
 }
 
@@ -281,6 +285,8 @@ model ReceivingTransaction {
   line     InboundShipmentLine @relation(fields: [lineId], references: [id])
   bin      Bin?                @relation(fields: [binId], references: [id])
 
+  @@index([shipmentId])
+  @@index([receivedAt])
   @@map("receiving_transactions")
 }
 
@@ -395,6 +401,8 @@ model Inventory {
   bin     Bin     @relation(fields: [binId], references: [id])
 
   @@unique([productId, binId, lotNumber, serialNumber])
+  @@index([productId])
+  @@index([binId])
   @@map("inventory")
 }
 
@@ -427,6 +435,10 @@ model InventoryTransaction {
   fromBin Bin?    @relation("from_bin", fields: [fromBinId], references: [id])
   toBin   Bin?    @relation("to_bin", fields: [toBinId], references: [id])
 
+  @@index([productId])
+  @@index([type])
+  @@index([referenceType, referenceId])
+  @@index([performedAt])
   @@map("inventory_transactions")
 }
 
@@ -626,6 +638,7 @@ model OrderLine {
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
 
+  @@index([orderId])
   @@map("order_lines")
 }
 
@@ -660,6 +673,8 @@ model PickTask {
   order Order? @relation(fields: [orderId], references: [id])
   lines PickTaskLine[]
 
+  @@index([orderId])
+  @@index([status])
   @@map("pick_tasks")
 }
 
@@ -677,6 +692,8 @@ model PickTaskLine {
   product Product  @relation(fields: [productId], references: [id])
   bin     Bin      @relation(fields: [binId], references: [id])
 
+  @@index([taskId])
+  @@index([productId])
   @@map("pick_task_lines")
 }
 
@@ -705,6 +722,8 @@ model Shipment {
   order Order @relation(fields: [orderId], references: [id])
   items ShipmentItem[]
 
+  @@index([orderId])
+  @@index([shippedAt])
   @@map("shipments")
 }
 
@@ -719,6 +738,8 @@ model ShipmentItem {
   shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id])
 
+  @@index([shipmentId])
+  @@index([productId])
   @@map("shipment_items")
 }
 

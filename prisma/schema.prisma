@@ -74,6 +74,8 @@ model TenantUser {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
   @@map("tenant_users")
 }
 
@@ -87,6 +89,7 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 
