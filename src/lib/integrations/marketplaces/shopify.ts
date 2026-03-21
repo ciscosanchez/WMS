@@ -261,7 +261,26 @@ export class ShopifyAdapter implements MarketplaceAdapter {
   }
 }
 
-// ─── Factory using env vars ──────────────────────────────────────────────────
+// ─── Tenant-scoped factory (preferred) ───────────────────────────────────────
+
+/**
+ * Create a ShopifyAdapter from explicit credentials (resolved from tenant DB).
+ */
+export function getShopifyAdapterForTenant(opts: {
+  shopDomain: string;
+  accessToken: string;
+  apiVersion?: string;
+  locationId?: string;
+}): ShopifyAdapter {
+  return new ShopifyAdapter({
+    shopDomain: opts.shopDomain,
+    accessToken: opts.accessToken,
+    apiVersion: opts.apiVersion ?? "2026-01",
+    locationId: opts.locationId,
+  });
+}
+
+// ─── Legacy factory using env vars (backward compat) ─────────────────────────
 
 export function getShopifyAdapter(locationId?: string): ShopifyAdapter {
   const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;

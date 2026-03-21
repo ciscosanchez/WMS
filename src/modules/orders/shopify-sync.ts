@@ -5,9 +5,46 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
-import { getShopifyAdapter } from "@/lib/integrations/marketplaces/shopify";
+import { getShopifyAdapterForTenant } from "@/lib/integrations/marketplaces/shopify";
+import type { ShopifyAdapter } from "@/lib/integrations/marketplaces/shopify";
 import type { MarketplaceOrder } from "@/lib/integrations/marketplaces/types";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
+
+/**
+ * Resolve Shopify credentials for the current tenant.
+ * Reads from SalesChannel.config first, falls back to env vars.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveShopifyAdapter(db: any): Promise<{ adapter: ShopifyAdapter; channel: any } | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let channel = await db.salesChannel.findFirst({
+    where: { type: "shopify", isActive: true },
+  });
+
+  // Read credentials from channel config, fall back to env vars
+  const cfg = (channel?.config ?? {}) as Record<string, string>;
+  const shopDomain = cfg.shopDomain || process.env.SHOPIFY_SHOP_DOMAIN;
+  const accessToken = cfg.accessToken || process.env.SHOPIFY_ACCESS_TOKEN;
+  const apiVersion = cfg.apiVersion || process.env.SHOPIFY_API_VERSION || "2026-01";
+  const locationId = cfg.locationId || process.env.SHOPIFY_LOCATION_ID || undefined;
+
+  if (!shopDomain || !accessToken) return null;
+
+  // Auto-create channel record if it doesn't exist
+  if (!channel) {
+    channel = await db.salesChannel.create({
+      data: {
+        name: "Shopify",
+        type: "shopify",
+        isActive: true,
+        config: { shopDomain },
+      },
+    });
+  }
+
+  const adapter = getShopifyAdapterForTenant({ shopDomain, accessToken, apiVersion, locationId });
+  return { adapter, channel };
+}
 
 /**
  * Sync unfulfilled Shopify orders into WMS.
@@ -25,26 +62,10 @@ export async function syncShopifyOrders(
   try {
     const { user, tenant } = await requireTenantContext();
 
-    // Find or create the Shopify sales channel
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let channel = await (tenant.db as any).salesChannel.findFirst({
-      where: { type: "shopify", isActive: true },
-    });
-    if (!channel) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel = await (tenant.db as any).salesChannel.create({
-        data: {
-          name: "Shopify",
-          type: "shopify",
-          isActive: true,
-          config: {
-            shopDomain: process.env.SHOPIFY_SHOP_DOMAIN ?? "",
-          },
-        },
-      });
-    }
-
-    const adapter = getShopifyAdapter();
+    // Resolve Shopify credentials (DB first, env var fallback)
+    const resolved = await resolveShopifyAdapter(tenant.db);
+    if (!resolved) return { imported: 0, skipped: 0, error: "Shopify not configured for this tenant" };
+    const { adapter, channel } = resolved;
 
     // Fetch orders updated in the last 7 days
     const since = new Date();
@@ -182,17 +203,14 @@ export async function pushShopifyFulfillment(
 
     if (!order?.externalId) return {}; // Not a Shopify order
 
-    // Check the channel is actually Shopify
-    if (order.channelId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const channel = await (tenant.db as any).salesChannel.findUnique({
-        where: { id: order.channelId },
-      });
-      if (!channel || channel.type !== "shopify") return {};
-    }
+    // Resolve Shopify credentials for this tenant
+    const resolved = await resolveShopifyAdapter(tenant.db);
+    if (!resolved) return {}; // Shopify not configured — nothing to push
 
-    const adapter = getShopifyAdapter();
-    await adapter.pushFulfillment({
+    // Verify the order's channel is actually Shopify
+    if (order.channelId && order.channelId !== resolved.channel.id) return {};
+
+    await resolved.adapter.pushFulfillment({
       externalOrderId: order.externalId,
       trackingNumber,
       carrier,
@@ -241,8 +259,9 @@ export async function syncInventoryToShopify(
         availableQuantity: availableById.get(p.id) ?? 0,
       }));
 
-    const adapter = getShopifyAdapter();
-    await adapter.syncInventory(updates);
+    const resolved = await resolveShopifyAdapter(tenant.db);
+    if (!resolved) return { synced: 0, error: "Shopify not configured for this tenant" };
+    await resolved.adapter.syncInventory(updates);
 
     return { synced: updates.length };
   } catch (err) {

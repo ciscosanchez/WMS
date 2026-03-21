@@ -6,6 +6,10 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { pushShopifyFulfillment } from "@/modules/orders/shopify-sync";
 import type { RateQuote, LabelRequest } from "@/lib/integrations/carriers/types";
+import { publicDb } from "@/lib/db/public-client";
+import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
+import { notifyWarehouseTeam } from "@/lib/notifications/notify";
+import { sendOrderShipped, sendOrderShippedCustomer } from "@/lib/email/resend";
 
 async function getContext() {
   return requireTenantContext();
@@ -61,15 +65,10 @@ export async function getRatesForShipment(
     const { FedExAdapter } = await import("@/lib/integrations/carriers/fedex");
     const { USPSAdapter } = await import("@/lib/integrations/carriers/usps");
 
-    const from = {
-      name: "Warehouse",
-      company: "Armstrong WMS",
-      street1: process.env.WAREHOUSE_ADDRESS ?? "100 Warehouse Blvd",
-      city: process.env.WAREHOUSE_CITY ?? "Dallas",
-      state: process.env.WAREHOUSE_STATE ?? "TX",
-      zip: process.env.WAREHOUSE_ZIP ?? "75201",
-      country: "US",
-    };
+    // Resolve tenant credentials (DB first, env var fallback)
+    const tenantEntry = await getTenantEntry(tenant.tenantId);
+    const creds = tenantEntry ? getCarrierCredentials(tenantEntry) : {};
+    const from = getWarehouseAddress(tenantEntry);
 
     const to = {
       name: shipment.order?.shipToName ?? "",
@@ -92,33 +91,33 @@ export async function getRatesForShipment(
 
     const rateRequest = { from, to, packages: [pkg] };
 
-    // Build adapters from env vars; skip any without credentials
+    // Build adapters from tenant-scoped credentials
     const adapterList = [];
-    if (process.env.UPS_CLIENT_ID) {
+    if (creds.ups) {
       adapterList.push(new UPSAdapter({
-        accountNumber: process.env.UPS_ACCOUNT_NUMBER ?? "",
-        clientId: process.env.UPS_CLIENT_ID,
-        clientSecret: process.env.UPS_CLIENT_SECRET ?? "",
+        accountNumber: creds.ups.accountNumber,
+        clientId: creds.ups.clientId,
+        clientSecret: creds.ups.clientSecret,
         useSandbox: process.env.UPS_SANDBOX === "true",
       }));
     }
-    if (process.env.FEDEX_CLIENT_ID) {
+    if (creds.fedex) {
       adapterList.push(new FedExAdapter({
-        accountNumber: process.env.FEDEX_ACCOUNT_NUMBER ?? "",
-        clientId: process.env.FEDEX_CLIENT_ID,
-        clientSecret: process.env.FEDEX_CLIENT_SECRET ?? "",
+        accountNumber: creds.fedex.accountNumber,
+        clientId: creds.fedex.clientId,
+        clientSecret: creds.fedex.clientSecret,
         useSandbox: process.env.FEDEX_SANDBOX === "true",
       }));
     }
-    if (process.env.USPS_CLIENT_ID) {
+    if (creds.usps) {
       adapterList.push(new USPSAdapter({
-        clientId: process.env.USPS_CLIENT_ID,
-        clientSecret: process.env.USPS_CLIENT_SECRET ?? "",
+        clientId: creds.usps.clientId,
+        clientSecret: creds.usps.clientSecret,
         useSandbox: process.env.USPS_SANDBOX === "true",
       }));
     }
 
-    // Fail closed: no credentials → no rates (don't fake sandbox rates)
+    // Fail closed: no credentials → no rates
     if (adapterList.length === 0) {
       return { rates: [], error: "No carrier credentials configured. Add UPS, FedEx, or USPS API keys to enable rate shopping." };
     }
@@ -158,38 +157,66 @@ export async function selectShipmentRate(
   }
 }
 
-// ── Carrier adapter factory ───────────────────────────────────────────────
+// ── Tenant-scoped helpers ────────────────────────────────────────────────
 
-async function getAdapterForCarrier(carrier: string) {
+async function getTenantEntry(tenantId: string): Promise<TenantEntry | null> {
+  const row = await publicDb.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, slug: true, dbSchema: true, settings: true },
+  });
+  if (!row) return null;
+  return { id: row.id, slug: row.slug, dbSchema: row.dbSchema, settings: (row.settings ?? {}) as Record<string, unknown> };
+}
+
+function getWarehouseAddress(tenantEntry: TenantEntry | null) {
+  const wh = (tenantEntry?.settings as Record<string, Record<string, string>> | undefined)?.warehouse;
+  return {
+    name: wh?.name || "Warehouse",
+    company: wh?.company || process.env.WAREHOUSE_COMPANY || "Armstrong WMS",
+    street1: wh?.street1 || process.env.WAREHOUSE_ADDRESS || "100 Warehouse Blvd",
+    city: wh?.city || process.env.WAREHOUSE_CITY || "Dallas",
+    state: wh?.state || process.env.WAREHOUSE_STATE || "TX",
+    zip: wh?.zip || process.env.WAREHOUSE_ZIP || "75201",
+    country: wh?.country || "US",
+    phone: wh?.phone || process.env.WAREHOUSE_PHONE || "",
+  };
+}
+
+// ── Carrier adapter factory (tenant-scoped) ─────────────────────────────
+
+async function getAdapterForCarrier(carrier: string, tenantId: string) {
   const { UPSAdapter } = await import("@/lib/integrations/carriers/ups");
   const { FedExAdapter } = await import("@/lib/integrations/carriers/fedex");
   const { USPSAdapter } = await import("@/lib/integrations/carriers/usps");
 
+  const tenantEntry = await getTenantEntry(tenantId);
+  const creds = tenantEntry ? getCarrierCredentials(tenantEntry) : {};
+
   const name = carrier.toLowerCase();
-  if (name.includes("ups") && process.env.UPS_CLIENT_ID) {
+  if (name.includes("ups") && creds.ups) {
     return new UPSAdapter({
-      accountNumber: process.env.UPS_ACCOUNT_NUMBER ?? "",
-      clientId: process.env.UPS_CLIENT_ID,
-      clientSecret: process.env.UPS_CLIENT_SECRET ?? "",
+      accountNumber: creds.ups.accountNumber,
+      clientId: creds.ups.clientId,
+      clientSecret: creds.ups.clientSecret,
       useSandbox: process.env.UPS_SANDBOX === "true",
     });
   }
-  if (name.includes("fedex") && process.env.FEDEX_CLIENT_ID) {
+  if (name.includes("fedex") && creds.fedex) {
     return new FedExAdapter({
-      accountNumber: process.env.FEDEX_ACCOUNT_NUMBER ?? "",
-      clientId: process.env.FEDEX_CLIENT_ID,
-      clientSecret: process.env.FEDEX_CLIENT_SECRET ?? "",
+      accountNumber: creds.fedex.accountNumber,
+      clientId: creds.fedex.clientId,
+      clientSecret: creds.fedex.clientSecret,
       useSandbox: process.env.FEDEX_SANDBOX === "true",
     });
   }
-  if (name.includes("usps") && process.env.USPS_CLIENT_ID) {
+  if (name.includes("usps") && creds.usps) {
     return new USPSAdapter({
-      clientId: process.env.USPS_CLIENT_ID,
-      clientSecret: process.env.USPS_CLIENT_SECRET ?? "",
+      clientId: creds.usps.clientId,
+      clientSecret: creds.usps.clientSecret,
       useSandbox: process.env.USPS_SANDBOX === "true",
     });
   }
-  return null; // No credentials configured for this carrier
+  return null;
 }
 
 /**
@@ -213,15 +240,17 @@ export async function generateShipmentLabel(
     if (!shipment) return { error: "Shipment not found" };
     if (!shipment.carrier) return { error: "No carrier selected — use rate shopping first" };
 
+    const tenantEntry = await getTenantEntry(tenant.tenantId);
+    const wh = getWarehouseAddress(tenantEntry);
     const from: LabelRequest["from"] = {
-      name: "Warehouse",
-      company: process.env.WAREHOUSE_COMPANY ?? "Armstrong WMS",
-      street1: process.env.WAREHOUSE_ADDRESS ?? "100 Warehouse Blvd",
-      city: process.env.WAREHOUSE_CITY ?? "Dallas",
-      state: process.env.WAREHOUSE_STATE ?? "TX",
-      zip: process.env.WAREHOUSE_ZIP ?? "75201",
-      country: "US",
-      phone: process.env.WAREHOUSE_PHONE ?? "",
+      name: wh.name,
+      company: wh.company,
+      street1: wh.street1,
+      city: wh.city,
+      state: wh.state,
+      zip: wh.zip,
+      country: wh.country,
+      phone: wh.phone,
     };
 
     const to: LabelRequest["to"] = {
@@ -254,7 +283,7 @@ export async function generateShipmentLabel(
       reference: shipment.shipmentNumber,
     };
 
-    const adapter = await getAdapterForCarrier(shipment.carrier);
+    const adapter = await getAdapterForCarrier(shipment.carrier, tenant.tenantId);
 
     if (!adapter) {
       return { error: `No credentials configured for carrier "${shipment.carrier}". Add API keys before generating labels.` };
@@ -430,6 +459,32 @@ export async function markShipmentShipped(
     if (shipment.order.externalId) {
       pushShopifyFulfillment(shipment.orderId, trackingNumber, carrier).catch((err) => {
         console.error("[Shopify] Failed to push fulfillment:", err);
+      });
+    }
+
+    // Fire-and-forget: notify warehouse team
+    const orderNumber = shipment.order?.orderNumber ?? shipment.shipmentNumber;
+    notifyWarehouseTeam(tenant.db, {
+      tenantId: tenant.tenantId,
+      title: "Order Shipped",
+      message: `${orderNumber} shipped via ${carrier} — ${trackingNumber}`,
+      type: "success",
+      link: `/shipping/${shipmentId}`,
+      emailFn: (email) => sendOrderShipped({ to: email, orderNumber, trackingNumber, carrier }),
+    }).catch(() => {});
+
+    // Fire-and-forget: notify customer if email is available
+    const customerEmail = shipment.order?.shipToEmail;
+    const customerName = shipment.order?.shipToName;
+    if (customerEmail) {
+      sendOrderShippedCustomer({
+        to: customerEmail,
+        customerName: customerName ?? "Customer",
+        orderNumber,
+        trackingNumber,
+        carrier,
+      }).catch((err) => {
+        console.error("[Email] Failed to send customer shipment notification:", err);
       });
     }
 

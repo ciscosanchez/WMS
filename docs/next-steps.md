@@ -12,13 +12,11 @@ All remaining items are externally blocked or config-level (carriers settings, E
 
 | Priority | Item | Blocked on |
 |----------|------|------------|
-| 1 | Multi-tenant credential scoping (Shopify/carriers use global env vars) | Architecture decision |
-| 2 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
-| 3 | NetSuite credentials from Armstrong | Armstrong IT |
-| 4 | Email notifications (shipment updates, invoices) | Choose provider (SES vs SendGrid) |
-| 5 | Hetzner Backups ($1.20/mo) | Enable in console |
-| 6 | Performance tuning (DB indexes, pagination) | Load testing |
-| 7 | Settings sub-pages (carriers, EDI, integrations) still use setTimeout for test/save | Low priority — config pages, not operator-critical |
+| 1 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
+| 2 | NetSuite credentials from Armstrong | Armstrong IT |
+| 3 | Hetzner Backups ($1.20/mo) | Enable in console |
+| 4 | Performance tuning (DB indexes, pagination) | Load testing |
+| 5 | Settings sub-pages (carriers, EDI, integrations) still use setTimeout for test/save | Low priority — config pages, not operator-critical |
 
 ### What's Done (no longer "next steps")
 
@@ -47,6 +45,18 @@ All remaining items are externally blocked or config-level (carriers settings, E
   - Settings page loads/saves from tenant.settings in public DB (no more setTimeout simulation)
   - Dashboard mockActivity removed — always uses real inventory transaction queries
   - All pages now DB-backed — no inline mock arrays remain in operational pages
+- ✅ Multi-tenant credential scoping (March 21):
+  - Shopify sync reads credentials from SalesChannel.config, falls back to env vars
+  - Carrier adapters read from Tenant.settings via getCarrierCredentials(), env var fallback
+  - Warehouse address resolved from Tenant.settings.warehouse, env var fallback
+  - New getShopifyAdapterForTenant() factory for tenant-scoped Shopify calls
+  - Dead carrier config module identified (src/lib/integrations/carriers/config.ts)
+- ✅ Email notifications via Resend (March 21):
+  - 5 email templates: shipment arrived, receiving completed, order shipped (internal), order shipped (customer), low-stock alert
+  - notifyWarehouseTeam() helper: sends in-app notification + email to all admin/manager users
+  - Triggers: shipment arrived, receiving completed, order shipped, low-stock after adjustment approval
+  - Customer shipment email sent to order.shipToEmail when available
+  - All fire-and-forget — never blocks the calling action
 
 ---
 

@@ -8,6 +8,8 @@ import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
 import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
 import { suggestPutawayLocation } from "./putaway-engine";
+import { notifyWarehouseTeam } from "@/lib/notifications/notify";
+import { sendLowStockAlert } from "@/lib/email/resend";
 import { type PaginatedResult, paginateQuery, buildPaginatedResult } from "@/lib/pagination";
 
 async function getContext() {
@@ -467,6 +469,37 @@ export async function approveAdjustment(id: string) {
     entityId: id,
     changes: { status: { old: "pending_approval", new: "completed" } },
   });
+
+  // Fire-and-forget: check for low-stock products after adjustment
+  (async () => {
+    try {
+      const products = await tenant.db.product.findMany({
+        where: { isActive: true, minStock: { not: null } },
+        select: { id: true, sku: true, name: true, minStock: true, inventory: { select: { available: true } } },
+      });
+      const lowStock = products
+        .map((p) => ({
+          sku: p.sku,
+          name: p.name,
+          available: p.inventory.reduce((sum, inv) => sum + inv.available, 0),
+          minStock: p.minStock ?? 0,
+        }))
+        .filter((p) => p.available < p.minStock);
+
+      if (lowStock.length > 0) {
+        await notifyWarehouseTeam(tenant.db, {
+          tenantId: tenant.tenantId,
+          title: "Low Stock Alert",
+          message: `${lowStock.length} product(s) below minimum stock after adjustment ${adjustment.adjustmentNumber}`,
+          type: "warning",
+          link: "/inventory",
+          emailFn: (email) => sendLowStockAlert({ to: email, products: lowStock }),
+        });
+      }
+    } catch (err) {
+      console.error("[LowStock] Failed to check low-stock after adjustment:", err);
+    }
+  })();
 
   revalidatePath("/inventory/adjustments");
 }

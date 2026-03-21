@@ -42,9 +42,11 @@ The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0
 | Prisma Schemas | Hardened | Public + tenant with fulfillment models, driver adapters |
 | Server Actions | Wired | All CRUD with mock/real toggle per function |
 | RBAC | Hardened | 4 roles, permission map, helpers |
-| Integrations | Wired | UPS/FedEx/USPS adapters, Shopify (single-tenant env vars), Amazon, NetSuite, DispatchPro, EDI |
-| Carrier Rate Shop | Wired | Multi-carrier parallel rate comparison (fails closed if no credentials) |
-| Marketplace Connectors | Wired | Shopify (single-tenant), Amazon adapter |
+| Integrations | Hardened | UPS/FedEx/USPS adapters, Shopify, Amazon, NetSuite, DispatchPro, EDI — all tenant-scoped |
+| Carrier Rate Shop | Hardened | Multi-carrier rate comparison, tenant-scoped credentials (DB first, env var fallback) |
+| Marketplace Connectors | Hardened | Shopify (tenant-scoped via SalesChannel.config), Amazon adapter |
+| Email Notifications | Wired | Resend: shipment arrived, receiving complete, order shipped (internal + customer), low-stock alerts |
+| In-App Notifications | Wired | DB-backed, notifyWarehouseTeam() sends to admin + manager users |
 | Putaway Engine | Wired | 4 strategies (fixed, zone, closest_empty, consolidate), suggestions shown in putaway dialog |
 | Putaway Rules | Wired | CRUD for putaway rules with real products/zones from DB |
 | Workflow Guards | Hardened | Order + shipment transition maps, invalid jumps rejected |
