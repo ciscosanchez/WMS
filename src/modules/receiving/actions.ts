@@ -14,8 +14,7 @@ import {
 import { mockShipments } from "@/lib/mock-data";
 import { captureEvent } from "@/modules/billing/capture";
 import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
-import { notifyWarehouseTeam } from "@/lib/notifications/notify";
-import { sendShipmentArrived, sendReceivingCompleted } from "@/lib/email/resend";
+import { notificationQueue } from "@/lib/jobs/queue";
 
 async function getContext() {
   return requireTenantContext();
@@ -153,34 +152,32 @@ export async function updateShipmentStatus(
     await captureBillingOnReceive(tenant, id);
   }
 
-  // Fire-and-forget notifications
+  // Enqueue durable notifications (retried on failure)
   if (status === "arrived") {
     const detail = await tenant.db.inboundShipment.findUnique({
       where: { id },
       include: { client: { select: { name: true } }, lines: true },
     });
     const expectedUnits = detail?.lines.reduce((s, l) => s + l.expectedQty, 0) ?? 0;
-    notifyWarehouseTeam(tenant.db, {
+    await notificationQueue.add("shipment_arrived", {
+      type: "warehouse_team",
       tenantId: tenant.tenantId,
       title: "Shipment Arrived",
       message: `${detail?.shipmentNumber ?? id} from ${detail?.client?.name ?? "Unknown"} — ${expectedUnits} units expected`,
-      type: "info",
       link: `/receiving/${id}`,
-      emailFn: (email) => sendShipmentArrived({ to: email, shipmentNumber: detail?.shipmentNumber ?? id, clientName: detail?.client?.name ?? "Unknown", expectedUnits }),
-    }).catch(() => {});
+    });
   }
 
   if (status === "completed") {
     const txns = await tenant.db.receivingTransaction.findMany({ where: { shipmentId: id } });
     const totalUnits = txns.reduce((s, t) => s + t.quantity, 0);
-    notifyWarehouseTeam(tenant.db, {
+    await notificationQueue.add("receiving_completed", {
+      type: "warehouse_team",
       tenantId: tenant.tenantId,
       title: "Receiving Complete",
       message: `${shipment.shipmentNumber} — ${totalUnits} units received, ${txns.length} cartons`,
-      type: "success",
       link: `/receiving/${id}`,
-      emailFn: (email) => sendReceivingCompleted({ to: email, shipmentNumber: shipment.shipmentNumber, totalUnits, totalCartons: txns.length }),
-    }).catch(() => {});
+    });
   }
 
   revalidatePath("/receiving");

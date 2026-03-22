@@ -8,8 +8,7 @@ import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
 import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
 import { suggestPutawayLocation } from "./putaway-engine";
-import { notifyWarehouseTeam } from "@/lib/notifications/notify";
-import { sendLowStockAlert } from "@/lib/email/resend";
+import { notificationQueue, emailQueue } from "@/lib/jobs/queue";
 import { type PaginatedResult, paginateQuery, buildPaginatedResult } from "@/lib/pagination";
 
 async function getContext() {
@@ -487,13 +486,16 @@ export async function approveAdjustment(id: string) {
         .filter((p) => p.available < p.minStock);
 
       if (lowStock.length > 0) {
-        await notifyWarehouseTeam(tenant.db, {
+        await notificationQueue.add("low_stock_alert", {
+          type: "warehouse_team",
           tenantId: tenant.tenantId,
           title: "Low Stock Alert",
           message: `${lowStock.length} product(s) below minimum stock after adjustment ${adjustment.adjustmentNumber}`,
-          type: "warning",
           link: "/inventory",
-          emailFn: (email) => sendLowStockAlert({ to: email, products: lowStock }),
+        });
+        await emailQueue.add("low_stock_alert_email", {
+          template: "low_stock_alert",
+          products: lowStock,
         });
       }
     } catch (err) {

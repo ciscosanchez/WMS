@@ -1,15 +1,13 @@
 /**
- * Simple in-memory rate limiter.
- * Tracks request counts per key within a sliding window.
+ * Distributed rate limiter backed by Redis.
+ * Falls back to in-memory if Redis is unavailable (fail-open for availability).
+ *
+ * Uses fixed-window counting via Redis INCR + EXPIRE.
  */
-
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+import { redis } from "@/lib/redis/client";
 
 export class RateLimiter {
-  private store = new Map<string, RateLimitEntry>();
+  private fallbackStore = new Map<string, { count: number; resetAt: number }>();
 
   constructor(
     private maxRequests: number,
@@ -18,36 +16,63 @@ export class RateLimiter {
 
   /**
    * Check whether a request identified by `key` is allowed.
-   * Cleans up expired entries on each call.
+   * Uses Redis for distributed counting; falls back to in-memory on error.
    */
-  check(key: string): { allowed: boolean; remaining: number; resetAt: Date } {
-    const now = Date.now();
+  async check(key: string): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+    try {
+      return await this.checkRedis(key);
+    } catch {
+      // Redis unavailable — fall back to in-memory (fail-open)
+      return this.checkMemory(key);
+    }
+  }
 
-    // Clean up expired entries
-    for (const [k, entry] of this.store) {
-      if (entry.resetAt <= now) {
-        this.store.delete(k);
-      }
+  private async checkRedis(key: string): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+    const redisKey = `rl:${key}`;
+    const windowSec = Math.ceil(this.windowMs / 1000);
+
+    // Ensure connected (lazy connect)
+    if (redis.status === "wait") {
+      await redis.connect();
     }
 
-    const existing = this.store.get(key);
+    const count = await redis.incr(redisKey);
+    if (count === 1) {
+      await redis.expire(redisKey, windowSec);
+    }
+
+    const ttl = await redis.ttl(redisKey);
+    const resetAt = new Date(Date.now() + ttl * 1000);
+    const remaining = Math.max(0, this.maxRequests - count);
+
+    return {
+      allowed: count <= this.maxRequests,
+      remaining,
+      resetAt,
+    };
+  }
+
+  /** In-memory fallback when Redis is unavailable. */
+  private checkMemory(key: string): { allowed: boolean; remaining: number; resetAt: Date } {
+    const now = Date.now();
+
+    // Clean expired entries
+    for (const [k, entry] of this.fallbackStore) {
+      if (entry.resetAt <= now) this.fallbackStore.delete(k);
+    }
+
+    const existing = this.fallbackStore.get(key);
 
     if (!existing || existing.resetAt <= now) {
-      // First request in a new window
-      this.store.set(key, { count: 1, resetAt: now + this.windowMs });
-      return {
-        allowed: true,
-        remaining: this.maxRequests - 1,
-        resetAt: new Date(now + this.windowMs),
-      };
+      this.fallbackStore.set(key, { count: 1, resetAt: now + this.windowMs });
+      return { allowed: true, remaining: this.maxRequests - 1, resetAt: new Date(now + this.windowMs) };
     }
 
     existing.count += 1;
     const remaining = Math.max(0, this.maxRequests - existing.count);
-    const allowed = existing.count <= this.maxRequests;
 
     return {
-      allowed,
+      allowed: existing.count <= this.maxRequests,
       remaining,
       resetAt: new Date(existing.resetAt),
     };

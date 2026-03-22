@@ -8,8 +8,7 @@ import { pushShopifyFulfillment } from "@/modules/orders/shopify-sync";
 import type { RateQuote, LabelRequest } from "@/lib/integrations/carriers/types";
 import { publicDb } from "@/lib/db/public-client";
 import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
-import { notifyWarehouseTeam } from "@/lib/notifications/notify";
-import { sendOrderShipped, sendOrderShippedCustomer } from "@/lib/email/resend";
+import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
 
 async function getContext() {
   return requireTenantContext();
@@ -455,36 +454,35 @@ export async function markShipmentShipped(
       changes: { status: { old: "pending", new: "shipped" }, trackingNumber: { old: null, new: trackingNumber } },
     });
 
-    // Push tracking to Shopify (fire-and-forget — don't block on error)
+    // Enqueue background jobs (durable, retried on failure)
+    const orderNumber = shipment.order?.orderNumber ?? shipment.shipmentNumber;
+
     if (shipment.order.externalId) {
-      pushShopifyFulfillment(shipment.orderId, trackingNumber, carrier).catch((err) => {
-        console.error("[Shopify] Failed to push fulfillment:", err);
+      await integrationQueue.add("shopify_fulfillment", {
+        type: "shopify_fulfillment",
+        orderId: shipment.orderId,
+        trackingNumber,
+        carrier,
       });
     }
 
-    // Fire-and-forget: notify warehouse team
-    const orderNumber = shipment.order?.orderNumber ?? shipment.shipmentNumber;
-    notifyWarehouseTeam(tenant.db, {
+    await notificationQueue.add("order_shipped", {
+      type: "warehouse_team",
       tenantId: tenant.tenantId,
       title: "Order Shipped",
       message: `${orderNumber} shipped via ${carrier} — ${trackingNumber}`,
-      type: "success",
       link: `/shipping/${shipmentId}`,
-      emailFn: (email) => sendOrderShipped({ to: email, orderNumber, trackingNumber, carrier }),
-    }).catch(() => {});
+    });
 
-    // Fire-and-forget: notify customer if email is available
     const customerEmail = shipment.order?.shipToEmail;
-    const customerName = shipment.order?.shipToName;
     if (customerEmail) {
-      sendOrderShippedCustomer({
+      await emailQueue.add("order_shipped_customer", {
+        template: "order_shipped_customer",
         to: customerEmail,
-        customerName: customerName ?? "Customer",
+        customerName: shipment.order?.shipToName ?? "Customer",
         orderNumber,
         trackingNumber,
         carrier,
-      }).catch((err) => {
-        console.error("[Email] Failed to send customer shipment notification:", err);
       });
     }
 

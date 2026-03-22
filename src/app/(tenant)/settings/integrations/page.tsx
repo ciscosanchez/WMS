@@ -1,28 +1,24 @@
 import { IntegrationsClient } from "./_client";
+import { getIntegrationStatuses } from "@/modules/settings/integration-status";
 
-export default function IntegrationsPage() {
-  const shopifyConnected = !!(
-    process.env.SHOPIFY_SHOP_DOMAIN && process.env.SHOPIFY_ACCESS_TOKEN
-  );
-  const amazonConnected = !!(
-    process.env.AMAZON_CLIENT_ID &&
-    process.env.AMAZON_REFRESH_TOKEN &&
-    process.env.AMAZON_SELLER_ID
-  );
-  const netsuiteConnected = !!(
-    process.env.NETSUITE_ACCOUNT_ID && process.env.NETSUITE_CONSUMER_KEY
-  );
-  const dispatchproConnected = !!(process.env.DISPATCHPRO_URL && process.env.DISPATCHPRO_API_KEY);
+export default async function IntegrationsPage() {
+  const statuses = await getIntegrationStatuses();
 
   return (
     <IntegrationsClient
       shopify={{
-        connected: shopifyConnected,
-        shopDomain: process.env.SHOPIFY_SHOP_DOMAIN ?? null,
+        connected: statuses.shopify.connected,
+        shopDomain: statuses.shopify.connected ? statuses.shopify.detail : null,
       }}
-      amazon={{ connected: amazonConnected, sellerId: process.env.AMAZON_SELLER_ID ?? null }}
-      netsuite={{ connected: netsuiteConnected, accountId: process.env.NETSUITE_ACCOUNT_ID ?? null }}
-      dispatchpro={{ connected: dispatchproConnected }}
+      amazon={{
+        connected: statuses.amazon.connected,
+        sellerId: statuses.amazon.connected ? statuses.amazon.detail : null,
+      }}
+      netsuite={{
+        connected: statuses.netsuite.connected,
+        accountId: statuses.netsuite.connected ? statuses.netsuite.detail : null,
+      }}
+      dispatchpro={{ connected: statuses.dispatchpro.connected }}
     />
   );
 }

@@ -29,7 +29,7 @@ const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 export async function POST(request: NextRequest) {
   // ── Rate limit ──────────────────────────────────────────────────────────────
   const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const rateCheck = rateLimiter.check(`upload:${clientIp}`);
+  const rateCheck = await rateLimiter.check(`upload:${clientIp}`);
   if (!rateCheck.allowed) {
     return NextResponse.json(
       { error: "Too many requests" },

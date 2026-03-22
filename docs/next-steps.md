@@ -8,15 +8,15 @@ Production is live on Hetzner CPX21. Two hardening sprints completed. All operat
 
 ### What's Actually Left
 
-All remaining items are externally blocked or config-level (carriers settings, EDI settings, integrations test buttons still use setTimeout — acceptable for config pages).
+11 of 12 audit items fixed. Remaining items are infrastructure or product depth.
 
-| Priority | Item | Blocked on |
-|----------|------|------------|
-| 1 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
-| 2 | NetSuite credentials from Armstrong | Armstrong IT |
-| 3 | Hetzner Backups ($1.20/mo) | Enable in console |
-| 4 | Performance tuning (DB indexes, pagination) | Load testing |
-| 5 | Settings sub-pages (carriers, EDI, integrations) still use setTimeout for test/save | Low priority — config pages, not operator-critical |
+| Priority | Item | Status |
+|----------|------|--------|
+| 1 | Wildcard tenant subdomains (#1 from audit) | Needs DNS + Traefik config |
+| 2 | Armstrong env var fallbacks (#2 from audit) | Needs tenant #2 |
+| 3 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
+| 4 | NetSuite credentials from Armstrong | Armstrong IT |
+| 5 | Hetzner Backups ($1.20/mo) | Enable in console |
 
 ### What's Done (no longer "next steps")
 
@@ -57,6 +57,25 @@ All remaining items are externally blocked or config-level (carriers settings, E
   - Triggers: shipment arrived, receiving completed, order shipped, low-stock after adjustment approval
   - Customer shipment email sent to order.shipToEmail when available
   - All fire-and-forget — never blocks the calling action
+- ✅ Security audit fixes (March 21):
+  - Portal billing: strict client-email match, no fallback to first client (#4)
+  - Receiving: conditional update prevents concurrent completion (#5)
+  - Putaway: replay protection with duplicate check (#6)
+  - Service APIs: per-tenant API key validation (#7)
+  - DB indexes: 24 indexes added across both schemas (#perf)
+  - Settings sub-pages: carriers, EDI, integrations wired to real DB persistence
+  - Secrets at rest: AES-256-GCM encryption for carrier credentials (#3)
+  - Secure invites: token-based password-set flow, no plaintext passwords (#3)
+  - Shared DB pool: single pg.Pool for all tenants, 20 max connections (#8)
+  - CSP header added to all responses (#11)
+  - Provisioner: server-side slug validation prevents SQL injection (#12)
+- ✅ Infrastructure + consistency fixes (March 21):
+  - Redis added (ioredis) for distributed rate limiting and job queues
+  - Redis-backed rate limiter replaces in-memory Map (distributed across instances) (#11)
+  - BullMQ job queues: notifications, integrations, email with retries + dead-letter (#10)
+  - Fire-and-forget patterns replaced with durable enqueued jobs
+  - Unified integration status resolver — single source of truth for connected state (#9)
+  - Integration status checks use SalesChannel.config + Tenant.settings + env vars consistently
 
 ---
 

@@ -51,7 +51,12 @@ The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0
 | Putaway Rules | Wired | CRUD for putaway rules with real products/zones from DB |
 | Workflow Guards | Hardened | Order + shipment transition maps, invalid jumps rejected |
 | Audit Logging | Wired | Utility functions |
-| Security | Hardened | Headers, sanitization, rate limiting, fail-closed patterns |
+| Security | Hardened | CSP, rate limiting (Redis-backed), AES-256-GCM secrets, per-tenant API auth, SQL injection prevention |
+| Secrets at Rest | Hardened | AES-256-GCM encryption for carrier credentials, SECRETS_KEY env var |
+| User Invites | Hardened | Token-based password-set flow (no plaintext passwords in email) |
+| Job Queue | Wired | BullMQ + Redis: notifications, integrations, email queues with retries + DLQ |
+| Redis | Wired | ioredis client for rate limiting + BullMQ job queues |
+| DB Pooling | Hardened | Single shared pg.Pool (max 20), LRU cache for PrismaClient instances |
 | Tests | Wired | 292 unit + 35 E2E, 0 lint errors |
 
 ---

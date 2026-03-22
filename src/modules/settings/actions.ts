@@ -291,40 +291,16 @@ export async function deleteEdiPartner(partnerId: string): Promise<{ error?: str
 export async function testIntegrationConnection(
   type: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { tenant } = await requireTenantContext("settings:read");
+  // Use the unified status resolver — single source of truth
+  const { getIntegrationStatuses } = await import("./integration-status");
+  const statuses = await getIntegrationStatuses();
 
-  if (type === "shopify") {
-    // Check if Shopify SalesChannel exists with config
-    const channel = await tenant.db.salesChannel.findFirst({
-      where: { type: "shopify", isActive: true },
-    });
-    const cfg = (channel?.config ?? {}) as Record<string, string>;
-    const hasCredentials = !!(cfg.accessToken || process.env.SHOPIFY_ACCESS_TOKEN);
-    return hasCredentials
-      ? { success: true }
-      : { success: false, error: "Shopify credentials not configured" };
+  const status = statuses[type];
+  if (!status) {
+    return { success: false, error: `Unknown integration type: ${type}` };
   }
 
-  if (type === "amazon") {
-    const hasCredentials = !!(process.env.AMAZON_SP_CLIENT_ID);
-    return hasCredentials
-      ? { success: true }
-      : { success: false, error: "Amazon SP-API credentials not configured" };
-  }
-
-  if (type === "netsuite") {
-    const hasCredentials = !!(process.env.NETSUITE_ACCOUNT_ID);
-    return hasCredentials
-      ? { success: true }
-      : { success: false, error: "NetSuite credentials not configured" };
-  }
-
-  if (type === "dispatchpro") {
-    const hasCredentials = !!(process.env.DISPATCHPRO_API_URL);
-    return hasCredentials
-      ? { success: true }
-      : { success: false, error: "DispatchPro not configured" };
-  }
-
-  return { success: false, error: `Unknown integration type: ${type}` };
+  return status.connected
+    ? { success: true }
+    : { success: false, error: `${type} credentials not configured` };
 }

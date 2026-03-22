@@ -31,10 +31,10 @@ export default async function OrdersPage() {
   const [orders, clients] = await Promise.all([getOrders(), getClients()]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const defaultClient = (clients as any[])[0];
-  const shopifyEnabled = !!(
-    process.env.SHOPIFY_SHOP_DOMAIN && process.env.SHOPIFY_ACCESS_TOKEN
-  );
-  const amazonEnabled = !!(process.env.AMAZON_CLIENT_ID && process.env.AMAZON_REFRESH_TOKEN);
+  const { getIntegrationStatuses } = await import("@/modules/settings/integration-status");
+  const statuses = await getIntegrationStatuses();
+  const shopifyEnabled = statuses.shopify.connected;
+  const amazonEnabled = statuses.amazon.connected;
 
   return (
     <div className="space-y-6">
