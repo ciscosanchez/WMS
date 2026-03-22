@@ -1,10 +1,10 @@
 # Next Steps — Production Setup
 
-*Updated: 2026-03-21*
+*Updated: 2026-03-21 (end of day)*
 
 ## Current State (March 21)
 
-Production is live on Hetzner CPX21. Two hardening sprints completed. All operational pages wired to real data. 292 unit tests, 35 E2E tests, 0 lint errors.
+Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All operational and config pages wired to real data. Redis + BullMQ job queues running. AES-256-GCM secrets at rest. 292 unit tests, 35 E2E tests, 0 lint errors.
 
 ### What's Actually Left
 

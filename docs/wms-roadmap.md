@@ -1,10 +1,10 @@
 # Ramola WMS — Full Roadmap to Production
 
-*Last updated: 2026-03-21*
+*Last updated: 2026-03-21 (end of day)*
 
 ## Current State Summary
 
-The WMS has **56 routes across 4 apps**, **292+ tests** (292 unit + 35 E2E), **0 lint errors**, and a **live Shopify integration** (single-tenant). Postgres 16 runs in Docker on port 5433 with Prisma pg driver adapter. GitHub Actions CI runs on every push.
+The WMS has **56 routes across 4 apps**, **292 tests** (unit + E2E), **0 lint errors**, and **11 of 12 security audit items fixed**. Infrastructure: Postgres 16 + Redis + BullMQ job queues + AES-256-GCM secrets at rest + shared DB pool. All pages DB-backed, no mock data in any operational or config page. Shopify integration tenant-scoped. GitHub Actions CI runs on every push.
 
 ### Status Vocabulary
 
