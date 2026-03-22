@@ -73,7 +73,7 @@ export async function inviteUser(opts: {
     });
 
     // Send invite email with password-set link (no plaintext password)
-    const baseUrl = process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+    const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
     const setPasswordUrl = isNewUser
       ? `${baseUrl}/set-password?token=${passwordSetToken}`
       : `${baseUrl}/login`;

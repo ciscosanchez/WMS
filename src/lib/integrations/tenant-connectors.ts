@@ -160,15 +160,17 @@ export async function resolveAmazonTenant(
     if (cfgSellerId !== sellerId) continue;
 
     // Build full connector
+    // Unified env var names: AMAZON_CLIENT_ID, AMAZON_CLIENT_SECRET, etc.
+    // Also accepts legacy AMAZON_SP_* for backward compat.
     const clientId =
       config.clientId ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-        ? process.env.AMAZON_SP_CLIENT_ID
+        ? process.env.AMAZON_CLIENT_ID ?? process.env.AMAZON_SP_CLIENT_ID
         : undefined);
     const clientSecret =
       config.clientSecret ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-        ? process.env.AMAZON_SP_CLIENT_SECRET
+        ? process.env.AMAZON_CLIENT_SECRET ?? process.env.AMAZON_SP_CLIENT_SECRET
         : undefined);
 
     if (!clientId || !clientSecret || !cfgSellerId) continue;
@@ -178,11 +180,11 @@ export async function resolveAmazonTenant(
       db,
       sellerId: cfgSellerId,
       marketplaceId: config.marketplaceId || process.env.AMAZON_MARKETPLACE_ID || "ATVPDKIKX0DER",
-      refreshToken: config.refreshToken || process.env.AMAZON_SP_REFRESH_TOKEN || "",
+      refreshToken: config.refreshToken || process.env.AMAZON_REFRESH_TOKEN || process.env.AMAZON_SP_REFRESH_TOKEN || "",
       clientId,
       clientSecret,
-      awsAccessKeyId: config.awsAccessKeyId || process.env.AWS_ACCESS_KEY_ID || "",
-      awsSecretAccessKey: config.awsSecretAccessKey || process.env.AWS_SECRET_ACCESS_KEY || "",
+      awsAccessKeyId: config.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
+      awsSecretAccessKey: config.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "",
       region: (config.region || "us-east-1") as "us-east-1" | "eu-west-1" | "us-west-2",
       clientCode:
         config.clientCode ||
