@@ -4,7 +4,7 @@
 
 ## Current State Summary
 
-The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E), **0 lint errors**, and **11 of 12 security audit items fixed**. Infrastructure: Postgres 16 + Redis + BullMQ job queues (standalone worker process) + AES-256-GCM secrets at rest + bounded DB pools. All pages DB-backed, no mock data in any operational or config page. Shopify integration tenant-scoped. GitHub Actions CI runs on every push. Sentry error monitoring active. Operator app is PWA-ready with offline queue wired into all mutations, high-contrast mode, and session keepalive. Cursor-based pagination with tie-breakers for high-volume tables. Multi-tenant Traefik routing with wildcard subdomains. Rate limiter fail-closed. Tenant resolution hardened (no dev fallbacks in production).
+The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E, all passing), **0 lint errors**, and **11 of 12 security audit items fixed**. Infrastructure: Postgres 16 + Redis + BullMQ job queues (standalone worker process, esbuild-bundled) + AES-256-GCM secrets at rest + bounded DB pools. All pages DB-backed, no mock data in any operational or config page. Both Shopify and Amazon integrations tenant-scoped (SalesChannel.config → env var fallback). GitHub Actions CI runs on every push. Sentry error monitoring active. Operator app is PWA-ready with centralized offline action registry, high-contrast mode, and session keepalive. Cursor-based pagination with tie-breakers for high-volume tables. Multi-tenant Traefik routing with wildcard subdomains. Rate limiter fail-closed with grace period. Tenant resolution hardened (no dev fallbacks in production). BullMQ Redis connections parse full URLs (auth, TLS, database).
 
 ### Status Vocabulary
 
@@ -397,10 +397,10 @@ The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E), **0 lint er
 ──────────────────────────────────    ──────────────────────────────────
 ✅ A1. Database (Docker+PG+Prisma)   🔲 D1. NetSuite bridge (need Armstrong credentials)
 ✅ A2. Auth (login/mock toggle)      🔲 D3. Carrier sandbox credentials (UPS/FedEx/USPS)
-✅ A3. Tenant resolution             🔲 D4. Marketplace connectors (Shopify live API)
-✅ A4. Server actions (mock+real)    🔲 D5. EDI 940/945
-✅ A5. Audit + sequences             🔲 H5. Mobile responsive polish
-✅ B1. Edit pages                    🔲 Audit #1 — Wildcard subdomains (DNS+Traefik)
+✅ A3. Tenant resolution             🔲 D5. EDI 940/945
+✅ A4. Server actions (mock+real)    🔲 H5. Mobile responsive polish
+✅ A5. Audit + sequences             🔲 DNS: *.wms.ramola.app → Hetzner (Traefik configured)
+✅ B1. Edit pages                    🔲 Amazon SP-API credentials (adapter built)
 ✅ B2. Full receiving workflow loop
 ✅ B3. Full inventory workflow loop
 ✅ B4. Full fulfillment workflow loop
@@ -422,11 +422,15 @@ The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E), **0 lint er
 ✅ G3. Billing config (rate cards)
 ✅ G4. Superadmin platform
 ✅ H1. Error handling + skeletons
-✅ H2. Testing (292 unit tests, 35 E2E)
-✅ H3. Security hardening (11/12 audit, RBAC, fail-closed)
+✅ H2. Testing (310 tests — 275 unit + 35 E2E, all passing)
+✅ H3. Security hardening (11/12 audit, RBAC, fail-closed rate limiter)
 ✅ H4. Performance (cursor pagination, 36 DB indexes, caching headers)
 ✅ Sentry error monitoring (all 3 runtimes)
 ✅ CI/CD (GitHub Actions → Docker → Hetzner)
+✅ Standalone BullMQ worker (esbuild-bundled, separate Docker service)
+✅ Multi-tenant marketplace adapters (Shopify + Amazon tenant-scoped)
+✅ Centralized offline action registry (replay from any operator page)
+✅ Full Redis URL parsing for BullMQ (auth, TLS, database)
 ✅ Cycle count plans + create
 ✅ Adjustment creation form
 ✅ Shipping detail + timeline
@@ -435,11 +439,11 @@ The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E), **0 lint er
 ```
 
 ### Next Up (Priority Order)
-1. **D1. NetSuite bridge** — Need Armstrong credentials
-2. **D3. Carrier sandbox credentials** — UPS/FedEx/USPS live API keys
-3. **D4. Shopify live API** — Adapter exists, needs real API calls wired
+1. **DNS wildcard** — Point `*.wms.ramola.app` at Hetzner + configure DNS challenge for wildcard TLS
+2. **D1. NetSuite bridge** — Need Armstrong credentials
+3. **D3. Carrier sandbox credentials** — UPS/FedEx/USPS live API keys
 4. **H5. Mobile responsive polish** — Tablet/phone optimization
-5. **Audit #1** — Wildcard tenant subdomains (DNS + Traefik infra)
+5. **Amazon SP-API credentials** — Per-tenant adapter is built, needs real credentials to test
 
 ### Armstrong Feature Requests (2026-03-20)
 
@@ -464,7 +468,7 @@ See `docs/armstrong-feature-requests.md` for full details.
 | A. Database Foundation | ~~1-2 weeks~~ | ✅ Complete |
 | B. Complete Workflows | ~~2-3 weeks~~ | ✅ Complete |
 | C. Client Portal | ~~1-2 weeks~~ | ✅ Complete |
-| D. Integrations | 3-5 weeks | 🔲 DispatchPro built. Need credentials for NetSuite, carriers, Shopify live. |
+| D. Integrations | 2-4 weeks | 🔲 DispatchPro + Shopify + Amazon adapters built & tenant-scoped. Need credentials for NetSuite, carriers. |
 | E. Operator App Polish | ~~1 week~~ | ✅ Complete (PWA, offline queue, high contrast, session keepalive) |
 | F. Dashboard & Reporting | ~~1-2 weeks~~ | ✅ Complete |
 | G. Settings & Admin | ~~1 week~~ | ✅ Complete |

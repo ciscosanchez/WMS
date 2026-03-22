@@ -4,7 +4,7 @@
 
 ## Current State (March 22)
 
-Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All operational and config pages wired to real data. Redis + BullMQ job queues now run as a standalone Docker service (separated from Next.js process). AES-256-GCM secrets at rest. 310 tests (291 unit + 18 new + 35 E2E), 0 lint errors. Operator app PWA-ready with offline queue wired into all 5 mutation pages, high-contrast mode, and 12hr session keepalive. Cursor-based pagination with tie-breakers for inventory/transaction tables. Caching strategy configured. DispatchPro integration confirmed built. Multi-tenant Traefik routing with wildcard subdomains configured. Rate limiter fail-closed with grace period. Tenant resolution hardened — no dev fallbacks in production. Both DB pools bounded and tuned.
+Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All operational and config pages wired to real data. BullMQ workers run as a standalone Docker service (esbuild-bundled, uses canonical Shopify adapter + tenant-scoped Amazon adapter). AES-256-GCM secrets at rest. 310 tests (all passing), 0 lint errors. Operator app PWA-ready with centralized offline action registry (replay from any page), high-contrast mode, and 12hr session keepalive. Cursor-based pagination with tie-breakers. Caching strategy configured. DispatchPro, Shopify, and Amazon integrations all tenant-scoped (SalesChannel.config → env var fallback). Multi-tenant Traefik routing with wildcard subdomains configured. Rate limiter fail-closed with 30s grace period. Tenant resolution hardened — no dev fallbacks in production. Both DB pools bounded. BullMQ Redis connections parse full URLs (auth, TLS, database). Shopify webhook error handling covers DB unavailability.
 
 ### What's Actually Left
 
@@ -99,6 +99,23 @@ Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All op
   - Tenant resolution dev fallbacks (cookie, DEFAULT_TENANT_SLUG) gated behind NODE_ENV
   - Public DB pool bounded: max 10, idle 30s, connect timeout 5s
   - TENANT_RESOLUTION=subdomain in production (no more header mode)
+- ✅ Production worker hardening (March 22):
+  - Standalone worker compiled with esbuild to `dist/worker.js` at Docker build time
+  - Worker uses canonical ShopifyAdapter.pushFulfillment() (fulfillment-order flow, not raw POST)
+  - Worker preserves notification `link` field for deep-linking
+  - BullMQ Redis connection parses full URL (auth, TLS, database) via shared `parseRedisUrl()`
+  - Worker email sender uses `EMAIL_FROM` env var (same as app email module)
+  - Worker payloads match exact enqueue callsites (orderId→externalId lookup, to field, products array)
+- ✅ Multi-tenant marketplace adapters (March 22):
+  - Amazon: `getAmazonAdapterForTenant()` factory, webhook uses tenant-resolved credentials
+  - Amazon inventory sync checks SalesChannel.config before env var fallback
+  - Shopify webhook tenant resolution moved inside try block (DB errors return 500, not crash)
+  - `AMAZON_WMS_CLIENT_CODE` env var (backward-compat fallback to `SHOPIFY_WMS_CLIENT_CODE`)
+- ✅ Centralized offline registry (March 22):
+  - All operator actions registered in `offline-actions-registry.ts`, imported by OfflineProvider
+  - Replay works from any operator page, not just the page that enqueued the action
+  - Per-page `registerOfflineActions()` calls removed
+  - 310/310 tests pass (previously 309/310 — Shopify webhook test now passes)
 
 ---
 
