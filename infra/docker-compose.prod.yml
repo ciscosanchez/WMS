@@ -199,8 +199,7 @@ services:
       context: ../
       dockerfile: Dockerfile
     restart: unless-stopped
-    command: ["node", "-e", "require('./src/lib/jobs/worker-entrypoint.ts')"]
-    entrypoint: ["npx", "tsx"]
+    command: ["node", "worker.js"]
     environment:
       NODE_ENV: production
       DATABASE_URL: ${WMS_DATABASE_URL}

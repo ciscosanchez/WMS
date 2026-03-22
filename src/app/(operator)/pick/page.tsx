@@ -15,7 +15,8 @@ import {
   confirmPickLine,
   markPickLineShort,
 } from "@/modules/operator/actions";
-import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 
 type PickTask = Awaited<ReturnType<typeof getMyPickTasks>>[number];
 
@@ -31,7 +32,7 @@ export default function OperatorPickPage() {
   const [availableTasks, setAvailableTasks] = useState<PickTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
-  const { executeAction } = useOffline();
+  const { executeAction } = useSharedOffline();
 
   async function reload() {
     const [mine, avail] = await Promise.all([getMyPickTasks(), getAvailablePickTasks()]);

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OfflineIndicator } from "@/components/shared/offline-indicator";
-import { useOffline } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 import { useServiceWorker } from "@/hooks/use-service-worker";
 import { useSessionKeepalive } from "@/hooks/use-session-keepalive";
 import { useHighContrast } from "@/hooks/use-high-contrast";
@@ -31,7 +31,7 @@ const navItems = [
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isOnline, pendingCount, isSyncing, replayQueue } = useOffline();
+  const { isOnline, pendingCount, isSyncing, replayQueue } = useSharedOffline();
   const { highContrast, toggleHighContrast } = useHighContrast();
   const { sessionExpired, refreshSession } = useSessionKeepalive();
 

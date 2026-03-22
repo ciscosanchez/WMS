@@ -11,7 +11,8 @@ import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getShipment, receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 import { getBinByBarcode } from "@/modules/operator/actions";
-import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 
 interface ShipmentLine {
   id: string;
@@ -47,7 +48,7 @@ export default function ReceiveShipmentPage() {
   const [binId, setBinId] = useState<string | null>(null);
   const [qty, setQty] = useState("1");
   const [submitting, setSubmitting] = useState(false);
-  const { executeAction } = useOffline();
+  const { executeAction } = useSharedOffline();
 
   useEffect(() => {
     getShipment(id)

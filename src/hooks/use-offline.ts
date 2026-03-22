@@ -106,8 +106,25 @@ export function useOffline() {
   }, []);
 
   /**
+   * Request a Background Sync so the SW replays the queue when connectivity returns,
+   * even if the user closes the tab.
+   */
+  const requestSync = useCallback(async () => {
+    try {
+      const reg = await navigator.serviceWorker?.ready;
+      if (reg && "sync" in reg) {
+        await (reg as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } })
+          .sync.register("offline-queue-sync");
+      }
+    } catch {
+      // Background Sync not supported — client-side replay is the fallback
+    }
+  }, []);
+
+  /**
    * Execute a server action with offline fallback.
-   * If offline or the action fails due to network error, queue it for later.
+   * If offline or the action fails due to network error, queue it for later
+   * and register a Background Sync so the SW replays when online.
    *
    * @param key - The registry key, e.g. "operator:confirmPickLine"
    * @param actionFn - The actual server action function
@@ -127,6 +144,7 @@ export function useOffline() {
       if (!navigator.onLine) {
         await enqueueAction(key, args);
         refreshCount();
+        await requestSync();
         toast.info("Action queued — will sync when online");
         return { result: null, queued: true };
       }
@@ -139,13 +157,14 @@ export function useOffline() {
         if (isNetworkError(err)) {
           await enqueueAction(key, args);
           refreshCount();
+          await requestSync();
           toast.info("Network error — action queued for retry");
           return { result: null, queued: true };
         }
         throw err; // Re-throw application errors
       }
     },
-    [refreshCount]
+    [refreshCount, requestSync]
   );
 
   const replayQueue = useCallback(async () => {

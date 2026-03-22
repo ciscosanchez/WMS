@@ -9,7 +9,8 @@ import { ArrowRight, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { getBinByBarcode } from "@/modules/operator/actions";
 import { moveInventory } from "@/modules/inventory/actions";
-import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 
 type Bin = NonNullable<Awaited<ReturnType<typeof getBinByBarcode>>>;
 type InventoryItem = Bin["inventory"][number];
@@ -25,7 +26,7 @@ export default function OperatorMovePage() {
   const [quantity, setQuantity] = useState("1");
   const [toBin, setToBin] = useState<Bin | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { executeAction } = useOffline();
+  const { executeAction } = useSharedOffline();
 
   function reset() {
     setFromBin(null);

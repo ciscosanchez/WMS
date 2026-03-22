@@ -9,7 +9,8 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getCycleCountBins, submitCount } from "@/modules/operator/actions";
-import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 
 type CountBin = Awaited<ReturnType<typeof getCycleCountBins>>[number];
 
@@ -24,7 +25,7 @@ export default function OperatorCountPage() {
   const [activeBin, setActiveBin] = useState<CountBin | null>(null);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const { executeAction } = useOffline();
+  const { executeAction } = useSharedOffline();
 
   useEffect(() => {
     getCycleCountBins()

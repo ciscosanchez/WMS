@@ -17,7 +17,8 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Package, Printer, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getTasksReadyToPack, confirmPack } from "@/modules/operator/actions";
-import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { useSharedOffline } from "@/providers/offline-provider";
 
 type PackTask = Awaited<ReturnType<typeof getTasksReadyToPack>>[number];
 
@@ -33,7 +34,7 @@ export default function OperatorPackPage() {
   const [verified, setVerified] = useState<Set<string>>(new Set());
   const [boxCount, setBoxCount] = useState("1");
   const [submitting, setSubmitting] = useState(false);
-  const { executeAction } = useOffline();
+  const { executeAction } = useSharedOffline();
 
   useEffect(() => {
     getTasksReadyToPack()
