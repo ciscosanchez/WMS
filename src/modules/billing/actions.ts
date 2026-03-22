@@ -313,10 +313,19 @@ export async function getPortalBillingData() {
   const { user, tenant } = await getContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  // Find client strictly by contact email — no fallback to prevent data leaks
-  const client = await db.client.findFirst({
-    where: { contactEmail: user.email, isActive: true },
+  // Resolve client via explicit portal-client binding, then email fallback
+  const { publicDb } = await import("@/lib/db/public-client");
+  const membership = await publicDb.tenantUser.findUnique({
+    where: { tenantId_userId: { tenantId: tenant.tenantId, userId: user.id } },
+    select: { portalClientId: true },
   });
+
+  let client;
+  if (membership?.portalClientId) {
+    client = await db.client.findFirst({ where: { id: membership.portalClientId, isActive: true } });
+  } else {
+    client = await db.client.findFirst({ where: { contactEmail: user.email, isActive: true } });
+  }
 
   if (!client) return null;
 

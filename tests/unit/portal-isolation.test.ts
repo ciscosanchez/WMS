@@ -46,6 +46,11 @@ jest.mock("@/lib/db/public-client", () => ({
         status: "active",
       }),
     },
+    tenantUser: {
+      findUnique: jest.fn().mockResolvedValue({
+        portalClientId: null, // No explicit binding — falls back to email match
+      }),
+    },
   },
 }));
 

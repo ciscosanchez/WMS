@@ -76,6 +76,12 @@ Production is live on Hetzner CPX21. Two hardening sprints completed. All operat
   - Fire-and-forget patterns replaced with durable enqueued jobs
   - Unified integration status resolver — single source of truth for connected state (#9)
   - Integration status checks use SalesChannel.config + Tenant.settings + env vars consistently
+- ✅ Portal + picking hardening (March 21):
+  - Portal authorization: explicit portalClientId on TenantUser (replaces email heuristic)
+  - Portal layout requires tenant membership (not just authentication)
+  - Portal billing uses portalClientId first, email fallback for backward compat
+  - claimPickTask: conditional update prevents concurrent operator claims
+  - 11 of 12 original audit items fixed
 
 ---
 

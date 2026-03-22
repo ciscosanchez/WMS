@@ -149,9 +149,19 @@ export async function claimPickTask(taskId: string) {
 
   const { user, tenant } = await requireTenantContext("operator:write");
 
-  const task = await tenant.db.pickTask.update({
-    where: { id: taskId },
+  // Conditional update: only claim if status is still pending or assigned.
+  // Prevents race condition where two operators claim the same task.
+  const result = await tenant.db.pickTask.updateMany({
+    where: { id: taskId, status: { in: ["pending", "assigned"] } },
     data: { status: "in_progress", assignedTo: user.id, startedAt: new Date() },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Task already claimed by another operator");
+  }
+
+  const task = await tenant.db.pickTask.findUniqueOrThrow({
+    where: { id: taskId },
     include: {
       order: true,
       lines: { include: { product: true, bin: true } },

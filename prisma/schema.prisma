@@ -67,10 +67,11 @@ enum TenantRole {
 }
 
 model TenantUser {
-  id       String     @id @default(cuid())
-  tenantId String     @map("tenant_id")
-  userId   String     @map("user_id")
-  role     TenantRole @default(viewer)
+  id             String     @id @default(cuid())
+  tenantId       String     @map("tenant_id")
+  userId         String     @map("user_id")
+  role           TenantRole @default(viewer)
+  portalClientId String?    @map("portal_client_id") // If set, user is a portal user scoped to this client
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

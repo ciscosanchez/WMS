@@ -1,13 +1,34 @@
 "use server";
 
 import { requireTenantContext } from "@/lib/tenant/context";
+import { publicDb } from "@/lib/db/public-client";
 
 async function getContext() {
   return requireTenantContext();
 }
 
-/** Resolve the portal client: match by contactEmail only. No fallback — fail closed. */
-async function resolvePortalClient(db: any, userEmail: string) { // eslint-disable-line @typescript-eslint/no-explicit-any
+/**
+ * Resolve the portal client for the current user.
+ * Priority:
+ *   1. Explicit portalClientId on TenantUser (preferred — modeled relationship)
+ *   2. Match by user email = client.contactEmail (backward compat)
+ *   3. null (fail closed)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolvePortalClient(db: any, userId: string, tenantId: string, userEmail: string) {
+  // 1. Check explicit portal-client binding
+  const membership = await publicDb.tenantUser.findUnique({
+    where: { tenantId_userId: { tenantId, userId } },
+    select: { portalClientId: true },
+  });
+
+  if (membership?.portalClientId) {
+    return db.client.findFirst({
+      where: { id: membership.portalClientId, isActive: true },
+    });
+  }
+
+  // 2. Fall back to email matching (backward compat — will be deprecated)
   if (!userEmail) return null;
   return db.client.findFirst({
     where: { contactEmail: userEmail, isActive: true },
@@ -19,7 +40,7 @@ export async function getPortalInventory() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  const client = await resolvePortalClient(db, user.email ?? "");
+  const client = await resolvePortalClient(db, user.id, tenant.tenantId, user.email ?? "");
   if (!client) return [];
 
   const products = await db.product.findMany({
@@ -75,7 +96,7 @@ export async function getPortalOrders() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  const client = await resolvePortalClient(db, user.email ?? "");
+  const client = await resolvePortalClient(db, user.id, tenant.tenantId, user.email ?? "");
   if (!client) return [];
 
   const orders = await db.order.findMany({
@@ -111,7 +132,7 @@ export async function getPortalProducts() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  const client = await resolvePortalClient(db, user.email ?? "");
+  const client = await resolvePortalClient(db, user.id, tenant.tenantId, user.email ?? "");
   if (!client) return [];
 
   return db.product.findMany({
@@ -134,7 +155,7 @@ export async function createPortalOrder(data: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  const client = await resolvePortalClient(db, user.email ?? "");
+  const client = await resolvePortalClient(db, user.id, tenant.tenantId, user.email ?? "");
   if (!client) return { error: "No client account found" };
 
   try {
@@ -213,7 +234,7 @@ export async function getPortalShipments() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  const client = await resolvePortalClient(db, user.email ?? "");
+  const client = await resolvePortalClient(db, user.id, tenant.tenantId, user.email ?? "");
   if (!client) return [];
 
   const shipments = await db.shipment.findMany({
