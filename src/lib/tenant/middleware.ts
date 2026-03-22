@@ -14,16 +14,18 @@ export function tenantMiddleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // In dev mode, check for x-tenant-slug header
+  // Header-based tenant resolution (dev/testing only in production)
   if (process.env.TENANT_RESOLUTION === "header") {
     const tenantSlug = request.headers.get("x-tenant-slug");
     if (!tenantSlug && !pathname.startsWith("/api")) {
-      // Try cookie as fallback for browser requests
-      const cookieSlug = request.cookies.get("tenant-slug")?.value;
-      if (cookieSlug) {
-        const response = NextResponse.next();
-        response.headers.set("x-tenant-slug", cookieSlug);
-        return response;
+      // Cookie fallback — dev only
+      if (process.env.NODE_ENV !== "production") {
+        const cookieSlug = request.cookies.get("tenant-slug")?.value;
+        if (cookieSlug) {
+          const response = NextResponse.next();
+          response.headers.set("x-tenant-slug", cookieSlug);
+          return response;
+        }
       }
     }
     return NextResponse.next();

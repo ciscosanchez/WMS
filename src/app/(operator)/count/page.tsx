@@ -9,8 +9,14 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getCycleCountBins, submitCount } from "@/modules/operator/actions";
+import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
 
 type CountBin = Awaited<ReturnType<typeof getCycleCountBins>>[number];
+
+// Register mutations for offline replay
+registerOfflineActions("operator", {
+  submitCount: submitCount as (...args: unknown[]) => Promise<unknown>,
+});
 
 export default function OperatorCountPage() {
   const [bins, setBins] = useState<CountBin[]>([]);
@@ -18,6 +24,7 @@ export default function OperatorCountPage() {
   const [activeBin, setActiveBin] = useState<CountBin | null>(null);
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const { executeAction } = useOffline();
 
   useEffect(() => {
     getCycleCountBins()
@@ -54,13 +61,21 @@ export default function OperatorCountPage() {
         lotNumber: item.lotNumber,
       }));
 
-      await submitCount(activeBin.id, lines);
+      const { queued } = await executeAction(
+        actionKey("operator", "submitCount"),
+        submitCount as (...args: unknown[]) => Promise<unknown>,
+        [activeBin.id, lines]
+      );
 
-      const variances = lines.filter((l) => l.countedQty !== l.systemQty);
-      if (variances.length > 0) {
-        toast.warning(`Count submitted — ${variances.length} variance(s) flagged`);
+      if (queued) {
+        toast.info("Count queued — will submit when online");
       } else {
-        toast.success("Count submitted — no variances");
+        const variances = lines.filter((l) => l.countedQty !== l.systemQty);
+        if (variances.length > 0) {
+          toast.warning(`Count submitted — ${variances.length} variance(s) flagged`);
+        } else {
+          toast.success("Count submitted — no variances");
+        }
       }
 
       setActiveBin(null);
@@ -84,8 +99,18 @@ export default function OperatorCountPage() {
         lotNumber: item.lotNumber,
       }));
 
-      await submitCount(activeBin.id, lines);
-      toast.warning("Bin marked empty — adjustment created");
+      const { queued } = await executeAction(
+        actionKey("operator", "submitCount"),
+        submitCount as (...args: unknown[]) => Promise<unknown>,
+        [activeBin.id, lines]
+      );
+
+      if (queued) {
+        toast.info("Empty count queued — will submit when online");
+      } else {
+        toast.warning("Bin marked empty — adjustment created");
+      }
+
       setActiveBin(null);
       setCounts({});
     } catch (err) {

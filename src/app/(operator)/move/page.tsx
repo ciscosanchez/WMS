@@ -9,9 +9,15 @@ import { ArrowRight, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { getBinByBarcode } from "@/modules/operator/actions";
 import { moveInventory } from "@/modules/inventory/actions";
+import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
 
 type Bin = NonNullable<Awaited<ReturnType<typeof getBinByBarcode>>>;
 type InventoryItem = Bin["inventory"][number];
+
+// Register mutations for offline replay
+registerOfflineActions("inventory", {
+  moveInventory: moveInventory as (...args: unknown[]) => Promise<unknown>,
+});
 
 export default function OperatorMovePage() {
   const [fromBin, setFromBin] = useState<Bin | null>(null);
@@ -19,6 +25,7 @@ export default function OperatorMovePage() {
   const [quantity, setQuantity] = useState("1");
   const [toBin, setToBin] = useState<Bin | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { executeAction } = useOffline();
 
   function reset() {
     setFromBin(null);
@@ -82,15 +89,26 @@ export default function OperatorMovePage() {
 
     setSubmitting(true);
     try {
-      await moveInventory({
+      const payload = {
         productId: selectedItem.productId,
         fromBinId: fromBin.id,
         toBinId: toBin.id,
         quantity: qty,
         lotNumber: selectedItem.lotNumber,
         serialNumber: selectedItem.serialNumber,
-      });
-      toast.success("Move complete");
+      };
+
+      const { queued } = await executeAction(
+        actionKey("inventory", "moveInventory"),
+        moveInventory as (...args: unknown[]) => Promise<unknown>,
+        [payload]
+      );
+
+      if (queued) {
+        toast.info("Move queued — will complete when online");
+      } else {
+        toast.success("Move complete");
+      }
       reset();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Move failed");

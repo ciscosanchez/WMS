@@ -33,20 +33,28 @@ export interface TenantContext {
 
 export async function getTenantFromHeaders(): Promise<string | null> {
   const headersList = await headers();
+  const isDev = process.env.NODE_ENV !== "production";
 
   if (process.env.TENANT_RESOLUTION === "header") {
     const slug = headersList.get("x-tenant-slug");
     if (slug) return slug;
-    // Cookie fallback for browser
-    const cookieHeader = headersList.get("cookie") || "";
-    const match = cookieHeader.match(/tenant-slug=([^;]+)/);
-    if (match) return match[1];
-    // Dev default — avoids needing to set cookie manually
-    if (process.env.DEFAULT_TENANT_SLUG) return process.env.DEFAULT_TENANT_SLUG;
+
+    // Cookie fallback — dev only. In production, require explicit header.
+    if (isDev) {
+      const cookieHeader = headersList.get("cookie") || "";
+      const match = cookieHeader.match(/tenant-slug=([^;]+)/);
+      if (match) return match[1];
+    }
+
+    // Default slug — dev only. Production must always resolve explicitly.
+    if (isDev && process.env.DEFAULT_TENANT_SLUG) {
+      return process.env.DEFAULT_TENANT_SLUG;
+    }
+
     return null;
   }
 
-  // Production: extract from subdomain
+  // Production: extract from subdomain (e.g. armstrong.wms.ramola.app → armstrong)
   const host = headersList.get("host") || "";
   const parts = host.split(".");
   if (parts.length >= 3) return parts[0];

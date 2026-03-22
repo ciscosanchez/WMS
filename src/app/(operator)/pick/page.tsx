@@ -15,14 +15,23 @@ import {
   confirmPickLine,
   markPickLineShort,
 } from "@/modules/operator/actions";
+import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
 
 type PickTask = Awaited<ReturnType<typeof getMyPickTasks>>[number];
+
+// Register mutations for offline replay on module load
+registerOfflineActions("operator", {
+  claimPickTask: claimPickTask as (...args: unknown[]) => Promise<unknown>,
+  confirmPickLine: confirmPickLine as (...args: unknown[]) => Promise<unknown>,
+  markPickLineShort: markPickLineShort as (...args: unknown[]) => Promise<unknown>,
+});
 
 export default function OperatorPickPage() {
   const [myTasks, setMyTasks] = useState<PickTask[]>([]);
   const [availableTasks, setAvailableTasks] = useState<PickTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const { executeAction } = useOffline();
 
   async function reload() {
     const [mine, avail] = await Promise.all([getMyPickTasks(), getAvailablePickTasks()]);
@@ -39,8 +48,16 @@ export default function OperatorPickPage() {
   async function handleClaim(taskId: string) {
     setWorking(true);
     try {
-      const task = await claimPickTask(taskId);
-      toast.success(`Claimed task ${(task as PickTask).taskNumber}`);
+      const { result, queued } = await executeAction(
+        actionKey("operator", "claimPickTask"),
+        claimPickTask as (...args: unknown[]) => Promise<unknown>,
+        [taskId]
+      );
+      if (queued) {
+        toast.info("Claim queued — will sync when online");
+      } else {
+        toast.success(`Claimed task ${(result as PickTask).taskNumber}`);
+      }
       await reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to claim task");
@@ -61,8 +78,17 @@ export default function OperatorPickPage() {
     }
     setWorking(true);
     try {
-      await confirmPickLine(line.id, line.quantity - line.pickedQty);
-      toast.success(`Picked ${line.product.sku}`);
+      const qty = line.quantity - line.pickedQty;
+      const { queued } = await executeAction(
+        actionKey("operator", "confirmPickLine"),
+        confirmPickLine as (...args: unknown[]) => Promise<unknown>,
+        [line.id, qty]
+      );
+      if (queued) {
+        toast.info(`Pick queued for ${line.product.sku}`);
+      } else {
+        toast.success(`Picked ${line.product.sku}`);
+      }
       await reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to confirm pick");
@@ -74,8 +100,16 @@ export default function OperatorPickPage() {
   async function handleShort(line: PickTask["lines"][number]) {
     setWorking(true);
     try {
-      await markPickLineShort(line.id, line.pickedQty);
-      toast.warning(`Marked short: ${line.product.sku}`);
+      const { queued } = await executeAction(
+        actionKey("operator", "markPickLineShort"),
+        markPickLineShort as (...args: unknown[]) => Promise<unknown>,
+        [line.id, line.pickedQty]
+      );
+      if (queued) {
+        toast.info(`Short pick queued: ${line.product.sku}`);
+      } else {
+        toast.warning(`Marked short: ${line.product.sku}`);
+      }
       await reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to mark short");

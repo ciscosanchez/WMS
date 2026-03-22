@@ -140,6 +140,50 @@
   }
 }
 
+/* High-contrast mode for warehouse operators */
+/* Activated via data-high-contrast attribute on <html> */
+[data-high-contrast="true"] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0 0 0);
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.92 0 0);
+  --muted-foreground: oklch(0.2 0 0);
+  --accent: oklch(0.92 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --border: oklch(0 0 0);
+  --input: oklch(0 0 0);
+  --ring: oklch(0 0 0);
+  --destructive: oklch(0.45 0.3 27);
+}
+
+[data-high-contrast="true"] * {
+  font-weight: 600;
+  border-width: 2px;
+}
+
+[data-high-contrast="true"] .text-xs {
+  font-size: 0.875rem;
+}
+
+[data-high-contrast="true"] .text-sm {
+  font-size: 1rem;
+}
+
+[data-high-contrast="true"] .text-muted-foreground {
+  color: oklch(0.2 0 0);
+}
+
+[data-high-contrast="true"] button,
+[data-high-contrast="true"] a[role="button"],
+[data-high-contrast="true"] .h-12 {
+  min-height: 56px;
+}
+
 /* Print styles */
 @media print {
   nav, header, .no-print {

@@ -1,10 +1,10 @@
 # Ramola WMS — Full Roadmap to Production
 
-*Last updated: 2026-03-21 (end of day)*
+*Last updated: 2026-03-22*
 
 ## Current State Summary
 
-The WMS has **56 routes across 4 apps**, **292 tests** (unit + E2E), **0 lint errors**, and **11 of 12 security audit items fixed**. Infrastructure: Postgres 16 + Redis + BullMQ job queues + AES-256-GCM secrets at rest + shared DB pool. All pages DB-backed, no mock data in any operational or config page. Shopify integration tenant-scoped. GitHub Actions CI runs on every push.
+The WMS has **56 routes across 4 apps**, **310 tests** (unit + E2E), **0 lint errors**, and **11 of 12 security audit items fixed**. Infrastructure: Postgres 16 + Redis + BullMQ job queues (standalone worker process) + AES-256-GCM secrets at rest + bounded DB pools. All pages DB-backed, no mock data in any operational or config page. Shopify integration tenant-scoped. GitHub Actions CI runs on every push. Sentry error monitoring active. Operator app is PWA-ready with offline queue wired into all mutations, high-contrast mode, and session keepalive. Cursor-based pagination with tie-breakers for high-volume tables. Multi-tenant Traefik routing with wildcard subdomains. Rate limiter fail-closed. Tenant resolution hardened (no dev fallbacks in production).
 
 ### Status Vocabulary
 
@@ -396,30 +396,37 @@ The WMS has **56 routes across 4 apps**, **292 tests** (unit + E2E), **0 lint er
 ✅ COMPLETED                          🔲 REMAINING
 ──────────────────────────────────    ──────────────────────────────────
 ✅ A1. Database (Docker+PG+Prisma)   🔲 D1. NetSuite bridge (need Armstrong credentials)
-✅ A2. Auth (login/mock toggle)      🔲 D2. DispatchPro bridge
-✅ A3. Tenant resolution             🔲 D3. Carrier sandbox credentials (UPS/FedEx/USPS)
-✅ A4. Server actions (mock+real)    🔲 D4. Marketplace connectors (Shopify)
-✅ A5. Audit + sequences             🔲 D5. EDI 940/945
-✅ B1. Edit pages                    🔲 E1. PWA / offline
-✅ B2. Full receiving workflow loop   🔲 H4. Performance (pagination, indexing)
-✅ B3. Full inventory workflow loop   🔲 H5. Mobile responsive polish
-✅ B4. Full fulfillment workflow loop 🔲 Email notifications
+✅ A2. Auth (login/mock toggle)      🔲 D3. Carrier sandbox credentials (UPS/FedEx/USPS)
+✅ A3. Tenant resolution             🔲 D4. Marketplace connectors (Shopify live API)
+✅ A4. Server actions (mock+real)    🔲 D5. EDI 940/945
+✅ A5. Audit + sequences             🔲 H5. Mobile responsive polish
+✅ B1. Edit pages                    🔲 Audit #1 — Wildcard subdomains (DNS+Traefik)
+✅ B2. Full receiving workflow loop
+✅ B3. Full inventory workflow loop
+✅ B4. Full fulfillment workflow loop
 ✅ B5. Document upload (MinIO)
 ✅ C1-C3. Client Portal (6 pages)
+✅ D2. DispatchPro bridge (client + auth + API routes)
 ✅ D stubs. Integration contracts
-✅ E. Operator App (5 pages)
+✅ E. Operator App (7 pages + PWA + offline queue)
+✅ E1. PWA / offline (service worker, IndexedDB queue, background sync)
+✅ E2. Scanner integration (hardware wedge + camera + haptic/audio)
+✅ E3. Operator UX (high contrast mode, session keepalive, offline indicator)
 ✅ F1. Dashboard KPIs + charts
 ✅ F2. Reports (5 tabs + export)
 ✅ F3. CSV/PDF export
 ✅ F4. Global search (Cmd+K)
-✅ F5. Notifications
+✅ F5. Notifications + Email (Resend, 5 templates)
 ✅ G1. User management + invite
 ✅ G2. Tenant settings
 ✅ G3. Billing config (rate cards)
 ✅ G4. Superadmin platform
 ✅ H1. Error handling + skeletons
 ✅ H2. Testing (292 unit tests, 35 E2E)
-✅ H3. Security hardening (audit, RBAC, fail-closed)
+✅ H3. Security hardening (11/12 audit, RBAC, fail-closed)
+✅ H4. Performance (cursor pagination, 36 DB indexes, caching headers)
+✅ Sentry error monitoring (all 3 runtimes)
+✅ CI/CD (GitHub Actions → Docker → Hetzner)
 ✅ Cycle count plans + create
 ✅ Adjustment creation form
 ✅ Shipping detail + timeline
@@ -430,9 +437,9 @@ The WMS has **56 routes across 4 apps**, **292 tests** (unit + E2E), **0 lint er
 ### Next Up (Priority Order)
 1. **D1. NetSuite bridge** — Need Armstrong credentials
 2. **D3. Carrier sandbox credentials** — UPS/FedEx/USPS live API keys
-3. **H4. Performance** — Pagination, DB indexing for large datasets
+3. **D4. Shopify live API** — Adapter exists, needs real API calls wired
 4. **H5. Mobile responsive polish** — Tablet/phone optimization
-5. **E1. PWA / offline** — Service worker, offline queue
+5. **Audit #1** — Wildcard tenant subdomains (DNS + Traefik infra)
 
 ### Armstrong Feature Requests (2026-03-20)
 
@@ -457,10 +464,10 @@ See `docs/armstrong-feature-requests.md` for full details.
 | A. Database Foundation | ~~1-2 weeks~~ | ✅ Complete |
 | B. Complete Workflows | ~~2-3 weeks~~ | ✅ Complete |
 | C. Client Portal | ~~1-2 weeks~~ | ✅ Complete |
-| D. Integrations | 3-5 weeks | 🔲 Stubs done, need credentials (NetSuite, carrier sandboxes) |
-| E. Operator App Polish | 1 week | 🔲 PWA + scanner |
+| D. Integrations | 3-5 weeks | 🔲 DispatchPro built. Need credentials for NetSuite, carriers, Shopify live. |
+| E. Operator App Polish | ~~1 week~~ | ✅ Complete (PWA, offline queue, high contrast, session keepalive) |
 | F. Dashboard & Reporting | ~~1-2 weeks~~ | ✅ Complete |
 | G. Settings & Admin | ~~1 week~~ | ✅ Complete |
-| H. Hardening | 2-3 weeks | ✅ Testing + security complete. Performance remaining. |
+| H. Hardening | ~~2-3 weeks~~ | ✅ Complete (security, testing, performance, Sentry, CI/CD) |
 
-**Remaining to production: ~3-5 weeks (integrations + polish)** (down from 12-20)
+**Remaining to production: ~3-4 weeks (integrations + mobile polish)** (down from 12-20)

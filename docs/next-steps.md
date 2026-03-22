@@ -1,22 +1,23 @@
 # Next Steps — Production Setup
 
-*Updated: 2026-03-21 (end of day)*
+*Updated: 2026-03-22*
 
-## Current State (March 21)
+## Current State (March 22)
 
-Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All operational and config pages wired to real data. Redis + BullMQ job queues running. AES-256-GCM secrets at rest. 292 unit tests, 35 E2E tests, 0 lint errors.
+Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All operational and config pages wired to real data. Redis + BullMQ job queues now run as a standalone Docker service (separated from Next.js process). AES-256-GCM secrets at rest. 310 tests (291 unit + 18 new + 35 E2E), 0 lint errors. Operator app PWA-ready with offline queue wired into all 5 mutation pages, high-contrast mode, and 12hr session keepalive. Cursor-based pagination with tie-breakers for inventory/transaction tables. Caching strategy configured. DispatchPro integration confirmed built. Multi-tenant Traefik routing with wildcard subdomains configured. Rate limiter fail-closed with grace period. Tenant resolution hardened — no dev fallbacks in production. Both DB pools bounded and tuned.
 
 ### What's Actually Left
 
-11 of 12 audit items fixed. Remaining items are infrastructure or product depth.
+11 of 12 audit items fixed. Traefik wildcard routing configured but needs DNS `*.wms.ramola.app` pointed at Hetzner.
 
 | Priority | Item | Status |
 |----------|------|--------|
-| 1 | Wildcard tenant subdomains (#1 from audit) | Needs DNS + Traefik config |
+| 1 | DNS: point `*.wms.ramola.app` at Hetzner | Need Cloudflare/registrar config |
 | 2 | Armstrong env var fallbacks (#2 from audit) | Needs tenant #2 |
 | 3 | UPS/FedEx/USPS sandbox credentials | Developer portal signups |
 | 4 | NetSuite credentials from Armstrong | Armstrong IT |
 | 5 | Hetzner Backups ($1.20/mo) | Enable in console |
+| 6 | Mobile responsive polish | Tablet/phone fine-tuning |
 
 ### What's Done (no longer "next steps")
 
@@ -82,6 +83,22 @@ Production is live on Hetzner CPX21. 11 of 12 security audit items fixed. All op
   - Portal billing uses portalClientId first, email fallback for backward compat
   - claimPickTask: conditional update prevents concurrent operator claims
   - 11 of 12 original audit items fixed
+- ✅ Operator app polish + performance (March 22):
+  - Service worker with app shell precaching + network-first strategy
+  - IndexedDB offline queue wired into all 5 operator mutation pages (pick, pack, count, move, receive)
+  - Offline indicator banner (red/amber/blue states) with manual sync
+  - High-contrast mode for warehouse lighting (CSS overrides, localStorage toggle)
+  - Session keepalive (10min ping, 12hr idle timeout, re-auth overlay)
+  - Cursor-based pagination with id tie-breaker for inventory + transactions
+  - Caching headers: static immutable, SW must-revalidate, API no-cache
+  - 18 new unit tests (cursor pagination + offline queue)
+- ✅ SaaS readiness hardening (March 22):
+  - Multi-tenant Traefik: wildcard `*.wms.ramola.app` routing + wildcard TLS
+  - BullMQ workers extracted to standalone Docker service
+  - Rate limiter fail-closed after 30s Redis grace period
+  - Tenant resolution dev fallbacks (cookie, DEFAULT_TENANT_SLUG) gated behind NODE_ENV
+  - Public DB pool bounded: max 10, idle 30s, connect timeout 5s
+  - TENANT_RESOLUTION=subdomain in production (no more header mode)
 
 ---
 

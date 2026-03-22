@@ -9,6 +9,9 @@ const globalForPrisma = globalThis as unknown as {
 function createClient() {
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
+    max: parseInt(process.env.DB_PUBLIC_POOL_MAX ?? "10", 10),
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaPg(pool as any);

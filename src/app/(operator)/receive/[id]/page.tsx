@@ -11,6 +11,7 @@ import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getShipment, receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 import { getBinByBarcode } from "@/modules/operator/actions";
+import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
 
 interface ShipmentLine {
   id: string;
@@ -28,6 +29,12 @@ interface Shipment {
   lines: ShipmentLine[];
 }
 
+// Register mutations for offline replay
+registerOfflineActions("receiving", {
+  receiveLine: receiveLine as (...args: unknown[]) => Promise<unknown>,
+  updateShipmentStatus: updateShipmentStatus as (...args: unknown[]) => Promise<unknown>,
+});
+
 export default function ReceiveShipmentPage() {
   const params = useParams();
   const router = useRouter();
@@ -40,6 +47,7 @@ export default function ReceiveShipmentPage() {
   const [binId, setBinId] = useState<string | null>(null);
   const [qty, setQty] = useState("1");
   const [submitting, setSubmitting] = useState(false);
+  const { executeAction } = useOffline();
 
   useEffect(() => {
     getShipment(id)
@@ -80,14 +88,22 @@ export default function ReceiveShipmentPage() {
 
     setSubmitting(true);
     try {
-      await receiveLine(shipment!.id, {
-        lineId: line.id,
-        binId: binId ?? undefined,
-        quantity: parseInt(qty),
-        condition: "good",
-      });
+      const { queued } = await executeAction(
+        actionKey("receiving", "receiveLine"),
+        receiveLine as (...args: unknown[]) => Promise<unknown>,
+        [shipment!.id, {
+          lineId: line.id,
+          binId: binId ?? undefined,
+          quantity: parseInt(qty),
+          condition: "good",
+        }]
+      );
 
-      toast.success(`Received ${qty} × ${line.product.sku}`);
+      if (queued) {
+        toast.info(`Receive queued: ${qty} × ${line.product.sku}`);
+      } else {
+        toast.success(`Received ${qty} × ${line.product.sku}`);
+      }
 
       // Refresh shipment
       const updated = await getShipment(id);
@@ -115,8 +131,17 @@ export default function ReceiveShipmentPage() {
   async function handleComplete() {
     setSubmitting(true);
     try {
-      await updateShipmentStatus(id, "completed");
-      toast.success("Shipment completed");
+      const { queued } = await executeAction(
+        actionKey("receiving", "updateShipmentStatus"),
+        updateShipmentStatus as (...args: unknown[]) => Promise<unknown>,
+        [id, "completed"]
+      );
+
+      if (queued) {
+        toast.info("Completion queued — will finalize when online");
+      } else {
+        toast.success("Shipment completed");
+      }
       router.push("/receive");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to complete shipment");

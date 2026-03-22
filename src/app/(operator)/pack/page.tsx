@@ -17,8 +17,14 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Package, Printer, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getTasksReadyToPack, confirmPack } from "@/modules/operator/actions";
+import { useOffline, registerOfflineActions, actionKey } from "@/hooks/use-offline";
 
 type PackTask = Awaited<ReturnType<typeof getTasksReadyToPack>>[number];
+
+// Register mutations for offline replay
+registerOfflineActions("operator", {
+  confirmPack: confirmPack as (...args: unknown[]) => Promise<unknown>,
+});
 
 export default function OperatorPackPage() {
   const [tasks, setTasks] = useState<PackTask[]>([]);
@@ -27,6 +33,7 @@ export default function OperatorPackPage() {
   const [verified, setVerified] = useState<Set<string>>(new Set());
   const [boxCount, setBoxCount] = useState("1");
   const [submitting, setSubmitting] = useState(false);
+  const { executeAction } = useOffline();
 
   useEffect(() => {
     getTasksReadyToPack()
@@ -66,8 +73,19 @@ export default function OperatorPackPage() {
 
     setSubmitting(true);
     try {
-      await confirmPack(activeTask.id, parseInt(boxCount) || 1);
-      toast.success(`Packed — shipment created`);
+      const boxes = parseInt(boxCount) || 1;
+      const { queued } = await executeAction(
+        actionKey("operator", "confirmPack"),
+        confirmPack as (...args: unknown[]) => Promise<unknown>,
+        [activeTask.id, boxes]
+      );
+
+      if (queued) {
+        toast.info("Pack queued — shipment will be created when online");
+      } else {
+        toast.success("Packed — shipment created");
+      }
+
       // Reload tasks
       const updated = await getTasksReadyToPack();
       setTasks(updated as PackTask[]);

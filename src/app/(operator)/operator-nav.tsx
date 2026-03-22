@@ -10,8 +10,15 @@ import {
   Package,
   ArrowLeftRight,
   ListChecks,
+  Sun,
+  LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { OfflineIndicator } from "@/components/shared/offline-indicator";
+import { useOffline } from "@/hooks/use-offline";
+import { useServiceWorker } from "@/hooks/use-service-worker";
+import { useSessionKeepalive } from "@/hooks/use-session-keepalive";
+import { useHighContrast } from "@/hooks/use-high-contrast";
 
 const navItems = [
   { href: "/my-tasks", label: "Home", icon: LayoutDashboard },
@@ -24,9 +31,42 @@ const navItems = [
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isOnline, pendingCount, isSyncing, replayQueue } = useOffline();
+  const { highContrast, toggleHighContrast } = useHighContrast();
+  const { sessionExpired, refreshSession } = useSessionKeepalive();
+
+  // Register service worker
+  useServiceWorker();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Offline banner */}
+      <OfflineIndicator
+        isOnline={isOnline}
+        pendingCount={pendingCount}
+        isSyncing={isSyncing}
+        onRetry={replayQueue}
+      />
+
+      {/* Session expired overlay */}
+      {sessionExpired && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="mx-4 rounded-lg bg-white p-6 text-center shadow-xl">
+            <LogIn className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <h2 className="text-lg font-bold">Session Expired</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your session timed out. Tap below to sign back in.
+            </p>
+            <button
+              onClick={refreshSession}
+              className="mt-4 h-12 w-full rounded-md bg-primary px-4 text-primary-foreground font-semibold"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b px-4">
         <Link href="/my-tasks" className="flex items-center gap-2">
@@ -38,7 +78,22 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
             Floor
           </span>
         </Link>
-        <span className="text-sm text-muted-foreground">Carlos M.</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleHighContrast}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+              highContrast
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            aria-label="Toggle high contrast mode"
+            title={highContrast ? "High contrast: ON" : "High contrast: OFF"}
+          >
+            <Sun className="h-4 w-4" />
+          </button>
+          <span className="text-sm text-muted-foreground">Carlos M.</span>
+        </div>
       </header>
 
       {/* Content */}

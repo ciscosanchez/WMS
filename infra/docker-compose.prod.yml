@@ -131,10 +131,11 @@ services:
       REDIS_URL: redis://redis:6379
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: https://wms.ramola.app
+      AUTH_TRUST_HOST: "true"
       USE_MOCK_AUTH: "false"
       USE_MOCK_DATA: "false"
-      TENANT_RESOLUTION: header
-      DEFAULT_TENANT_SLUG: armstrong
+      TENANT_RESOLUTION: subdomain
+      DISABLE_EMBEDDED_WORKERS: "true"
       DOCAI_URL: http://docai:3002
       DOCAI_API_KEY: ${DOCAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -168,9 +169,12 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`)"
+      # Multi-tenant: accept *.wms.ramola.app (tenant subdomains) AND wms.ramola.app (login/admin)
+      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`) || HostRegexp(`{tenant:[a-z0-9-]+}.wms.ramola.app`)"
       - "traefik.http.routers.wms.entrypoints=websecure"
       - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.wms.tls.domains[0].main=wms.ramola.app"
+      - "traefik.http.routers.wms.tls.domains[0].sans=*.wms.ramola.app"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
       - "traefik.http.routers.wms.middlewares=security-headers@docker,rate-limit@docker"
     networks:
@@ -187,6 +191,38 @@ services:
       retries: 5
       start_period: 10s
 
+  # ── Background Workers (BullMQ) ────────────────────────────
+  # Runs the same image as WMS but only starts the BullMQ workers,
+  # not the Next.js web server. Isolates job processing from request handling.
+  worker:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["node", "-e", "require('./src/lib/jobs/worker-entrypoint.ts')"]
+    entrypoint: ["npx", "tsx"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${WMS_DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+      SHOPIFY_SHOP_DOMAIN: ${SHOPIFY_SHOP_DOMAIN:-}
+      SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN:-}
+      SHOPIFY_API_VERSION: "2026-01"
+      SHOPIFY_LOCATION_ID: ${SHOPIFY_LOCATION_ID:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
   # ── MinIO (S3-compatible object storage) ───────────────────
   minio:
     image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
@@ -196,7 +232,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_SERVER_URL: https://storage.wms.ramola.app
-      MINIO_API_CORS_ALLOW_ORIGIN: https://wms.ramola.app
+      MINIO_API_CORS_ALLOW_ORIGIN: "https://wms.ramola.app,https://*.wms.ramola.app"
     volumes:
       - miniodata:/data
     networks:

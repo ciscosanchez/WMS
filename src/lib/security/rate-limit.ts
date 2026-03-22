@@ -1,13 +1,24 @@
 /**
  * Distributed rate limiter backed by Redis.
- * Falls back to in-memory if Redis is unavailable (fail-open for availability).
+ *
+ * FAIL-CLOSED: If Redis is unavailable, requests are REJECTED by default.
+ * A configurable grace period allows a brief window of degraded (in-memory)
+ * rate limiting before fully closing, so a transient Redis restart doesn't
+ * instantly lock out all users.
  *
  * Uses fixed-window counting via Redis INCR + EXPIRE.
  */
 import { redis } from "@/lib/redis/client";
 
+/** How long to allow in-memory fallback before failing closed (ms) */
+const REDIS_GRACE_PERIOD_MS = parseInt(
+  process.env.RATE_LIMIT_GRACE_MS ?? "30000",
+  10
+); // 30 seconds default
+
 export class RateLimiter {
   private fallbackStore = new Map<string, { count: number; resetAt: number }>();
+  private redisDownSince: number | null = null;
 
   constructor(
     private maxRequests: number,
@@ -16,14 +27,36 @@ export class RateLimiter {
 
   /**
    * Check whether a request identified by `key` is allowed.
-   * Uses Redis for distributed counting; falls back to in-memory on error.
+   * Uses Redis for distributed counting; fails CLOSED if Redis is down
+   * beyond the grace period.
    */
   async check(key: string): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
     try {
-      return await this.checkRedis(key);
+      const result = await this.checkRedis(key);
+      // Redis is healthy — clear any degraded state
+      this.redisDownSince = null;
+      return result;
     } catch {
-      // Redis unavailable — fall back to in-memory (fail-open)
-      return this.checkMemory(key);
+      // Redis unavailable — check grace period
+      const now = Date.now();
+
+      if (this.redisDownSince === null) {
+        this.redisDownSince = now;
+      }
+
+      const downDuration = now - this.redisDownSince;
+
+      if (downDuration <= REDIS_GRACE_PERIOD_MS) {
+        // Within grace period — degrade to in-memory rate limiting
+        return this.checkMemory(key);
+      }
+
+      // Grace period expired — FAIL CLOSED
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: new Date(now + this.windowMs),
+      };
     }
   }
 
@@ -52,7 +85,10 @@ export class RateLimiter {
     };
   }
 
-  /** In-memory fallback when Redis is unavailable. */
+  /**
+   * In-memory fallback during Redis grace period.
+   * Still enforces limits, but not distributed across instances.
+   */
   private checkMemory(key: string): { allowed: boolean; remaining: number; resetAt: Date } {
     const now = Date.now();
 

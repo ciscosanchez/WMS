@@ -9,7 +9,14 @@ import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./s
 import { mockInventory, mockTransactions, mockAdjustments } from "@/lib/mock-data";
 import { suggestPutawayLocation } from "./putaway-engine";
 import { notificationQueue, emailQueue } from "@/lib/jobs/queue";
-import { type PaginatedResult, paginateQuery, buildPaginatedResult } from "@/lib/pagination";
+import {
+  type PaginatedResult,
+  type CursorPaginatedResult,
+  paginateQuery,
+  buildPaginatedResult,
+  cursorPaginateQuery,
+  buildCursorResult,
+} from "@/lib/pagination";
 
 async function getContext() {
   return requireTenantContext();
@@ -229,6 +236,115 @@ export async function getInventoryTransactionsPaginated(opts: {
   ]);
 
   return buildPaginatedResult(data, total, page, pageSize);
+}
+
+// ─── Cursor-based pagination (high-volume tables) ─────────
+
+export async function getInventoryCursor(opts: {
+  cursor?: string | null;
+  pageSize?: number;
+  search?: string;
+  productId?: string;
+  binId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<CursorPaginatedResult<any>> {
+  const pageSize = opts.pageSize ?? 50;
+
+  if (config.useMockData) {
+    return buildCursorResult(mockInventory.slice(0, pageSize) as (typeof mockInventory[number] & { id: string })[], pageSize);
+  }
+
+  const { tenant } = await getContext();
+
+  const where = {
+    ...(opts.productId ? { productId: opts.productId } : {}),
+    ...(opts.binId ? { binId: opts.binId } : {}),
+    ...(opts.search
+      ? {
+          product: {
+            OR: [
+              { sku: { contains: opts.search, mode: "insensitive" as const } },
+              { name: { contains: opts.search, mode: "insensitive" as const } },
+            ],
+          },
+        }
+      : {}),
+  };
+
+  const paginationArgs = cursorPaginateQuery(pageSize, opts.cursor);
+
+  const data = await tenant.db.inventory.findMany({
+    where,
+    include: {
+      product: { include: { client: true } },
+      bin: {
+        include: {
+          shelf: {
+            include: {
+              rack: {
+                include: {
+                  aisle: {
+                    include: {
+                      zone: { include: { warehouse: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    ...paginationArgs,
+  });
+
+  return buildCursorResult(data, pageSize);
+}
+
+export async function getTransactionsCursor(opts: {
+  cursor?: string | null;
+  pageSize?: number;
+  productId?: string;
+  type?: string;
+  search?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+}): Promise<CursorPaginatedResult<any>> {
+  const pageSize = opts.pageSize ?? 50;
+
+  if (config.useMockData) {
+    return buildCursorResult(mockTransactions.slice(0, pageSize) as (typeof mockTransactions[number] & { id: string })[], pageSize);
+  }
+
+  const { tenant } = await getContext();
+
+  const where = {
+    ...(opts.productId ? { productId: opts.productId } : {}),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(opts.type ? { type: opts.type as any } : {}),
+    ...(opts.search
+      ? {
+          product: {
+            sku: { contains: opts.search, mode: "insensitive" as const },
+          },
+        }
+      : {}),
+  };
+
+  const paginationArgs = cursorPaginateQuery(pageSize, opts.cursor);
+
+  const data = await tenant.db.inventoryTransaction.findMany({
+    where,
+    include: {
+      product: true,
+      fromBin: true,
+      toBin: true,
+    },
+    orderBy: [{ performedAt: "desc" }, { id: "desc" }],
+    ...paginationArgs,
+  });
+
+  return buildCursorResult(data, pageSize);
 }
 
 export async function moveInventory(data: unknown) {
