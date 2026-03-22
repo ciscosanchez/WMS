@@ -9,6 +9,10 @@
  *
  * This file intentionally avoids `@/` path aliases — it is compiled
  * independently of Next.js so it can run without the full app tree.
+ *
+ * IMPORTANT: Job payloads must exactly match what the app enqueues.
+ * See src/modules/shipping/actions.ts, src/modules/inventory/actions.ts,
+ * and src/modules/receiving/actions.ts for the enqueue callsites.
  */
 
 import { Worker, type Job } from "bullmq";
@@ -50,19 +54,25 @@ function getTenantDb(schema: string): TenantPrismaClient {
 
 const publicDb = getPublicDb();
 
+/** Resolve a tenant's DB schema from their ID. */
+async function resolveTenantSchema(tenantId: string): Promise<string> {
+  const tenant = await publicDb.tenant.findUnique({
+    where: { id: tenantId },
+    select: { dbSchema: true },
+  });
+  if (!tenant) throw new Error(`Tenant ${tenantId} not found`);
+  return tenant.dbSchema;
+}
+
 // ── Notification Worker ─────────────────────────────────────────────────────
+// Payload: { type: "warehouse_team", tenantId, title, message, link?, notificationType? }
 
 async function processNotification(job: Job) {
   const { type, ...data } = job.data;
 
   if (type === "warehouse_team") {
-    const tenant = await publicDb.tenant.findUnique({
-      where: { id: data.tenantId },
-      select: { dbSchema: true },
-    });
-    if (!tenant) throw new Error(`Tenant ${data.tenantId} not found`);
-
-    const db = getTenantDb(tenant.dbSchema);
+    const dbSchema = await resolveTenantSchema(data.tenantId);
+    const db = getTenantDb(dbSchema);
 
     // Look up admin + manager users from public schema
     const tenantUsers = await publicDb.tenantUser.findMany({
@@ -89,18 +99,48 @@ async function processNotification(job: Job) {
 }
 
 // ── Integration Worker ──────────────────────────────────────────────────────
+// Payload: { type: "shopify_fulfillment", tenantId, orderId, trackingNumber, carrier }
 
 async function processIntegration(job: Job) {
   const { type, ...data } = job.data;
 
   if (type === "shopify_fulfillment") {
-    // Shopify fulfillment push — requires store credentials
-    const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-    const accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
-    const apiVersion = process.env.SHOPIFY_API_VERSION ?? "2026-01";
+    const dbSchema = await resolveTenantSchema(data.tenantId);
+    const db = getTenantDb(dbSchema);
+
+    // Look up the order to get externalId (Shopify order ID)
+    const order = await db.order.findUnique({
+      where: { id: data.orderId },
+      select: { externalId: true, channelId: true },
+    });
+
+    if (!order?.externalId) {
+      console.warn(`[integration] Order ${data.orderId} has no externalId, skipping`);
+      return;
+    }
+
+    // Resolve Shopify credentials: SalesChannel.config first, env var fallback
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let shopDomain: string | undefined;
+    let accessToken: string | undefined;
+    let apiVersion = process.env.SHOPIFY_API_VERSION ?? "2026-01";
+
+    if (order.channelId) {
+      const channel = await db.salesChannel.findUnique({
+        where: { id: order.channelId },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cfg = (channel?.config ?? {}) as any;
+      shopDomain = cfg.shopDomain || process.env.SHOPIFY_SHOP_DOMAIN;
+      accessToken = cfg.accessToken || process.env.SHOPIFY_ACCESS_TOKEN;
+      if (cfg.apiVersion) apiVersion = cfg.apiVersion;
+    } else {
+      shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+      accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+    }
 
     if (!shopDomain || !accessToken) {
-      console.warn("[integration] Shopify not configured, skipping fulfillment push");
+      console.warn("[integration] Shopify not configured for this tenant/channel, skipping");
       return;
     }
 
@@ -114,7 +154,7 @@ async function processIntegration(job: Job) {
         },
         body: JSON.stringify({
           fulfillment: {
-            order_id: data.shopifyOrderId,
+            order_id: order.externalId,
             tracking_number: data.trackingNumber,
             tracking_company: data.carrier,
           },
@@ -130,6 +170,12 @@ async function processIntegration(job: Job) {
 }
 
 // ── Email Worker ────────────────────────────────────────────────────────────
+//
+// order_shipped_customer payload:
+//   { template, to, customerName, orderNumber, trackingNumber, carrier }
+//
+// low_stock_alert payload:
+//   { template, tenantId, products: [{ sku, name, available, minStock }] }
 
 async function processEmail(job: Job) {
   const { template, ...data } = job.data;
@@ -145,15 +191,54 @@ async function processEmail(job: Job) {
   let html: string;
 
   if (template === "order_shipped_customer") {
-    to = data.customerEmail;
-    subject = `Your order ${data.orderNumber} has shipped`;
-    html = `<p>Your order <strong>${data.orderNumber}</strong> has been shipped.</p>
-            ${data.trackingNumber ? `<p>Tracking: ${data.trackingNumber}</p>` : ""}`;
+    // Payload: { to, customerName, orderNumber, trackingNumber, carrier }
+    to = data.to;
+    subject = `Your order ${data.orderNumber} has shipped!`;
+    html = `
+      <p>Hi ${data.customerName ?? "Customer"},</p>
+      <p>Your order <strong>${data.orderNumber}</strong> has been shipped!</p>
+      <ul>
+        <li><strong>Carrier:</strong> ${data.carrier}</li>
+        <li><strong>Tracking number:</strong> ${data.trackingNumber}</li>
+      </ul>
+      <p>You can track your package using the tracking number above on the carrier's website.</p>
+      <p style="color:#888;font-size:12px;">Shipped by Ramola WMS</p>
+    `;
   } else if (template === "low_stock_alert") {
-    to = data.recipientEmail;
-    subject = `Low stock alert: ${data.sku}`;
-    html = `<p>Product <strong>${data.sku}</strong> is below minimum stock level.</p>
-            <p>Current: ${data.currentQty} / Min: ${data.minStock}</p>`;
+    // Payload: { tenantId, products: [{ sku, name, available, minStock }] }
+    const products = data.products as { sku: string; name: string; available: number; minStock: number }[];
+    if (!products || products.length === 0) return;
+
+    // Resolve admin email(s) for this tenant
+    if (data.tenantId) {
+      const admins = await publicDb.tenantUser.findMany({
+        where: {
+          tenantId: data.tenantId,
+          role: "admin",
+        },
+        include: { user: { select: { email: true } } },
+      });
+      to = admins[0]?.user?.email;
+    }
+
+    if (!to) {
+      console.warn("[email] No admin email found for low-stock alert");
+      return;
+    }
+
+    const rows = products
+      .map((p) => `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`)
+      .join("");
+
+    subject = `Low stock alert: ${products.length} product(s) below minimum`;
+    html = `
+      <p><strong>${products.length}</strong> product(s) are below their minimum stock level:</p>
+      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+        <tr style="background:#f5f5f5"><th>SKU</th><th>Name</th><th>Available</th><th>Min Stock</th></tr>
+        ${rows}
+      </table>
+      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+    `;
   } else {
     console.warn(`[email] Unknown template: ${template}`);
     return;

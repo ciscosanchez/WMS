@@ -611,6 +611,7 @@ export async function approveAdjustment(id: string) {
         });
         await emailQueue.add("low_stock_alert_email", {
           template: "low_stock_alert",
+          tenantId: tenant.tenantId,
           products: lowStock,
         });
       }

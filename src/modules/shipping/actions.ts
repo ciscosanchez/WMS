@@ -460,6 +460,7 @@ export async function markShipmentShipped(
     if (shipment.order.externalId) {
       await integrationQueue.add("shopify_fulfillment", {
         type: "shopify_fulfillment",
+        tenantId: tenant.tenantId,
         orderId: shipment.orderId,
         trackingNumber,
         carrier,
