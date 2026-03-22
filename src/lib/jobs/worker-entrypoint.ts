@@ -7,8 +7,8 @@
  * Run in production:
  *   node dist/worker.js
  *
- * This file intentionally avoids `@/` path aliases — it is compiled
- * independently of Next.js so it can run without the full app tree.
+ * Uses the same Shopify adapter, notification helpers, and email sender
+ * identity as the in-process path. No reimplementation of business logic.
  *
  * IMPORTANT: Job payloads must exactly match what the app enqueues.
  * See src/modules/shipping/actions.ts, src/modules/inventory/actions.ts,
@@ -20,14 +20,35 @@ import { PrismaClient as PublicPrismaClient } from "../../../node_modules/.prism
 import { PrismaClient as TenantPrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { getShopifyAdapterForTenant } from "../integrations/marketplaces/shopify";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
-const redisUrl = new URL(process.env.REDIS_URL ?? "redis://localhost:6379");
-const connection = {
-  host: redisUrl.hostname,
-  port: parseInt(redisUrl.port || "6379", 10),
-};
+const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
+const EMAIL_FROM = process.env.EMAIL_FROM || "Ramola WMS <noreply@wms.ramola.app>";
+
+/**
+ * Parse REDIS_URL into an ioredis-compatible connection object.
+ * Preserves auth (username/password), TLS (rediss://), and database number.
+ */
+function parseRedisConnection(url: string): Record<string, unknown> {
+  const parsed = new URL(url);
+  const opts: Record<string, unknown> = {
+    host: parsed.hostname,
+    port: parseInt(parsed.port || "6379", 10),
+  };
+  if (parsed.password) opts.password = decodeURIComponent(parsed.password);
+  if (parsed.username && parsed.username !== "default") opts.username = parsed.username;
+  if (parsed.pathname && parsed.pathname.length > 1) {
+    opts.db = parseInt(parsed.pathname.slice(1), 10);
+  }
+  if (parsed.protocol === "rediss:") {
+    opts.tls = {};
+  }
+  return opts;
+}
+
+const connection = parseRedisConnection(REDIS_URL);
 
 // ── DB Clients ──────────────────────────────────────────────────────────────
 
@@ -54,7 +75,6 @@ function getTenantDb(schema: string): TenantPrismaClient {
 
 const publicDb = getPublicDb();
 
-/** Resolve a tenant's DB schema from their ID. */
 async function resolveTenantSchema(tenantId: string): Promise<string> {
   const tenant = await publicDb.tenant.findUnique({
     where: { id: tenantId },
@@ -74,7 +94,6 @@ async function processNotification(job: Job) {
     const dbSchema = await resolveTenantSchema(data.tenantId);
     const db = getTenantDb(dbSchema);
 
-    // Look up admin + manager users from public schema
     const tenantUsers = await publicDb.tenantUser.findMany({
       where: {
         tenantId: data.tenantId,
@@ -83,7 +102,6 @@ async function processNotification(job: Job) {
       select: { userId: true },
     });
 
-    // Create in-app notifications in tenant schema
     for (const tu of tenantUsers) {
       await db.notification.create({
         data: {
@@ -92,6 +110,7 @@ async function processNotification(job: Job) {
           message: data.message ?? "",
           type: data.notificationType ?? "info",
           isRead: false,
+          link: data.link ?? null,
         },
       });
     }
@@ -100,6 +119,8 @@ async function processNotification(job: Job) {
 
 // ── Integration Worker ──────────────────────────────────────────────────────
 // Payload: { type: "shopify_fulfillment", tenantId, orderId, trackingNumber, carrier }
+//
+// Uses the same ShopifyAdapter and fulfillment-order flow as the in-app path.
 
 async function processIntegration(job: Job) {
   const { type, ...data } = job.data;
@@ -120,10 +141,10 @@ async function processIntegration(job: Job) {
     }
 
     // Resolve Shopify credentials: SalesChannel.config first, env var fallback
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let shopDomain: string | undefined;
     let accessToken: string | undefined;
     let apiVersion = process.env.SHOPIFY_API_VERSION ?? "2026-01";
+    let locationId: string | undefined;
 
     if (order.channelId) {
       const channel = await db.salesChannel.findUnique({
@@ -134,9 +155,11 @@ async function processIntegration(job: Job) {
       shopDomain = cfg.shopDomain || process.env.SHOPIFY_SHOP_DOMAIN;
       accessToken = cfg.accessToken || process.env.SHOPIFY_ACCESS_TOKEN;
       if (cfg.apiVersion) apiVersion = cfg.apiVersion;
+      locationId = cfg.locationId || process.env.SHOPIFY_LOCATION_ID;
     } else {
       shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
       accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+      locationId = process.env.SHOPIFY_LOCATION_ID;
     }
 
     if (!shopDomain || !accessToken) {
@@ -144,28 +167,15 @@ async function processIntegration(job: Job) {
       return;
     }
 
-    const res = await fetch(
-      `https://${shopDomain}/admin/api/${apiVersion}/fulfillments.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": accessToken,
-        },
-        body: JSON.stringify({
-          fulfillment: {
-            order_id: order.externalId,
-            tracking_number: data.trackingNumber,
-            tracking_company: data.carrier,
-          },
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Shopify fulfillment failed: ${res.status} ${text}`);
-    }
+    // Use the canonical adapter — same fulfillment-order flow as the in-app path
+    const adapter = getShopifyAdapterForTenant({ shopDomain, accessToken, apiVersion, locationId });
+    await adapter.pushFulfillment({
+      externalOrderId: order.externalId,
+      trackingNumber: data.trackingNumber,
+      carrier: data.carrier,
+      shippedAt: new Date(),
+      lineItems: [],
+    });
   }
 }
 
@@ -209,13 +219,10 @@ async function processEmail(job: Job) {
     const products = data.products as { sku: string; name: string; available: number; minStock: number }[];
     if (!products || products.length === 0) return;
 
-    // Resolve admin email(s) for this tenant
+    // Resolve admin email for this tenant
     if (data.tenantId) {
       const admins = await publicDb.tenantUser.findMany({
-        where: {
-          tenantId: data.tenantId,
-          role: "admin",
-        },
+        where: { tenantId: data.tenantId, role: "admin" },
         include: { user: { select: { email: true } } },
       });
       to = admins[0]?.user?.email;
@@ -256,7 +263,7 @@ async function processEmail(job: Job) {
       Authorization: `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from: "Ramola WMS <noreply@ramola.app>",
+      from: EMAIL_FROM,
       to,
       subject,
       html,

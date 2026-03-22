@@ -1,13 +1,9 @@
 /**
  * BullMQ job queues for durable background work.
- * All queues share the same Redis connection.
+ * All queues share the same Redis connection (supports auth, TLS, db).
  */
 import { Queue } from "bullmq";
-
-const connection = {
-  host: new URL(process.env.REDIS_URL ?? "redis://localhost:6379").hostname,
-  port: parseInt(new URL(process.env.REDIS_URL ?? "redis://localhost:6379").port || "6379", 10),
-};
+import { bullmqConnection as connection } from "./redis-connection";
 
 /** Notification queue: in-app + email notifications to warehouse team. */
 export const notificationQueue = new Queue("wms-notifications", {

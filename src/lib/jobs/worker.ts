@@ -6,11 +6,7 @@
  * For high-volume, split into a separate worker process.
  */
 import { Worker, type Job } from "bullmq";
-
-const connection = {
-  host: new URL(process.env.REDIS_URL ?? "redis://localhost:6379").hostname,
-  port: parseInt(new URL(process.env.REDIS_URL ?? "redis://localhost:6379").port || "6379", 10),
-};
+import { bullmqConnection as connection } from "./redis-connection";
 
 // ── Notification Worker ─────────────────────────────────────────────────────
 
