@@ -282,11 +282,35 @@ export async function syncInventoryToAmazon(
   if (config.useMockData) return { synced: 0 };
 
   try {
-    const { getAmazonAdapter } = await import("@/lib/integrations/marketplaces/amazon");
-    const adapter = getAmazonAdapter();
-    if (!adapter) return { synced: 0, error: "Amazon not configured" };
-
     const { tenant } = await requireTenantContext();
+
+    // Resolve Amazon adapter: tenant-scoped credentials first, global env fallback
+    const { getAmazonAdapter, getAmazonAdapterForTenant } = await import("@/lib/integrations/marketplaces/amazon");
+    let adapter: ReturnType<typeof getAmazonAdapter> = null;
+
+    // Try tenant-scoped SalesChannel config
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const amazonChannel = await (tenant.db as any).salesChannel.findFirst({
+      where: { type: "amazon", isActive: true },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cfg = (amazonChannel?.config ?? {}) as any;
+    if (cfg.clientId && cfg.clientSecret && cfg.refreshToken && cfg.sellerId) {
+      adapter = getAmazonAdapterForTenant({
+        clientId: cfg.clientId,
+        clientSecret: cfg.clientSecret,
+        refreshToken: cfg.refreshToken,
+        sellerId: cfg.sellerId,
+        marketplaceId: cfg.marketplaceId,
+        awsAccessKeyId: cfg.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || "",
+        awsSecretAccessKey: cfg.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || "",
+        region: cfg.region,
+      });
+    } else {
+      adapter = getAmazonAdapter(); // Legacy global env fallback
+    }
+
+    if (!adapter) return { synced: 0, error: "Amazon not configured" };
 
     // Load all active products so zero-stock SKUs are pushed as 0
     const products = await tenant.db.product.findMany({

@@ -183,12 +183,14 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let db: any;
       let clientCode: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let tenantConnector: Awaited<ReturnType<typeof resolveAmazonTenant>> = null;
 
       if (sellerId) {
-        const connector = await resolveAmazonTenant(publicDb, getTenantDb, sellerId);
-        if (connector) {
-          db = connector.db;
-          clientCode = connector.clientCode;
+        tenantConnector = await resolveAmazonTenant(publicDb, getTenantDb, sellerId);
+        if (tenantConnector) {
+          db = tenantConnector.db;
+          clientCode = tenantConnector.clientCode;
         }
       }
 
@@ -214,9 +216,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ skipped: "Already imported", orderId: existing.id });
       }
 
-      // Fetch full order details from SP-API
-      const { getAmazonAdapter } = await import("@/lib/integrations/marketplaces/amazon");
-      const adapter = getAmazonAdapter();
+      // Fetch full order details from SP-API using tenant-scoped credentials
+      const { getAmazonAdapter, getAmazonAdapterForTenant } = await import("@/lib/integrations/marketplaces/amazon");
+      const adapter = tenantConnector
+        ? getAmazonAdapterForTenant({
+            clientId: tenantConnector.clientId,
+            clientSecret: tenantConnector.clientSecret,
+            refreshToken: tenantConnector.refreshToken,
+            sellerId: tenantConnector.sellerId,
+            marketplaceId: tenantConnector.marketplaceId,
+            awsAccessKeyId: tenantConnector.awsAccessKeyId,
+            awsSecretAccessKey: tenantConnector.awsSecretAccessKey,
+            region: tenantConnector.region,
+          })
+        : getAmazonAdapter(); // Legacy fallback to global env
+
       if (!adapter) {
         return NextResponse.json({ skipped: "Amazon adapter not configured" });
       }

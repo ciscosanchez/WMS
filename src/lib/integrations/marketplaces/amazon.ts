@@ -381,6 +381,10 @@ export class AmazonAdapter implements MarketplaceAdapter {
   }
 }
 
+/**
+ * Create an AmazonAdapter from global env vars.
+ * Legacy path — prefer getAmazonAdapterForTenant() for multi-tenant.
+ */
 export function getAmazonAdapter(): AmazonAdapter | null {
   const clientId = process.env.AMAZON_CLIENT_ID;
   const clientSecret = process.env.AMAZON_CLIENT_SECRET;
@@ -402,5 +406,31 @@ export function getAmazonAdapter(): AmazonAdapter | null {
     awsAccessKeyId: awsKeyId,
     awsSecretAccessKey: awsSecret,
     region: (process.env.AMAZON_REGION as AmazonConfig["region"] | undefined) ?? "us-east-1",
+  });
+}
+
+/**
+ * Create an AmazonAdapter from explicit tenant-resolved credentials.
+ * Use this in multi-tenant paths (webhooks, sync actions).
+ */
+export function getAmazonAdapterForTenant(opts: {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  sellerId: string;
+  marketplaceId?: string;
+  awsAccessKeyId: string;
+  awsSecretAccessKey: string;
+  region?: string;
+}): AmazonAdapter {
+  return new AmazonAdapter({
+    clientId: opts.clientId,
+    clientSecret: opts.clientSecret,
+    refreshToken: opts.refreshToken,
+    sellerId: opts.sellerId,
+    marketplaceId: opts.marketplaceId ?? "ATVPDKIKX0DER",
+    awsAccessKeyId: opts.awsAccessKeyId,
+    awsSecretAccessKey: opts.awsSecretAccessKey,
+    region: (opts.region as AmazonConfig["region"]) ?? "us-east-1",
   });
 }
