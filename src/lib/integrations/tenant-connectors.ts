@@ -175,16 +175,24 @@ export async function resolveAmazonTenant(
 
     if (!clientId || !clientSecret || !cfgSellerId) continue;
 
+    // Resolve remaining required credentials
+    const refreshToken = config.refreshToken || process.env.AMAZON_REFRESH_TOKEN || process.env.AMAZON_SP_REFRESH_TOKEN || "";
+    const awsAccessKeyId = config.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "";
+    const awsSecretAccessKey = config.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "";
+
+    // All five credentials are required for SP-API calls — skip if incomplete
+    if (!refreshToken || !awsAccessKeyId || !awsSecretAccessKey) continue;
+
     return {
       tenant,
       db,
       sellerId: cfgSellerId,
       marketplaceId: config.marketplaceId || process.env.AMAZON_MARKETPLACE_ID || "ATVPDKIKX0DER",
-      refreshToken: config.refreshToken || process.env.AMAZON_REFRESH_TOKEN || process.env.AMAZON_SP_REFRESH_TOKEN || "",
+      refreshToken,
       clientId,
       clientSecret,
-      awsAccessKeyId: config.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
-      awsSecretAccessKey: config.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "",
+      awsAccessKeyId,
+      awsSecretAccessKey,
       region: (config.region || "us-east-1") as "us-east-1" | "eu-west-1" | "us-west-2",
       clientCode:
         config.clientCode ||
