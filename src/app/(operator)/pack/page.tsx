@@ -17,15 +17,10 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Package, Printer, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getTasksReadyToPack, confirmPack } from "@/modules/operator/actions";
-import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
 type PackTask = Awaited<ReturnType<typeof getTasksReadyToPack>>[number];
-
-// Register mutations for offline replay
-registerOfflineActions("operator", {
-  confirmPack: confirmPack as (...args: unknown[]) => Promise<unknown>,
-});
 
 export default function OperatorPackPage() {
   const [tasks, setTasks] = useState<PackTask[]>([]);

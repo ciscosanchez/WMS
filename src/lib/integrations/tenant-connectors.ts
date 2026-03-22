@@ -187,7 +187,7 @@ export async function resolveAmazonTenant(
       clientCode:
         config.clientCode ||
         (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-          ? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong"
+          ? process.env.AMAZON_WMS_CLIENT_CODE ?? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong"
           : ""),
     };
   }

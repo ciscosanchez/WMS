@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
         }
         db = getTenantDb(tenantRecord.dbSchema);
-        clientCode = process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
+        clientCode = process.env.AMAZON_WMS_CLIENT_CODE ?? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
       }
 
       // Skip if already imported

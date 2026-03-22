@@ -11,7 +11,7 @@ import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getShipment, receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 import { getBinByBarcode } from "@/modules/operator/actions";
-import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
 interface ShipmentLine {
@@ -29,12 +29,6 @@ interface Shipment {
   client: { name: string };
   lines: ShipmentLine[];
 }
-
-// Register mutations for offline replay
-registerOfflineActions("receiving", {
-  receiveLine: receiveLine as (...args: unknown[]) => Promise<unknown>,
-  updateShipmentStatus: updateShipmentStatus as (...args: unknown[]) => Promise<unknown>,
-});
 
 export default function ReceiveShipmentPage() {
   const params = useParams();

@@ -15,17 +15,10 @@ import {
   confirmPickLine,
   markPickLineShort,
 } from "@/modules/operator/actions";
-import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
 type PickTask = Awaited<ReturnType<typeof getMyPickTasks>>[number];
-
-// Register mutations for offline replay on module load
-registerOfflineActions("operator", {
-  claimPickTask: claimPickTask as (...args: unknown[]) => Promise<unknown>,
-  confirmPickLine: confirmPickLine as (...args: unknown[]) => Promise<unknown>,
-  markPickLineShort: markPickLineShort as (...args: unknown[]) => Promise<unknown>,
-});
 
 export default function OperatorPickPage() {
   const [myTasks, setMyTasks] = useState<PickTask[]>([]);

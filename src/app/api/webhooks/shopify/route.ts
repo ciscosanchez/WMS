@@ -49,23 +49,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Resolve the tenant from the shop domain
-  const { publicDb } = await import("@/lib/db/public-client");
-  const { getTenantDb } = await import("@/lib/db/tenant-client");
-  const { resolveShopifyTenant } = await import("@/lib/integrations/tenant-connectors");
-
-  const connector = await resolveShopifyTenant(publicDb, getTenantDb, shopDomain);
-
-  if (!connector) {
-    // Legacy fallback: if shop domain matches the global env var, use ARMSTRONG_TENANT_SLUG
-    const configuredDomain = process.env.SHOPIFY_SHOP_DOMAIN;
-    if (!shopDomain || !configuredDomain || shopDomain !== configuredDomain) {
-      return NextResponse.json({ error: "Unknown shop" }, { status: 404 });
-    }
-  }
-
-  // Route by topic
+  // Route by topic — tenant resolution is inside try so DB errors are caught
   try {
+    const { publicDb } = await import("@/lib/db/public-client");
+    const { getTenantDb } = await import("@/lib/db/tenant-client");
+    const { resolveShopifyTenant } = await import("@/lib/integrations/tenant-connectors");
+
+    const connector = await resolveShopifyTenant(publicDb, getTenantDb, shopDomain);
+
+    if (!connector) {
+      // Legacy fallback: if shop domain matches the global env var, use ARMSTRONG_TENANT_SLUG
+      const configuredDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+      if (!shopDomain || !configuredDomain || shopDomain !== configuredDomain) {
+        return NextResponse.json({ error: "Unknown shop" }, { status: 404 });
+      }
+    }
+
     switch (topic) {
       case "orders/create":
         await handleOrderCreate(payload, connector, shopDomain);

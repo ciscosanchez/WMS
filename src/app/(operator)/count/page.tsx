@@ -9,15 +9,10 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getCycleCountBins, submitCount } from "@/modules/operator/actions";
-import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
 type CountBin = Awaited<ReturnType<typeof getCycleCountBins>>[number];
-
-// Register mutations for offline replay
-registerOfflineActions("operator", {
-  submitCount: submitCount as (...args: unknown[]) => Promise<unknown>,
-});
 
 export default function OperatorCountPage() {
   const [bins, setBins] = useState<CountBin[]>([]);

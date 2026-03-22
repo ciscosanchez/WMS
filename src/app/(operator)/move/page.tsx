@@ -9,16 +9,11 @@ import { ArrowRight, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { getBinByBarcode } from "@/modules/operator/actions";
 import { moveInventory } from "@/modules/inventory/actions";
-import { registerOfflineActions, actionKey } from "@/hooks/use-offline";
+import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
 type Bin = NonNullable<Awaited<ReturnType<typeof getBinByBarcode>>>;
 type InventoryItem = Bin["inventory"][number];
-
-// Register mutations for offline replay
-registerOfflineActions("inventory", {
-  moveInventory: moveInventory as (...args: unknown[]) => Promise<unknown>,
-});
 
 export default function OperatorMovePage() {
   const [fromBin, setFromBin] = useState<Bin | null>(null);
