@@ -118,8 +118,48 @@ export async function getLaborDashboard() {
       name: op.operatorId.slice(0, 8),
       uph: op.uph,
     })),
-    productivityTrend: [],
+    productivityTrend: await getProductivityTrend(db, 14),
   };
+}
+
+/** Daily average UPH over the last N days. */
+async function getProductivityTrend(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  days: number
+): Promise<{ date: string; uph: number }[]> {
+  const trend: { date: string; uph: number }[] = [];
+  const now = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const dayStart = new Date(now);
+    dayStart.setDate(dayStart.getDate() - i);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const logs = await db.taskTimeLog.findMany({
+      where: { completedAt: { gte: dayStart, lte: dayEnd } },
+      select: { unitsHandled: true, startedAt: true, completedAt: true },
+    });
+
+    let units = 0;
+    let hours = 0;
+    for (const log of logs) {
+      units += log.unitsHandled;
+      if (log.completedAt && log.startedAt) {
+        hours +=
+          (new Date(log.completedAt).getTime() - new Date(log.startedAt).getTime()) / 3600000;
+      }
+    }
+
+    trend.push({
+      date: dayStart.toISOString().slice(0, 10),
+      uph: hours > 0 ? Math.round(units / hours) : 0,
+    });
+  }
+
+  return trend;
 }
 
 // ─── Shift History ──────────────────────────────────────────────────────────
