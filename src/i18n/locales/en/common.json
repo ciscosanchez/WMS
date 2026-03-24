@@ -83,6 +83,8 @@
     "automation": "Automation",
     "billing": "Billing",
     "billingDashboard": "Billing",
-    "floorApp": "Floor App"
+    "floorApp": "Floor App",
+    "expiring": "Expiring Items",
+    "gs1Labels": "GS1 Labels"
   }
 }

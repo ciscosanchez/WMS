@@ -352,3 +352,39 @@ export async function getTransactionsCursor(opts: {
 
   return buildCursorResult(data, pageSize);
 }
+
+export async function getExpiringInventory(daysAhead: number = 30) {
+  if (config.useMockData) return [];
+
+  const { tenant } = await getContext();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + daysAhead);
+
+  return tenant.db.inventory.findMany({
+    where: {
+      expirationDate: { lte: cutoff },
+      available: { gt: 0 },
+    },
+    include: {
+      product: { include: { client: true } },
+      bin: {
+        include: {
+          shelf: {
+            include: {
+              rack: {
+                include: {
+                  aisle: {
+                    include: {
+                      zone: { include: { warehouse: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { expirationDate: "asc" },
+  });
+}

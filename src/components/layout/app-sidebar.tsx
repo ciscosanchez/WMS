@@ -94,6 +94,7 @@ const navigation: NavGroup[] = [
       { titleKey: "returns", href: "/returns", icon: RotateCcw },
       { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat },
       { titleKey: "compliance", href: "/shipping/compliance", icon: Shield },
+      { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine },
     ],
   },
   {
@@ -105,6 +106,7 @@ const navigation: NavGroup[] = [
       { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
       { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks },
       { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3 },
+      { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle },
     ],
   },
   {

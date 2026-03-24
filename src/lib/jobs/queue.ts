@@ -38,6 +38,17 @@ export const slottingQueue = new Queue("wms-slotting", {
   },
 });
 
+/** Report queue: scheduled report generation and delivery. */
+export const reportQueue = new Queue("wms-reports", {
+  connection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: "exponential", delay: 30_000 },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 50 },
+  },
+});
+
 /** Email queue: direct customer emails (shipment tracking, etc.). */
 export const emailQueue = new Queue("wms-email", {
   connection,

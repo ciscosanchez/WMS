@@ -256,9 +256,10 @@ model InboundShipmentLine {
   expectedQty  Int     @map("expected_qty")
   receivedQty  Int     @default(0) @map("received_qty")
   uom          String  @default("EA")
-  lotNumber    String? @map("lot_number")
-  serialNumber String? @map("serial_number")
-  notes        String?
+  lotNumber      String?   @map("lot_number")
+  serialNumber   String?   @map("serial_number")
+  expirationDate DateTime? @map("expiration_date")
+  notes          String?
 
   shipment     InboundShipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   product      Product              @relation(fields: [productId], references: [id])
@@ -291,6 +292,7 @@ model ReceivingTransaction {
   inspectionStatus InspectionStatus @default(pending) @map("inspection_status")
   lotNumber        String?          @map("lot_number")
   serialNumber     String?          @map("serial_number")
+  expirationDate   DateTime?        @map("expiration_date")
   receivedBy       String           @map("received_by")
   receivedAt       DateTime         @default(now()) @map("received_at")
   notes            String?
@@ -403,8 +405,9 @@ model Inventory {
   productId    String   @map("product_id")
   binId        String   @map("bin_id")
   lotNumber    String?  @map("lot_number")
-  serialNumber String?  @map("serial_number")
-  onHand       Int      @default(0) @map("on_hand")
+  serialNumber   String?   @map("serial_number")
+  expirationDate DateTime? @map("expiration_date")
+  onHand         Int       @default(0) @map("on_hand")
   allocated    Int      @default(0)
   available    Int      @default(0) // computed: on_hand - allocated
   uom          String   @default("EA")
@@ -745,6 +748,7 @@ model Shipment {
   manifestUrl   String?  @map("manifest_url")
   freightClass  String?  @map("freight_class")
   bolNumber     String?  @map("bol_number")
+  sscc          String?  @map("sscc")
 
   @@index([orderId])
   @@index([shippedAt])
