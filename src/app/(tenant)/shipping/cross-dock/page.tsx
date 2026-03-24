@@ -23,10 +23,7 @@ import { getTranslations } from "next-intl/server";
 
 export default async function CrossDockPage() {
   const t = await getTranslations("tenant.crossDock");
-  const [plans, rules] = await Promise.all([
-    getCrossDockPlans(),
-    getCrossDockRules(),
-  ]);
+  const [plans, rules] = await Promise.all([getCrossDockPlans(), getCrossDockRules()]);
 
   return (
     <div className="space-y-6">
@@ -39,11 +36,7 @@ export default async function CrossDockPage() {
         </CardHeader>
         <CardContent>
           {rules.length === 0 ? (
-            <EmptyState
-              icon={Repeat}
-              title={t("noRules")}
-              description={t("subtitle")}
-            />
+            <EmptyState icon={Repeat} title={t("noRules")} description={t("subtitle")} />
           ) : (
             <Table>
               <TableHeader>
@@ -63,12 +56,8 @@ export default async function CrossDockPage() {
                     priority: number;
                   }) => (
                     <TableRow key={rule.id}>
-                      <TableCell className="font-mono">
-                        {rule.clientId ?? "—"}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {rule.productId ?? "—"}
-                      </TableCell>
+                      <TableCell className="font-mono">{rule.clientId ?? "—"}</TableCell>
+                      <TableCell className="font-mono">{rule.productId ?? "—"}</TableCell>
                       <TableCell className="text-right">{rule.priority}</TableCell>
                       <TableCell className="text-right">
                         <form
@@ -98,11 +87,7 @@ export default async function CrossDockPage() {
         </CardHeader>
         <CardContent>
           {plans.length === 0 ? (
-            <EmptyState
-              icon={Repeat}
-              title={t("noPlans")}
-              description={t("subtitle")}
-            />
+            <EmptyState icon={Repeat} title={t("noPlans")} description={t("subtitle")} />
           ) : (
             <Table>
               <TableHeader>
@@ -166,7 +151,12 @@ export default async function CrossDockPage() {
                                 await updateCrossDockStatus(plan.id, "cd_in_progress");
                               }}
                             >
-                              <Button variant="ghost" size="sm" type="submit" title={t("inProgress")}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="submit"
+                                title={t("inProgress")}
+                              >
                                 <Play className="h-4 w-4" />
                               </Button>
                             </form>
@@ -178,7 +168,12 @@ export default async function CrossDockPage() {
                                 await completeCrossDock(plan.id);
                               }}
                             >
-                              <Button variant="ghost" size="sm" type="submit" title={t("completed")}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="submit"
+                                title={t("completed")}
+                              >
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               </Button>
                             </form>
@@ -190,7 +185,12 @@ export default async function CrossDockPage() {
                                 await updateCrossDockStatus(plan.id, "cd_cancelled");
                               }}
                             >
-                              <Button variant="ghost" size="sm" type="submit" title={t("cancelled")}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="submit"
+                                title={t("cancelled")}
+                              >
                                 <XCircle className="h-4 w-4 text-destructive" />
                               </Button>
                             </form>

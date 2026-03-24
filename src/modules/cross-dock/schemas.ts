@@ -5,7 +5,11 @@ export function crossDockRuleSchema(t?: (key: string) => string) {
   return z.object({
     clientId: z.string().optional().nullable(),
     productId: z.string().optional().nullable(),
-    priority: z.number().int().min(0, msg("priorityMin", "Priority must be 0 or greater")).default(0),
+    priority: z
+      .number()
+      .int()
+      .min(0, msg("priorityMin", "Priority must be 0 or greater"))
+      .default(0),
   });
 }
 

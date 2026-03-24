@@ -26,9 +26,7 @@ export async function getCrossDockRules() {
   });
 }
 
-export async function createCrossDockRule(
-  data: unknown
-): Promise<{ id?: string; error?: string }> {
+export async function createCrossDockRule(data: unknown): Promise<{ id?: string; error?: string }> {
   if (config.useMockData) return { id: "mock-rule" };
 
   try {
@@ -59,9 +57,7 @@ export async function createCrossDockRule(
   }
 }
 
-export async function deleteCrossDockRule(
-  id: string
-): Promise<{ error?: string }> {
+export async function deleteCrossDockRule(id: string): Promise<{ error?: string }> {
   if (config.useMockData) return {};
 
   try {
@@ -92,7 +88,10 @@ export async function deleteCrossDockRule(
 
 export async function identifyCrossDockCandidates(
   inboundShipmentId: string
-): Promise<{ candidates: Array<{ productId: string; orderId: string; quantity: number }>; error?: string }> {
+): Promise<{
+  candidates: Array<{ productId: string; orderId: string; quantity: number }>;
+  error?: string;
+}> {
   if (config.useMockData) return { candidates: [] };
 
   try {
@@ -122,11 +121,13 @@ export async function identifyCrossDockCandidates(
 
     for (const inboundLine of shipment.lines) {
       // Check if this product matches any cross-dock rule
-      const matchesRule = rules.length === 0 || rules.some(
-        (rule: { clientId: string | null; productId: string | null }) =>
-          (!rule.clientId || rule.clientId === shipment.clientId) &&
-          (!rule.productId || rule.productId === inboundLine.productId)
-      );
+      const matchesRule =
+        rules.length === 0 ||
+        rules.some(
+          (rule: { clientId: string | null; productId: string | null }) =>
+            (!rule.clientId || rule.clientId === shipment.clientId) &&
+            (!rule.productId || rule.productId === inboundLine.productId)
+        );
 
       if (!matchesRule) continue;
 
@@ -149,15 +150,16 @@ export async function identifyCrossDockCandidates(
 
     return { candidates };
   } catch (err) {
-    return { candidates: [], error: err instanceof Error ? err.message : "Failed to identify candidates" };
+    return {
+      candidates: [],
+      error: err instanceof Error ? err.message : "Failed to identify candidates",
+    };
   }
 }
 
 // ─── Plans CRUD ──────────────────────────────────────────────────────────────
 
-export async function createCrossDockPlan(
-  data: unknown
-): Promise<{ id?: string; error?: string }> {
+export async function createCrossDockPlan(data: unknown): Promise<{ id?: string; error?: string }> {
   if (config.useMockData) return { id: "mock-plan" };
 
   try {
@@ -242,9 +244,7 @@ export async function updateCrossDockStatus(
   }
 }
 
-export async function completeCrossDock(
-  id: string
-): Promise<{ error?: string }> {
+export async function completeCrossDock(id: string): Promise<{ error?: string }> {
   if (config.useMockData) return {};
 
   try {
