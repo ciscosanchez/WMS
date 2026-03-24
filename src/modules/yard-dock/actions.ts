@@ -5,17 +5,12 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
-import {
-  assertTransition,
-  APPOINTMENT_TRANSITIONS,
-  YARD_VISIT_TRANSITIONS,
-} from "@/lib/workflow/transitions";
+import { assertTransition, APPOINTMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 import {
   dockDoorSchemaStatic as dockDoorSchema,
   yardSpotSchemaStatic as yardSpotSchema,
   appointmentSchemaStatic as appointmentSchema,
   driverCheckInSchemaStatic as driverCheckInSchema,
-  yardVisitSchemaStatic as yardVisitSchema,
 } from "./schemas";
 
 // ─── Dock Door CRUD ─────────────────────────────────────────────────────────

@@ -177,7 +177,7 @@ export async function completeInterleavedStep(
   if (config.useMockData) return {};
 
   try {
-    const { user, tenant } = await requireTenantContext("operator:write");
+    const { tenant } = await requireTenantContext("operator:write");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = tenant.db as any;
 
@@ -253,7 +253,6 @@ export async function skipInterleavedStep(stepId: string): Promise<{ error?: str
       data: { status: "il_skipped", completedAt: new Date() },
     });
 
-    // Check if all steps are done (completed or skipped)
     const step = await db.interleavedStep.findUnique({ where: { id: stepId } });
     const remaining = await db.interleavedStep.count({
       where: { routeId: step.routeId, status: "il_pending" },

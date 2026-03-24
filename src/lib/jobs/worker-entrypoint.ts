@@ -301,14 +301,14 @@ new Worker("wms-email", processEmail, {
   concurrency: 5,
 });
 
-console.log("[worker] BullMQ workers started: notifications, integrations, email");
+console.warn("[worker] BullMQ workers started: notifications, integrations, email");
 
 // Keep alive
 process.on("SIGINT", () => {
-  console.log("[worker] Shutting down...");
+  console.warn("[worker] Shutting down...");
   pool.end().then(() => process.exit(0));
 });
 process.on("SIGTERM", () => {
-  console.log("[worker] Shutting down...");
+  console.warn("[worker] Shutting down...");
   pool.end().then(() => process.exit(0));
 });

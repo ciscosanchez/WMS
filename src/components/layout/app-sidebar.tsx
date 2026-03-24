@@ -44,6 +44,9 @@ import {
   RotateCcw,
   Repeat,
   Puzzle,
+  TrendingUp,
+  Shield,
+  Bot,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -89,6 +92,7 @@ const navigation: NavGroup[] = [
       { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes },
       { titleKey: "returns", href: "/returns", icon: RotateCcw },
       { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat },
+      { titleKey: "compliance", href: "/shipping/compliance", icon: Shield },
     ],
   },
   {
@@ -110,11 +114,13 @@ const navigation: NavGroup[] = [
       { titleKey: "products", href: "/products", icon: Package },
       { titleKey: "kits", href: "/products/kits", icon: Puzzle },
       { titleKey: "channels", href: "/channels", icon: Store },
+      { titleKey: "automation", href: "/warehouse/automation", icon: Bot },
     ],
   },
   {
     labelKey: "system",
     items: [
+      { titleKey: "analytics", href: "/analytics", icon: TrendingUp },
       { titleKey: "reports", href: "/reports", icon: BarChart3 },
       { titleKey: "settings", href: "/settings", icon: Settings },
     ],

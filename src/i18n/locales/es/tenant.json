@@ -710,6 +710,29 @@
       "prevDay": "Día Anterior",
       "nextDay": "Día Siguiente"
     },
+    "automation": {
+      "title": "Automatizacion y Robotica",
+      "subtitle": "Registrar y monitorear dispositivos de automatizacion",
+      "devices": "Dispositivos",
+      "deviceCode": "Codigo de Dispositivo",
+      "deviceName": "Nombre de Dispositivo",
+      "deviceType": "Tipo de Dispositivo",
+      "deviceStatus": "Estado",
+      "online": "En Linea",
+      "offline": "Fuera de Linea",
+      "error": "Error",
+      "maintenance": "Mantenimiento",
+      "amr": "AMR",
+      "conveyor": "Transportador",
+      "pickToLight": "Pick-to-Light",
+      "putToLight": "Put-to-Light",
+      "sortation": "Clasificacion",
+      "tasks": "Tareas",
+      "noDevices": "Sin dispositivos registrados",
+      "noDevicesDesc": "Registre un dispositivo de automatizacion para comenzar a coordinar tareas.",
+      "newDevice": "Nuevo Dispositivo",
+      "taskQueue": "Cola de Tareas"
+    },
     "crossDock": {
       "title": "Cross-Dock",
       "subtitle": "Dirigir envíos entrantes directamente a salida sin almacenamiento",
@@ -728,6 +751,38 @@
       "quantity": "Cantidad",
       "inboundShipment": "Envío Entrante",
       "outboundOrder": "Orden de Salida"
+    },
+    "compliance": {
+      "title": "Cumplimiento y Aduanas",
+      "subtitle": "Validación de códigos HS, banderas de materiales peligrosos y estado de documentación aduanera",
+      "complianceChecks": "Verificaciones de Cumplimiento",
+      "hazmatProducts": "Productos Peligrosos",
+      "hsCode": "Código HS",
+      "hazClass": "Clase de Peligro",
+      "unNumber": "Número UN",
+      "packingGroup": "Grupo de Embalaje",
+      "pending": "Pendiente",
+      "cleared": "Aprobado",
+      "flagged": "Marcado",
+      "blocked": "Bloqueado",
+      "resolve": "Resolver",
+      "noChecks": "Sin verificaciones de cumplimiento"
+    },
+    "analytics": {
+      "title": "Analítica Avanzada",
+      "subtitle": "Paneles de analítica operativa e indicadores de rendimiento",
+      "throughput": "Tendencia de Rendimiento",
+      "received": "Recibido",
+      "shipped": "Enviado",
+      "slaCompliance": "Cumplimiento de SLA",
+      "onTime": "A Tiempo",
+      "late": "Tardío",
+      "noSla": "Sin SLA",
+      "exceptions": "Mapa de Excepciones",
+      "topProducts": "Productos Principales",
+      "utilization": "Utilización del Almacén",
+      "orderVelocity": "Velocidad de Órdenes (Hrs Promedio)",
+      "noData": "Sin datos disponibles"
     }
   }
 }

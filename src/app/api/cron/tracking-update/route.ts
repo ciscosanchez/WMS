@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
                 },
               });
               delivered++;
-              console.log(
+              console.warn(
                 `[Tracking Cron] ${tenant.slug}: Marked delivered: ${shipment.shipmentNumber} (${shipment.trackingNumber})`
               );
             }
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        console.log(
+        console.warn(
           `[Tracking Cron] ${tenant.slug}: checked=${checked} delivered=${delivered} errors=${errors}`
         );
         tenantResults.push({ tenant: tenant.slug, checked, delivered, errors });

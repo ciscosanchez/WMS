@@ -710,6 +710,29 @@
       "prevDay": "Previous Day",
       "nextDay": "Next Day"
     },
+    "automation": {
+      "title": "Automation & Robotics",
+      "subtitle": "Register and monitor automation devices",
+      "devices": "Devices",
+      "deviceCode": "Device Code",
+      "deviceName": "Device Name",
+      "deviceType": "Device Type",
+      "deviceStatus": "Status",
+      "online": "Online",
+      "offline": "Offline",
+      "error": "Error",
+      "maintenance": "Maintenance",
+      "amr": "AMR",
+      "conveyor": "Conveyor",
+      "pickToLight": "Pick-to-Light",
+      "putToLight": "Put-to-Light",
+      "sortation": "Sortation",
+      "tasks": "Tasks",
+      "noDevices": "No devices registered",
+      "noDevicesDesc": "Register an automation device to start coordinating tasks.",
+      "newDevice": "New Device",
+      "taskQueue": "Task Queue"
+    },
     "crossDock": {
       "title": "Cross-Dock",
       "subtitle": "Route inbound shipments directly to outbound without putaway",
@@ -728,6 +751,38 @@
       "quantity": "Quantity",
       "inboundShipment": "Inbound Shipment",
       "outboundOrder": "Outbound Order"
+    },
+    "compliance": {
+      "title": "Compliance & Customs",
+      "subtitle": "HS code validation, hazmat flags, and customs documentation status",
+      "complianceChecks": "Compliance Checks",
+      "hazmatProducts": "Hazmat Products",
+      "hsCode": "HS Code",
+      "hazClass": "Hazard Class",
+      "unNumber": "UN Number",
+      "packingGroup": "Packing Group",
+      "pending": "Pending",
+      "cleared": "Cleared",
+      "flagged": "Flagged",
+      "blocked": "Blocked",
+      "resolve": "Resolve",
+      "noChecks": "No compliance checks"
+    },
+    "analytics": {
+      "title": "Advanced Analytics",
+      "subtitle": "Operational analytics dashboards and performance insights",
+      "throughput": "Throughput Trend",
+      "received": "Received",
+      "shipped": "Shipped",
+      "slaCompliance": "SLA Compliance",
+      "onTime": "On Time",
+      "late": "Late",
+      "noSla": "No SLA",
+      "exceptions": "Exception Heatmap",
+      "topProducts": "Top Products",
+      "utilization": "Warehouse Utilization",
+      "orderVelocity": "Order Velocity (Avg Hours)",
+      "noData": "No data available"
     }
   }
 }

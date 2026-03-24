@@ -83,5 +83,5 @@ export function startWorkers() {
     concurrency: 5,
   });
 
-  console.log("[jobs] BullMQ workers started: notifications, integrations, email");
+  console.warn("[jobs] BullMQ workers started: notifications, integrations, email");
 }

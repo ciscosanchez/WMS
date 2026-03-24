@@ -67,6 +67,7 @@
     "kits": "Kits",
     "channels": "Channels",
     "system": "System",
+    "analytics": "Analytics",
     "reports": "Reports",
     "settings": "Settings",
     "labor": "Labor",
@@ -78,6 +79,8 @@
     "yardMap": "Yard Map",
     "driverCheckIn": "Driver Check-In",
     "crossDock": "Cross-Dock",
+    "compliance": "Compliance",
+    "automation": "Automation",
     "floorApp": "Floor App"
   }
 }

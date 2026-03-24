@@ -14,7 +14,7 @@ import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
  * Resolve Shopify credentials for the current tenant.
  * Reads from SalesChannel.config first, falls back to env vars.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function resolveShopifyAdapter(
   db: any
 ): Promise<{ adapter: ShopifyAdapter; channel: any } | null> {

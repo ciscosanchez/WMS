@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       }
       try {
         await fetch(envelope.SubscribeURL);
-        console.log("[Amazon Webhook] SNS subscription confirmed");
+        console.warn("[Amazon Webhook] SNS subscription confirmed");
       } catch (err) {
         console.error("[Amazon Webhook] Failed to confirm SNS subscription:", err);
       }
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
   }
 
   const notificationType = notification.NotificationType;
-  console.log(`[Amazon Webhook] Type: ${notificationType}`);
+  console.warn(`[Amazon Webhook] Type: ${notificationType}`);
 
   if (notificationType === "ORDER_CHANGE") {
     const orderPayload = notification.Payload?.OrderChangeNotification;
@@ -332,7 +332,7 @@ export async function POST(req: NextRequest) {
         changes: { source: { old: null, new: "amazon_webhook" } },
       });
 
-      console.log(`[Amazon Webhook] Imported order ${created.orderNumber} (${amazonOrderId})`);
+      console.warn(`[Amazon Webhook] Imported order ${created.orderNumber} (${amazonOrderId})`);
       return NextResponse.json({ imported: created.orderNumber });
     } catch (err) {
       console.error("[Amazon Webhook] Error processing ORDER_CHANGE:", err);

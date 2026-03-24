@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
           }
 
           const resolvedLines = so.lineItems
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             .map((li) => ({
               productId: (productBySku.get(li.sku) as any)?.id,
               quantity: li.quantity,
@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
           console.error(`[Shopify Cron] ${tenant.slug} inventory sync error:`, invErr);
         }
 
-        console.log(
+        console.warn(
           `[Shopify Cron] ${tenant.slug}: imported=${imported} skipped=${skipped} inventorySynced=${inventorySynced}`
         );
         tenantResults.push({ tenant: tenant.slug, imported, skipped, inventorySynced });

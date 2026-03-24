@@ -64,7 +64,7 @@ export async function getBillingConfig() {
   return {
     defaultCard: defaultCard ?? null,
     clients: clients.map((c: any) => ({
-      // eslint-disable-line @typescript-eslint/no-explicit-any
+       
       id: c.id,
       name: c.name,
       rateCard: cardByClientId[c.id] ?? null,
@@ -231,7 +231,7 @@ export async function generateInvoice(clientId: string, fromDate: Date, toDate: 
   type GroupEntry = { qty: number; unitRate: number; amount: number };
   const grouped = events.reduce(
     (acc: Record<string, GroupEntry>, ev: any) => {
-      // eslint-disable-line @typescript-eslint/no-explicit-any
+       
       const key = ev.serviceType;
       if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
       acc[key].qty += Number(ev.qty);

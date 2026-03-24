@@ -67,6 +67,7 @@
     "kits": "Kits",
     "channels": "Canales",
     "system": "Sistema",
+    "analytics": "Analítica",
     "reports": "Reportes",
     "settings": "Configuración",
     "labor": "Mano de Obra",
@@ -78,6 +79,8 @@
     "yardMap": "Mapa del Patio",
     "driverCheckIn": "Registro de Conductor",
     "crossDock": "Cross-Dock",
+    "compliance": "Cumplimiento",
+    "automation": "Automatizacion",
     "floorApp": "App de piso"
   }
 }

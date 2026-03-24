@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
             });
 
             results.billing.invoicesPushed++;
-            console.log(
+            console.warn(
               `[NetSuite Cron] ${tenant.slug}: Pushed ${events.length} events for ${client.name} → NS invoice ${invoiceId}`
             );
           } catch (err) {
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        console.log(`[NetSuite Cron] ${tenant.slug}: Complete:`, results);
+        console.warn(`[NetSuite Cron] ${tenant.slug}: Complete:`, results);
         tenantResults.push({ tenant: tenant.slug, ...results });
       } catch (tenantErr) {
         console.error(`[NetSuite Cron] Error processing tenant ${tenant.slug}:`, tenantErr);

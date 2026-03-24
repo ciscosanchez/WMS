@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
           });
         }
 
-        console.log(`[Storage Billing Cron] ${tenant.slug} date=${dateKey}`, clientResults);
+        console.warn(`[Storage Billing Cron] ${tenant.slug} date=${dateKey}`, clientResults);
         tenantResults.push({ tenant: tenant.slug, clients: clientResults });
       } catch (tenantErr) {
         console.error(`[Storage Billing Cron] Error processing tenant ${tenant.slug}:`, tenantErr);

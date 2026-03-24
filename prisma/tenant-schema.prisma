@@ -82,6 +82,7 @@ model Product {
   packPlanLines     PackPlanLine[]
   kitDefinition     KitDefinition?
   kitComponents     KitComponent[] @relation("kit_component_product")
+  hazmatFlag        HazmatFlag?
 
   @@unique([clientId, sku])
   @@map("products")
@@ -1487,6 +1488,45 @@ model YardVisit {
   @@map("yard_visits")
 }
 
+// ─── Compliance & Customs ──────────────────────────────────────────
+
+enum ComplianceStatus {
+  comp_pending
+  comp_cleared
+  comp_flagged
+  comp_blocked
+}
+
+model ComplianceCheck {
+  id          String           @id @default(cuid())
+  entityType  String           @map("entity_type")  // shipment, product, order
+  entityId    String           @map("entity_id")
+  checkType   String           @map("check_type")   // hs_code, hazmat, restricted, sanctions
+  status      ComplianceStatus @default(comp_pending)
+  details     String?
+  resolvedBy  String?          @map("resolved_by")
+  resolvedAt  DateTime?        @map("resolved_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([status])
+  @@map("compliance_checks")
+}
+
+model HazmatFlag {
+  id            String  @id @default(cuid())
+  productId     String  @unique @map("product_id")
+  unNumber      String? @map("un_number")
+  hazClass      String? @map("haz_class")
+  packingGroup  String? @map("packing_group")
+  properName    String? @map("proper_name")
+  isRestricted  Boolean @default(false) @map("is_restricted")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("hazmat_flags")
+}
+
 // ─── Cross-Dock Orchestration ──────────────────────────────────────
 
 enum CrossDockStatus {
@@ -1524,6 +1564,62 @@ model CrossDockPlan {
   @@index([outboundOrderId])
   @@index([status])
   @@map("cross_dock_plans")
+}
+
+// ─── Automation & Robotics ─────────────────────────────
+
+enum DeviceType {
+  amr
+  conveyor
+  pick_to_light
+  put_to_light
+  sortation
+}
+
+enum DeviceStatus {
+  dev_online
+  dev_offline
+  dev_error
+  dev_maintenance
+}
+
+model AutomationDevice {
+  id           String       @id @default(cuid())
+  warehouseId  String       @map("warehouse_id")
+  code         String
+  name         String
+  type         DeviceType
+  status       DeviceStatus @default(dev_offline)
+  zoneId       String?      @map("zone_id")
+  ipAddress    String?      @map("ip_address")
+  lastPingAt   DateTime?    @map("last_ping_at")
+  config       Json         @default("{}")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  deviceTasks DeviceTask[]
+
+  @@unique([warehouseId, code])
+  @@map("automation_devices")
+}
+
+model DeviceTask {
+  id          String   @id @default(cuid())
+  deviceId    String   @map("device_id")
+  taskType    String   @map("task_type")    // transport, sort, pick_signal, put_signal
+  status      String   @default("queued")   // queued, dispatched, in_progress, completed, failed
+  payload     Json     @default("{}")
+  result      Json?
+  dispatchedAt DateTime? @map("dispatched_at")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  device AutomationDevice @relation(fields: [deviceId], references: [id])
+
+  @@index([deviceId])
+  @@index([status])
+  @@map("device_tasks")
 }
 
 // ─── Document Intelligence (DocAI) ─────────────────────
