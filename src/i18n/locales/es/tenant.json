@@ -593,6 +593,35 @@
       "effectiveFrom": "Vigente Desde",
       "effectiveTo": "Vigente Hasta"
     },
+    "vas": {
+      "title": "Definiciones de Kits",
+      "subtitle": "Gestionar kits, paquetes y servicios de valor agregado",
+      "kitDefinitions": "Definiciones de Kits",
+      "kitDefinition": "Definicion de Kit",
+      "components": "Componentes",
+      "newKit": "Nuevo Kit",
+      "noKits": "Sin kits definidos",
+      "noKitsDesc": "Crea una definicion de kit para agrupar productos.",
+      "kitName": "Nombre del Kit",
+      "kitDetails": "Detalles del Kit",
+      "productName": "Nombre del Producto",
+      "backToKits": "Volver a Kits",
+      "componentProduct": "Producto Componente",
+      "componentQty": "Cantidad",
+      "noComponents": "Sin componentes definidos",
+      "vasTask": "Tarea VAS",
+      "assembly": "Ensamblaje",
+      "labeling": "Etiquetado",
+      "bundling": "Empaquetado",
+      "custom": "Personalizado",
+      "status": "Estado",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "created": "Creado",
+      "vas_pending": "Pendiente",
+      "vas_in_progress": "En Progreso",
+      "vas_completed": "Completado"
+    },
     "yardDock": {
       "title": "Patio y Muelle",
       "subtitle": "Programación de muelles, gestión del patio y registro de conductores",
@@ -680,6 +709,25 @@
       "trailer": "Remolque",
       "prevDay": "Día Anterior",
       "nextDay": "Día Siguiente"
+    },
+    "crossDock": {
+      "title": "Cross-Dock",
+      "subtitle": "Dirigir envíos entrantes directamente a salida sin almacenamiento",
+      "rules": "Reglas de Cross-Dock",
+      "plans": "Planes de Cross-Dock",
+      "identified": "Identificado",
+      "approved": "Aprobado",
+      "inProgress": "En Progreso",
+      "completed": "Completado",
+      "cancelled": "Cancelado",
+      "newRule": "Nueva Regla",
+      "noPlans": "Sin planes de cross-dock",
+      "noRules": "Sin reglas de cross-dock configuradas",
+      "sourceDock": "Muelle de Origen",
+      "targetDock": "Muelle de Destino",
+      "quantity": "Cantidad",
+      "inboundShipment": "Envío Entrante",
+      "outboundOrder": "Orden de Salida"
     }
   }
 }

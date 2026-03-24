@@ -42,6 +42,8 @@ import {
   Clock,
   DollarSign,
   RotateCcw,
+  Repeat,
+  Puzzle,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -86,6 +88,7 @@ const navigation: NavGroup[] = [
       { titleKey: "shipping", href: "/shipping", icon: Truck },
       { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes },
       { titleKey: "returns", href: "/returns", icon: RotateCcw },
+      { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat },
     ],
   },
   {
@@ -105,6 +108,7 @@ const navigation: NavGroup[] = [
       { titleKey: "locations", href: "/warehouse", icon: MapPin },
       { titleKey: "clients", href: "/clients", icon: Users },
       { titleKey: "products", href: "/products", icon: Package },
+      { titleKey: "kits", href: "/products/kits", icon: Puzzle },
       { titleKey: "channels", href: "/channels", icon: Store },
     ],
   },

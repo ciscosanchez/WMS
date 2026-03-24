@@ -593,6 +593,35 @@
       "effectiveFrom": "Effective From",
       "effectiveTo": "Effective To"
     },
+    "vas": {
+      "title": "Kit Definitions",
+      "subtitle": "Manage kits, bundles, and value-added services",
+      "kitDefinitions": "Kit Definitions",
+      "kitDefinition": "Kit Definition",
+      "components": "Components",
+      "newKit": "New Kit",
+      "noKits": "No kits defined",
+      "noKitsDesc": "Create a kit definition to bundle products together.",
+      "kitName": "Kit Name",
+      "kitDetails": "Kit Details",
+      "productName": "Product Name",
+      "backToKits": "Back to Kits",
+      "componentProduct": "Component Product",
+      "componentQty": "Quantity",
+      "noComponents": "No components defined",
+      "vasTask": "VAS Task",
+      "assembly": "Assembly",
+      "labeling": "Labeling",
+      "bundling": "Bundling",
+      "custom": "Custom",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "created": "Created",
+      "vas_pending": "Pending",
+      "vas_in_progress": "In Progress",
+      "vas_completed": "Completed"
+    },
     "yardDock": {
       "title": "Yard & Dock",
       "subtitle": "Dock scheduling, yard management, and driver check-in",
@@ -680,6 +709,25 @@
       "trailer": "Trailer",
       "prevDay": "Previous Day",
       "nextDay": "Next Day"
+    },
+    "crossDock": {
+      "title": "Cross-Dock",
+      "subtitle": "Route inbound shipments directly to outbound without putaway",
+      "rules": "Cross-Dock Rules",
+      "plans": "Cross-Dock Plans",
+      "identified": "Identified",
+      "approved": "Approved",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "newRule": "New Rule",
+      "noPlans": "No cross-dock plans",
+      "noRules": "No cross-dock rules configured",
+      "sourceDock": "Source Dock",
+      "targetDock": "Target Dock",
+      "quantity": "Quantity",
+      "inboundShipment": "Inbound Shipment",
+      "outboundOrder": "Outbound Order"
     }
   }
 }

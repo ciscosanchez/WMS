@@ -64,6 +64,7 @@
     "locations": "Locations",
     "clients": "Clients",
     "products": "Products",
+    "kits": "Kits",
     "channels": "Channels",
     "system": "System",
     "reports": "Reports",
@@ -76,6 +77,7 @@
     "dockSchedule": "Dock Schedule",
     "yardMap": "Yard Map",
     "driverCheckIn": "Driver Check-In",
+    "crossDock": "Cross-Dock",
     "floorApp": "Floor App"
   }
 }

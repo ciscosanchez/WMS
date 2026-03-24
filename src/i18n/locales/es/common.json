@@ -64,6 +64,7 @@
     "locations": "Ubicaciones",
     "clients": "Clientes",
     "products": "Productos",
+    "kits": "Kits",
     "channels": "Canales",
     "system": "Sistema",
     "reports": "Reportes",
@@ -76,6 +77,7 @@
     "dockSchedule": "Horario de Muelle",
     "yardMap": "Mapa del Patio",
     "driverCheckIn": "Registro de Conductor",
+    "crossDock": "Cross-Dock",
     "floorApp": "App de piso"
   }
 }

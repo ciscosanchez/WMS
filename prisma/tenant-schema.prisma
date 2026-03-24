@@ -80,6 +80,8 @@ model Product {
   shipmentItems     ShipmentItem[]
   returnLines       ReturnLine[]
   packPlanLines     PackPlanLine[]
+  kitDefinition     KitDefinition?
+  kitComponents     KitComponent[] @relation("kit_component_product")
 
   @@unique([clientId, sku])
   @@map("products")
@@ -934,6 +936,57 @@ model InvoiceLine {
   @@map("invoice_lines")
 }
 
+// ─── VAS / Kitting ─────────────────────────────────────
+
+enum VasTaskStatus {
+  vas_pending
+  vas_in_progress
+  vas_completed
+}
+
+model KitDefinition {
+  id         String   @id @default(cuid())
+  productId  String   @unique @map("product_id")  // the kit SKU
+  name       String
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  product    Product  @relation(fields: [productId], references: [id])
+  components KitComponent[]
+
+  @@map("kit_definitions")
+}
+
+model KitComponent {
+  id        String @id @default(cuid())
+  kitId     String @map("kit_id")
+  productId String @map("product_id")
+  quantity  Int
+
+  kit     KitDefinition @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  product Product       @relation("kit_component_product", fields: [productId], references: [id])
+
+  @@map("kit_components")
+}
+
+model VasTask {
+  id          String        @id @default(cuid())
+  taskNumber  String        @unique @map("task_number")
+  orderId     String?       @map("order_id")
+  type        String        @default("assembly")  // assembly, labeling, bundling, custom
+  status      VasTaskStatus @default(vas_pending)
+  instructions String?
+  assignedTo  String?       @map("assigned_to")
+  startedAt   DateTime?     @map("started_at")
+  completedAt DateTime?     @map("completed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@index([status])
+  @@map("vas_tasks")
+}
+
 // ─── Task Interleaving ─────────────────────────────────
 
 enum InterleavedStepType {
@@ -1432,6 +1485,45 @@ model YardVisit {
   @@index([yardSpotId])
   @@index([status])
   @@map("yard_visits")
+}
+
+// ─── Cross-Dock Orchestration ──────────────────────────────────────
+
+enum CrossDockStatus {
+  cd_identified
+  cd_approved
+  cd_in_progress
+  cd_completed
+  cd_cancelled
+}
+
+model CrossDockRule {
+  id        String   @id @default(cuid())
+  clientId  String?  @map("client_id")
+  productId String?  @map("product_id")
+  isActive  Boolean  @default(true) @map("is_active")
+  priority  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("cross_dock_rules")
+}
+
+model CrossDockPlan {
+  id                  String          @id @default(cuid())
+  inboundShipmentId   String          @map("inbound_shipment_id")
+  outboundOrderId     String          @map("outbound_order_id")
+  status              CrossDockStatus @default(cd_identified)
+  productId           String          @map("product_id")
+  quantity            Int
+  sourceDockDoorId    String?         @map("source_dock_door_id")
+  targetDockDoorId    String?         @map("target_dock_door_id")
+  completedAt         DateTime?       @map("completed_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+
+  @@index([inboundShipmentId])
+  @@index([outboundOrderId])
+  @@index([status])
+  @@map("cross_dock_plans")
 }
 
 // ─── Document Intelligence (DocAI) ─────────────────────
