@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,18 +22,20 @@ export default function OperatorCountPage() {
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const { executeAction } = useSharedOffline();
+  const t = useTranslations("operator.count");
+  const tc = useTranslations("common");
 
   useEffect(() => {
     getCycleCountBins()
       .then((data) => setBins(data as CountBin[]))
-      .catch(() => toast.error("Failed to load bins"))
+      .catch(() => toast.error(t("failedLoadBins")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   function handleBinScan(barcode: string) {
     const bin = bins.find((b) => b.barcode === barcode);
     if (!bin) {
-      toast.error(`Bin not found: ${barcode}`);
+      toast.error(t("binNotFound", { barcode }));
       return;
     }
     setActiveBin(bin);
@@ -42,7 +45,7 @@ export default function OperatorCountPage() {
       initial[item.id] = String(item.onHand);
     }
     setCounts(initial);
-    toast.success(`Counting: ${bin.barcode}`);
+    toast.success(t("counting", { barcode: bin.barcode }));
   }
 
   async function handleSubmit() {
@@ -64,20 +67,20 @@ export default function OperatorCountPage() {
       );
 
       if (queued) {
-        toast.info("Count queued — will submit when online");
+        toast.info(t("countQueued"));
       } else {
         const variances = lines.filter((l) => l.countedQty !== l.systemQty);
         if (variances.length > 0) {
-          toast.warning(`Count submitted — ${variances.length} variance(s) flagged`);
+          toast.warning(t("countSubmittedVariances", { count: variances.length }));
         } else {
-          toast.success("Count submitted — no variances");
+          toast.success(t("countSubmittedClean"));
         }
       }
 
       setActiveBin(null);
       setCounts({});
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit count");
+      toast.error(err instanceof Error ? err.message : t("failedSubmitCount"));
     } finally {
       setSubmitting(false);
     }
@@ -102,15 +105,15 @@ export default function OperatorCountPage() {
       );
 
       if (queued) {
-        toast.info("Empty count queued — will submit when online");
+        toast.info(t("emptyCountQueued"));
       } else {
-        toast.warning("Bin marked empty — adjustment created");
+        toast.warning(t("binMarkedEmpty"));
       }
 
       setActiveBin(null);
       setCounts({});
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit count");
+      toast.error(err instanceof Error ? err.message : t("failedSubmitCount"));
     } finally {
       setSubmitting(false);
     }
@@ -119,13 +122,13 @@ export default function OperatorCountPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Cycle Count</h1>
-        <p className="text-sm text-muted-foreground">Count inventory at bin locations</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Scan to select bin */}
       <BarcodeScannerInput
-        placeholder="Scan bin barcode to start count..."
+        placeholder={t("scanBinPlaceholder")}
         onScan={handleBinScan}
         showFeedback
       />
@@ -138,10 +141,10 @@ export default function OperatorCountPage() {
               <div>
                 <p className="font-semibold font-mono">{activeBin.barcode}</p>
                 <p className="text-sm text-muted-foreground">
-                  {activeBin.inventory.length} SKU(s) in bin
+                  {activeBin.inventory.length} {t("skusInBin")}
                 </p>
               </div>
-              <Badge className="bg-orange-100 text-orange-700">Active</Badge>
+              <Badge className="bg-orange-100 text-orange-700">{t("active")}</Badge>
             </div>
 
             <div className="space-y-3">
@@ -157,14 +160,14 @@ export default function OperatorCountPage() {
                         <p className="text-xs text-muted-foreground">{item.product.name}</p>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        System: <strong>{item.onHand}</strong>
+                        {t("system", { onHand: item.onHand })}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
                         min={0}
-                        placeholder="Count..."
+                        placeholder={t("countPlaceholder")}
                         className={`h-12 text-center text-xl font-bold ${
                           hasVariance ? "border-orange-400 bg-orange-50" : ""
                         }`}
@@ -175,7 +178,7 @@ export default function OperatorCountPage() {
                       />
                       {hasVariance && (
                         <span className="text-sm font-medium text-orange-600 whitespace-nowrap">
-                          Δ {parseInt(counted) - item.onHand}
+                          {t("variance", { delta: parseInt(counted) - item.onHand })}
                         </span>
                       )}
                     </div>
@@ -196,7 +199,7 @@ export default function OperatorCountPage() {
                 ) : (
                   <Check className="mr-2 h-5 w-5" />
                 )}
-                Submit Count
+                {t("submitCount")}
               </Button>
               <Button
                 variant="outline"
@@ -204,7 +207,7 @@ export default function OperatorCountPage() {
                 disabled={submitting}
                 onClick={handleEmpty}
               >
-                Empty
+                {t("empty")}
               </Button>
             </div>
           </CardContent>
@@ -214,13 +217,13 @@ export default function OperatorCountPage() {
       {/* Bin list */}
       <div>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-          BINS WITH INVENTORY ({bins.length})
+          {t("binsWithInventory", { count: bins.length })}
         </h2>
 
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading bins...
+            {t("loadingBins")}
           </div>
         )}
 
@@ -245,7 +248,7 @@ export default function OperatorCountPage() {
                   <p className="font-mono font-medium text-sm">{bin.barcode}</p>
                   <p className="text-xs text-muted-foreground">
                     {bin.inventory.length} SKU(s) &middot;{" "}
-                    {bin.inventory.reduce((sum, i) => sum + i.onHand, 0)} units
+                    {bin.inventory.reduce((sum, i) => sum + i.onHand, 0)} {tc("units")}
                   </p>
                 </div>
                 <Badge variant="outline" className="text-xs">

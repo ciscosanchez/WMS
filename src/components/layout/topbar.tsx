@@ -1,6 +1,8 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -8,14 +10,25 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Globe, Check } from "lucide-react";
+import { toast } from "sonner";
 import { Breadcrumbs } from "./breadcrumbs";
 import { SearchCommand } from "./search-command";
 import { NotificationBell } from "./notification-bell";
+import { updateUserLocale } from "@/modules/users/actions";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+
+const LOCALE_LABELS: Record<string, string> = {
+  en: "English",
+  es: "Español",
+};
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return "??";
@@ -29,6 +42,8 @@ function getInitials(name: string | undefined | null): string {
 
 export function Topbar() {
   const { data: session } = useSession();
+  const locale = useLocale();
+  const router = useRouter();
 
   const userName = USE_MOCK ? "Admin User" : (session?.user?.name ?? "User");
   const userEmail = USE_MOCK ? "admin@ramola.io" : (session?.user?.email ?? "");
@@ -39,6 +54,27 @@ export function Topbar() {
       window.location.href = "/login";
     } else {
       signOut({ callbackUrl: "/login" });
+    }
+  }
+
+  async function handleLocaleChange(newLocale: string) {
+    if (newLocale === locale) return;
+    const result = await updateUserLocale(newLocale);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(LOCALE_LABELS[newLocale] ?? newLocale);
+      router.refresh();
+    }
+  }
+
+  async function handleResetLocale() {
+    const result = await updateUserLocale(null);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Using tenant default");
+      router.refresh();
     }
   }
 
@@ -62,6 +98,24 @@ export function Topbar() {
               <p className="text-xs text-muted-foreground">{userEmail}</p>
             </div>
             <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Globe className="mr-2 h-4 w-4" />
+                {LOCALE_LABELS[locale] ?? locale}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {Object.entries(LOCALE_LABELS).map(([code, label]) => (
+                  <DropdownMenuItem key={code} onSelect={() => handleLocaleChange(code)}>
+                    {locale === code && <Check className="mr-2 h-4 w-4" />}
+                    <span className={locale !== code ? "ml-6" : ""}>{label}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleResetLocale}>
+                  <span className="ml-6 text-muted-foreground">Use tenant default</span>
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

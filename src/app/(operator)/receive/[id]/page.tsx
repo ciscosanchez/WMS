@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export default function ReceiveShipmentPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const t = useTranslations("operator.receive");
 
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function ReceiveShipmentPage() {
     getShipment(id)
       .then((data) => {
         if (!data) {
-          toast.error("Shipment not found");
+          toast.error(t("shipmentNotFound"));
           router.push("/receive");
           return;
         }
@@ -60,24 +62,24 @@ export default function ReceiveShipmentPage() {
         );
         setActiveLineIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
       })
-      .catch(() => toast.error("Failed to load shipment"))
+      .catch(() => toast.error(t("failedLoadShipment")))
       .finally(() => setLoading(false));
-  }, [id, router]);
+  }, [id, router, t]);
 
   async function handleBinScan(barcode: string) {
     const bin = await getBinByBarcode(barcode);
     if (!bin) {
-      toast.error(`Bin not found: ${barcode}`);
+      toast.error(t("binNotFound", { barcode }));
       return;
     }
     setBinBarcode(barcode);
     setBinId(bin.id);
-    toast.success(`Bin: ${bin.barcode}`);
+    toast.success(t("binLabel", { binBarcode: bin.barcode }));
   }
 
   async function handleReceiveLine(line: ShipmentLine) {
     if (!qty || parseInt(qty) < 1) {
-      toast.error("Enter a valid quantity");
+      toast.error(t("enterValidQty"));
       return;
     }
 
@@ -95,9 +97,9 @@ export default function ReceiveShipmentPage() {
       );
 
       if (queued) {
-        toast.info(`Receive queued: ${qty} × ${line.product.sku}`);
+        toast.info(t("receiveQueued", { qty, sku: line.product.sku }));
       } else {
-        toast.success(`Received ${qty} × ${line.product.sku}`);
+        toast.success(t("received", { qty, sku: line.product.sku }));
       }
 
       // Refresh shipment
@@ -113,11 +115,11 @@ export default function ReceiveShipmentPage() {
           setBinId(null);
           setQty("1");
         } else {
-          toast.success("All lines received!");
+          toast.success(t("allLinesReceived") + "!");
         }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to receive line");
+      toast.error(err instanceof Error ? err.message : t("failedReceiveLine"));
     } finally {
       setSubmitting(false);
     }
@@ -133,13 +135,13 @@ export default function ReceiveShipmentPage() {
       );
 
       if (queued) {
-        toast.info("Completion queued — will finalize when online");
+        toast.info(t("completionQueued"));
       } else {
-        toast.success("Shipment completed");
+        toast.success(t("shipmentCompleted"));
       }
       router.push("/receive");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to complete shipment");
+      toast.error(err instanceof Error ? err.message : t("failedCompleteShipment"));
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +151,7 @@ export default function ReceiveShipmentPage() {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading shipment...
+        {t("loadingShipment")}
       </div>
     );
   }
@@ -210,22 +212,22 @@ export default function ReceiveShipmentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">SCAN DESTINATION BIN</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("scanDestBin")}</label>
               <div className="mt-1">
                 <BarcodeScannerInput
-                  placeholder="Scan bin barcode..."
+                  placeholder={t("scanBinBarcode")}
                   onScan={handleBinScan}
                   showFeedback
                   value={binBarcode}
                 />
               </div>
               {binBarcode && (
-                <p className="mt-1 text-xs text-green-600">Bin: {binBarcode}</p>
+                <p className="mt-1 text-xs text-green-600">{t("binLabel", { binBarcode })}</p>
               )}
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">QUANTITY RECEIVED</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("quantityReceived")}</label>
               <Input
                 type="number"
                 min={1}
@@ -247,7 +249,7 @@ export default function ReceiveShipmentPage() {
               ) : (
                 <Check className="mr-2 h-5 w-5" />
               )}
-              Confirm Receive
+              {t("confirmReceive")}
             </Button>
           </CardContent>
         </Card>
@@ -257,9 +259,9 @@ export default function ReceiveShipmentPage() {
       {allDone && (
         <Card className="border-green-300 bg-green-50">
           <CardContent className="p-4">
-            <p className="font-semibold text-green-700">All lines received</p>
+            <p className="font-semibold text-green-700">{t("allLinesReceived")}</p>
             <p className="mb-4 text-sm text-green-600">
-              Ready to complete this shipment and update inventory.
+              {t("allLinesReceivedReady")}
             </p>
             <Button
               className="h-12 w-full"
@@ -272,7 +274,7 @@ export default function ReceiveShipmentPage() {
               ) : (
                 <Check className="mr-2 h-5 w-5" />
               )}
-              Complete Shipment
+              {t("completeShipment")}
             </Button>
           </CardContent>
         </Card>

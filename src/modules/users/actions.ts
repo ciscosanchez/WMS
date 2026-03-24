@@ -145,6 +145,26 @@ export async function updateUserRole(userId: string, role: TenantRole): Promise<
   }
 }
 
+/**
+ * Update the current user's locale preference.
+ * Null = use tenant default.
+ */
+export async function updateUserLocale(
+  locale: string | null
+): Promise<{ error?: string }> {
+  const { user } = await requireTenantContext();
+  try {
+    await publicDb.user.update({
+      where: { id: user.id },
+      data: { locale },
+    });
+    revalidatePath("/");
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to update locale" };
+  }
+}
+
 export async function removeUser(userId: string): Promise<{ error: string } | { ok: true }> {
   const { user, tenant } = await getAdminContext();
   if (userId === user.id) return { error: "Cannot remove yourself" };

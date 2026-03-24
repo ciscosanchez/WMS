@@ -43,6 +43,17 @@ export async function middleware(request: NextRequest) {
   // --- Tenant resolution (existing behaviour) ---
   const response = tenantMiddleware(request);
 
+  // --- Locale resolution ---
+  // Priority: user locale from JWT > tenant default > "en"
+  const token = pathname.startsWith("/platform")
+    ? null // already read above
+    : await getToken({ req: request, secret: process.env.AUTH_SECRET }).catch(() => null);
+  const locale =
+    (token?.locale as string | undefined) ??
+    (token?.tenantLocale as string | undefined) ??
+    "en";
+  response.headers.set("x-locale", locale);
+
   // --- Security headers ---
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);

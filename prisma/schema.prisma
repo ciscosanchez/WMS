@@ -47,6 +47,7 @@ model User {
   passwordHash       String    @map("password_hash")
   name               String
   isSuperadmin       Boolean   @default(false) @map("is_superadmin")
+  locale             String?   // null = use tenant default
   passwordSetToken   String?   @unique @map("password_set_token")
   passwordSetExpires DateTime? @map("password_set_expires")
   createdAt          DateTime  @default(now()) @map("created_at")

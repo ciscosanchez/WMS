@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -25,13 +26,15 @@ export default function OperatorReceivePage() {
   const router = useRouter();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = useTranslations("operator.receive");
+  const tc = useTranslations("common");
 
   useEffect(() => {
     getShipments("arrived")
       .then((data) => setShipments(data as unknown as Shipment[]))
-      .catch(() => toast.error("Failed to load shipments"))
+      .catch(() => toast.error(t("failedLoadShipments")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   async function handleScan(value: string) {
     const local = shipments.find(
@@ -46,7 +49,7 @@ export default function OperatorReceivePage() {
     if (found) {
       router.push(`/receive/${found.id}`);
     } else {
-      toast.error(`No shipment found for: ${value}`);
+      toast.error(t("noShipmentFound", { value }));
     }
   }
 
@@ -55,30 +58,30 @@ export default function OperatorReceivePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Receive</h1>
-        <p className="text-sm text-muted-foreground">Scan BOL or select shipment</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <BarcodeScannerInput
-        placeholder="Scan BOL or ASN barcode..."
+        placeholder={t("scanBolBarcode")}
         onScan={handleScan}
         showFeedback
       />
 
       <div>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-          ARRIVED — READY TO RECEIVE
+          {t("arrivedReady")}
         </h2>
 
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading shipments...
+            {t("loadingShipments")}
           </div>
         )}
 
         {!loading && shipments.length === 0 && (
-          <p className="text-sm text-muted-foreground">No shipments ready to receive.</p>
+          <p className="text-sm text-muted-foreground">{t("noShipmentsReady")}</p>
         )}
 
         <div className="space-y-3">
@@ -99,12 +102,12 @@ export default function OperatorReceivePage() {
                       <div className="mt-1 flex items-center gap-2">
                         <StatusBadge status={s.status} />
                         <span className="text-xs text-muted-foreground">
-                          {receivedLines}/{s._count.lines} lines received
+                          {receivedLines}/{s._count.lines} {t("linesReceived")}
                         </span>
                       </div>
                     </div>
                     <Button size="lg" onClick={() => router.push(`/receive/${s.id}`)}>
-                      {receivedLines > 0 ? "Continue" : "Start"}
+                      {receivedLines > 0 ? tc("continue") : tc("start")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -115,7 +118,7 @@ export default function OperatorReceivePage() {
 
       {completed.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">COMPLETED TODAY</h2>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("completedToday")}</h2>
           <div className="space-y-3">
             {completed.slice(0, 5).map((s) => (
               <Card key={s.id}>
@@ -128,7 +131,7 @@ export default function OperatorReceivePage() {
                   </div>
                   <div className="flex items-center gap-2 text-green-600">
                     <Check className="h-4 w-4" />
-                    <span className="text-sm font-medium">Done</span>
+                    <span className="text-sm font-medium">{tc("done")}</span>
                   </div>
                 </CardContent>
               </Card>

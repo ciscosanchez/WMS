@@ -28,11 +28,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await compare(credentials.password as string, user.passwordHash);
         if (!isValid) return null;
 
+        // Resolve tenant locale from first tenant's settings
+        const tenantSettings = user.tenantUsers[0]?.tenant?.settings as Record<string, unknown> | null;
+        const tenantLocale = (tenantSettings?.locale as string) ?? "en";
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           isSuperadmin: user.isSuperadmin,
+          locale: user.locale ?? undefined,
+          tenantLocale,
           tenants: user.tenantUsers.map((tu) => ({
             tenantId: tu.tenantId,
             slug: tu.tenant.slug,
@@ -50,6 +56,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.isSuperadmin = (user as any).isSuperadmin;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         token.tenants = (user as any).tenants;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token.locale = (user as any).locale;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token.tenantLocale = (user as any).tenantLocale;
       }
       return token;
     },
@@ -60,6 +70,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         (session.user as any).isSuperadmin = token.isSuperadmin;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).tenants = token.tenants;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (session.user as any).locale = token.locale;
       }
       return session;
     },

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Warehouse,
   LayoutDashboard,
@@ -20,13 +21,13 @@ import { useServiceWorker } from "@/hooks/use-service-worker";
 import { useSessionKeepalive } from "@/hooks/use-session-keepalive";
 import { useHighContrast } from "@/hooks/use-high-contrast";
 
-const navItems = [
-  { href: "/my-tasks", label: "Home", icon: LayoutDashboard },
-  { href: "/receive", label: "Receive", icon: PackageOpen },
-  { href: "/pick", label: "Pick", icon: ScanLine },
-  { href: "/pack", label: "Pack", icon: Package },
-  { href: "/move", label: "Move", icon: ArrowLeftRight },
-  { href: "/count", label: "Count", icon: ListChecks },
+const navKeys = [
+  { href: "/my-tasks", key: "home" as const, icon: LayoutDashboard },
+  { href: "/receive", key: "receive" as const, icon: PackageOpen },
+  { href: "/pick", key: "pick" as const, icon: ScanLine },
+  { href: "/pack", key: "pack" as const, icon: Package },
+  { href: "/move", key: "move" as const, icon: ArrowLeftRight },
+  { href: "/count", key: "count" as const, icon: ListChecks },
 ];
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,8 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
   const { isOnline, pendingCount, isSyncing, replayQueue } = useSharedOffline();
   const { highContrast, toggleHighContrast } = useHighContrast();
   const { sessionExpired, refreshSession } = useSessionKeepalive();
+  const t = useTranslations("operator.nav");
+  const tc = useTranslations("common");
 
   // Register service worker
   useServiceWorker();
@@ -53,15 +56,15 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="mx-4 rounded-lg bg-white p-6 text-center shadow-xl">
             <LogIn className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <h2 className="text-lg font-bold">Session Expired</h2>
+            <h2 className="text-lg font-bold">{tc("sessionExpired")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your session timed out. Tap below to sign back in.
+              {tc("sessionExpiredMessage")}
             </p>
             <button
               onClick={refreshSession}
               className="mt-4 h-12 w-full rounded-md bg-primary px-4 text-primary-foreground font-semibold"
             >
-              Sign In
+              {tc("signIn")}
             </button>
           </div>
         </div>
@@ -75,7 +78,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
           </div>
           <span className="text-lg font-semibold">Ramola</span>
           <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-            Floor
+            {tc("floor")}
           </span>
         </Link>
         <div className="flex items-center gap-3">
@@ -87,8 +90,8 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
-            aria-label="Toggle high contrast mode"
-            title={highContrast ? "High contrast: ON" : "High contrast: OFF"}
+            aria-label={tc("toggleHighContrast")}
+            title={highContrast ? tc("highContrastOn") : tc("highContrastOff")}
           >
             <Sun className="h-4 w-4" />
           </button>
@@ -102,7 +105,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
       {/* Bottom navigation — mobile-optimized */}
       <nav className="border-t bg-background">
         <div className="flex justify-around">
-          {navItems.map((item) => {
+          {navKeys.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
@@ -116,7 +119,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
                 )}
               >
                 <item.icon className={cn("h-5 w-5", isActive && "text-primary")} />
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}

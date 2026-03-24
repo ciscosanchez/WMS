@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,8 @@ export default function OperatorMovePage() {
   const [toBin, setToBin] = useState<Bin | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { executeAction } = useSharedOffline();
+  const t = useTranslations("operator.move");
+  const tc = useTranslations("common");
 
   function reset() {
     setFromBin(null);
@@ -33,17 +36,17 @@ export default function OperatorMovePage() {
   async function handleFromBinScan(barcode: string) {
     const bin = await getBinByBarcode(barcode);
     if (!bin) {
-      toast.error(`Bin not found: ${barcode}`);
+      toast.error(t("binNotFound", { barcode }));
       return;
     }
     if (bin.inventory.length === 0) {
-      toast.error("That bin has no inventory");
+      toast.error(t("binNoInventory"));
       return;
     }
     setFromBin(bin);
     setSelectedItem(null);
     setToBin(null);
-    toast.success(`Source: ${bin.barcode}`);
+    toast.success(t("sourceLabel", { binBarcode: bin.barcode }));
   }
 
   async function handleProductScan(barcode: string) {
@@ -52,34 +55,34 @@ export default function OperatorMovePage() {
       (i) => i.product.sku === barcode || i.product.barcode === barcode
     );
     if (!item) {
-      toast.error(`Product not in bin: ${barcode}`);
+      toast.error(t("productNotInBin", { barcode }));
       return;
     }
     setSelectedItem(item);
-    toast.success(`Product: ${item.product.sku}`);
+    toast.success(t("productLabel", { sku: item.product.sku }));
   }
 
   async function handleToBinScan(barcode: string) {
     if (fromBin && barcode === fromBin.barcode) {
-      toast.error("Source and destination bins must differ");
+      toast.error(t("sameBinError"));
       return;
     }
     const bin = await getBinByBarcode(barcode);
     if (!bin) {
-      toast.error(`Bin not found: ${barcode}`);
+      toast.error(t("binNotFound", { barcode }));
       return;
     }
     setToBin(bin);
-    toast.success(`Destination: ${bin.barcode}`);
+    toast.success(t("destLabel", { binBarcode: bin.barcode }));
   }
 
   async function handleConfirmMove() {
     if (!fromBin || !selectedItem || !toBin || !quantity) return;
 
     const qty = parseInt(quantity);
-    if (qty < 1) { toast.error("Invalid quantity"); return; }
+    if (qty < 1) { toast.error(t("invalidQuantity")); return; }
     if (qty > selectedItem.available) {
-      toast.error(`Only ${selectedItem.available} available`);
+      toast.error(t("onlyAvailable", { available: selectedItem.available }));
       return;
     }
 
@@ -101,13 +104,13 @@ export default function OperatorMovePage() {
       );
 
       if (queued) {
-        toast.info("Move queued — will complete when online");
+        toast.info(t("moveQueued"));
       } else {
-        toast.success("Move complete");
+        toast.success(t("moveComplete"));
       }
       reset();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Move failed");
+      toast.error(err instanceof Error ? err.message : t("moveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -118,25 +121,25 @@ export default function OperatorMovePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Move Inventory</h1>
-        <p className="text-sm text-muted-foreground">Transfer stock between bins</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardContent className="space-y-4 p-4">
           {/* Step 1: Source bin */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">1. SCAN SOURCE BIN</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("scanSourceBin")}</label>
             <div className="mt-1">
               <BarcodeScannerInput
-                placeholder="Scan source bin..."
+                placeholder={t("scanSourcePlaceholder")}
                 onScan={handleFromBinScan}
                 showFeedback
               />
             </div>
             {fromBin && (
               <p className="mt-1 text-xs text-green-600">
-                {fromBin.barcode} — {fromBin.inventory.length} SKU(s)
+                {fromBin.barcode} — {t("skusInBin", { count: fromBin.inventory.length })}
               </p>
             )}
           </div>
@@ -145,11 +148,11 @@ export default function OperatorMovePage() {
           {fromBin && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                2. SCAN PRODUCT (or tap below)
+                {t("scanProduct")}
               </label>
               <div className="mt-1">
                 <BarcodeScannerInput
-                  placeholder="Scan product barcode or SKU..."
+                  placeholder={t("scanProductPlaceholder")}
                   onScan={handleProductScan}
                   showFeedback
                 />
@@ -169,7 +172,7 @@ export default function OperatorMovePage() {
                     <span className="font-mono font-medium">{item.product.sku}</span>
                     <span className="ml-2 text-muted-foreground">{item.product.name}</span>
                     <span className="float-right text-muted-foreground">
-                      {item.available} avail
+                      {item.available} {tc("avail")}
                     </span>
                   </button>
                 ))}
@@ -181,7 +184,7 @@ export default function OperatorMovePage() {
           {selectedItem && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                3. QUANTITY (max {selectedItem.available})
+                {t("quantityLabel", { max: selectedItem.available })}
               </label>
               <Input
                 type="number"
@@ -205,17 +208,17 @@ export default function OperatorMovePage() {
           {selectedItem && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                4. SCAN DESTINATION BIN
+                {t("scanDestBin")}
               </label>
               <div className="mt-1">
                 <BarcodeScannerInput
-                  placeholder="Scan destination bin..."
+                  placeholder={t("scanDestPlaceholder")}
                   onScan={handleToBinScan}
                   showFeedback
                 />
               </div>
               {toBin && (
-                <p className="mt-1 text-xs text-green-600">Destination: {toBin.barcode}</p>
+                <p className="mt-1 text-xs text-green-600">{t("destLabel", { binBarcode: toBin.barcode })}</p>
               )}
             </div>
           )}
@@ -226,7 +229,7 @@ export default function OperatorMovePage() {
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <span>
-                  Move <strong>{quantity}</strong> × <strong>{selectedItem!.product.sku}</strong>
+                  {t("moveSummary", { quantity, sku: selectedItem!.product.sku })}
                 </span>
               </div>
               <p className="mt-1 text-muted-foreground">
@@ -244,7 +247,7 @@ export default function OperatorMovePage() {
             {submitting ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : null}
-            Confirm Move
+            {t("confirmMove")}
           </Button>
         </CardContent>
       </Card>

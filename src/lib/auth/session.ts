@@ -7,6 +7,7 @@ export interface SessionUser {
   email: string;
   name: string;
   isSuperadmin: boolean;
+  locale?: string;
   tenants: Array<{
     tenantId: string;
     slug: string;

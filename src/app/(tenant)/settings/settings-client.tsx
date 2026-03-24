@@ -16,6 +16,7 @@ interface Settings {
   companyName: string;
   timezone: string;
   dateFormat: string;
+  locale: string;
   freightMode: boolean;
   dtcMode: boolean;
   asnPrefix: string;
@@ -28,6 +29,7 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
   const [companyName, setCompanyName] = useState(initialSettings.companyName);
   const [timezone, setTimezone] = useState(initialSettings.timezone);
   const [dateFormat, setDateFormat] = useState(initialSettings.dateFormat);
+  const [locale, setLocale] = useState(initialSettings.locale);
   const [freightMode, setFreightMode] = useState(initialSettings.freightMode);
   const [dtcMode, setDtcMode] = useState(initialSettings.dtcMode);
   const [asnPrefix, setAsnPrefix] = useState(initialSettings.asnPrefix);
@@ -40,7 +42,7 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
     setSaving(true);
     try {
       const result = await saveTenantSettings({
-        companyName, timezone, dateFormat, freightMode, dtcMode,
+        companyName, timezone, dateFormat, locale, freightMode, dtcMode,
         asnPrefix, orderPrefix, adjustmentPrefix, pickPrefix,
       });
       if (result.error) {
@@ -110,6 +112,17 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                 <option value="YYYY-MM-DD">YYYY-MM-DD</option>
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Language (Tenant Default)</Label>
+              <select value={locale} onChange={(e) => setLocale(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Default language for all users. Individual users can override this from their profile menu.
+              </p>
             </div>
           </CardContent>
         </Card>

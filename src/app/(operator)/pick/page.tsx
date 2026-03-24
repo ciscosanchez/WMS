@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,8 @@ export default function OperatorPickPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const { executeAction } = useSharedOffline();
+  const t = useTranslations("operator.pick");
+  const tc = useTranslations("common");
 
   async function reload() {
     const [mine, avail] = await Promise.all([getMyPickTasks(), getAvailablePickTasks()]);
@@ -35,9 +38,9 @@ export default function OperatorPickPage() {
 
   useEffect(() => {
     reload()
-      .catch(() => toast.error("Failed to load tasks"))
+      .catch(() => toast.error(t("failedLoadTasks")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   async function handleClaim(taskId: string) {
     setWorking(true);
@@ -48,13 +51,13 @@ export default function OperatorPickPage() {
         [taskId]
       );
       if (queued) {
-        toast.info("Claim queued — will sync when online");
+        toast.info(t("claimQueued"));
       } else {
-        toast.success(`Claimed task ${(result as PickTask).taskNumber}`);
+        toast.success(t("claimedTask", { taskNumber: (result as PickTask).taskNumber }));
       }
       await reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to claim task");
+      toast.error(err instanceof Error ? err.message : t("failedClaim"));
     } finally {
       setWorking(false);
     }
@@ -67,7 +70,7 @@ export default function OperatorPickPage() {
       scannedValue === line.product.barcode ||
       scannedValue === line.product.sku;
     if (!isBinMatch && !isProductMatch) {
-      toast.error(`Wrong scan — expected bin ${line.bin.barcode} or product ${line.product.sku}`);
+      toast.error(t("wrongScan", { binBarcode: line.bin.barcode, sku: line.product.sku }));
       return;
     }
     setWorking(true);
@@ -79,13 +82,13 @@ export default function OperatorPickPage() {
         [line.id, qty]
       );
       if (queued) {
-        toast.info(`Pick queued for ${line.product.sku}`);
+        toast.info(t("pickQueued", { sku: line.product.sku }));
       } else {
-        toast.success(`Picked ${line.product.sku}`);
+        toast.success(t("picked", { sku: line.product.sku }));
       }
       await reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to confirm pick");
+      toast.error(err instanceof Error ? err.message : t("failedConfirm"));
     } finally {
       setWorking(false);
     }
@@ -100,13 +103,13 @@ export default function OperatorPickPage() {
         [line.id, line.pickedQty]
       );
       if (queued) {
-        toast.info(`Short pick queued: ${line.product.sku}`);
+        toast.info(t("shortQueued", { sku: line.product.sku }));
       } else {
-        toast.warning(`Marked short: ${line.product.sku}`);
+        toast.warning(t("markedShort", { sku: line.product.sku }));
       }
       await reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to mark short");
+      toast.error(err instanceof Error ? err.message : t("failedShort"));
     } finally {
       setWorking(false);
     }
@@ -120,26 +123,26 @@ export default function OperatorPickPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Pick</h1>
-        <p className="text-sm text-muted-foreground">Your active and available pick tasks</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <KpiCard title="My Active" value={myTasks.length} icon={ScanLine} />
-        <KpiCard title="Available" value={availableTasks.length} icon={Clock} />
+        <KpiCard title={t("myActive")} value={myTasks.length} icon={ScanLine} />
+        <KpiCard title={t("available")} value={availableTasks.length} icon={Clock} />
       </div>
 
       {loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading tasks...
+          {t("loadingTasks")}
         </div>
       )}
 
       {/* Active tasks */}
       {myTasks.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">MY ACTIVE TASKS</h2>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("myActiveTasks")}</h2>
           {myTasks.map((task) => {
             const activeLine = getActiveLine(task);
             const doneCount = task.lines.filter((l) => l.pickedQty >= l.quantity).length;
@@ -153,6 +156,7 @@ export default function OperatorPickPage() {
                 working={working}
                 onConfirm={handleConfirm}
                 onShort={handleShort}
+                t={t}
               />
             );
           })}
@@ -162,7 +166,7 @@ export default function OperatorPickPage() {
       {/* Available tasks */}
       {availableTasks.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">AVAILABLE TASKS</h2>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("availableTasks")}</h2>
           <div className="space-y-3">
             {availableTasks.map((task) => (
               <Card key={task.id}>
@@ -175,11 +179,11 @@ export default function OperatorPickPage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {task.order?.orderNumber ?? "—"} &middot; {task.lines.length} lines
+                      {task.order?.orderNumber ?? "—"} &middot; {task.lines.length} {tc("lines")}
                     </p>
                   </div>
                   <Button disabled={working} onClick={() => handleClaim(task.id)}>
-                    Claim
+                    {t("claim")}
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </CardContent>
@@ -190,7 +194,7 @@ export default function OperatorPickPage() {
       )}
 
       {!loading && myTasks.length === 0 && availableTasks.length === 0 && (
-        <p className="text-sm text-muted-foreground">No pick tasks available.</p>
+        <p className="text-sm text-muted-foreground">{t("noPickTasks")}</p>
       )}
     </div>
   );
@@ -203,6 +207,7 @@ function ActiveTaskCard({
   working,
   onConfirm,
   onShort,
+  t,
 }: {
   task: PickTask;
   activeLine: PickTask["lines"][number] | null;
@@ -210,6 +215,7 @@ function ActiveTaskCard({
   working: boolean;
   onConfirm: (line: PickTask["lines"][number], scannedBin: string) => void;
   onShort: (line: PickTask["lines"][number]) => void;
+  t: ReturnType<typeof useTranslations>;
 }) {
   const [scanInput, setScanInput] = useState("");
 
@@ -235,7 +241,7 @@ function ActiveTaskCard({
         {activeLine && (
           <>
             <div className="mt-4 rounded-lg bg-muted p-4">
-              <p className="text-xs font-medium text-muted-foreground">NEXT PICK</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("nextPick")}</p>
               <div className="mt-2 flex items-center gap-3">
                 <MapPin className="h-8 w-8 text-primary" />
                 <div>
@@ -249,11 +255,11 @@ function ActiveTaskCard({
                     return (
                       <>
                         <p className="text-2xl font-bold text-primary">
-                          Pick {qty} {upc ? "EACH" : (activeLine.product as { baseUom?: string }).baseUom ?? "EA"}
+                          Pick {qty} {upc ? t("each") : (activeLine.product as { baseUom?: string }).baseUom ?? "EA"}
                         </p>
                         {upc && upc > 1 && (
                           <p className="text-sm font-medium text-amber-600">
-                            {upc} units per case — pick individual units, NOT cartons
+                            {t("unitsPerCase", { upc })}
                           </p>
                         )}
                       </>
@@ -265,7 +271,7 @@ function ActiveTaskCard({
 
             <div className="mt-4">
               <BarcodeScannerInput
-                placeholder="Scan bin or product to confirm..."
+                placeholder={t("scanBinOrProduct")}
                 onScan={(v) => {
                   setScanInput(v);
                   onConfirm(activeLine, v);
@@ -283,7 +289,7 @@ function ActiveTaskCard({
                 onClick={() => onConfirm(activeLine, scanInput)}
               >
                 <Check className="mr-2 h-5 w-5" />
-                Confirm Pick
+                {t("confirmPick")}
               </Button>
               <Button
                 variant="outline"
@@ -298,7 +304,7 @@ function ActiveTaskCard({
         )}
 
         {!activeLine && (
-          <p className="mt-3 text-sm text-green-600 font-medium">All lines picked ✓</p>
+          <p className="mt-3 text-sm text-green-600 font-medium">{t("allLinesPicked")} ✓</p>
         )}
       </CardContent>
     </Card>

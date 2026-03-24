@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,25 +31,27 @@ export default function OperatorPackPage() {
   const [boxCount, setBoxCount] = useState("1");
   const [submitting, setSubmitting] = useState(false);
   const { executeAction } = useSharedOffline();
+  const t = useTranslations("operator.pack");
+  const tc = useTranslations("common");
 
   useEffect(() => {
     getTasksReadyToPack()
       .then((data) => setTasks(data as PackTask[]))
-      .catch(() => toast.error("Failed to load packing queue"))
+      .catch(() => toast.error(t("failedLoadQueue")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   function handleTaskScan(value: string) {
     const task = tasks.find(
       (t) => t.taskNumber === value || t.order?.orderNumber === value
     );
     if (!task) {
-      toast.error(`No packing task found for: ${value}`);
+      toast.error(t("noTaskFound", { value }));
       return;
     }
     setActiveTask(task);
     setVerified(new Set());
-    toast.success(`Task: ${task.taskNumber}`);
+    toast.success(t("taskSelected", { taskNumber: task.taskNumber }));
   }
 
   function handleItemScan(value: string) {
@@ -57,11 +60,11 @@ export default function OperatorPackPage() {
       (l) => l.product.sku === value || l.product.barcode === value
     );
     if (!line) {
-      toast.error(`Item not in this task: ${value}`);
+      toast.error(t("itemNotInTask", { value }));
       return;
     }
     setVerified((prev) => new Set([...prev, line.id]));
-    toast.success(`Verified: ${line.product.sku}`);
+    toast.success(t("verifiedItem", { sku: line.product.sku }));
   }
 
   async function handleConfirmPack() {
@@ -77,9 +80,9 @@ export default function OperatorPackPage() {
       );
 
       if (queued) {
-        toast.info("Pack queued — shipment will be created when online");
+        toast.info(t("packQueued"));
       } else {
-        toast.success("Packed — shipment created");
+        toast.success(t("packSuccess"));
       }
 
       // Reload tasks
@@ -89,7 +92,7 @@ export default function OperatorPackPage() {
       setVerified(new Set());
       setBoxCount("1");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Pack failed");
+      toast.error(err instanceof Error ? err.message : t("packFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -102,13 +105,13 @@ export default function OperatorPackPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">Pack</h1>
-        <p className="text-sm text-muted-foreground">Verify items and pack for shipment</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* Scan to select task */}
       <BarcodeScannerInput
-        placeholder="Scan order or pick task barcode..."
+        placeholder={t("scanOrderBarcode")}
         onScan={handleTaskScan}
         showFeedback
       />
@@ -134,20 +137,20 @@ export default function OperatorPackPage() {
             {/* Items to verify */}
             <div className="mt-4">
               <p className="text-xs font-medium text-muted-foreground mb-2">
-                SCAN EACH ITEM TO VERIFY
+                {t("scanEachItem")}
               </p>
               <BarcodeScannerInput
-                placeholder="Scan item barcode..."
+                placeholder={t("scanItemBarcode")}
                 onScan={handleItemScan}
                 showFeedback
               />
               <Table className="mt-2">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-center">Verified</TableHead>
+                    <TableHead>{t("sku")}</TableHead>
+                    <TableHead>{t("product")}</TableHead>
+                    <TableHead className="text-right">{t("qty")}</TableHead>
+                    <TableHead className="text-center">{t("verified")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -169,7 +172,7 @@ export default function OperatorPackPage() {
                               setVerified((prev) => new Set([...prev, line.id]));
                             }}
                           >
-                            Scan
+                            {t("scan")}
                           </Button>
                         )}
                       </TableCell>
@@ -183,7 +186,7 @@ export default function OperatorPackPage() {
             <div className="mt-4 rounded-lg bg-muted p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">BOX COUNT</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("boxCount")}</p>
                   <Input
                     type="number"
                     min={1}
@@ -209,7 +212,7 @@ export default function OperatorPackPage() {
                 ) : (
                   <Printer className="mr-2 h-5 w-5" />
                 )}
-                Complete Pack
+                {t("completePack")}
               </Button>
             </div>
           </CardContent>
@@ -220,7 +223,7 @@ export default function OperatorPackPage() {
       {tasks.length > 0 && !activeTask && (
         <div>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            READY TO PACK ({tasks.length})
+            {t("readyToPack", { count: tasks.length })}
           </h2>
           <div className="space-y-3">
             {tasks.map((task) => (
@@ -252,12 +255,12 @@ export default function OperatorPackPage() {
       {loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading packing queue...
+          {t("loadingQueue")}
         </div>
       )}
 
       {!loading && tasks.length === 0 && !activeTask && (
-        <p className="text-sm text-muted-foreground">No tasks ready to pack.</p>
+        <p className="text-sm text-muted-foreground">{t("noTasksReady")}</p>
       )}
     </div>
   );

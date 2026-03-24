@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/shared/kpi-card";
@@ -23,13 +24,15 @@ export default function OperatorDashboardPage() {
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const t = useTranslations("operator.dashboard");
+  const tc = useTranslations("common");
 
   useEffect(() => {
     getMyTasksSummary()
       .then(setData)
-      .catch(() => toast.error("Failed to load dashboard"))
+      .catch(() => toast.error(t("failedLoadDashboard")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
@@ -52,15 +55,15 @@ export default function OperatorDashboardPage() {
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
-        <KpiCard title="Active Tasks" value={data.stats.active} icon={ClipboardList} />
-        <KpiCard title="Completed Today" value={data.stats.completedToday} icon={CheckCircle2} />
+        <KpiCard title={t("activeTasks")} value={data.stats.active} icon={ClipboardList} />
+        <KpiCard title={t("completedToday")} value={data.stats.completedToday} icon={CheckCircle2} />
       </div>
 
       {/* Active Pick Tasks */}
       {activePicks.length > 0 && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <ScanLine className="h-4 w-4" /> Picking
+            <ScanLine className="h-4 w-4" /> {t("picking")}
           </h2>
           <div className="space-y-2">
             {activePicks.map((task: PickItem) => (
@@ -74,10 +77,10 @@ export default function OperatorDashboardPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{task.taskNumber}</span>
                       {task.priority === "rush" && (
-                        <Badge variant="destructive" className="text-xs">Rush</Badge>
+                        <Badge variant="destructive" className="text-xs">{t("rush")}</Badge>
                       )}
                       {task.priority === "expedited" && (
-                        <Badge variant="secondary" className="text-xs">Expedited</Badge>
+                        <Badge variant="secondary" className="text-xs">{t("expedited")}</Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
@@ -87,7 +90,7 @@ export default function OperatorDashboardPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
                       <div className="text-sm font-medium">{task.completedLines}/{task.totalLines}</div>
-                      <div className="text-xs text-muted-foreground">lines</div>
+                      <div className="text-xs text-muted-foreground">{tc("lines")}</div>
                     </div>
                     {/* Progress bar */}
                     <div className="h-8 w-2 rounded-full bg-muted overflow-hidden">
@@ -109,7 +112,7 @@ export default function OperatorDashboardPage() {
       {data.receivingShipments.length > 0 && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <PackageOpen className="h-4 w-4" /> Receiving
+            <PackageOpen className="h-4 w-4" /> {t("receiving")}
           </h2>
           <div className="space-y-2">
             {data.receivingShipments.map((s: ReceiveItem) => (
@@ -126,7 +129,7 @@ export default function OperatorDashboardPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
                       <div className="text-sm font-medium">{s.completedLines}/{s.totalLines}</div>
-                      <div className="text-xs text-muted-foreground">lines</div>
+                      <div className="text-xs text-muted-foreground">{tc("lines")}</div>
                     </div>
                     <Badge variant={s.status === "receiving" ? "default" : "secondary"} className="text-xs">
                       {s.status}
@@ -144,7 +147,7 @@ export default function OperatorDashboardPage() {
       {data.cycleCounts.length > 0 && (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <ListChecks className="h-4 w-4" /> Cycle Counts
+            <ListChecks className="h-4 w-4" /> {t("cycleCounts")}
           </h2>
           <div className="space-y-2">
             {data.cycleCounts.map((c: CountItem) => (
@@ -155,7 +158,7 @@ export default function OperatorDashboardPage() {
               >
                 <CardContent className="flex items-center justify-between py-3">
                   <div>
-                    <span className="font-medium">Count</span>
+                    <span className="font-medium">{t("count")}</span>
                     {c.reason && <span className="ml-2 text-sm text-muted-foreground">{c.reason}</span>}
                   </div>
                   <Badge variant={c.status === "completed" ? "secondary" : "default"} className="text-xs">
@@ -172,7 +175,7 @@ export default function OperatorDashboardPage() {
       {completedPicks.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Completed Today
+            {t("completedToday")}
           </h2>
           <div className="space-y-2">
             {completedPicks.map((task: PickItem) => (
@@ -184,7 +187,7 @@ export default function OperatorDashboardPage() {
                     <span className="ml-2 text-sm text-muted-foreground">{task.orderNumber}</span>
                   </div>
                   <Badge variant={task.status === "short_picked" ? "destructive" : "secondary"} className="text-xs">
-                    {task.status === "short_picked" ? "Short" : "Done"}
+                    {task.status === "short_picked" ? t("short") : tc("done")}
                   </Badge>
                 </CardContent>
               </Card>
@@ -197,9 +200,9 @@ export default function OperatorDashboardPage() {
       {data.pickTasks.length === 0 && data.receivingShipments.length === 0 && data.cycleCounts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-semibold">No tasks yet</h3>
+          <h3 className="mt-4 text-lg font-semibold">{t("noTasksTitle")}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Claim a pick task or start receiving to see your work here.
+            {t("noTasksMessage")}
           </p>
         </div>
       )}

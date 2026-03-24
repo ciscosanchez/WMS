@@ -10,6 +10,7 @@ interface TenantSettings {
   companyName: string;
   timezone: string;
   dateFormat: string;
+  locale: string;
   freightMode: boolean;
   dtcMode: boolean;
   asnPrefix: string;
@@ -22,6 +23,7 @@ const DEFAULTS: TenantSettings = {
   companyName: "",
   timezone: "America/New_York",
   dateFormat: "MM/DD/YYYY",
+  locale: "en",
   freightMode: true,
   dtcMode: false,
   asnPrefix: "ASN-",
@@ -44,6 +46,7 @@ export async function getTenantSettings(): Promise<TenantSettings> {
     companyName: (saved.companyName as string) ?? row?.name ?? DEFAULTS.companyName,
     timezone: (saved.timezone as string) ?? DEFAULTS.timezone,
     dateFormat: (saved.dateFormat as string) ?? DEFAULTS.dateFormat,
+    locale: (saved.locale as string) ?? DEFAULTS.locale,
     freightMode: saved.freightMode !== undefined ? !!saved.freightMode : DEFAULTS.freightMode,
     dtcMode: saved.dtcMode !== undefined ? !!saved.dtcMode : DEFAULTS.dtcMode,
     asnPrefix: (saved.asnPrefix as string) ?? DEFAULTS.asnPrefix,
@@ -69,6 +72,7 @@ export async function saveTenantSettings(
       companyName: data.companyName,
       timezone: data.timezone,
       dateFormat: data.dateFormat,
+      locale: data.locale,
       freightMode: data.freightMode,
       dtcMode: data.dtcMode,
       asnPrefix: data.asnPrefix,
