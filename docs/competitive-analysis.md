@@ -1,91 +1,116 @@
-# Competitive Analysis
+# Competitive Analysis — Ramola WMS vs. Market
 
-## Armstrong WMS vs. Market Alternatives
+_Last updated: 2026-03-24_
 
-### Logiwa IO
+## Enterprise Tier
 
-| Dimension | Logiwa IO | Armstrong WMS |
-|---|---|---|
-| **Primary market** | E-commerce / DTC fulfillment 3PLs | Freight + DTC fulfillment 3PLs |
-| **Domain focus** | B2C order fulfillment, marketplace integrations | Both freight (BOL, customs, containers) AND fulfillment |
-| **Multi-tenancy** | Multi-client within shared platform | Schema-per-tenant (stronger data isolation) |
-| **Architecture** | Cloud SaaS, headless/serverless | Self-hosted (Docker), Next.js + PostgreSQL |
-| **Receiving** | Barcode scan, PO upload, putaway rules | Freight-oriented: BOL, container, compliance + PO receiving |
-| **Inventory** | Real-time tracking, cycle counting, demand prediction | Client-owned inventory, customs fields, lot/serial tracking |
-| **Integrations** | 200+ pre-built (Shopify, carriers, marketplaces) | Building targeted integrations |
-| **Pricing** | $500-$10K+/month SaaS | Self-hosted, lower TCO |
-| **AI/Automation** | AI-driven job optimization, ML analytics | Not in MVP scope |
-| **Workflow builder** | No-code drag-and-drop | Not in MVP scope |
+### Manhattan Associates (Manhattan Active WM)
 
-**Key takeaway:** Logiwa is e-commerce only. Armstrong covers both freight AND fulfillment in one platform — the gap neither Logiwa nor Magaya fills.
+- **Strengths**: ML-driven order streaming (waveless), best-in-class optimization, labor management with engineered standards, voice picking, full WCS/automation control
+- **Weaknesses**: $500K+ implementation cost, 12-18 month deployment, overkill for mid-market
+- **Ramola gap**: Order streaming, labor standards engine, voice picking, WCS execution
+- **Ramola advantage**: 10x lower cost, modern stack, faster deployment
 
-### Oracle NetSuite WMS
+### Blue Yonder (formerly JDA)
 
-| Dimension | NetSuite WMS | Armstrong WMS |
-|---|---|---|
-| **Primary target** | Mid-large enterprises on NetSuite ERP | Freight/3PL operators |
-| **Multi-tenancy** | Shared account, role-based (OneWorld) | Schema-per-tenant, DB-level isolation |
-| **Freight domain** | Not native; needs customization | Native: HS codes, BOLs, customs |
-| **Inventory model** | Company-owned inventory | Client-owned (cargo owners model) |
-| **Pricing** | $2K-$5K+/mo + $25K-$100K implementation | Self-hosted, competitive |
-| **ERP integration** | Native NetSuite | API bridge to NetSuite |
-| **Maturity** | Mature, Oracle-backed | Early-stage |
+- **Strengths**: Cognitive demand sensing, AI-driven warehouse orchestration, strong in retail/grocery
+- **Weaknesses**: Complex, expensive, slow to innovate on UI
+- **Ramola gap**: Demand forecasting, AI optimization, predictive labor planning
+- **Ramola advantage**: Modern UI, self-hosted option, simpler operations
 
-**Key takeaway:** NetSuite WMS is strong for companies already on NetSuite ERP but not purpose-built for 3PL. Armstrong's advantage is native multi-tenant isolation and freight domain features. Risk is NetSuite ecosystem lock-in.
+### SAP EWM
+
+- **Strengths**: Deep ERP integration, LPN tracking, GS1 compliance, configurable process flows, PLC/automation integration
+- **Weaknesses**: Requires SAP ecosystem, expensive consultants, rigid customization
+- **Ramola gap**: LPN tracking, GS1/SSCC, configurable workflows, PLC integration
+- **Ramola advantage**: No SAP dependency, multi-tenant native, modern stack
+
+### Oracle WMS Cloud
+
+- **Strengths**: Multi-site, distributed order management, warehouse intelligence dashboards, cloud-native
+- **Weaknesses**: Oracle ecosystem lock-in, limited 3PL billing features
+- **Ramola gap**: Multi-warehouse, distributed order management, report scheduling
+- **Ramola advantage**: 3PL billing built-in, freight + fulfillment dual mode
+
+### Korber (formerly HighJump)
+
+- **Strengths**: Process-based configurability (workflow builder), voice picking, strong in distribution
+- **Weaknesses**: Aging architecture, expensive
+- **Ramola gap**: Rules engine, voice picking, workflow configurability
+- **Ramola advantage**: Modern stack, lower cost, faster iteration
+
+### Infor WMS
+
+- **Strengths**: AI-powered slotting, 3D warehouse visualization, strong in manufacturing/distribution
+- **Weaknesses**: Infor ecosystem dependency
+- **Ramola gap**: 3D visualization, AI slotting, auto-replenishment
+- **Ramola advantage**: Multi-tenant, self-hosted, 3PL-native billing
+
+## Mid-Market / 3PL Tier
+
+### Extensiv (formerly 3PL Central)
+
+- **Strengths**: Best-in-class 3PL billing (charge adjustments, dispute handling, approval workflows), strong client portal, marketplace breadth
+- **Weaknesses**: Aging technology, limited freight/customs capability
+- **Ramola gap**: Billing ops workbench (adjustments, approvals, PDF delivery, disputes)
+- **Ramola advantage**: Modern stack, freight depth, better tenant isolation
+
+### Logiwa
+
+- **Strengths**: 240+ marketplace integrations, strong DTC fulfillment, good automation partnerships
+- **Weaknesses**: No freight/customs capability, limited 3PL billing
+- **Ramola gap**: Marketplace breadth (we have 2, they have 240+), optimization maturity
+- **Ramola advantage**: Freight + fulfillment dual mode, deeper inventory management
+
+### Deposco
+
+- **Strengths**: Causal AI for demand sensing, strong cross-dock, good mid-market fit
+- **Weaknesses**: Smaller ecosystem, less brand recognition
+- **Ramola gap**: Demand forecasting, auto-replenishment intelligence
+- **Ramola advantage**: Self-hosted option, modern open stack
 
 ### Magaya
 
-| Dimension | Magaya | Armstrong WMS |
-|---|---|---|
-| **Primary market** | Freight forwarders, NVOCC, customs brokers | Freight + fulfillment 3PLs |
-| **Strengths** | Deep freight forwarding, customs/compliance, cargo tracking | Modern UI, dual-mode (freight + DTC), multi-tenant |
-| **Weaknesses** | Legacy UI, no DTC/e-commerce fulfillment | Early stage, no customs module yet |
-| **Pricing** | $$$$ (enterprise, implementation-heavy) | Self-hosted, lower cost |
-| **Architecture** | Client-server / cloud (older tech) | Modern web (Next.js, React, PostgreSQL) |
+- **Strengths**: Deep customs/freight (ISF, ACE, customs filing, broker workflows, bonded inventory), strong in freight forwarding
+- **Weaknesses**: Legacy client-server architecture, weak fulfillment/DTC
+- **Ramola gap**: Customs filing, ISF, broker workflows, bonded inventory handling
+- **Ramola advantage**: Modern stack, DTC fulfillment, multi-tenant, operator PWA
 
-**Key takeaway:** Magaya is the most direct competitor for the freight/3PL segment. Armstrong differentiates by adding fulfillment capabilities and offering a modern, lower-cost alternative. Many Magaya customers are frustrated with the UI and pricing.
+### ShipHero
 
-### 3PL Warehouse Manager (Extensiv)
+- **Strengths**: Simple setup, good multi-warehouse, strong Shopify integration
+- **Weaknesses**: Limited 3PL billing, no freight capability, simple inventory model
+- **Ramola gap**: Multi-warehouse simplicity
+- **Ramola advantage**: Everything else (freight, billing, labor, yard, returns, compliance)
 
-| Dimension | 3PL WM (Extensiv) | Armstrong WMS |
-|---|---|---|
-| **Primary market** | 3PL warehouses | Freight + fulfillment 3PLs |
-| **Strengths** | Purpose-built for 3PL, billing module, integrations | Dual-mode, modern stack, self-hosted option |
-| **Weaknesses** | No freight forwarding, aging platform | Early stage |
-| **Pricing** | $500-$2K+/month | Self-hosted |
-| **Client billing** | Built-in activity-based billing | Planned (WMS → NetSuite bridge) |
+### Grasshopper
 
-**Key takeaway:** 3PL Warehouse Manager is the closest 3PL-focused competitor. Their billing module is a key feature Armstrong needs to match.
+- **Strengths**: Combined WMS + TMS in one platform, freight management native
+- **Weaknesses**: Smaller market presence, limited fulfillment features
+- **Ramola gap**: TMS integration (LTL/FTL shipment management)
+- **Ramola advantage**: Deeper WMS features, modern stack, multi-tenant
 
----
+## Summary: Where Ramola Wins and Loses
 
-## Armstrong's Competitive Position
+### Wins Against Every Competitor
 
-```
-                        FREIGHT/CUSTOMS DEPTH
-                              ▲
-                              │
-                    Magaya ●  │
-                              │
-                              │  ● Armstrong WMS
-                              │    (target position)
-                              │
-               ───────────────┼──────────────────► FULFILLMENT / DTC
-                              │
-             3PL WM (Extensiv)│●
-                              │        ● Logiwa
-                              │
-                NetSuite WMS ●│
-                              │
-```
+- Unified freight + fulfillment (no one else does both at mid-market)
+- Modern stack (Next.js/React vs legacy .NET/Java)
+- Real multi-tenant isolation (schema-per-tenant)
+- Self-hosted option (Docker Compose, $20/mo Hetzner vs $500+/mo SaaS)
+- Operator PWA with offline support
 
-Armstrong's unique position: **the only platform that covers both freight-depth (Magaya territory) and fulfillment-breadth (Logiwa territory)** for 3PL operators who do both.
+### Loses To Specific Competitors On
 
-## Target Customer Profile
-
-- 3PL operators with 1-10 warehouse facilities
-- Handle both freight (containers, pallets, BOL-based receiving) and fulfillment (DTC, B2C orders)
-- Currently using Magaya, legacy WMS, or spreadsheets
-- Want modern UI, lower cost, and integrated fulfillment
-- Already on or planning to adopt NetSuite for financials
-- Need multi-client inventory segregation and activity-based billing
+| We Lose On               | Who Beats Us                   |
+| ------------------------ | ------------------------------ |
+| Billing ops maturity     | Extensiv                       |
+| Customs/freight depth    | Magaya                         |
+| Marketplace breadth      | Logiwa, Extensiv, ShipHero     |
+| Optimization/AI          | Manhattan, Blue Yonder, Oracle |
+| LPN/container tracking   | SAP, Manhattan, Oracle         |
+| Voice picking            | Korber, Manhattan              |
+| Multi-warehouse          | Oracle, ShipHero, Logiwa       |
+| GS1/SSCC compliance      | SAP, Manhattan                 |
+| Report export/scheduling | All of them                    |
+| Automation/WCS execution | SAP, Manhattan, Korber         |
