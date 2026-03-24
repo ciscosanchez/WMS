@@ -19,8 +19,8 @@ export async function getReceivingStats() {
       where: { status: "completed", completedDate: { gte: monthStart } },
     }),
     db.receivingTransaction.aggregate({
-      where: { createdAt: { gte: monthStart } },
-      _sum: { qty: true },
+      where: { receivedAt: { gte: monthStart } },
+      _sum: { quantity: true },
       _count: { id: true },
     }),
     db.receivingDiscrepancy.count({
@@ -46,7 +46,7 @@ export async function getReceivingStats() {
     clients.map((c: { id: string; code: string }) => [c.id, c.code])
   );
 
-  const totalReceived = receivedAgg._sum.qty ?? 0;
+  const totalReceived = receivedAgg._sum.quantity ?? 0;
   const totalTransactions = receivedAgg._count.id ?? 0;
   const discrepancyRate =
     totalTransactions > 0
@@ -211,7 +211,7 @@ export async function getMovementAnalytics() {
   const moves = await db.inventoryTransaction.findMany({
     where: {
       type: "move",
-      createdAt: { gte: sevenDaysAgo },
+      performedAt: { gte: sevenDaysAgo },
     },
     select: {
       id: true,
@@ -219,9 +219,9 @@ export async function getMovementAnalytics() {
       fromBin: { select: { barcode: true } },
       toBin: { select: { barcode: true } },
       quantity: true,
-      createdAt: true,
+      performedAt: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { performedAt: "desc" },
     take: 500,
   });
 
@@ -269,14 +269,14 @@ export async function getMovementAnalytics() {
   const dayLabels = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), 6 - i), "EEE"));
   const dayMap: Record<string, number> = Object.fromEntries(dayLabels.map((d) => [d, 0]));
   for (const m of moves) {
-    const label = format(new Date((m as { createdAt: Date }).createdAt), "EEE");
+    const label = format(new Date((m as { performedAt: Date }).performedAt), "EEE");
     if (label in dayMap) dayMap[label] = (dayMap[label] ?? 0) + 1;
   }
   const movesPerDay = dayLabels.map((d) => ({ name: d, value: dayMap[d] ?? 0 }));
 
   // MTD totals
   const mtdMoves = await db.inventoryTransaction.count({
-    where: { type: "move", createdAt: { gte: monthStart } },
+    where: { type: "move", performedAt: { gte: monthStart } },
   });
 
   return {

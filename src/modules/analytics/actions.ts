@@ -100,9 +100,9 @@ export async function getExceptionHeatmap() {
     db.inventoryAdjustment.findMany({
       select: { createdAt: true },
     }),
-    db.pickTaskLine.findMany({
-      where: { pickedQty: { lt: 0 } }, // placeholder: we filter post-query
-      select: { task: { select: { completedAt: true } }, quantity: true, pickedQty: true },
+    db.pickTask.findMany({
+      where: { status: "short_picked" },
+      select: { completedAt: true },
     }),
   ]);
 
@@ -123,10 +123,9 @@ export async function getExceptionHeatmap() {
     grid.adjustments[dow]++;
   }
 
-  // Short picks: pickedQty < requested quantity
-  for (const line of shortPicks) {
-    if (line.pickedQty < line.quantity && line.task?.completedAt) {
-      const dow = new Date(line.task.completedAt).getDay();
+  for (const sp of shortPicks) {
+    if (sp.completedAt) {
+      const dow = new Date(sp.completedAt).getDay();
       grid.shortPicks[dow]++;
     }
   }

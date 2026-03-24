@@ -36,7 +36,15 @@ export default async function SlottingDashboardPage() {
         <form
           action={async () => {
             "use server";
-            const result = await triggerSlottingRun(runs[0]?.warehouseId ?? "default");
+            const { requireTenantContext } = await import("@/lib/tenant/context");
+            const { tenant } = await requireTenantContext();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const wh = await (tenant.db as any).warehouse.findFirst({
+              where: { isActive: true },
+              select: { id: true },
+            });
+            if (!wh) return;
+            const result = await triggerSlottingRun(wh.id);
             if (!result.error) {
               revalidatePath("/inventory/slotting");
               redirect("/inventory/slotting");

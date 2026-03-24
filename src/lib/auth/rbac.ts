@@ -38,7 +38,11 @@ export const PERMISSION_LEVEL: Record<string, number> = {
   "shipping:read": 10,
   "shipping:write": 20,
   // Operator floor screens
+  "operator:read": 10,
   "operator:write": 20,
+  // Cross-dock
+  "cross_dock:read": 10,
+  "cross_dock:write": 30,
   // Returns / RMA
   "returns:read": 10,
   "returns:write": 20,
