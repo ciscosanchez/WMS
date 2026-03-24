@@ -250,12 +250,3 @@ export async function completeTaskTimeLog(
     // Never break the main workflow
   }
 }
-
-// ─── Re-exports from queries.ts (split for <500 line rule) ──────────────────
-export {
-  getLaborDashboard,
-  getShifts,
-  getLaborCostReport,
-  getLaborRates,
-  saveLaborRate,
-} from "./queries";

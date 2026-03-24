@@ -1,4 +1,4 @@
-import { getShifts } from "@/modules/labor/actions";
+import { getShifts } from "@/modules/labor/queries";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

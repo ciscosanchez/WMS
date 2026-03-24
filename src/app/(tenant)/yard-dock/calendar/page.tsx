@@ -1,4 +1,4 @@
-import { getCalendarAppointments } from "@/modules/yard-dock/actions";
+import { getCalendarAppointments } from "@/modules/yard-dock/yard-actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTranslations } from "next-intl/server";

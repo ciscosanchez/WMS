@@ -508,13 +508,3 @@ export async function driverCheckIn(
     return { error: err instanceof Error ? err.message : "Check-in failed" };
   }
 }
-
-// ─── Re-exports from yard-actions.ts (split for <500 line rule) ──────────────
-export {
-  getActiveYardVisits,
-  createYardVisit,
-  moveTrailer,
-  updateYardVisitStatus,
-  getCalendarAppointments,
-  getYardDockStats,
-} from "./yard-actions";

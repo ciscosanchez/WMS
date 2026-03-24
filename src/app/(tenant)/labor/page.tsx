@@ -1,4 +1,4 @@
-import { getLaborDashboard } from "@/modules/labor/actions";
+import { getLaborDashboard } from "@/modules/labor/queries";
 import { PageHeader } from "@/components/shared/page-header";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { BarChartCard, PieChartCard } from "@/components/shared/charts";

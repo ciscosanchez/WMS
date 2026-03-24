@@ -1,4 +1,5 @@
-import { getYardDockStats, getAppointments } from "@/modules/yard-dock/actions";
+import { getAppointments } from "@/modules/yard-dock/actions";
+import { getYardDockStats } from "@/modules/yard-dock/yard-actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
