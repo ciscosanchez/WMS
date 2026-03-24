@@ -6,10 +6,10 @@ import { requireTenantContext, type TenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import {
-  inboundShipmentSchema,
-  shipmentLineSchema,
+  inboundShipmentSchemaStatic as inboundShipmentSchema,
+  shipmentLineSchemaStatic as shipmentLineSchema,
   receiveLineSchema,
-  discrepancySchema,
+  discrepancySchemaStatic as discrepancySchema,
 } from "./schemas";
 import { mockShipments } from "@/lib/mock-data";
 import { captureEvent } from "@/modules/billing/capture";

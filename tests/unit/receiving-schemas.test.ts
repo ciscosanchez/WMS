@@ -1,8 +1,8 @@
 import {
-  inboundShipmentSchema,
-  shipmentLineSchema,
+  inboundShipmentSchemaStatic as inboundShipmentSchema,
+  shipmentLineSchemaStatic as shipmentLineSchema,
   receiveLineSchema,
-  discrepancySchema,
+  discrepancySchemaStatic as discrepancySchema,
 } from "@/modules/receiving/schemas";
 
 describe("Receiving schemas", () => {

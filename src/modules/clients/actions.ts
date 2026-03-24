@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit, diffChanges } from "@/lib/audit";
-import { clientSchema } from "./schemas";
+import { clientSchemaStatic as clientSchema } from "./schemas";
 import { mockClients } from "@/lib/mock-data";
 
 async function getContext() {

@@ -29,10 +29,12 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const t = useTranslations("tenant.products");
+  const tv = useTranslations("validation");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -48,7 +50,7 @@ export default function EditProductPage() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema(tv)),
   });
 
   useEffect(() => {

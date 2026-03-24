@@ -17,6 +17,7 @@ export default getRequestConfig(async () => {
       ...(await import(`./locales/${locale}/portal.json`)).default,
       ...(await import(`./locales/${locale}/platform.json`)).default,
       ...(await import(`./locales/${locale}/email.json`)).default,
+      ...(await import(`./locales/${locale}/validation.json`)).default,
     },
   };
 });

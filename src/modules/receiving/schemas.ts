@@ -1,26 +1,34 @@
 import { z } from "zod";
 
-export const inboundShipmentSchema = z.object({
-  clientId: z.string().min(1, "Client is required"),
-  carrier: z.string().optional().nullable(),
-  trackingNumber: z.string().optional().nullable(),
-  bolNumber: z.string().optional().nullable(),
-  poNumber: z.string().optional().nullable(),
-  expectedDate: z.preprocess(
-    (v) => (v === "" || v === undefined || v === null ? null : v),
-    z.coerce.date().optional().nullable()
-  ),
-  notes: z.string().optional().nullable(),
-});
+type T = (key: string) => string;
 
-export const shipmentLineSchema = z.object({
-  productId: z.string().min(1, "Product is required"),
-  expectedQty: z.coerce.number().int().min(1, "Quantity must be at least 1"),
-  uom: z.string().default("EA"),
-  lotNumber: z.string().optional().nullable(),
-  serialNumber: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+export function inboundShipmentSchema(t?: T) {
+  const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
+  return z.object({
+    clientId: z.string().min(1, msg("clientRequired", "Client is required")),
+    carrier: z.string().optional().nullable(),
+    trackingNumber: z.string().optional().nullable(),
+    bolNumber: z.string().optional().nullable(),
+    poNumber: z.string().optional().nullable(),
+    expectedDate: z.preprocess(
+      (v) => (v === "" || v === undefined || v === null ? null : v),
+      z.coerce.date().optional().nullable()
+    ),
+    notes: z.string().optional().nullable(),
+  });
+}
+
+export function shipmentLineSchema(t?: T) {
+  const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
+  return z.object({
+    productId: z.string().min(1, msg("productRequired", "Product is required")),
+    expectedQty: z.coerce.number().int().min(1, msg("quantityMin", "Quantity must be at least 1")),
+    uom: z.string().default("EA"),
+    lotNumber: z.string().optional().nullable(),
+    serialNumber: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+  });
+}
 
 export const receiveLineSchema = z.object({
   lineId: z.string().min(1),
@@ -32,15 +40,21 @@ export const receiveLineSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export const discrepancySchema = z.object({
-  shipmentId: z.string().min(1),
-  type: z.enum(["shortage", "overage", "damage"]),
-  description: z.string().min(1, "Description is required"),
-  productId: z.string().optional().nullable(),
-  expectedQty: z.coerce.number().int().optional().nullable(),
-  actualQty: z.coerce.number().int().optional().nullable(),
-});
+export function discrepancySchema(t?: T) {
+  const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
+  return z.object({
+    shipmentId: z.string().min(1),
+    type: z.enum(["shortage", "overage", "damage"]),
+    description: z.string().min(1, msg("descriptionRequired", "Description is required")),
+    productId: z.string().optional().nullable(),
+    expectedQty: z.coerce.number().int().optional().nullable(),
+    actualQty: z.coerce.number().int().optional().nullable(),
+  });
+}
 
-export type InboundShipmentFormData = z.input<typeof inboundShipmentSchema>;
-export type ShipmentLineFormData = z.input<typeof shipmentLineSchema>;
+export const inboundShipmentSchemaStatic = inboundShipmentSchema();
+export const shipmentLineSchemaStatic = shipmentLineSchema();
+export const discrepancySchemaStatic = discrepancySchema();
+export type InboundShipmentFormData = z.input<ReturnType<typeof inboundShipmentSchema>>;
+export type ShipmentLineFormData = z.input<ReturnType<typeof shipmentLineSchema>>;
 export type ReceiveLineFormData = z.input<typeof receiveLineSchema>;

@@ -1,6 +1,6 @@
-import { clientSchema } from "@/modules/clients/schemas";
-import { productSchema } from "@/modules/products/schemas";
-import { inboundShipmentSchema } from "@/modules/receiving/schemas";
+import { clientSchemaStatic as clientSchema } from "@/modules/clients/schemas";
+import { productSchemaStatic as productSchema } from "@/modules/products/schemas";
+import { inboundShipmentSchemaStatic as inboundShipmentSchema } from "@/modules/receiving/schemas";
 import { moveInventorySchema } from "@/modules/inventory/schemas";
 
 describe("Zod schemas", () => {

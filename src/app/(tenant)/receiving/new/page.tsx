@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 export default function NewShipmentPage() {
   const router = useRouter();
   const t = useTranslations("tenant.receiving");
+  const tv = useTranslations("validation");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [clients, setClients] = useState<any[]>([]);
 
@@ -31,7 +32,7 @@ export default function NewShipmentPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<InboundShipmentFormData>({
-    resolver: zodResolver(inboundShipmentSchema),
+    resolver: zodResolver(inboundShipmentSchema(tv)),
   });
 
   async function onSubmit(data: InboundShipmentFormData) {

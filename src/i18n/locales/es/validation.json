@@ -1,0 +1,21 @@
+{
+  "validation": {
+    "required": "{field} es obligatorio",
+    "minLength": "{field} debe tener al menos {min} caracteres",
+    "maxLength": "{field} debe tener como máximo {max} caracteres",
+    "minValue": "{field} debe ser al menos {min}",
+    "invalidEmail": "Dirección de correo inválida",
+    "invalidType": "Valor inválido",
+    "codeRequired": "El código es obligatorio",
+    "nameRequired": "El nombre es obligatorio",
+    "clientRequired": "El cliente es obligatorio",
+    "skuRequired": "El SKU es obligatorio",
+    "descriptionRequired": "La descripción es obligatoria",
+    "productRequired": "El producto es obligatorio",
+    "quantityMin": "La cantidad debe ser al menos 1",
+    "shipToNameRequired": "El nombre de envío es obligatorio",
+    "shipToAddressRequired": "La dirección de envío es obligatoria",
+    "shipToCityRequired": "La ciudad de envío es obligatoria",
+    "shipToZipRequired": "El código postal de envío es obligatorio"
+  }
+}

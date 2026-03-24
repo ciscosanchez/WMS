@@ -1,18 +1,26 @@
 import { z } from "zod";
 
-export const warehouseSchema = z.object({
-  code: z.string().min(1, "Code is required").max(20),
-  name: z.string().min(1, "Name is required").max(200),
-  address: z.string().max(500).optional().nullable(),
-  isActive: z.boolean().default(true),
-});
+type T = (key: string) => string;
 
-export const zoneSchema = z.object({
-  warehouseId: z.string().min(1),
-  code: z.string().min(1, "Code is required").max(20),
-  name: z.string().min(1, "Name is required").max(200),
-  type: z.enum(["storage", "staging", "dock", "quarantine"]).default("storage"),
-});
+export function warehouseSchema(t?: T) {
+  const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
+  return z.object({
+    code: z.string().min(1, msg("codeRequired", "Code is required")).max(20),
+    name: z.string().min(1, msg("nameRequired", "Name is required")).max(200),
+    address: z.string().max(500).optional().nullable(),
+    isActive: z.boolean().default(true),
+  });
+}
+
+export function zoneSchema(t?: T) {
+  const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
+  return z.object({
+    warehouseId: z.string().min(1),
+    code: z.string().min(1, msg("codeRequired", "Code is required")).max(20),
+    name: z.string().min(1, msg("nameRequired", "Name is required")).max(200),
+    type: z.enum(["storage", "staging", "dock", "quarantine"]).default("storage"),
+  });
+}
 
 export const bulkLocationSchema = z.object({
   warehouseId: z.string().min(1),
@@ -26,6 +34,8 @@ export const bulkLocationSchema = z.object({
   binType: z.enum(["standard", "bulk", "pick"]).default("standard"),
 });
 
-export type WarehouseFormData = z.input<typeof warehouseSchema>;
-export type ZoneFormData = z.input<typeof zoneSchema>;
+export const warehouseSchemaStatic = warehouseSchema();
+export const zoneSchemaStatic = zoneSchema();
+export type WarehouseFormData = z.input<ReturnType<typeof warehouseSchema>>;
+export type ZoneFormData = z.input<ReturnType<typeof zoneSchema>>;
 export type BulkLocationFormData = z.input<typeof bulkLocationSchema>;

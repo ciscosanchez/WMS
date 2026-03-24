@@ -17,12 +17,13 @@ import { useTranslations } from "next-intl";
 export default function NewClientPage() {
   const router = useRouter();
   const t = useTranslations("tenant.clients");
+  const tv = useTranslations("validation");
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
-    resolver: zodResolver(clientSchema),
+    resolver: zodResolver(clientSchema(tv)),
     defaultValues: { isActive: true },
   });
 

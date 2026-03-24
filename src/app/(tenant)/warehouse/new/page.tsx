@@ -15,13 +15,14 @@ import { useTranslations } from "next-intl";
 
 export default function NewWarehousePage() {
   const t = useTranslations("tenant.warehouse");
+  const tv = useTranslations("validation");
   const router = useRouter();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<WarehouseFormData>({
-    resolver: zodResolver(warehouseSchema),
+    resolver: zodResolver(warehouseSchema(tv)),
     defaultValues: { isActive: true },
   });
 

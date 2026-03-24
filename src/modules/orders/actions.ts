@@ -5,7 +5,7 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
-import { orderSchema, orderLineSchema } from "./schemas";
+import { orderSchemaStatic as orderSchema, orderLineSchemaStatic as orderLineSchema } from "./schemas";
 import { mockOrders } from "@/lib/mock-data";
 import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";

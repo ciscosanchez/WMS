@@ -1,4 +1,4 @@
-import { warehouseSchema, bulkLocationSchema } from "@/modules/warehouse/schemas";
+import { warehouseSchemaStatic as warehouseSchema, bulkLocationSchema } from "@/modules/warehouse/schemas";
 
 describe("Warehouse schemas", () => {
   describe("warehouseSchema", () => {

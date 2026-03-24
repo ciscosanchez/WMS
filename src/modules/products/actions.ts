@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit, diffChanges } from "@/lib/audit";
-import { productSchema } from "./schemas";
+import { productSchemaStatic as productSchema } from "./schemas";
 import { mockProducts } from "@/lib/mock-data";
 
 async function getContext() {

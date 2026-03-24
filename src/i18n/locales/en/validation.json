@@ -1,0 +1,21 @@
+{
+  "validation": {
+    "required": "{field} is required",
+    "minLength": "{field} must be at least {min} characters",
+    "maxLength": "{field} must be at most {max} characters",
+    "minValue": "{field} must be at least {min}",
+    "invalidEmail": "Invalid email address",
+    "invalidType": "Invalid value",
+    "codeRequired": "Code is required",
+    "nameRequired": "Name is required",
+    "clientRequired": "Client is required",
+    "skuRequired": "SKU is required",
+    "descriptionRequired": "Description is required",
+    "productRequired": "Product is required",
+    "quantityMin": "Quantity must be at least 1",
+    "shipToNameRequired": "Ship-to name is required",
+    "shipToAddressRequired": "Ship-to address is required",
+    "shipToCityRequired": "Ship-to city is required",
+    "shipToZipRequired": "Ship-to ZIP is required"
+  }
+}

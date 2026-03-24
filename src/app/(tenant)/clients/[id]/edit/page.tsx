@@ -28,6 +28,7 @@ import { useTranslations } from "next-intl";
 
 export default function EditClientPage() {
   const router = useRouter();
+  const tv = useTranslations("validation");
   const params = useParams<{ id: string }>();
   const t = useTranslations("tenant.clients");
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,7 @@ export default function EditClientPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
-    resolver: zodResolver(clientSchema),
+    resolver: zodResolver(clientSchema(tv)),
   });
 
   useEffect(() => {

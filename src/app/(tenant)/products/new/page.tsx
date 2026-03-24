@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 export default function NewProductPage() {
   const router = useRouter();
   const t = useTranslations("tenant.products");
+  const tv = useTranslations("validation");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [clients, setClients] = useState<any[]>([]);
 
@@ -34,7 +35,7 @@ export default function NewProductPage() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(productSchema(tv)),
     defaultValues: {
       baseUom: "EA",
       weightUnit: "lb",
