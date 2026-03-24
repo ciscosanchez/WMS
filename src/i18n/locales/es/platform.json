@@ -1,0 +1,34 @@
+{
+  "platform": {
+    "dashboard": {
+      "title": "Panel de plataforma",
+      "subtitle": "Resumen de todos los inquilinos y métricas de la plataforma",
+      "activeTenants": "Inquilinos activos",
+      "activeTenantsDesc": "Aprovisionados y activos",
+      "totalUsers": "Total de usuarios",
+      "totalUsersDesc": "En todos los inquilinos"
+    },
+    "tenants": {
+      "title": "Inquilinos",
+      "subtitle": "Gestionar todos los inquilinos de la plataforma",
+      "addTenant": "Agregar inquilino",
+      "createTenant": "Crear inquilino",
+      "createTenantDesc": "Aprovisionar un nuevo inquilino en la plataforma",
+      "tenantDetails": "Detalles del inquilino",
+      "tenantName": "Nombre del inquilino",
+      "slug": "Slug",
+      "slugDesc": "Se usa en URLs y como prefijo del esquema de base de datos. Se genera automáticamente del nombre.",
+      "plan": "Plan",
+      "starter": "Starter — $99/mes",
+      "professional": "Professional — $299/mes",
+      "enterprise": "Enterprise — $799/mes",
+      "schemaCreation": "Creación de esquema",
+      "schemaDesc": "El aprovisionamiento creará el esquema PostgreSQL",
+      "schemaDescSuffix": "y ejecutará todas las migraciones. Esto toma unos segundos.",
+      "provisionTenant": "Aprovisionar inquilino",
+      "provisioning": "Aprovisionando...",
+      "tenantProvisioned": "Inquilino aprovisionado",
+      "provisioningFailed": "Error al aprovisionar"
+    }
+  }
+}

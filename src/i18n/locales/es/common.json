@@ -30,6 +30,14 @@
     "highContrastOff": "Alto contraste: DESACTIVADO",
     "toggleHighContrast": "Alternar modo de alto contraste",
     "floor": "Piso",
-    "languageChangeOffline": "Cambio de idioma requiere conexión"
+    "languageChangeOffline": "Cambio de idioma requiere conexión",
+    "offline": "Sin conexión — las acciones se están encolando",
+    "syncing": "Sincronizando {count} acción(es) en cola...",
+    "pendingSync": "{count} acción(es) pendiente(s) de sincronizar",
+    "syncNow": "Sincronizar ahora",
+    "noResultsTable": "Sin resultados.",
+    "rows": "{count} fila(s)",
+    "pageOf": "Página {page} de {total}",
+    "searchPlaceholder": "Buscar..."
   }
 }

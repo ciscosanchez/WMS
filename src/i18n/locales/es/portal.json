@@ -1,0 +1,59 @@
+{
+  "portal": {
+    "inventory": {
+      "title": "Mi inventario",
+      "subtitle": "Niveles de stock actuales para tus productos",
+      "noInventory": "Sin inventario registrado aún"
+    },
+    "orders": {
+      "title": "Mis órdenes",
+      "subtitle": "Ver y gestionar tus órdenes de cumplimiento",
+      "placeOrder": "Crear orden",
+      "noOrders": "Sin órdenes aún",
+      "newOrder": "Crear orden",
+      "newOrderDesc": "Crear una nueva orden de cumplimiento",
+      "back": "Atrás"
+    },
+    "shipments": {
+      "title": "Envíos",
+      "subtitle": "Rastrear envíos de tus órdenes",
+      "noShipments": "Sin envíos aún"
+    },
+    "billing": {
+      "title": "Facturación",
+      "subtitle": "Facturas y cargos de tu cuenta",
+      "noBillingData": "Sin datos de facturación disponibles",
+      "outstandingBalance": "Saldo pendiente",
+      "outstandingBalanceDesc": "Facturas sin pagar",
+      "lastInvoice": "Última factura",
+      "noInvoices": "Sin facturas aún",
+      "storageMtd": "Cargos de almacenamiento (mes actual)",
+      "storageMtdDesc": "Almacenamiento del mes actual",
+      "handlingMtd": "Cargos de manejo (mes actual)",
+      "handlingMtdDesc": "Manejo del mes actual",
+      "invoiceNumber": "Factura #",
+      "period": "Período",
+      "amount": "Monto",
+      "status": "Estado",
+      "dueDate": "Fecha de vencimiento",
+      "actions": "Acciones",
+      "pdf": "PDF",
+      "noInvoicesGenerated": "Sin facturas generadas aún."
+    },
+    "reports": {
+      "title": "Reportes",
+      "subtitle": "Descargar reportes de tu cuenta",
+      "inventorySnapshot": "Estado del inventario",
+      "inventorySnapshotDesc": "Cantidades actuales disponibles, asignadas y en mano para todos tus productos. Incluye detalles de ubicación.",
+      "activitySummary": "Resumen de actividad",
+      "activitySummaryDesc": "Todas las órdenes y envíos incluyendo estados, fechas y números de rastreo.",
+      "billingDetail": "Detalle de facturación",
+      "billingDetailDesc": "Facturas detalladas con montos, períodos y estado de pago.",
+      "shipmentHistory": "Historial de envíos",
+      "shipmentHistoryDesc": "Historial completo de todos los envíos con transportista, rastreo y estado de entrega.",
+      "preparing": "Preparando…",
+      "downloadCsv": "Descargar CSV",
+      "failedDownload": "Error al descargar"
+    }
+  }
+}

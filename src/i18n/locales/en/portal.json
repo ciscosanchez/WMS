@@ -1,0 +1,59 @@
+{
+  "portal": {
+    "inventory": {
+      "title": "My Inventory",
+      "subtitle": "Current stock levels for your products",
+      "noInventory": "No inventory on file yet"
+    },
+    "orders": {
+      "title": "My Orders",
+      "subtitle": "View and manage your fulfillment orders",
+      "placeOrder": "Place Order",
+      "noOrders": "No orders yet",
+      "newOrder": "Place Order",
+      "newOrderDesc": "Create a new fulfillment order",
+      "back": "Back"
+    },
+    "shipments": {
+      "title": "Shipments",
+      "subtitle": "Track shipments for your orders",
+      "noShipments": "No shipments yet"
+    },
+    "billing": {
+      "title": "Billing",
+      "subtitle": "Invoices and charges for your account",
+      "noBillingData": "No billing data available",
+      "outstandingBalance": "Outstanding Balance",
+      "outstandingBalanceDesc": "Unpaid invoices",
+      "lastInvoice": "Last Invoice",
+      "noInvoices": "No invoices yet",
+      "storageMtd": "Storage Charges (MTD)",
+      "storageMtdDesc": "Current month storage",
+      "handlingMtd": "Handling Charges (MTD)",
+      "handlingMtdDesc": "Current month handling",
+      "invoiceNumber": "Invoice #",
+      "period": "Period",
+      "amount": "Amount",
+      "status": "Status",
+      "dueDate": "Due Date",
+      "actions": "Actions",
+      "pdf": "PDF",
+      "noInvoicesGenerated": "No invoices generated yet."
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Download reports for your account",
+      "inventorySnapshot": "Inventory Snapshot",
+      "inventorySnapshotDesc": "Current on-hand, allocated, and available quantities for all your products. Includes location details.",
+      "activitySummary": "Activity Summary",
+      "activitySummaryDesc": "All orders and shipments including statuses, dates, and tracking numbers.",
+      "billingDetail": "Billing Detail",
+      "billingDetailDesc": "Itemized invoices with amounts, periods, and payment status.",
+      "shipmentHistory": "Shipment History",
+      "shipmentHistoryDesc": "Complete history of all shipments with carrier, tracking, and delivery status.",
+      "preparing": "Preparing…",
+      "downloadCsv": "Download CSV",
+      "failedDownload": "Failed to download"
+    }
+  }
+}

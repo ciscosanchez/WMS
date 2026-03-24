@@ -1,0 +1,34 @@
+{
+  "platform": {
+    "dashboard": {
+      "title": "Platform Dashboard",
+      "subtitle": "Overview of all tenants and platform metrics",
+      "activeTenants": "Active Tenants",
+      "activeTenantsDesc": "Provisioned and active",
+      "totalUsers": "Total Users",
+      "totalUsersDesc": "Across all tenants"
+    },
+    "tenants": {
+      "title": "Tenants",
+      "subtitle": "Manage all tenants on the platform",
+      "addTenant": "Add Tenant",
+      "createTenant": "Create Tenant",
+      "createTenantDesc": "Provision a new tenant on the platform",
+      "tenantDetails": "Tenant Details",
+      "tenantName": "Tenant Name",
+      "slug": "Slug",
+      "slugDesc": "Used in URLs and as the database schema prefix. Auto-generated from the name.",
+      "plan": "Plan",
+      "starter": "Starter — $99/mo",
+      "professional": "Professional — $299/mo",
+      "enterprise": "Enterprise — $799/mo",
+      "schemaCreation": "Schema Creation",
+      "schemaDesc": "Provisioning will create PostgreSQL schema",
+      "schemaDescSuffix": "and run all migrations. This takes a few seconds.",
+      "provisionTenant": "Provision Tenant",
+      "provisioning": "Provisioning...",
+      "tenantProvisioned": "Tenant provisioned",
+      "provisioningFailed": "Provisioning failed"
+    }
+  }
+}

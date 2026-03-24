@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ export function SetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") ?? "";
+  const t = useTranslations("auth.setPassword");
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -21,11 +23,11 @@ export function SetPasswordForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("minLength"));
       return;
     }
     if (password !== confirm) {
-      toast.error("Passwords do not match");
+      toast.error(t("mismatch"));
       return;
     }
 
@@ -35,11 +37,11 @@ export function SetPasswordForm() {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Password set successfully! You can now log in.");
+        toast.success(t("success"));
         router.push("/login");
       }
     } catch {
-      toast.error("Failed to set password");
+      toast.error(t("failed"));
     } finally {
       setSubmitting(false);
     }
@@ -50,7 +52,7 @@ export function SetPasswordForm() {
       <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Invalid link. Please use the link from your invitation email.</p>
+            <p className="text-center text-muted-foreground">{t("invalidLink")}</p>
           </CardContent>
         </Card>
       </div>
@@ -61,36 +63,36 @@ export function SetPasswordForm() {
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Set Your Password</CardTitle>
-          <CardDescription>Choose a password for your Ramola WMS account.</CardDescription>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder={t("passwordPlaceholder")}
                 minLength={8}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm">Confirm Password</Label>
+              <Label htmlFor="confirm">{t("confirmPassword")}</Label>
               <Input
                 id="confirm"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repeat password"
+                placeholder={t("confirmPlaceholder")}
                 required
               />
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Setting password..." : "Set Password"}
+              {submitting ? t("settingPassword") : t("setPassword")}
             </Button>
           </form>
         </CardContent>

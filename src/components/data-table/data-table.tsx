@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -37,13 +38,14 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
-  searchPlaceholder = "Search...",
+  searchPlaceholder,
   pageSize = 20,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const t = useTranslations("common");
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -75,7 +77,7 @@ export function DataTable<TData, TValue>({
           <div className="relative max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t("searchPlaceholder")}
               value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
               onChange={(e) => table.getColumn(searchKey)?.setFilterValue(e.target.value)}
               className="pl-8"
@@ -113,7 +115,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {t("noResultsTable")}
                 </TableCell>
               </TableRow>
             )}
@@ -123,7 +125,7 @@ export function DataTable<TData, TValue>({
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} row(s)
+          {t("rows", { count: table.getFilteredRowModel().rows.length })}
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -135,7 +137,7 @@ export function DataTable<TData, TValue>({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            {t("pageOf", { page: table.getState().pagination.pageIndex + 1, total: table.getPageCount() })}
           </span>
           <Button
             variant="outline"

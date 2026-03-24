@@ -30,6 +30,14 @@
     "highContrastOff": "High contrast: OFF",
     "toggleHighContrast": "Toggle high contrast mode",
     "floor": "Floor",
-    "languageChangeOffline": "Language change requires network connection"
+    "languageChangeOffline": "Language change requires network connection",
+    "offline": "Offline — actions are being queued",
+    "syncing": "Syncing {count} queued action(s)...",
+    "pendingSync": "{count} action(s) pending sync",
+    "syncNow": "Sync now",
+    "noResultsTable": "No results.",
+    "rows": "{count} row(s)",
+    "pageOf": "Page {page} of {total}",
+    "searchPlaceholder": "Search..."
   }
 }
