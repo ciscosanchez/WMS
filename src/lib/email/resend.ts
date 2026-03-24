@@ -2,8 +2,12 @@
  * Email sender via Resend.
  * Set RESEND_API_KEY in env to enable. If not set, emails are skipped
  * and the caller receives a warning — useful for local dev.
+ *
+ * All email text is loaded from i18n translation files (email.json)
+ * so emails are sent in the tenant's locale.
  */
 import { Resend } from "resend";
+import { getServerTranslations } from "@/i18n/server";
 
 function getClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
@@ -18,6 +22,8 @@ export interface SendResult {
   warning?: string;
 }
 
+const NO_KEY: SendResult = { sent: false, warning: "RESEND_API_KEY not set — email skipped." };
+
 export async function sendUserInvite(opts: {
   to: string;
   name: string;
@@ -25,6 +31,7 @@ export async function sendUserInvite(opts: {
   role: string;
   tempPassword: string;
   loginUrl: string;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) {
@@ -34,22 +41,23 @@ export async function sendUserInvite(opts: {
     };
   }
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
   const roleLabel = opts.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `You've been invited to ${opts.tenantName} on Ramola WMS`,
+    subject: t("invite.subject", { tenantName: opts.tenantName }),
     html: `
-      <p>Hi ${opts.name},</p>
-      <p>You've been invited to <strong>${opts.tenantName}</strong> on Ramola WMS as a <strong>${roleLabel}</strong>.</p>
-      <p>Your temporary credentials:</p>
+      <p>${t("invite.greeting", { name: opts.name })}</p>
+      <p>${t("invite.body", { tenantName: opts.tenantName, role: roleLabel })}</p>
+      <p>${t("invite.credentials")}</p>
       <ul>
-        <li><strong>Email:</strong> ${opts.to}</li>
-        <li><strong>Temporary password:</strong> <code>${opts.tempPassword}</code></li>
+        <li><strong>${t("invite.emailLabel")}</strong> ${opts.to}</li>
+        <li><strong>${t("invite.tempPasswordLabel")}</strong> <code>${opts.tempPassword}</code></li>
       </ul>
-      <p><a href="${opts.loginUrl}">Log in and change your password →</a></p>
-      <p style="color:#888;font-size:12px;">This invite was sent from Ramola WMS. If you weren't expecting this, you can ignore it.</p>
+      <p><a href="${opts.loginUrl}">${t("invite.loginLink")}</a></p>
+      <p style="color:#888;font-size:12px;">${t("invite.footer")}</p>
     `,
   });
 
@@ -62,24 +70,26 @@ export async function sendPasswordSetLink(opts: {
   tenantName: string;
   role: string;
   setPasswordUrl: string;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) {
     return { sent: false, warning: "RESEND_API_KEY not set — email skipped." };
   }
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
   const roleLabel = opts.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Set your password for ${opts.tenantName} on Ramola WMS`,
+    subject: t("setPassword.subject", { tenantName: opts.tenantName }),
     html: `
-      <p>Hi ${opts.name},</p>
-      <p>You've been invited to <strong>${opts.tenantName}</strong> on Ramola WMS as a <strong>${roleLabel}</strong>.</p>
-      <p>Click the link below to set your password:</p>
-      <p><a href="${opts.setPasswordUrl}" style="display:inline-block;padding:10px 24px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Set Your Password</a></p>
-      <p style="color:#888;font-size:12px;">This link expires in 48 hours. If you didn't expect this invitation, you can ignore it.</p>
+      <p>${t("setPassword.greeting", { name: opts.name })}</p>
+      <p>${t("setPassword.body", { tenantName: opts.tenantName, role: roleLabel })}</p>
+      <p>${t("setPassword.instruction")}</p>
+      <p><a href="${opts.setPasswordUrl}" style="display:inline-block;padding:10px 24px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">${t("setPassword.buttonText")}</a></p>
+      <p style="color:#888;font-size:12px;">${t("setPassword.footer")}</p>
     `,
   });
 
@@ -88,24 +98,25 @@ export async function sendPasswordSetLink(opts: {
 
 // ── Warehouse notification emails ───────────────────────────────────────────
 
-const NO_KEY: SendResult = { sent: false, warning: "RESEND_API_KEY not set — email skipped." };
-
 export async function sendShipmentArrived(opts: {
   to: string;
   shipmentNumber: string;
   clientName: string;
   expectedUnits: number;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) return NO_KEY;
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Shipment ${opts.shipmentNumber} has arrived`,
+    subject: t("shipmentArrived.subject", { shipmentNumber: opts.shipmentNumber }),
     html: `
-      <p>Shipment <strong>${opts.shipmentNumber}</strong> from <strong>${opts.clientName}</strong> has arrived at the dock.</p>
-      <p><strong>${opts.expectedUnits}</strong> units expected.</p>
+      <p>${t("shipmentArrived.body", { shipmentNumber: opts.shipmentNumber, clientName: opts.clientName })}</p>
+      <p>${t("shipmentArrived.unitsExpected", { count: opts.expectedUnits })}</p>
       <p style="color:#888;font-size:12px;">Ramola WMS</p>
     `,
   });
@@ -117,19 +128,22 @@ export async function sendReceivingCompleted(opts: {
   shipmentNumber: string;
   totalUnits: number;
   totalCartons: number;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) return NO_KEY;
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Receiving complete: ${opts.shipmentNumber}`,
+    subject: t("receivingCompleted.subject", { shipmentNumber: opts.shipmentNumber }),
     html: `
-      <p>Shipment <strong>${opts.shipmentNumber}</strong> receiving is complete.</p>
+      <p>${t("receivingCompleted.body", { shipmentNumber: opts.shipmentNumber })}</p>
       <ul>
-        <li><strong>${opts.totalUnits}</strong> units received</li>
-        <li><strong>${opts.totalCartons}</strong> cartons scanned</li>
+        <li>${t("receivingCompleted.unitsReceived", { count: opts.totalUnits })}</li>
+        <li>${t("receivingCompleted.cartonsScanned", { count: opts.totalCartons })}</li>
       </ul>
       <p style="color:#888;font-size:12px;">Ramola WMS</p>
     `,
@@ -142,19 +156,22 @@ export async function sendOrderShipped(opts: {
   orderNumber: string;
   trackingNumber: string;
   carrier: string;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) return NO_KEY;
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Order ${opts.orderNumber} shipped via ${opts.carrier}`,
+    subject: t("orderShipped.subject", { orderNumber: opts.orderNumber, carrier: opts.carrier }),
     html: `
-      <p>Order <strong>${opts.orderNumber}</strong> has been shipped.</p>
+      <p>${t("orderShipped.body", { orderNumber: opts.orderNumber })}</p>
       <ul>
-        <li><strong>Carrier:</strong> ${opts.carrier}</li>
-        <li><strong>Tracking:</strong> ${opts.trackingNumber}</li>
+        <li><strong>${t("orderShipped.carrier")}</strong> ${opts.carrier}</li>
+        <li><strong>${t("orderShipped.tracking")}</strong> ${opts.trackingNumber}</li>
       </ul>
       <p style="color:#888;font-size:12px;">Ramola WMS</p>
     `,
@@ -168,23 +185,26 @@ export async function sendOrderShippedCustomer(opts: {
   orderNumber: string;
   trackingNumber: string;
   carrier: string;
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) return NO_KEY;
 
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Your order ${opts.orderNumber} has shipped!`,
+    subject: t("orderShippedCustomer.subject", { orderNumber: opts.orderNumber }),
     html: `
-      <p>Hi ${opts.customerName},</p>
-      <p>Your order <strong>${opts.orderNumber}</strong> has been shipped!</p>
+      <p>${t("orderShippedCustomer.greeting", { name: opts.customerName })}</p>
+      <p>${t("orderShippedCustomer.body", { orderNumber: opts.orderNumber })}</p>
       <ul>
-        <li><strong>Carrier:</strong> ${opts.carrier}</li>
-        <li><strong>Tracking number:</strong> ${opts.trackingNumber}</li>
+        <li><strong>${t("orderShippedCustomer.carrier")}</strong> ${opts.carrier}</li>
+        <li><strong>${t("orderShippedCustomer.tracking")}</strong> ${opts.trackingNumber}</li>
       </ul>
-      <p>You can track your package using the tracking number above on the carrier's website.</p>
-      <p style="color:#888;font-size:12px;">Shipped by Ramola WMS</p>
+      <p>${t("orderShippedCustomer.trackingHelp")}</p>
+      <p style="color:#888;font-size:12px;">${t("orderShippedCustomer.footer")}</p>
     `,
   });
   return { sent: true };
@@ -193,9 +213,12 @@ export async function sendOrderShippedCustomer(opts: {
 export async function sendLowStockAlert(opts: {
   to: string;
   products: { sku: string; name: string; available: number; minStock: number }[];
+  locale?: string;
 }): Promise<SendResult> {
   const client = getClient();
   if (!client) return NO_KEY;
+
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
 
   const rows = opts.products
     .map((p) => `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`)
@@ -204,11 +227,11 @@ export async function sendLowStockAlert(opts: {
   await client.emails.send({
     from: FROM,
     to: opts.to,
-    subject: `Low stock alert: ${opts.products.length} product(s) below minimum`,
+    subject: t("lowStock.subject", { count: opts.products.length }),
     html: `
-      <p><strong>${opts.products.length}</strong> product(s) are below their minimum stock level:</p>
+      <p>${t("lowStock.body", { count: opts.products.length })}</p>
       <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
-        <tr style="background:#f5f5f5"><th>SKU</th><th>Name</th><th>Available</th><th>Min Stock</th></tr>
+        <tr style="background:#f5f5f5"><th>${t("lowStock.sku")}</th><th>${t("lowStock.name")}</th><th>${t("lowStock.available")}</th><th>${t("lowStock.minStock")}</th></tr>
         ${rows}
       </table>
       <p style="color:#888;font-size:12px;">Ramola WMS</p>

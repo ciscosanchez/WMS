@@ -39,5 +39,32 @@
     "rows": "{count} row(s)",
     "pageOf": "Page {page} of {total}",
     "searchPlaceholder": "Search..."
+  },
+  "sidebar": {
+    "overview": "Overview",
+    "dashboard": "Dashboard",
+    "operations": "Operations",
+    "inbound": "Inbound",
+    "inboundShipments": "Inbound Shipments",
+    "discrepancies": "Discrepancies",
+    "fulfillment": "Fulfillment",
+    "orders": "Orders",
+    "picking": "Picking",
+    "shipping": "Shipping",
+    "inventory": "Inventory",
+    "stockBrowser": "Stock Browser",
+    "putaway": "Putaway",
+    "movements": "Movements",
+    "adjustments": "Adjustments",
+    "cycleCounts": "Cycle Counts",
+    "setup": "Setup",
+    "locations": "Locations",
+    "clients": "Clients",
+    "products": "Products",
+    "channels": "Channels",
+    "system": "System",
+    "reports": "Reports",
+    "settings": "Settings",
+    "floorApp": "Floor App"
   }
 }

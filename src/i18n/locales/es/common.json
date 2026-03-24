@@ -39,5 +39,32 @@
     "rows": "{count} fila(s)",
     "pageOf": "Página {page} de {total}",
     "searchPlaceholder": "Buscar..."
+  },
+  "sidebar": {
+    "overview": "Resumen",
+    "dashboard": "Panel",
+    "operations": "Operaciones",
+    "inbound": "Entrante",
+    "inboundShipments": "Envíos entrantes",
+    "discrepancies": "Discrepancias",
+    "fulfillment": "Cumplimiento",
+    "orders": "Órdenes",
+    "picking": "Recolección",
+    "shipping": "Envíos",
+    "inventory": "Inventario",
+    "stockBrowser": "Explorador de stock",
+    "putaway": "Almacenamiento",
+    "movements": "Movimientos",
+    "adjustments": "Ajustes",
+    "cycleCounts": "Conteos cíclicos",
+    "setup": "Configuración",
+    "locations": "Ubicaciones",
+    "clients": "Clientes",
+    "products": "Productos",
+    "channels": "Canales",
+    "system": "Sistema",
+    "reports": "Reportes",
+    "settings": "Configuración",
+    "floorApp": "App de piso"
   }
 }

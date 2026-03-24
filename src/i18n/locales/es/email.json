@@ -1,0 +1,56 @@
+{
+  "email": {
+    "invite": {
+      "subject": "Has sido invitado a {tenantName} en Ramola WMS",
+      "greeting": "Hola {name},",
+      "body": "Has sido invitado a <strong>{tenantName}</strong> en Ramola WMS como <strong>{role}</strong>.",
+      "credentials": "Tus credenciales temporales:",
+      "emailLabel": "Correo:",
+      "tempPasswordLabel": "Contraseña temporal:",
+      "loginLink": "Inicia sesión y cambia tu contraseña →",
+      "footer": "Esta invitación fue enviada desde Ramola WMS. Si no la esperabas, puedes ignorarla."
+    },
+    "setPassword": {
+      "subject": "Establece tu contraseña para {tenantName} en Ramola WMS",
+      "greeting": "Hola {name},",
+      "body": "Has sido invitado a <strong>{tenantName}</strong> en Ramola WMS como <strong>{role}</strong>.",
+      "instruction": "Haz clic en el enlace de abajo para establecer tu contraseña:",
+      "buttonText": "Establecer contraseña",
+      "footer": "Este enlace expira en 48 horas. Si no esperabas esta invitación, puedes ignorarla."
+    },
+    "shipmentArrived": {
+      "subject": "El envío {shipmentNumber} ha llegado",
+      "body": "El envío <strong>{shipmentNumber}</strong> de <strong>{clientName}</strong> ha llegado al muelle.",
+      "unitsExpected": "<strong>{count}</strong> unidades esperadas."
+    },
+    "receivingCompleted": {
+      "subject": "Recepción completa: {shipmentNumber}",
+      "body": "La recepción del envío <strong>{shipmentNumber}</strong> está completa.",
+      "unitsReceived": "<strong>{count}</strong> unidades recibidas",
+      "cartonsScanned": "<strong>{count}</strong> cajas escaneadas"
+    },
+    "orderShipped": {
+      "subject": "Orden {orderNumber} enviada vía {carrier}",
+      "body": "La orden <strong>{orderNumber}</strong> ha sido enviada.",
+      "carrier": "Transportista:",
+      "tracking": "Rastreo:"
+    },
+    "orderShippedCustomer": {
+      "subject": "¡Tu orden {orderNumber} ha sido enviada!",
+      "greeting": "Hola {name},",
+      "body": "¡Tu orden <strong>{orderNumber}</strong> ha sido enviada!",
+      "carrier": "Transportista:",
+      "tracking": "Número de rastreo:",
+      "trackingHelp": "Puedes rastrear tu paquete usando el número de rastreo de arriba en el sitio web del transportista.",
+      "footer": "Enviado por Ramola WMS"
+    },
+    "lowStock": {
+      "subject": "Alerta de stock bajo: {count} producto(s) por debajo del mínimo",
+      "body": "<strong>{count}</strong> producto(s) están por debajo de su nivel mínimo de stock:",
+      "sku": "SKU",
+      "name": "Nombre",
+      "available": "Disponible",
+      "minStock": "Stock mínimo"
+    }
+  }
+}

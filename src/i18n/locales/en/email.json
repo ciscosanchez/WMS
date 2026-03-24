@@ -1,0 +1,56 @@
+{
+  "email": {
+    "invite": {
+      "subject": "You've been invited to {tenantName} on Ramola WMS",
+      "greeting": "Hi {name},",
+      "body": "You've been invited to <strong>{tenantName}</strong> on Ramola WMS as a <strong>{role}</strong>.",
+      "credentials": "Your temporary credentials:",
+      "emailLabel": "Email:",
+      "tempPasswordLabel": "Temporary password:",
+      "loginLink": "Log in and change your password →",
+      "footer": "This invite was sent from Ramola WMS. If you weren't expecting this, you can ignore it."
+    },
+    "setPassword": {
+      "subject": "Set your password for {tenantName} on Ramola WMS",
+      "greeting": "Hi {name},",
+      "body": "You've been invited to <strong>{tenantName}</strong> on Ramola WMS as a <strong>{role}</strong>.",
+      "instruction": "Click the link below to set your password:",
+      "buttonText": "Set Your Password",
+      "footer": "This link expires in 48 hours. If you didn't expect this invitation, you can ignore it."
+    },
+    "shipmentArrived": {
+      "subject": "Shipment {shipmentNumber} has arrived",
+      "body": "Shipment <strong>{shipmentNumber}</strong> from <strong>{clientName}</strong> has arrived at the dock.",
+      "unitsExpected": "<strong>{count}</strong> units expected."
+    },
+    "receivingCompleted": {
+      "subject": "Receiving complete: {shipmentNumber}",
+      "body": "Shipment <strong>{shipmentNumber}</strong> receiving is complete.",
+      "unitsReceived": "<strong>{count}</strong> units received",
+      "cartonsScanned": "<strong>{count}</strong> cartons scanned"
+    },
+    "orderShipped": {
+      "subject": "Order {orderNumber} shipped via {carrier}",
+      "body": "Order <strong>{orderNumber}</strong> has been shipped.",
+      "carrier": "Carrier:",
+      "tracking": "Tracking:"
+    },
+    "orderShippedCustomer": {
+      "subject": "Your order {orderNumber} has shipped!",
+      "greeting": "Hi {name},",
+      "body": "Your order <strong>{orderNumber}</strong> has been shipped!",
+      "carrier": "Carrier:",
+      "tracking": "Tracking number:",
+      "trackingHelp": "You can track your package using the tracking number above on the carrier's website.",
+      "footer": "Shipped by Ramola WMS"
+    },
+    "lowStock": {
+      "subject": "Low stock alert: {count} product(s) below minimum",
+      "body": "<strong>{count}</strong> product(s) are below their minimum stock level:",
+      "sku": "SKU",
+      "name": "Name",
+      "available": "Available",
+      "minStock": "Min Stock"
+    }
+  }
+}

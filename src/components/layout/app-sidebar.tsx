@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Sidebar,
   SidebarContent,
@@ -36,59 +37,63 @@ import {
   Smartphone,
 } from "lucide-react";
 
-const navigation = [
+type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
+type NavGroup = { labelKey: string; items: NavItem[] };
+
+const navigation: NavGroup[] = [
   {
-    label: "Overview",
+    labelKey: "overview",
     items: [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Operations", href: "/operations", icon: Users },
+      { titleKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { titleKey: "operations", href: "/operations", icon: Users },
     ],
   },
   {
-    label: "Inbound",
+    labelKey: "inbound",
     items: [
-      { title: "Inbound Shipments", href: "/receiving", icon: PackageOpen },
-      { title: "Discrepancies", href: "/receiving/discrepancies", icon: AlertTriangle },
+      { titleKey: "inboundShipments", href: "/receiving", icon: PackageOpen },
+      { titleKey: "discrepancies", href: "/receiving/discrepancies", icon: AlertTriangle },
     ],
   },
   {
-    label: "Fulfillment",
+    labelKey: "fulfillment",
     items: [
-      { title: "Orders", href: "/orders", icon: ShoppingCart },
-      { title: "Picking", href: "/picking", icon: ScanLine },
-      { title: "Shipping", href: "/shipping", icon: Truck },
+      { titleKey: "orders", href: "/orders", icon: ShoppingCart },
+      { titleKey: "picking", href: "/picking", icon: ScanLine },
+      { titleKey: "shipping", href: "/shipping", icon: Truck },
     ],
   },
   {
-    label: "Inventory",
+    labelKey: "inventory",
     items: [
-      { title: "Stock Browser", href: "/inventory", icon: Boxes },
-      { title: "Putaway", href: "/inventory/putaway", icon: ArrowDownToLine },
-      { title: "Movements", href: "/inventory/movements", icon: ArrowLeftRight },
-      { title: "Adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
-      { title: "Cycle Counts", href: "/inventory/cycle-counts", icon: ListChecks },
+      { titleKey: "stockBrowser", href: "/inventory", icon: Boxes },
+      { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine },
+      { titleKey: "movements", href: "/inventory/movements", icon: ArrowLeftRight },
+      { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
+      { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks },
     ],
   },
   {
-    label: "Setup",
+    labelKey: "setup",
     items: [
-      { title: "Locations", href: "/warehouse", icon: MapPin },
-      { title: "Clients", href: "/clients", icon: Users },
-      { title: "Products", href: "/products", icon: Package },
-      { title: "Channels", href: "/channels", icon: Store },
+      { titleKey: "locations", href: "/warehouse", icon: MapPin },
+      { titleKey: "clients", href: "/clients", icon: Users },
+      { titleKey: "products", href: "/products", icon: Package },
+      { titleKey: "channels", href: "/channels", icon: Store },
     ],
   },
   {
-    label: "System",
+    labelKey: "system",
     items: [
-      { title: "Reports", href: "/reports", icon: BarChart3 },
-      { title: "Settings", href: "/settings", icon: Settings },
+      { titleKey: "reports", href: "/reports", icon: BarChart3 },
+      { titleKey: "settings", href: "/settings", icon: Settings },
     ],
   },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const t = useTranslations("sidebar");
 
   return (
     <Sidebar>
@@ -102,8 +107,8 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navigation.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+          <SidebarGroup key={group.labelKey}>
+            <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -113,7 +118,7 @@ export function AppSidebar() {
                       isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
                     >
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -127,7 +132,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton render={<Link href="/receive" />}>
               <Smartphone className="h-4 w-4" />
-              <span>Floor App</span>
+              <span>{t("floorApp")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
