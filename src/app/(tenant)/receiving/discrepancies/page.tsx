@@ -12,16 +12,15 @@ import { format } from "date-fns";
 import { getDiscrepancies } from "@/modules/receiving/actions";
 import { getTranslations } from "next-intl/server";
 
+type Discrepancy = Awaited<ReturnType<typeof getDiscrepancies>>[number];
+
 export default async function DiscrepanciesPage() {
   const t = await getTranslations("tenant.receiving");
   const discrepancies = await getDiscrepancies();
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("discrepancies")}
-        description={t("discrepanciesDesc")}
-      />
+      <PageHeader title={t("discrepancies")} description={t("discrepanciesDesc")} />
 
       <div className="rounded-md border">
         <Table>
@@ -44,11 +43,9 @@ export default async function DiscrepanciesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              discrepancies.map((d) => (
+              discrepancies.map((d: Discrepancy) => (
                 <TableRow key={d.id}>
-                  <TableCell className="font-medium">
-                    {d.shipment?.shipmentNumber ?? "-"}
-                  </TableCell>
+                  <TableCell className="font-medium">{d.shipment?.shipmentNumber ?? "-"}</TableCell>
                   <TableCell>
                     <StatusBadge status={d.type} />
                   </TableCell>

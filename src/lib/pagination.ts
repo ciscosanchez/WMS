@@ -57,7 +57,7 @@ export function buildCursorResult<T extends { id: string }>(
 
   return {
     data: trimmed,
-    nextCursor: hasMore ? trimmed[trimmed.length - 1]?.id ?? null : null,
+    nextCursor: hasMore ? (trimmed[trimmed.length - 1]?.id ?? null) : null,
     hasMore,
     pageSize,
   };

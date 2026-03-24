@@ -19,12 +19,21 @@ export async function getChannels() {
     orderBy: { createdAt: "desc" },
   });
 
-  return channels.map((ch) => ({
-    id: ch.id,
-    name: ch.name,
-    type: ch.type,
-    isActive: ch.isActive,
-    orderCount: ch._count.orders,
-    updatedAt: ch.updatedAt,
-  }));
+  return channels.map(
+    (ch: {
+      id: string;
+      name: string;
+      type: string;
+      isActive: boolean;
+      _count: { orders: number };
+      updatedAt: Date;
+    }) => ({
+      id: ch.id,
+      name: ch.name,
+      type: ch.type,
+      isActive: ch.isActive,
+      orderCount: ch._count.orders,
+      updatedAt: ch.updatedAt,
+    })
+  );
 }

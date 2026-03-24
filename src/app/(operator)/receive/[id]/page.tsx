@@ -57,9 +57,7 @@ export default function ReceiveShipmentPage() {
         const shipmentData = data as unknown as Shipment;
         setShipment(shipmentData);
         // start at the first incomplete line
-        const firstIncomplete = shipmentData.lines.findIndex(
-          (l) => l.receivedQty < l.expectedQty
-        );
+        const firstIncomplete = shipmentData.lines.findIndex((l) => l.receivedQty < l.expectedQty);
         setActiveLineIdx(firstIncomplete >= 0 ? firstIncomplete : 0);
       })
       .catch(() => toast.error(t("failedLoadShipment")))
@@ -88,12 +86,15 @@ export default function ReceiveShipmentPage() {
       const { queued } = await executeAction(
         actionKey("receiving", "receiveLine"),
         receiveLine as (...args: unknown[]) => Promise<unknown>,
-        [shipment!.id, {
-          lineId: line.id,
-          binId: binId ?? undefined,
-          quantity: parseInt(qty),
-          condition: "good",
-        }]
+        [
+          shipment!.id,
+          {
+            lineId: line.id,
+            binId: binId ?? undefined,
+            quantity: parseInt(qty),
+            condition: "good",
+          },
+        ]
       );
 
       if (queued) {
@@ -185,8 +186,8 @@ export default function ReceiveShipmentPage() {
               idx === activeLineIdx
                 ? "border-primary bg-primary/5"
                 : line.receivedQty >= line.expectedQty
-                ? "border-green-200 bg-green-50"
-                : "border-border"
+                  ? "border-green-200 bg-green-50"
+                  : "border-border"
             }`}
           >
             <p className="truncate font-mono font-medium">{line.product.sku}</p>
@@ -212,7 +213,9 @@ export default function ReceiveShipmentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t("scanDestBin")}</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {t("scanDestBin")}
+              </label>
               <div className="mt-1">
                 <BarcodeScannerInput
                   placeholder={t("scanBinBarcode")}
@@ -227,7 +230,9 @@ export default function ReceiveShipmentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t("quantityReceived")}</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                {t("quantityReceived")}
+              </label>
               <Input
                 type="number"
                 min={1}
@@ -260,9 +265,7 @@ export default function ReceiveShipmentPage() {
         <Card className="border-green-300 bg-green-50">
           <CardContent className="p-4">
             <p className="font-semibold text-green-700">{t("allLinesReceived")}</p>
-            <p className="mb-4 text-sm text-green-600">
-              {t("allLinesReceivedReady")}
-            </p>
+            <p className="mb-4 text-sm text-green-600">{t("allLinesReceivedReady")}</p>
             <Button
               className="h-12 w-full"
               size="lg"

@@ -67,8 +67,7 @@ export default function OperatorPickPage() {
     // Accept bin barcode OR product barcode/SKU as verification
     const isBinMatch = scannedValue === line.bin.barcode;
     const isProductMatch =
-      scannedValue === line.product.barcode ||
-      scannedValue === line.product.sku;
+      scannedValue === line.product.barcode || scannedValue === line.product.sku;
     if (!isBinMatch && !isProductMatch) {
       toast.error(t("wrongScan", { binBarcode: line.bin.barcode, sku: line.product.sku }));
       return;
@@ -117,7 +116,7 @@ export default function OperatorPickPage() {
 
   // For each active task, find the first incomplete line
   function getActiveLine(task: PickTask) {
-    return task.lines.find((l) => l.pickedQty < l.quantity) ?? null;
+    return task.lines.find((l: PickTask["lines"][number]) => l.pickedQty < l.quantity) ?? null;
   }
 
   return (
@@ -145,7 +144,9 @@ export default function OperatorPickPage() {
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("myActiveTasks")}</h2>
           {myTasks.map((task) => {
             const activeLine = getActiveLine(task);
-            const doneCount = task.lines.filter((l) => l.pickedQty >= l.quantity).length;
+            const doneCount = task.lines.filter(
+              (l: PickTask["lines"][number]) => l.pickedQty >= l.quantity
+            ).length;
 
             return (
               <ActiveTaskCard
@@ -251,11 +252,15 @@ function ActiveTaskCard({
                   </p>
                   {(() => {
                     const qty = activeLine.quantity - activeLine.pickedQty;
-                    const upc = (activeLine.product as { unitsPerCase?: number | null }).unitsPerCase;
+                    const upc = (activeLine.product as { unitsPerCase?: number | null })
+                      .unitsPerCase;
                     return (
                       <>
                         <p className="text-2xl font-bold text-primary">
-                          Pick {qty} {upc ? t("each") : (activeLine.product as { baseUom?: string }).baseUom ?? "EA"}
+                          Pick {qty}{" "}
+                          {upc
+                            ? t("each")
+                            : ((activeLine.product as { baseUom?: string }).baseUom ?? "EA")}
                         </p>
                         {upc && upc > 1 && (
                           <p className="text-sm font-medium text-amber-600">

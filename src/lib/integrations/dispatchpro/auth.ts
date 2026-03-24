@@ -43,7 +43,8 @@ export function validateTenantApiKey(
   }
 
   // Fall back to shared key ONLY for the default tenant
-  const defaultSlug = process.env.ARMSTRONG_TENANT_SLUG ?? process.env.DEFAULT_TENANT_SLUG ?? "armstrong";
+  const defaultSlug =
+    process.env.ARMSTRONG_TENANT_SLUG ?? process.env.DEFAULT_TENANT_SLUG ?? "armstrong";
   if (tenantSlug !== defaultSlug) {
     return false; // Non-default tenants MUST have their own API key
   }

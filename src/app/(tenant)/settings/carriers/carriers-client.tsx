@@ -9,11 +9,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, Loader2, Settings2, Truck, Wifi } from "lucide-react";
-import { saveCarrierCredentials, testCarrierConnection, type CarrierCredentials } from "@/modules/settings/actions";
+import {
+  saveCarrierCredentials,
+  testCarrierConnection,
+  type CarrierCredentials,
+} from "@/modules/settings/actions";
 
 interface CarrierDef {
   id: string;
@@ -23,26 +32,49 @@ interface CarrierDef {
 
 const CARRIERS: CarrierDef[] = [
   {
-    id: "ups", name: "UPS",
+    id: "ups",
+    name: "UPS",
     fields: [
       { key: "accountNumber", label: "Account Number", type: "text", placeholder: "e.g. A1B2C3" },
       { key: "clientId", label: "Client ID", type: "text", placeholder: "UPS client ID" },
-      { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "UPS client secret" },
+      {
+        key: "clientSecret",
+        label: "Client Secret",
+        type: "password",
+        placeholder: "UPS client secret",
+      },
     ],
   },
   {
-    id: "fedex", name: "FedEx",
+    id: "fedex",
+    name: "FedEx",
     fields: [
       { key: "clientId", label: "Client ID", type: "text", placeholder: "FedEx API client ID" },
-      { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "FedEx API client secret" },
-      { key: "accountNumber", label: "Account Number", type: "text", placeholder: "e.g. 456789123" },
+      {
+        key: "clientSecret",
+        label: "Client Secret",
+        type: "password",
+        placeholder: "FedEx API client secret",
+      },
+      {
+        key: "accountNumber",
+        label: "Account Number",
+        type: "text",
+        placeholder: "e.g. 456789123",
+      },
     ],
   },
   {
-    id: "usps", name: "USPS",
+    id: "usps",
+    name: "USPS",
     fields: [
       { key: "clientId", label: "Client ID", type: "text", placeholder: "USPS client ID" },
-      { key: "clientSecret", label: "Client Secret", type: "password", placeholder: "USPS client secret" },
+      {
+        key: "clientSecret",
+        label: "Client Secret",
+        type: "password",
+        placeholder: "USPS client secret",
+      },
     ],
   },
 ];
@@ -71,7 +103,11 @@ export function CarriersClient({ initialCreds }: Props) {
   function openConfigure(carrier: CarrierDef) {
     setActiveCarrier(carrier);
     const existing = creds[carrier.id] ?? {};
-    setFormValues(Object.fromEntries(carrier.fields.map((f) => [f.key, (existing as Record<string, string>)[f.key] ?? ""])));
+    setFormValues(
+      Object.fromEntries(
+        carrier.fields.map((f) => [f.key, (existing as Record<string, string>)[f.key] ?? ""])
+      )
+    );
     setDialogOpen(true);
   }
 
@@ -112,9 +148,15 @@ export function CarriersClient({ initialCreds }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Carrier Accounts" description="Manage shipping carrier integrations for rate shopping and label generation">
+      <PageHeader
+        title="Carrier Accounts"
+        description="Manage shipping carrier integrations for rate shopping and label generation"
+      >
         <Button asChild variant="outline">
-          <Link href="/settings"><ArrowLeft className="mr-2 h-4 w-4" />Back to Settings</Link>
+          <Link href="/settings">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Settings
+          </Link>
         </Button>
       </PageHeader>
 
@@ -131,21 +173,59 @@ export function CarriersClient({ initialCreds }: Props) {
                   </div>
                   <CardTitle className="text-lg">{carrier.name}</CardTitle>
                 </div>
-                <Badge variant={connected ? "default" : "secondary"} className={connected ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : ""}>
-                  {connected ? <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Connected</span> : "Not Configured"}
+                <Badge
+                  variant={connected ? "default" : "secondary"}
+                  className={
+                    connected
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : ""
+                  }
+                >
+                  {connected ? (
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Connected
+                    </span>
+                  ) : (
+                    "Not Configured"
+                  )}
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1 text-sm">
                   <p className="text-muted-foreground">Account</p>
-                  <p className="font-mono font-medium">{connected ? maskValue(c.accountNumber || c.clientId) : "--"}</p>
+                  <p className="font-mono font-medium">
+                    {connected ? maskValue(c.accountNumber || c.clientId) : "--"}
+                  </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openConfigure(carrier)}>
-                    <Settings2 className="mr-2 h-4 w-4" />Configure
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openConfigure(carrier)}
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Configure
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1" disabled={!connected || testingId === carrier.id} onClick={() => handleTest(carrier.id)}>
-                    {testingId === carrier.id ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Testing...</> : <><Wifi className="mr-2 h-4 w-4" />Test</>}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    disabled={!connected || testingId === carrier.id}
+                    onClick={() => handleTest(carrier.id)}
+                  >
+                    {testingId === carrier.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Wifi className="mr-2 h-4 w-4" />
+                        Test
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -164,15 +244,31 @@ export function CarriersClient({ initialCreds }: Props) {
             {activeCarrier?.fields.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={field.key}>{field.label}</Label>
-                <Input id={field.key} type={field.type} placeholder={field.placeholder}
-                  value={formValues[field.key] ?? ""} onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))} />
+                <Input
+                  id={field.key}
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  value={formValues[field.key] ?? ""}
+                  onChange={(e) =>
+                    setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  }
+                />
               </div>
             ))}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save Credentials"}
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Credentials"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

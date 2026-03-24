@@ -41,13 +41,19 @@ function TenantActions({ tenant }: { tenant: Tenant }) {
     if (!confirm(`Suspend "${tenant.name}"? They will lose access immediately.`)) return;
     const result = await suspendTenant(tenant.id);
     if ("error" in result) toast.error(result.error);
-    else { toast.success("Tenant suspended"); router.refresh(); }
+    else {
+      toast.success("Tenant suspended");
+      router.refresh();
+    }
   }
 
   async function handleReactivate() {
     const result = await reactivateTenant(tenant.id);
     if ("error" in result) toast.error(result.error);
-    else { toast.success("Tenant reactivated"); router.refresh(); }
+    else {
+      toast.success("Tenant reactivated");
+      router.refresh();
+    }
   }
 
   return (

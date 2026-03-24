@@ -4,7 +4,9 @@ import { runTenantMigrations } from "./tenant-migrations";
 export async function provisionTenant(name: string, slug: string): Promise<string> {
   // Server-side slug validation — prevent SQL injection via schema name
   if (!/^[a-z][a-z0-9-]{1,48}[a-z0-9]$/.test(slug)) {
-    throw new Error("Invalid tenant slug: must be 3-50 chars, lowercase alphanumeric + hyphens, start with letter");
+    throw new Error(
+      "Invalid tenant slug: must be 3-50 chars, lowercase alphanumeric + hyphens, start with letter"
+    );
   }
 
   const dbSchema = `tenant_${slug.replace(/-/g, "_")}`;

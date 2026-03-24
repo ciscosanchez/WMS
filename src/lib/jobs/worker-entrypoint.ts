@@ -216,7 +216,12 @@ async function processEmail(job: Job) {
     `;
   } else if (template === "low_stock_alert") {
     // Payload: { tenantId, products: [{ sku, name, available, minStock }] }
-    const products = data.products as { sku: string; name: string; available: number; minStock: number }[];
+    const products = data.products as {
+      sku: string;
+      name: string;
+      available: number;
+      minStock: number;
+    }[];
     if (!products || products.length === 0) return;
 
     // Resolve admin email for this tenant
@@ -234,7 +239,10 @@ async function processEmail(job: Job) {
     }
 
     const rows = products
-      .map((p) => `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`)
+      .map(
+        (p) =>
+          `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`
+      )
       .join("");
 
     subject = `Low stock alert: ${products.length} product(s) below minimum`;

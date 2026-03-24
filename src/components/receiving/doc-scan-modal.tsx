@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -56,14 +51,22 @@ function ConfidenceBadge({ value }: { value: number }) {
   );
 }
 
-function ExtractedField({ label, field }: { label: string; field?: { value: unknown; confidence: number } }) {
+function ExtractedField({
+  label,
+  field,
+}: {
+  label: string;
+  field?: { value: unknown; confidence: number };
+}) {
   if (!field) return null;
   const val = Array.isArray(field.value) ? field.value.join(", ") : String(field.value ?? "");
   if (!val) return null;
   return (
     <div className="flex items-center justify-between gap-3 py-2 border-b last:border-0">
       <span className="text-sm text-muted-foreground w-28 shrink-0">{label}</span>
-      <span className={`text-sm font-medium flex-1 ${field.confidence < 0.7 ? "text-red-600" : ""}`}>
+      <span
+        className={`text-sm font-medium flex-1 ${field.confidence < 0.7 ? "text-red-600" : ""}`}
+      >
         {val}
       </span>
       <ConfidenceBadge value={field.confidence} />
@@ -71,7 +74,13 @@ function ExtractedField({ label, field }: { label: string; field?: { value: unkn
   );
 }
 
-export function DocScanModal({ open, onClose, shipmentId, shipmentNumber, clientName }: DocScanModalProps) {
+export function DocScanModal({
+  open,
+  onClose,
+  shipmentId,
+  shipmentNumber,
+  clientName,
+}: DocScanModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>("idle");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -258,17 +267,18 @@ export function DocScanModal({ open, onClose, shipmentId, shipmentNumber, client
             </div>
 
             <div className="rounded-md border px-4 py-1">
-              <ExtractedField label="Carrier"    field={extracted.carrier} />
+              <ExtractedField label="Carrier" field={extracted.carrier} />
               <ExtractedField label="BOL / PRO #" field={extracted.proNumber} />
               <ExtractedField label="Tracking #" field={extracted.trackingNumber} />
-              <ExtractedField label="PO #"       field={extracted.poNumbers} />
-              <ExtractedField label="Shipper"    field={extracted.shipper} />
-              <ExtractedField label="Total Pcs"  field={extracted.totalPieces} />
+              <ExtractedField label="PO #" field={extracted.poNumbers} />
+              <ExtractedField label="Shipper" field={extracted.shipper} />
+              <ExtractedField label="Total Pcs" field={extracted.totalPieces} />
               <ExtractedField label="Weight (lb)" field={extracted.totalWeightLb} />
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Clicking &ldquo;Update Shipment&rdquo; will overwrite the carrier, BOL, and tracking fields above.
+              Clicking &ldquo;Update Shipment&rdquo; will overwrite the carrier, BOL, and tracking
+              fields above.
             </p>
 
             <div className="flex justify-end gap-2 pt-2">

@@ -5,7 +5,10 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
-import { orderSchemaStatic as orderSchema, orderLineSchemaStatic as orderLineSchema } from "./schemas";
+import {
+  orderSchemaStatic as orderSchema,
+  orderLineSchemaStatic as orderLineSchema,
+} from "./schemas";
 import { mockOrders } from "@/lib/mock-data";
 import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
@@ -127,12 +130,14 @@ export async function updateOrderStatus(id: string, status: string) {
       city: existing.shipToCity,
       state: existing.shipToState ?? "",
       zip: existing.shipToZip,
-      items: existing.lines.map((line) => ({
-        sku: line.product.sku,
-        description: line.product.name,
-        quantity: line.quantity,
-        weight: line.product.weight ? Number(line.product.weight) : undefined,
-      })),
+      items: existing.lines.map(
+        (line: { product: { sku: string; name: string; weight: unknown }; quantity: number }) => ({
+          sku: line.product.sku,
+          description: line.product.name,
+          quantity: line.quantity,
+          weight: line.product.weight ? Number(line.product.weight) : undefined,
+        })
+      ),
     });
 
     if ("error" in dispatchResult) {
@@ -155,73 +160,85 @@ async function generatePickTasksForOrder(
   const taskNumber = await nextSequence(db, "PICK");
 
   // Atomic: find bins, allocate inventory, create pick task in one transaction
-  const task = await db.$transaction(async (prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any) => {
-    const lineData = [];
+  const task = await db.$transaction(
+    async (
+      prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any
+    ) => {
+      const lineData = [];
 
-    for (const line of order.lines) {
-      // Find the best bin with enough available stock
-      const inv = await prisma.inventory.findFirst({
-        where: { productId: line.productId, available: { gte: line.quantity } },
-        orderBy: { available: "desc" },
-      });
-
-      if (inv) {
-        // Allocate: increment allocated, decrement available
-        await prisma.inventory.update({
-          where: { id: inv.id },
-          data: {
-            allocated: { increment: line.quantity },
-            available: { decrement: line.quantity },
-          },
+      for (const line of order.lines) {
+        // Find the best bin with enough available stock
+        const inv = await prisma.inventory.findFirst({
+          where: { productId: line.productId, available: { gte: line.quantity } },
+          orderBy: { available: "desc" },
         });
 
-        // Write allocation ledger entry
-        await prisma.inventoryTransaction.create({
-          data: {
-            type: "allocate",
-            productId: line.productId,
-            fromBinId: inv.binId,
-            quantity: line.quantity,
-            referenceType: "order",
-            referenceId: order.id,
-            performedBy: userId,
-          },
+        if (inv) {
+          // Allocate: increment allocated, decrement available
+          await prisma.inventory.update({
+            where: { id: inv.id },
+            data: {
+              allocated: { increment: line.quantity },
+              available: { decrement: line.quantity },
+            },
+          });
+
+          // Write allocation ledger entry
+          await prisma.inventoryTransaction.create({
+            data: {
+              type: "allocate",
+              productId: line.productId,
+              fromBinId: inv.binId,
+              quantity: line.quantity,
+              referenceType: "order",
+              referenceId: order.id,
+              performedBy: userId,
+            },
+          });
+        }
+
+        lineData.push({
+          productId: line.productId,
+          binId: inv?.binId ?? null,
+          quantity: line.quantity,
+          pickedQty: 0,
         });
       }
 
-      lineData.push({
-        productId: line.productId,
-        binId: inv?.binId ?? null,
-        quantity: line.quantity,
-        pickedQty: 0,
+      // Sort lines by bin barcode for optimal pick path (zone → aisle → rack → shelf → bin)
+      // Resolve barcodes for sorting — bin IDs are cuid strings, barcodes encode location
+      const binIds = lineData
+        .map((l: { binId: string | null }) => l.binId)
+        .filter(Boolean) as string[];
+      const bins =
+        binIds.length > 0
+          ? await prisma.bin.findMany({
+              where: { id: { in: binIds } },
+              select: { id: true, barcode: true },
+            })
+          : [];
+      const binBarcodeMap = new Map(
+        bins.map((b: { id: string; barcode: string }) => [b.id, b.barcode])
+      );
+
+      const sortedLines = [...lineData].sort((a, b) => {
+        const aKey = (a.binId && binBarcodeMap.get(a.binId)) ?? "zzz";
+        const bKey = (b.binId && binBarcodeMap.get(b.binId)) ?? "zzz";
+        return aKey.localeCompare(bKey);
+      });
+
+      return prisma.pickTask.create({
+        data: {
+          taskNumber,
+          orderId: order.id,
+          method: "single_order",
+          status: "pending",
+          lines: { create: sortedLines },
+        },
       });
     }
-
-    // Sort lines by bin barcode for optimal pick path (zone → aisle → rack → shelf → bin)
-    // Resolve barcodes for sorting — bin IDs are cuid strings, barcodes encode location
-    const binIds = lineData.map((l: { binId: string | null }) => l.binId).filter(Boolean) as string[];
-    const bins = binIds.length > 0
-      ? await prisma.bin.findMany({ where: { id: { in: binIds } }, select: { id: true, barcode: true } })
-      : [];
-    const binBarcodeMap = new Map(bins.map((b: { id: string; barcode: string }) => [b.id, b.barcode]));
-
-    const sortedLines = [...lineData].sort((a, b) => {
-      const aKey = (a.binId && binBarcodeMap.get(a.binId)) ?? "zzz";
-      const bKey = (b.binId && binBarcodeMap.get(b.binId)) ?? "zzz";
-      return aKey.localeCompare(bKey);
-    });
-
-    return prisma.pickTask.create({
-      data: {
-        taskNumber,
-        orderId: order.id,
-        method: "single_order",
-        status: "pending",
-        lines: { create: sortedLines },
-      },
-    });
-  });
+  );
 
   await logAudit(db, {
     userId,

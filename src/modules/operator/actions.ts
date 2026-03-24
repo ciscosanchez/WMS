@@ -89,7 +89,11 @@ export async function suggestPutawayBin(productId: string) {
     orderBy: { bin: { barcode: "asc" } },
   });
   if (existingInv?.bin) {
-    return { binId: existingInv.bin.id, barcode: existingInv.bin.barcode, reason: "consolidation" as const };
+    return {
+      binId: existingInv.bin.id,
+      barcode: existingInv.bin.barcode,
+      reason: "consolidation" as const,
+    };
   }
 
   // 3. Find nearest empty available bin in storage zones
@@ -133,7 +137,7 @@ export async function getMyPickTasks() {
 export async function getAvailablePickTasks() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await requireTenantContext("operator:write");
   return tenant.db.pickTask.findMany({
     where: { status: "pending" },
     include: {
@@ -176,6 +180,10 @@ export async function claimPickTask(taskId: string) {
     changes: { status: { old: "pending", new: "in_progress" } },
   });
 
+  // Start task time tracking (non-blocking)
+  const { startTaskTimeLog } = await import("@/modules/labor/actions");
+  startTaskTimeLog(tenant.db, user.id, "pick", taskId, task.order?.clientId).catch(() => {});
+
   revalidatePath("/pick");
   return task;
 }
@@ -194,12 +202,22 @@ export async function confirmPickLine(lineId: string, qty: number) {
   });
 
   // Check if all lines fully picked
-  const allDone = line.task.lines.every((l) => l.pickedQty >= l.quantity);
+  const allDone = line.task.lines.every(
+    (l: { pickedQty: number; quantity: number }) => l.pickedQty >= l.quantity
+  );
   if (allDone) {
     await tenant.db.pickTask.update({
       where: { id: line.taskId },
       data: { status: "completed", completedAt: new Date() },
     });
+
+    // Complete task time tracking (non-blocking)
+    const totalUnits = line.task.lines.reduce(
+      (s: number, l: { pickedQty: number }) => s + l.pickedQty,
+      0
+    );
+    const { completeTaskTimeLog } = await import("@/modules/labor/actions");
+    completeTaskTimeLog(tenant.db, line.taskId, totalUnits, line.task.lines.length).catch(() => {});
   }
 
   await logAudit(tenant.db, {
@@ -245,7 +263,7 @@ export async function markPickLineShort(lineId: string, actualQty: number) {
 export async function getTasksReadyToPack() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await requireTenantContext("operator:write");
   return tenant.db.pickTask.findMany({
     where: { status: "completed" },
     include: {
@@ -263,72 +281,104 @@ export async function confirmPack(taskId: string, boxCount: number) {
 
   const task = await tenant.db.pickTask.findUniqueOrThrow({
     where: { id: taskId },
-    include: { lines: true },
+    include: { lines: true, order: { include: { client: true } } },
   });
 
   if (!task.orderId) throw new Error("Pick task has no linked order");
 
-  const shipmentNumber = await nextSequence(tenant.db, "SHP");
+  // Pre-flight status guard
+  if (task.status !== "completed") {
+    // If a shipment already exists for this order, return it (idempotent)
+    const existingShipment = await tenant.db.shipment.findFirst({
+      where: { orderId: task.orderId },
+    });
+    if (existingShipment) return existingShipment;
+    throw new Error(`Cannot pack task in status "${task.status}" — must be "completed"`);
+  }
 
-  const shipment = await tenant.db.shipment.create({
-    data: {
-      shipmentNumber,
-      orderId: task.orderId,
-      status: "pending",
-      items: {
-        create: task.lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.pickedQty,
-          lotNumber: line.lotNumber,
-          serialNumber: line.serialNumber,
-        })),
-      },
-    },
-  });
+  // Atomic: duplicate check + shipment creation + order status + billing
+  // The duplicate check MUST be inside the transaction to prevent races.
+  const shipment = await tenant.db.$transaction(
+    async (
+      prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any
+    ) => {
+      // Duplicate check INSIDE transaction — prevents concurrent pack requests
+      const existing = await prisma.shipment.findFirst({
+        where: { orderId: task.orderId },
+      });
+      if (existing) return existing;
 
-  await tenant.db.order.update({
-    where: { id: task.orderId },
-    data: { status: "packed" },
-  });
+      const shipmentNumber = await nextSequence(tenant.db, "SHP");
 
-  await logAudit(tenant.db, {
-    userId: user.id,
-    action: "create",
-    entityType: "shipment",
-    entityId: shipment.id,
-    changes: { boxCount: { old: 0, new: boxCount } },
-  });
+      const newShipment = await prisma.shipment.create({
+        data: {
+          shipmentNumber,
+          orderId: task.orderId!,
+          status: "pending",
+          items: {
+            create: task.lines.map(
+              (line: {
+                productId: string;
+                pickedQty: number;
+                lotNumber: string | null;
+                serialNumber: string | null;
+              }) => ({
+                productId: line.productId,
+                quantity: line.pickedQty,
+                lotNumber: line.lotNumber,
+                serialNumber: line.serialNumber,
+              })
+            ),
+          },
+        },
+      });
 
-  // Capture billing events: order handling + per-line + per-unit
-  const order = await tenant.db.order.findUnique({
-    where: { id: task.orderId! },
-    include: { client: true },
-  });
-  if (order) {
-    const totalUnits = task.lines.reduce((sum, l) => sum + l.pickedQty, 0);
-    await Promise.all([
-      captureEvent(tenant.db, {
-        clientId: order.clientId,
-        serviceType: "handling_order",
-        qty: 1,
-        referenceType: "order",
-        referenceId: order.id,
-      }),
-      captureEvent(tenant.db, {
-        clientId: order.clientId,
-        serviceType: "handling_line",
-        qty: task.lines.length,
-        referenceType: "order",
-        referenceId: order.id,
-      }),
-      captureEvent(tenant.db, {
-        clientId: order.clientId,
-        serviceType: "handling_unit",
-        qty: totalUnits,
-        referenceType: "order",
-        referenceId: order.id,
-      }),
-    ]);
+      await prisma.order.update({
+        where: { id: task.orderId! },
+        data: { status: "packed" },
+      });
+
+      // Capture billing events INSIDE the transaction — no orphaned shipments without billing
+      if (task.order?.clientId) {
+        const totalUnits = task.lines.reduce(
+          (sum: number, l: { pickedQty: number }) => sum + l.pickedQty,
+          0
+        );
+
+        // Use prisma (tx client) for billing captures so they're atomic
+        const billingData = [
+          { serviceType: "handling_order", qty: 1 },
+          { serviceType: "handling_line", qty: task.lines.length },
+          { serviceType: "handling_unit", qty: totalUnits },
+        ];
+
+        for (const event of billingData) {
+          await captureEvent(prisma, {
+            clientId: task.order.clientId,
+            serviceType: event.serviceType,
+            qty: event.qty,
+            referenceType: "order",
+            referenceId: task.orderId!,
+          });
+        }
+      }
+
+      return newShipment;
+    }
+  );
+
+  // Post-commit: audit + cache invalidation (non-throwing)
+  try {
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "create",
+      entityType: "shipment",
+      entityId: shipment.id,
+      changes: { boxCount: { old: 0, new: boxCount } },
+    });
+  } catch (err) {
+    console.error("[confirmPack] post-commit audit failed:", err);
   }
 
   revalidatePath("/pack");

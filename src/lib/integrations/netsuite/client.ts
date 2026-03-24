@@ -14,7 +14,7 @@
 import crypto from "crypto";
 
 export interface NetSuiteConfig {
-  accountId: string;        // e.g. "1234567" or "TSTDRV1234567"
+  accountId: string; // e.g. "1234567" or "TSTDRV1234567"
   consumerKey: string;
   consumerSecret: string;
   tokenId: string;
@@ -51,8 +51,7 @@ export class NetSuiteClient {
    * Uses HMAC-SHA256 per NetSuite TBA specification.
    */
   private buildAuthHeader(method: string, url: string): string {
-    const { accountId, consumerKey, consumerSecret, tokenId, tokenSecret } =
-      this.config;
+    const { accountId, consumerKey, consumerSecret, tokenId, tokenSecret } = this.config;
 
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = crypto.randomBytes(16).toString("hex");
@@ -70,11 +69,13 @@ export class NetSuiteClient {
     // Parse existing query params from URL and merge with oauth params for base string
     const urlObj = new URL(url);
     const allParams: Record<string, string> = { ...oauthParams };
-    urlObj.searchParams.forEach((v, k) => { allParams[k] = v; });
+    urlObj.searchParams.forEach((v, k) => {
+      allParams[k] = v;
+    });
 
     // Normalize parameters: sort by key, then by value
     const normalizedParams = Object.entries(allParams)
-      .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join("&");
 
@@ -90,10 +91,7 @@ export class NetSuiteClient {
     const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(tokenSecret)}`;
 
     // HMAC-SHA256 signature
-    const signature = crypto
-      .createHmac("sha256", signingKey)
-      .update(baseString)
-      .digest("base64");
+    const signature = crypto.createHmac("sha256", signingKey).update(baseString).digest("base64");
 
     // Build Authorization header
     const headerParts = [
@@ -203,7 +201,7 @@ export class NetSuiteClient {
   async pushReceivingConfirmation(
     shipmentId: string,
     lines: Array<{
-      itemId: string;   // NetSuite internal item ID
+      itemId: string; // NetSuite internal item ID
       quantity: number;
       locationId: string;
     }>
@@ -244,9 +242,7 @@ export class NetSuiteClient {
    * Push billable WMS events to NetSuite as a single invoice.
    * Assumes NetSuite items exist per service type (mapped via `custbody_wms_service_type`).
    */
-  async pushBillableEvents(
-    events: BillableEvent[]
-  ): Promise<{ invoiceId: string }> {
+  async pushBillableEvents(events: BillableEvent[]): Promise<{ invoiceId: string }> {
     if (events.length === 0) throw new Error("No events to push");
 
     // Group by clientId — all events should be for the same client in one call
@@ -305,11 +301,7 @@ export class NetSuiteClient {
       await this.request("PATCH", `/inventoryitem/${existingId}`, body);
       return { netsuiteId: existingId };
     } else {
-      const created = await this.request<{ id: string }>(
-        "POST",
-        "/inventoryitem",
-        body
-      );
+      const created = await this.request<{ id: string }>("POST", "/inventoryitem", body);
       return { netsuiteId: created.id };
     }
   }
@@ -318,9 +310,7 @@ export class NetSuiteClient {
 /**
  * Factory: returns a configured NetSuiteClient from env vars, or null if not configured.
  */
-export function getNetSuiteClient(
-  overrides?: Record<string, string>
-): NetSuiteClient | null {
+export function getNetSuiteClient(overrides?: Record<string, string>): NetSuiteClient | null {
   const accountId = overrides?.accountId ?? process.env.NETSUITE_ACCOUNT_ID;
   const consumerKey = overrides?.consumerKey ?? process.env.NETSUITE_CONSUMER_KEY;
   const consumerSecret = overrides?.consumerSecret ?? process.env.NETSUITE_CONSUMER_SECRET;

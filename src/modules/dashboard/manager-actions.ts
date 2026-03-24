@@ -12,7 +12,12 @@ import { startOfDay } from "date-fns";
  */
 export async function getOperationsBoard() {
   if (config.useMockData) {
-    return { operators: [], unassignedTasks: [], receivingActive: [], kpis: { completedToday: 0, avgMinutes: 0, pendingTasks: 0, activeReceiving: 0 } };
+    return {
+      operators: [],
+      unassignedTasks: [],
+      receivingActive: [],
+      kpis: { completedToday: 0, avgMinutes: 0, pendingTasks: 0, activeReceiving: 0 },
+    };
   }
 
   const { tenant } = await requireTenantContext("reports:read");
@@ -68,25 +73,30 @@ export async function getOperationsBoard() {
   // Split tasks
   const unassignedTasks = allTasks
     .filter((t: { status: string }) => t.status === "pending")
-    .map((t: {
-      id: string;
-      taskNumber: string;
-      status: string;
-      createdAt: Date;
-      order: { orderNumber: string; priority: string; shipToName: string } | null;
-      lines: Array<{ id: string; quantity: number; pickedQty: number }>;
-    }) => ({
-      id: t.id,
-      taskNumber: t.taskNumber,
-      orderNumber: t.order?.orderNumber ?? "",
-      priority: t.order?.priority ?? "standard",
-      shipTo: t.order?.shipToName ?? "",
-      lineCount: t.lines.length,
-      createdAt: t.createdAt,
-    }));
+    .map(
+      (t: {
+        id: string;
+        taskNumber: string;
+        status: string;
+        createdAt: Date;
+        order: { orderNumber: string; priority: string; shipToName: string } | null;
+        lines: Array<{ id: string; quantity: number; pickedQty: number }>;
+      }) => ({
+        id: t.id,
+        taskNumber: t.taskNumber,
+        orderNumber: t.order?.orderNumber ?? "",
+        priority: t.order?.priority ?? "standard",
+        shipTo: t.order?.shipToName ?? "",
+        lineCount: t.lines.length,
+        createdAt: t.createdAt,
+      })
+    );
 
   // Build operator workload map
-  const operatorTasks = new Map<string, { active: number; completed: number; shortPicked: number }>();
+  const operatorTasks = new Map<
+    string,
+    { active: number; completed: number; shortPicked: number }
+  >();
   for (const task of allTasks) {
     const op = (task as { assignedTo: string | null }).assignedTo;
     if (!op) continue;
@@ -103,7 +113,10 @@ export async function getOperationsBoard() {
       const tasks = operatorTasks.get(userId) ?? { active: 0, completed: 0, shortPicked: 0 };
       return { userId, name, ...tasks, total: tasks.active + tasks.completed + tasks.shortPicked };
     })
-    .filter((op) => op.total > 0 || members.some((m) => m.userId === op.userId && m.role === "warehouse_worker"))
+    .filter(
+      (op) =>
+        op.total > 0 || members.some((m) => m.userId === op.userId && m.role === "warehouse_worker")
+    )
     .sort((a, b) => b.active - a.active || b.completed - a.completed);
 
   // Avg completion time (minutes) for tasks completed today
@@ -111,31 +124,36 @@ export async function getOperationsBoard() {
     (t: { status: string; startedAt: Date | null; completedAt: Date | null }) =>
       t.status === "completed" && t.startedAt && t.completedAt
   );
-  const avgMinutes = completedTasks.length > 0
-    ? Math.round(
-        completedTasks.reduce((sum: number, t: { startedAt: Date; completedAt: Date }) => {
-          return sum + (new Date(t.completedAt).getTime() - new Date(t.startedAt).getTime()) / 60000;
-        }, 0) / completedTasks.length
-      )
-    : 0;
+  const avgMinutes =
+    completedTasks.length > 0
+      ? Math.round(
+          completedTasks.reduce((sum: number, t: { startedAt: Date; completedAt: Date }) => {
+            return (
+              sum + (new Date(t.completedAt).getTime() - new Date(t.startedAt).getTime()) / 60000
+            );
+          }, 0) / completedTasks.length
+        )
+      : 0;
 
   // Map receiving
-  const mappedReceiving = receivingActive.map((s: {
-    id: string;
-    shipmentNumber: string;
-    status: string;
-    expectedDate: Date | null;
-    client: { name: string } | null;
-    lines: Array<{ expectedQty: number; receivedQty: number }>;
-  }) => ({
-    id: s.id,
-    shipmentNumber: s.shipmentNumber,
-    status: s.status,
-    expectedDate: s.expectedDate,
-    clientName: s.client?.name ?? "",
-    totalExpected: s.lines.reduce((sum, l) => sum + l.expectedQty, 0),
-    totalReceived: s.lines.reduce((sum, l) => sum + l.receivedQty, 0),
-  }));
+  const mappedReceiving = receivingActive.map(
+    (s: {
+      id: string;
+      shipmentNumber: string;
+      status: string;
+      expectedDate: Date | null;
+      client: { name: string } | null;
+      lines: Array<{ expectedQty: number; receivedQty: number }>;
+    }) => ({
+      id: s.id,
+      shipmentNumber: s.shipmentNumber,
+      status: s.status,
+      expectedDate: s.expectedDate,
+      clientName: s.client?.name ?? "",
+      totalExpected: s.lines.reduce((sum, l) => sum + l.expectedQty, 0),
+      totalReceived: s.lines.reduce((sum, l) => sum + l.receivedQty, 0),
+    })
+  );
 
   return {
     operators,
@@ -178,7 +196,10 @@ export async function assignTaskToOperator(taskId: string, operatorUserId: strin
     action: "update",
     entityType: "pickTask",
     entityId: taskId,
-    changes: { assignedTo: { old: null, new: operatorUserId }, status: { old: "pending", new: "assigned" } },
+    changes: {
+      assignedTo: { old: null, new: operatorUserId },
+      status: { old: "pending", new: "assigned" },
+    },
   });
 
   revalidatePath("/operations");

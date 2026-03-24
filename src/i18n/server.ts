@@ -4,10 +4,7 @@
  */
 import { defaultLocale, type Locale, locales } from "./config";
 
-function flattenMessages(
-  obj: Record<string, unknown>,
-  prefix = ""
-): Record<string, string> {
+function flattenMessages(obj: Record<string, unknown>, prefix = ""): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
@@ -38,9 +35,10 @@ export async function getServerTranslations(locale: string, namespace: string) {
 
   // If the JSON has a single top-level key matching the namespace, unwrap it
   const keys = Object.keys(raw);
-  const source = keys.length === 1 && typeof raw[keys[0]] === "object"
-    ? (raw[keys[0]] as Record<string, unknown>)
-    : raw;
+  const source =
+    keys.length === 1 && typeof raw[keys[0]] === "object"
+      ? (raw[keys[0]] as Record<string, unknown>)
+      : raw;
   const messages = flattenMessages(source);
 
   return function t(key: string, params?: Record<string, string | number>): string {

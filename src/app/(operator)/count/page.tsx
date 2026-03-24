@@ -53,7 +53,7 @@ export default function OperatorCountPage() {
 
     setSubmitting(true);
     try {
-      const lines = activeBin.inventory.map((item) => ({
+      const lines = activeBin.inventory.map((item: CountBin["inventory"][number]) => ({
         productId: item.productId,
         systemQty: item.onHand,
         countedQty: parseInt(counts[item.id] ?? "0"),
@@ -69,7 +69,9 @@ export default function OperatorCountPage() {
       if (queued) {
         toast.info(t("countQueued"));
       } else {
-        const variances = lines.filter((l) => l.countedQty !== l.systemQty);
+        const variances = lines.filter(
+          (l: { countedQty: number; systemQty: number }) => l.countedQty !== l.systemQty
+        );
         if (variances.length > 0) {
           toast.warning(t("countSubmittedVariances", { count: variances.length }));
         } else {
@@ -91,7 +93,7 @@ export default function OperatorCountPage() {
 
     setSubmitting(true);
     try {
-      const lines = activeBin.inventory.map((item) => ({
+      const lines = activeBin.inventory.map((item: CountBin["inventory"][number]) => ({
         productId: item.productId,
         systemQty: item.onHand,
         countedQty: 0,
@@ -148,10 +150,9 @@ export default function OperatorCountPage() {
             </div>
 
             <div className="space-y-3">
-              {activeBin.inventory.map((item) => {
+              {activeBin.inventory.map((item: CountBin["inventory"][number]) => {
                 const counted = counts[item.id] ?? "";
-                const hasVariance =
-                  counted !== "" && parseInt(counted) !== item.onHand;
+                const hasVariance = counted !== "" && parseInt(counted) !== item.onHand;
                 return (
                   <div key={item.id} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between mb-2">
@@ -248,7 +249,11 @@ export default function OperatorCountPage() {
                   <p className="font-mono font-medium text-sm">{bin.barcode}</p>
                   <p className="text-xs text-muted-foreground">
                     {bin.inventory.length} SKU(s) &middot;{" "}
-                    {bin.inventory.reduce((sum, i) => sum + i.onHand, 0)} {tc("units")}
+                    {bin.inventory.reduce(
+                      (sum: number, i: CountBin["inventory"][number]) => sum + i.onHand,
+                      0
+                    )}{" "}
+                    {tc("units")}
                   </p>
                 </div>
                 <Badge variant="outline" className="text-xs">

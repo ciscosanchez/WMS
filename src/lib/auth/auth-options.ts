@@ -29,7 +29,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!isValid) return null;
 
         // Resolve tenant locale from first tenant's settings
-        const tenantSettings = user.tenantUsers[0]?.tenant?.settings as Record<string, unknown> | null;
+        const tenantSettings = user.tenantUsers[0]?.tenant?.settings as Record<
+          string,
+          unknown
+        > | null;
         const tenantLocale = (tenantSettings?.locale as string) ?? "en";
 
         return {
@@ -43,6 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             tenantId: tu.tenantId,
             slug: tu.tenant.slug,
             role: tu.role,
+            portalClientId: tu.portalClientId ?? null,
           })),
         };
       },

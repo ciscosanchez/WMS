@@ -6,7 +6,24 @@
       "pick": "Pick",
       "pack": "Pack",
       "move": "Move",
-      "count": "Count"
+      "count": "Count",
+      "inspect": "Inspect",
+      "shift": "Shift"
+    },
+    "shift": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "clockedIn": "Clocked In",
+      "notClockedIn": "Not Clocked In",
+      "clockInFirst": "Clock in to start tracking your work",
+      "shiftStarted": "Shift started at {time}",
+      "hoursWorked": "Hours Worked",
+      "tasksToday": "Tasks Today",
+      "unitsToday": "Units Today",
+      "breakTime": "Break",
+      "addBreak": "Add Break Time",
+      "minutes": "minutes",
+      "confirmClockOut": "End your shift?"
     },
     "dashboard": {
       "activeTasks": "Active Tasks",

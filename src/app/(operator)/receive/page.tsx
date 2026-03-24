@@ -62,16 +62,10 @@ export default function OperatorReceivePage() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <BarcodeScannerInput
-        placeholder={t("scanBolBarcode")}
-        onScan={handleScan}
-        showFeedback
-      />
+      <BarcodeScannerInput placeholder={t("scanBolBarcode")} onScan={handleScan} showFeedback />
 
       <div>
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-          {t("arrivedReady")}
-        </h2>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t("arrivedReady")}</h2>
 
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -88,9 +82,7 @@ export default function OperatorReceivePage() {
           {shipments
             .filter((s) => s.status === "arrived" || s.status === "receiving")
             .map((s) => {
-              const receivedLines = s.lines.filter(
-                (l) => l.receivedQty >= l.expectedQty
-              ).length;
+              const receivedLines = s.lines.filter((l) => l.receivedQty >= l.expectedQty).length;
               return (
                 <Card key={s.id}>
                   <CardContent className="flex items-center justify-between p-4">

@@ -200,9 +200,7 @@ export default function EditClientPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("deleteClient")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("deleteConfirm")}
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>{t("deleteConfirm")}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>

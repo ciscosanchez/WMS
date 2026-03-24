@@ -37,10 +37,7 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function enqueueAction(
-  action: string,
-  args: unknown[]
-): Promise<void> {
+export async function enqueueAction(action: string, args: unknown[]): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");

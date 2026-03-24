@@ -1,9 +1,16 @@
-import { requireAuth } from "@/lib/auth/session";
+import { requirePermission } from "@/lib/auth/session";
+import { getTenantFromHeaders } from "@/lib/tenant/context";
 import { OfflineProvider } from "@/providers/offline-provider";
 import OperatorNav from "./operator-nav";
 
 export default async function OperatorLayout({ children }: { children: React.ReactNode }) {
-  await requireAuth();
+  const slug = await getTenantFromHeaders();
+  if (!slug) {
+    const { redirect: nav } = await import("next/navigation");
+    nav("/login");
+    return null;
+  }
+  await requirePermission(slug as string, "operator:write");
   return (
     <OfflineProvider>
       <OperatorNav>{children}</OperatorNav>

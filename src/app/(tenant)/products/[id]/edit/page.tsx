@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
-
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -141,9 +140,7 @@ export default function EditProductPage() {
                 className="rounded-md object-cover border"
                 unoptimized
               />
-              <div className="text-sm text-muted-foreground">
-                {t("shopifyImage")}
-              </div>
+              <div className="text-sm text-muted-foreground">{t("shopifyImage")}</div>
             </CardContent>
           </Card>
         )}
@@ -288,9 +285,7 @@ export default function EditProductPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t("deleteProduct")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("deleteProductConfirm")}
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>{t("deleteProductConfirm")}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>

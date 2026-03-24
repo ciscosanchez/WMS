@@ -130,20 +130,13 @@ export function NewOrderForm({ products }: { products: Product[] }) {
               placeholder="Street address"
               {...register("address", { required: "Required" })}
             />
-            {errors.address && (
-              <p className="text-xs text-destructive">{errors.address.message}</p>
-            )}
+            {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                {...register("city", { required: "Required" })}
-              />
-              {errors.city && (
-                <p className="text-xs text-destructive">{errors.city.message}</p>
-              )}
+              <Input id="city" {...register("city", { required: "Required" })} />
+              {errors.city && <p className="text-xs text-destructive">{errors.city.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="state">State *</Label>
@@ -153,19 +146,12 @@ export function NewOrderForm({ products }: { products: Product[] }) {
                 maxLength={2}
                 {...register("state", { required: "Required" })}
               />
-              {errors.state && (
-                <p className="text-xs text-destructive">{errors.state.message}</p>
-              )}
+              {errors.state && <p className="text-xs text-destructive">{errors.state.message}</p>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="zip">ZIP *</Label>
-              <Input
-                id="zip"
-                {...register("zip", { required: "Required" })}
-              />
-              {errors.zip && (
-                <p className="text-xs text-destructive">{errors.zip.message}</p>
-              )}
+              <Input id="zip" {...register("zip", { required: "Required" })} />
+              {errors.zip && <p className="text-xs text-destructive">{errors.zip.message}</p>}
             </div>
           </div>
           <div className="grid gap-2">

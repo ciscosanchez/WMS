@@ -131,13 +131,11 @@ export async function getInventoryStats() {
     totalOnHand: Number(totalsAgg._sum.onHand ?? 0),
     totalAllocated: Number(totalsAgg._sum.allocated ?? 0),
     lowStockCount,
-    topProducts: topProducts.map(
-      (p: { productId: string; _sum: { onHand: number | null } }) => ({
-        sku: skuMap[p.productId]?.sku ?? "Unknown",
-        uom: skuMap[p.productId]?.uom ?? "EA",
-        onHand: Number(p._sum.onHand ?? 0),
-      })
-    ) as { sku: string; uom: string; onHand: number }[],
+    topProducts: topProducts.map((p: { productId: string; _sum: { onHand: number | null } }) => ({
+      sku: skuMap[p.productId]?.sku ?? "Unknown",
+      uom: skuMap[p.productId]?.uom ?? "EA",
+      onHand: Number(p._sum.onHand ?? 0),
+    })) as { sku: string; uom: string; onHand: number }[],
   };
 }
 
@@ -169,9 +167,7 @@ export async function getFulfillmentStats() {
   ]);
 
   // Orders per day for the last 7 days
-  const dayLabels = Array.from({ length: 7 }, (_, i) =>
-    format(subDays(new Date(), 6 - i), "EEE")
-  );
+  const dayLabels = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), 6 - i), "EEE"));
   const dayMap: Record<string, number> = Object.fromEntries(dayLabels.map((d) => [d, 0]));
 
   for (const o of recentOrders) {
@@ -231,13 +227,16 @@ export async function getMovementAnalytics() {
 
   // Resolve operator names
   const { publicDb } = await import("@/lib/db/public-client");
-  const operatorIds = [...new Set(moves.map((m: { performedBy: string }) => m.performedBy))] as string[];
-  const users = operatorIds.length > 0
-    ? await publicDb.user.findMany({
-        where: { id: { in: operatorIds } },
-        select: { id: true, name: true },
-      })
-    : [];
+  const operatorIds = [
+    ...new Set(moves.map((m: { performedBy: string }) => m.performedBy)),
+  ] as string[];
+  const users =
+    operatorIds.length > 0
+      ? await publicDb.user.findMany({
+          where: { id: { in: operatorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
   const nameMap = new Map(users.map((u) => [u.id, u.name]));
 
   // Count movements per operator
@@ -267,9 +266,7 @@ export async function getMovementAnalytics() {
   const repeatTrips = topPaths.filter((p) => p.count > 1);
 
   // Movement counts by day for the last 7 days
-  const dayLabels = Array.from({ length: 7 }, (_, i) =>
-    format(subDays(new Date(), 6 - i), "EEE")
-  );
+  const dayLabels = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), 6 - i), "EEE"));
   const dayMap: Record<string, number> = Object.fromEntries(dayLabels.map((d) => [d, 0]));
   for (const m of moves) {
     const label = format(new Date((m as { createdAt: Date }).createdAt), "EEE");

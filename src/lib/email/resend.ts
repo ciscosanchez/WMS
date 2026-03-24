@@ -221,7 +221,10 @@ export async function sendLowStockAlert(opts: {
   const t = await getServerTranslations(opts.locale ?? "en", "email");
 
   const rows = opts.products
-    .map((p) => `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`)
+    .map(
+      (p) =>
+        `<tr><td>${p.sku}</td><td>${p.name}</td><td style="color:red;font-weight:bold">${p.available}</td><td>${p.minStock}</td></tr>`
+    )
     .join("");
 
   await client.emails.send({

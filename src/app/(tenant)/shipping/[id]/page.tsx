@@ -25,10 +25,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
   if (!s) notFound();
 
   const canGenerateLabel =
-    s.status !== "shipped" &&
-    s.status !== "delivered" &&
-    !!s.carrier &&
-    !s.labelUrl;
+    s.status !== "shipped" && s.status !== "delivered" && !!s.carrier && !s.labelUrl;
 
   const hasLabel = !!s.labelUrl;
 
@@ -88,9 +85,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">{t("tracking")}</span>
             </div>
-            <p className="mt-1 font-mono text-sm font-medium">
-              {s.trackingNumber ?? t("pending")}
-            </p>
+            <p className="mt-1 font-mono text-sm font-medium">{s.trackingNumber ?? t("pending")}</p>
           </CardContent>
         </Card>
       </div>
@@ -126,7 +121,9 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>{t("items")} ({(s.items ?? []).length})</CardTitle>
+            <CardTitle>
+              {t("items")} ({(s.items ?? []).length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {(s.items ?? []).length === 0 ? (

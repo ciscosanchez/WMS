@@ -15,10 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
 // SNS message types
-type SnsMessageType =
-  | "SubscriptionConfirmation"
-  | "Notification"
-  | "UnsubscribeConfirmation";
+type SnsMessageType = "SubscriptionConfirmation" | "Notification" | "UnsubscribeConfirmation";
 
 interface SnsEnvelope {
   Type: SnsMessageType;
@@ -121,7 +118,10 @@ export async function POST(req: NextRequest) {
   if (envelope.Type === "SubscriptionConfirmation") {
     if (envelope.SubscribeURL) {
       if (!SNS_DOMAIN_RE.test(envelope.SubscribeURL)) {
-        console.error("[Amazon Webhook] Rejected SubscribeURL from untrusted domain:", envelope.SubscribeURL);
+        console.error(
+          "[Amazon Webhook] Rejected SubscribeURL from untrusted domain:",
+          envelope.SubscribeURL
+        );
         return NextResponse.json({ error: "Untrusted SubscribeURL" }, { status: 403 });
       }
       try {
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let db: any;
       let clientCode: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       let tenantConnector: Awaited<ReturnType<typeof resolveAmazonTenant>> = null;
 
       if (sellerId) {
@@ -205,7 +205,8 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
         }
         db = getTenantDb(tenantRecord.dbSchema);
-        clientCode = process.env.AMAZON_WMS_CLIENT_CODE ?? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
+        clientCode =
+          process.env.AMAZON_WMS_CLIENT_CODE ?? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong";
       }
 
       // Skip if already imported
@@ -217,7 +218,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Fetch full order details from SP-API using tenant-scoped credentials
-      const { getAmazonAdapter, getAmazonAdapterForTenant } = await import("@/lib/integrations/marketplaces/amazon");
+      const { getAmazonAdapter, getAmazonAdapterForTenant } =
+        await import("@/lib/integrations/marketplaces/amazon");
       const adapter = tenantConnector
         ? getAmazonAdapterForTenant({
             clientId: tenantConnector.clientId,
@@ -271,12 +273,13 @@ export async function POST(req: NextRequest) {
 
       // Resolve SKUs
       const skus = order.lineItems.map((li) => li.sku).filter((s): s is string => !!s);
-      const products = skus.length > 0
-        ? await db.product.findMany({
-            where: { clientId: client.id, sku: { in: skus } },
-            select: { id: true, sku: true },
-          })
-        : [];
+      const products =
+        skus.length > 0
+          ? await db.product.findMany({
+              where: { clientId: client.id, sku: { in: skus } },
+              select: { id: true, sku: true },
+            })
+          : [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const productBySku = new Map(products.map((p: any) => [p.sku, p]));
 
@@ -333,10 +336,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ imported: created.orderNumber });
     } catch (err) {
       console.error("[Amazon Webhook] Error processing ORDER_CHANGE:", err);
-      return NextResponse.json(
-        { error: "Failed to process order" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to process order" }, { status: 500 });
     }
   }
 

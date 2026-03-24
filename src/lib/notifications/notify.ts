@@ -22,10 +22,7 @@ interface NotifyOpts {
  * Notify all admins + managers for a tenant.
  * Creates in-app notifications and optionally sends emails.
  */
-export async function notifyWarehouseTeam(
-  db: PrismaClient,
-  opts: NotifyOpts
-): Promise<void> {
+export async function notifyWarehouseTeam(db: PrismaClient, opts: NotifyOpts): Promise<void> {
   try {
     // Get all admin + manager users for this tenant
     const tenantUsers = await publicDb.tenantUser.findMany({

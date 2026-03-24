@@ -61,11 +61,7 @@ export default async function OrdersPage() {
       </PageHeader>
 
       {orders.length === 0 ? (
-        <EmptyState
-          icon={ShoppingCart}
-          title={t("noOrders")}
-          description={t("noOrdersDesc")}
-        />
+        <EmptyState icon={ShoppingCart} title={t("noOrders")} description={t("noOrdersDesc")} />
       ) : (
         <div className="rounded-md border">
           <Table>

@@ -8,8 +8,7 @@ import { useEffect, useState } from "react";
  * if a sync event fired while no tabs were open.
  */
 export function useServiceWorker() {
-  const [registration, setRegistration] =
-    useState<ServiceWorkerRegistration | null>(null);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -90,9 +90,7 @@ export default function NewTenantPage() {
                   onChange={(e) => handleSlugChange(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t("slugDesc")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("slugDesc")}</p>
               </div>
 
               <div className="space-y-2">

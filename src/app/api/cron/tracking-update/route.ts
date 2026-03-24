@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
   try {
     const { publicDb } = await import("@/lib/db/public-client");
     const { getTenantDb } = await import("@/lib/db/tenant-client");
-    const { getActiveTenants, getCarrierCredentials } = await import("@/lib/integrations/tenant-connectors");
+    const { getActiveTenants, getCarrierCredentials } =
+      await import("@/lib/integrations/tenant-connectors");
     const { UPSAdapter, FedExAdapter, USPSAdapter } = await import("@/lib/integrations/carriers");
 
     const tenants = await getActiveTenants(publicDb);
@@ -28,7 +29,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ skipped: "No active tenants" });
     }
 
-    const tenantResults: Array<{ tenant: string; checked: number; delivered: number; errors: number }> = [];
+    const tenantResults: Array<{
+      tenant: string;
+      checked: number;
+      delivered: number;
+      errors: number;
+    }> = [];
 
     for (const tenant of tenants) {
       const db = getTenantDb(tenant.dbSchema);
@@ -36,7 +42,10 @@ export async function GET(req: NextRequest) {
       try {
         // Build adapters from per-tenant credentials
         const creds = getCarrierCredentials(tenant);
-        const adapters: Record<string, { getTracking: (n: string) => Promise<{ status: string; deliveredAt?: Date | null }> }> = {};
+        const adapters: Record<
+          string,
+          { getTracking: (n: string) => Promise<{ status: string; deliveredAt?: Date | null }> }
+        > = {};
 
         if (creds.ups) adapters["UPS"] = new UPSAdapter(creds.ups);
         if (creds.fedex) adapters["FedEx"] = new FedExAdapter(creds.fedex);
@@ -81,15 +90,22 @@ export async function GET(req: NextRequest) {
                 },
               });
               delivered++;
-              console.log(`[Tracking Cron] ${tenant.slug}: Marked delivered: ${shipment.shipmentNumber} (${shipment.trackingNumber})`);
+              console.log(
+                `[Tracking Cron] ${tenant.slug}: Marked delivered: ${shipment.shipmentNumber} (${shipment.trackingNumber})`
+              );
             }
           } catch (err) {
             errors++;
-            console.error(`[Tracking Cron] ${tenant.slug}: Error checking ${shipment.shipmentNumber}:`, err);
+            console.error(
+              `[Tracking Cron] ${tenant.slug}: Error checking ${shipment.shipmentNumber}:`,
+              err
+            );
           }
         }
 
-        console.log(`[Tracking Cron] ${tenant.slug}: checked=${checked} delivered=${delivered} errors=${errors}`);
+        console.log(
+          `[Tracking Cron] ${tenant.slug}: checked=${checked} delivered=${delivered} errors=${errors}`
+        );
         tenantResults.push({ tenant: tenant.slug, checked, delivered, errors });
       } catch (tenantErr) {
         console.error(`[Tracking Cron] Error processing tenant ${tenant.slug}:`, tenantErr);

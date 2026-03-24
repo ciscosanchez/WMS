@@ -5,10 +5,21 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -73,16 +84,19 @@ export function PutawayRulesClient({ initialRules, products, zones }: Props) {
         priority: parseInt(formPriority, 10) || 5,
       });
 
-      setRules((prev) => [...prev, {
-        id: result.id,
-        productId: formProductId || null,
-        productSku: product?.sku ?? null,
-        productName: product?.name ?? null,
-        zoneCode: formZoneCode || null,
-        strategy: formStrategy,
-        priority: parseInt(formPriority, 10) || 5,
-        isActive: true,
-      }]);
+      setRules((prev) => [
+        ...prev,
+        {
+          id: result.id,
+          productId: formProductId || null,
+          productSku: product?.sku ?? null,
+          productName: product?.name ?? null,
+          zoneCode: formZoneCode || null,
+          strategy: formStrategy,
+          priority: parseInt(formPriority, 10) || 5,
+          isActive: true,
+        },
+      ]);
       setAddOpen(false);
       resetForm();
       toast.success("Putaway rule added");
@@ -105,8 +119,17 @@ export function PutawayRulesClient({ initialRules, products, zones }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Putaway Rules" description="Configure how received items are assigned to storage bins">
-        <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) resetForm(); }}>
+      <PageHeader
+        title="Putaway Rules"
+        description="Configure how received items are assigned to storage bins"
+      >
+        <Dialog
+          open={addOpen}
+          onOpenChange={(open) => {
+            setAddOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger render={<Button />}>
             <Plus className="h-4 w-4" />
             Add Rule
@@ -114,43 +137,87 @@ export function PutawayRulesClient({ initialRules, products, zones }: Props) {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add Putaway Rule</DialogTitle>
-              <DialogDescription>Define how inventory should be placed in the warehouse.</DialogDescription>
+              <DialogDescription>
+                Define how inventory should be placed in the warehouse.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="rule-product" className="text-sm font-medium">Product (optional)</label>
-                <select id="rule-product" value={formProductId} onChange={(e) => setFormProductId(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <label htmlFor="rule-product" className="text-sm font-medium">
+                  Product (optional)
+                </label>
+                <select
+                  id="rule-product"
+                  value={formProductId}
+                  onChange={(e) => setFormProductId(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
                   <option value="">All products</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.sku} - {p.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="rule-zone" className="text-sm font-medium">Zone (optional)</label>
-                <select id="rule-zone" value={formZoneCode} onChange={(e) => setFormZoneCode(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <label htmlFor="rule-zone" className="text-sm font-medium">
+                  Zone (optional)
+                </label>
+                <select
+                  id="rule-zone"
+                  value={formZoneCode}
+                  onChange={(e) => setFormZoneCode(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
                   <option value="">Any zone</option>
-                  {zones.map((z) => <option key={z.code} value={z.code}>{z.code} - {z.name}</option>)}
+                  {zones.map((z) => (
+                    <option key={z.code} value={z.code}>
+                      {z.code} - {z.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="rule-strategy" className="text-sm font-medium">Strategy</label>
-                <select id="rule-strategy" value={formStrategy} onChange={(e) => setFormStrategy(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  {strategies.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                <label htmlFor="rule-strategy" className="text-sm font-medium">
+                  Strategy
+                </label>
+                <select
+                  id="rule-strategy"
+                  value={formStrategy}
+                  onChange={(e) => setFormStrategy(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {strategies.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="rule-priority" className="text-sm font-medium">Priority</label>
-                <input id="rule-priority" type="number" min={1} max={99} value={formPriority}
+                <label htmlFor="rule-priority" className="text-sm font-medium">
+                  Priority
+                </label>
+                <input
+                  id="rule-priority"
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                />
                 <p className="text-xs text-muted-foreground">Lower numbers are evaluated first.</p>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-              <Button onClick={addRule} disabled={submitting}>{submitting ? "Adding..." : "Add Rule"}</Button>
+              <Button variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={addRule} disabled={submitting}>
+                {submitting ? "Adding..." : "Add Rule"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -184,10 +251,16 @@ export function PutawayRulesClient({ initialRules, products, zones }: Props) {
                         <span className="font-medium">{rule.productSku}</span>
                         <p className="text-xs text-muted-foreground">{rule.productName}</p>
                       </div>
-                    ) : <span className="text-muted-foreground">All products</span>}
+                    ) : (
+                      <span className="text-muted-foreground">All products</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    {rule.zoneCode ? <span className="font-mono">{rule.zoneCode}</span> : <span className="text-muted-foreground">Any</span>}
+                    {rule.zoneCode ? (
+                      <span className="font-mono">{rule.zoneCode}</span>
+                    ) : (
+                      <span className="text-muted-foreground">Any</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={strategyColors[rule.strategy] ?? "outline"}>
@@ -201,7 +274,12 @@ export function PutawayRulesClient({ initialRules, products, zones }: Props) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(rule.id)} aria-label="Delete rule">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(rule.id)}
+                      aria-label="Delete rule"
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>

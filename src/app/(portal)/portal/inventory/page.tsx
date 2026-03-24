@@ -39,27 +39,50 @@ export default async function PortalInventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventory.map((item: { id: string; sku: string; name: string; uom: string; onHand: number; allocated: number; available: number; location: string }) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-mono text-sm">{item.sku}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.uom}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {item.onHand.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={item.allocated > 0 ? "text-orange-600 font-medium" : "text-muted-foreground"}>
-                      {item.allocated.toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={item.available > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                      {item.available.toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{item.location}</TableCell>
-                </TableRow>
-              ))}
+              {inventory.map(
+                (item: {
+                  id: string;
+                  sku: string;
+                  name: string;
+                  uom: string;
+                  onHand: number;
+                  allocated: number;
+                  available: number;
+                  location: string;
+                }) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-mono text-sm">{item.sku}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.uom}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {item.onHand.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span
+                        className={
+                          item.allocated > 0
+                            ? "text-orange-600 font-medium"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {item.allocated.toLocaleString()}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span
+                        className={
+                          item.available > 0
+                            ? "text-green-600 font-medium"
+                            : "text-red-600 font-medium"
+                        }
+                      >
+                        {item.available.toLocaleString()}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{item.location}</TableCell>
+                  </TableRow>
+                )
+              )}
             </TableBody>
           </Table>
         </div>

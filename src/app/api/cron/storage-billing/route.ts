@@ -59,7 +59,12 @@ export async function GET(req: NextRequest) {
           select: { id: true, name: true },
         });
 
-        const clientResults: Array<{ clientId: string; name: string; pallets: number; captured: boolean }> = [];
+        const clientResults: Array<{
+          clientId: string;
+          name: string;
+          pallets: number;
+          captured: boolean;
+        }> = [];
 
         for (const client of clients) {
           const occupiedBins = await dbAny.inventory.count({
@@ -70,7 +75,12 @@ export async function GET(req: NextRequest) {
           });
 
           if (occupiedBins === 0) {
-            clientResults.push({ clientId: client.id, name: client.name, pallets: 0, captured: false });
+            clientResults.push({
+              clientId: client.id,
+              name: client.name,
+              pallets: 0,
+              captured: false,
+            });
             continue;
           }
 

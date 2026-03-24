@@ -20,18 +20,31 @@ export async function getPickTasks() {
     orderBy: { createdAt: "desc" },
   });
 
-  return tasks.map((t) => ({
-    id: t.id,
-    taskNumber: t.taskNumber,
-    method: t.method,
-    status: t.status,
-    assignedTo: t.assignedTo,
-    orderId: t.orderId,
-    orderNumber: t.order?.orderNumber ?? "-",
-    items: t.lines.length,
-    startedAt: t.startedAt,
-    completedAt: t.completedAt,
-  }));
+  return tasks.map(
+    (t: {
+      id: string;
+      taskNumber: string;
+      method: string;
+      status: string;
+      assignedTo: string | null;
+      orderId: string | null;
+      order: { orderNumber: string } | null;
+      lines: Array<unknown>;
+      startedAt: Date | null;
+      completedAt: Date | null;
+    }) => ({
+      id: t.id,
+      taskNumber: t.taskNumber,
+      method: t.method,
+      status: t.status,
+      assignedTo: t.assignedTo,
+      orderId: t.orderId,
+      orderNumber: t.order?.orderNumber ?? "-",
+      items: t.lines.length,
+      startedAt: t.startedAt,
+      completedAt: t.completedAt,
+    })
+  );
 }
 
 export async function getPickingKpis() {

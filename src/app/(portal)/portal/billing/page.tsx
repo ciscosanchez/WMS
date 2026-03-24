@@ -60,7 +60,11 @@ export default async function PortalBillingPage() {
         />
         <KpiCard
           title={t("lastInvoice")}
-          value={lastInvoice ? `$${Number(lastInvoice.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
+          value={
+            lastInvoice
+              ? `$${Number(lastInvoice.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+              : "—"
+          }
           description={lastInvoice?.invoiceNumber ?? t("noInvoices")}
           icon={FileText}
         />
@@ -95,29 +99,34 @@ export default async function PortalBillingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((invoice: any) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                  <TableCell>
-                    {format(new Date(invoice.periodStart), "MMM d")}–{format(new Date(invoice.periodEnd), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${Number(invoice.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={statusMap[invoice.status] ?? invoice.status} />
-                  </TableCell>
-                  <TableCell>
-                    {invoice.dueDate ? format(new Date(invoice.dueDate), "MMM d, yyyy") : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      <Download className="mr-1 h-4 w-4" />
-                      {t("pdf")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {invoices.map(
+                (
+                  invoice: any // eslint-disable-line @typescript-eslint/no-explicit-any
+                ) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                    <TableCell>
+                      {format(new Date(invoice.periodStart), "MMM d")}–
+                      {format(new Date(invoice.periodEnd), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      ${Number(invoice.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={statusMap[invoice.status] ?? invoice.status} />
+                    </TableCell>
+                    <TableCell>
+                      {invoice.dueDate ? format(new Date(invoice.dueDate), "MMM d, yyyy") : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        <Download className="mr-1 h-4 w-4" />
+                        {t("pdf")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              )}
             </TableBody>
           </Table>
         </div>

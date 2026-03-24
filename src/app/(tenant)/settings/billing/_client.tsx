@@ -33,7 +33,12 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Settings2, FileText, Loader2 } from "lucide-react";
-import { saveDefaultRateCard, saveClientRateCard, generateInvoice, getInvoices } from "@/modules/billing/actions";
+import {
+  saveDefaultRateCard,
+  saveClientRateCard,
+  generateInvoice,
+  getInvoices,
+} from "@/modules/billing/actions";
 import { format } from "date-fns";
 
 // ─── Types ───────────────────────────────────────────────
@@ -48,7 +53,10 @@ interface RateLine {
 interface ClientRow {
   id: string;
   name: string;
-  rateCard: { monthlyMinimum: number; lines: Array<{ serviceType: string; unitRate: number; uom: string }> } | null;
+  rateCard: {
+    monthlyMinimum: number;
+    lines: Array<{ serviceType: string; unitRate: number; uom: string }>;
+  } | null;
 }
 
 interface InvoiceRow {
@@ -63,7 +71,10 @@ interface InvoiceRow {
 }
 
 interface Props {
-  defaultRateCard: { monthlyMinimum: number; lines: Array<{ serviceType: string; unitRate: number; uom: string }> } | null;
+  defaultRateCard: {
+    monthlyMinimum: number;
+    lines: Array<{ serviceType: string; unitRate: number; uom: string }>;
+  } | null;
   clients: ClientRow[];
   invoices: InvoiceRow[];
 }
@@ -71,15 +82,15 @@ interface Props {
 // ─── Service type display config ─────────────────────────
 
 const SERVICE_CONFIG: Array<{ serviceType: string; label: string; uom: string }> = [
-  { serviceType: "receiving_pallet",  label: "Receiving — Per Pallet",       uom: "$" },
-  { serviceType: "receiving_carton",  label: "Receiving — Per Carton",       uom: "$" },
-  { serviceType: "storage_pallet",    label: "Storage — Per Pallet / Month", uom: "$" },
-  { serviceType: "storage_sqft",      label: "Storage — Per Sq Ft / Month",  uom: "$" },
-  { serviceType: "handling_order",    label: "Handling — Per Order",         uom: "$" },
-  { serviceType: "handling_line",     label: "Handling — Per Line",          uom: "$" },
-  { serviceType: "handling_unit",     label: "Handling — Per Unit",          uom: "$" },
-  { serviceType: "shipping_markup",   label: "Shipping — Markup",            uom: "%" },
-  { serviceType: "value_add_hour",    label: "Value-Add — Per Hour",         uom: "$" },
+  { serviceType: "receiving_pallet", label: "Receiving — Per Pallet", uom: "$" },
+  { serviceType: "receiving_carton", label: "Receiving — Per Carton", uom: "$" },
+  { serviceType: "storage_pallet", label: "Storage — Per Pallet / Month", uom: "$" },
+  { serviceType: "storage_sqft", label: "Storage — Per Sq Ft / Month", uom: "$" },
+  { serviceType: "handling_order", label: "Handling — Per Order", uom: "$" },
+  { serviceType: "handling_line", label: "Handling — Per Line", uom: "$" },
+  { serviceType: "handling_unit", label: "Handling — Per Unit", uom: "$" },
+  { serviceType: "shipping_markup", label: "Shipping — Markup", uom: "%" },
+  { serviceType: "value_add_hour", label: "Value-Add — Per Hour", uom: "$" },
 ];
 
 const DEFAULT_RATES: Record<string, number> = {
@@ -102,7 +113,7 @@ function buildRateLines(
     return {
       serviceType: cfg.serviceType,
       label: cfg.label,
-      unitRate: saved ? Number(saved.unitRate) : DEFAULT_RATES[cfg.serviceType] ?? 0,
+      unitRate: saved ? Number(saved.unitRate) : (DEFAULT_RATES[cfg.serviceType] ?? 0),
       uom: cfg.uom,
     };
   });
@@ -110,7 +121,11 @@ function buildRateLines(
 
 // ─── Component ───────────────────────────────────────────
 
-export default function BillingConfigClient({ defaultRateCard, clients, invoices: initialInvoices }: Props) {
+export default function BillingConfigClient({
+  defaultRateCard,
+  clients,
+  invoices: initialInvoices,
+}: Props) {
   const [defaultRates, setDefaultRates] = useState<RateLine[]>(
     buildRateLines(defaultRateCard?.lines)
   );
@@ -138,7 +153,9 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
 
   function handleDefaultAmountChange(serviceType: string, value: string) {
     setDefaultRates((prev) =>
-      prev.map((r) => (r.serviceType === serviceType ? { ...r, unitRate: parseFloat(value) || 0 } : r))
+      prev.map((r) =>
+        r.serviceType === serviceType ? { ...r, unitRate: parseFloat(value) || 0 } : r
+      )
     );
   }
 
@@ -158,13 +175,17 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
     const lines = buildRateLines(client.rateCard?.lines ?? defaultRateCard?.lines);
     setActiveClient(client);
     setClientRates(lines);
-    setClientMinimum(client.rateCard?.monthlyMinimum ? Number(client.rateCard.monthlyMinimum) : defaultMinimum);
+    setClientMinimum(
+      client.rateCard?.monthlyMinimum ? Number(client.rateCard.monthlyMinimum) : defaultMinimum
+    );
     setDialogOpen(true);
   }
 
   function handleClientRateChange(serviceType: string, value: string) {
     setClientRates((prev) =>
-      prev.map((r) => (r.serviceType === serviceType ? { ...r, unitRate: parseFloat(value) || 0 } : r))
+      prev.map((r) =>
+        r.serviceType === serviceType ? { ...r, unitRate: parseFloat(value) || 0 } : r
+      )
     );
   }
 
@@ -184,7 +205,10 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
   // ─── Invoice generation ──────────────────────────────
 
   function handleGenerateInvoice() {
-    if (!invoiceClientId) { toast.error("Select a client"); return; }
+    if (!invoiceClientId) {
+      toast.error("Select a client");
+      return;
+    }
     const [year, month] = invoiceMonth.split("-").map(Number);
     const fromDate = new Date(year, month - 1, 1);
     const toDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
@@ -251,7 +275,9 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
                         min="0"
                         className="h-8 w-32"
                         value={rate.unitRate}
-                        onChange={(e) => handleDefaultAmountChange(rate.serviceType, e.target.value)}
+                        onChange={(e) =>
+                          handleDefaultAmountChange(rate.serviceType, e.target.value)
+                        }
                       />
                     </TableCell>
                     <TableCell className="text-muted-foreground">{rate.uom}</TableCell>
@@ -316,11 +342,19 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          ${(hasCustom ? Number(client.rateCard!.monthlyMinimum) : defaultMinimum).toLocaleString()}
+                          $
+                          {(hasCustom
+                            ? Number(client.rateCard!.monthlyMinimum)
+                            : defaultMinimum
+                          ).toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">{overrides}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm" onClick={() => openClientDialog(client)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openClientDialog(client)}
+                          >
                             <Settings2 className="mr-2 h-4 w-4" />
                             Configure
                           </Button>
@@ -353,7 +387,9 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -368,7 +404,11 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
               />
             </div>
             <Button onClick={handleGenerateInvoice} disabled={pendingInvoice || !invoiceClientId}>
-              {pendingInvoice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              {pendingInvoice ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
               {pendingInvoice ? "Generating…" : "Generate Invoice"}
             </Button>
           </div>
@@ -392,15 +432,28 @@ export default function BillingConfigClient({ defaultRateCard, clients, invoices
                       <TableCell className="font-mono text-sm">{inv.invoiceNumber}</TableCell>
                       <TableCell>{inv.client.name}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(inv.periodStart), "MMM d")} – {format(new Date(inv.periodEnd), "MMM d, yyyy")}
+                        {format(new Date(inv.periodStart), "MMM d")} –{" "}
+                        {format(new Date(inv.periodEnd), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={inv.status === "paid" ? "default" : inv.status === "sent" ? "secondary" : "outline"}>
+                        <Badge
+                          variant={
+                            inv.status === "paid"
+                              ? "default"
+                              : inv.status === "sent"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
                           {inv.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ${Number(inv.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        $
+                        {Number(inv.total).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {inv.dueDate ? format(new Date(inv.dueDate), "MMM d, yyyy") : "—"}

@@ -35,6 +35,8 @@ model Client {
   rateCard          RateCard?
   billingEvents     BillingEvent[]
   invoices          Invoice[]
+  dockAppointments  DockAppointment[]
+  returns           ReturnAuthorization[]
 
   @@map("clients")
 }
@@ -76,6 +78,8 @@ model Product {
   orderLines        OrderLine[]
   pickTaskLines     PickTaskLine[]
   shipmentItems     ShipmentItem[]
+  returnLines       ReturnLine[]
+  packPlanLines     PackPlanLine[]
 
   @@unique([clientId, sku])
   @@map("products")
@@ -105,7 +109,10 @@ model Warehouse {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  zones Zone[]
+  zones      Zone[]
+  dockDoors  DockDoor[]
+  yardSpots  YardSpot[]
+  appointments DockAppointment[]
 
   @@map("warehouses")
 }
@@ -190,6 +197,7 @@ model Bin {
   inventoryTransactionsTo   InventoryTransaction[] @relation("to_bin")
   putawayRules        PutawayRule[]
   pickTaskLines       PickTaskLine[]
+  returnInspections   ReturnInspection[]
 
   @@unique([shelfId, code])
   @@map("bins")
@@ -223,11 +231,12 @@ model InboundShipment {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  client       Client                @relation(fields: [clientId], references: [id])
-  lines        InboundShipmentLine[]
-  transactions ReceivingTransaction[]
-  discrepancies ReceivingDiscrepancy[]
-  documents    Document[]
+  client            Client                @relation(fields: [clientId], references: [id])
+  lines             InboundShipmentLine[]
+  transactions      ReceivingTransaction[]
+  discrepancies     ReceivingDiscrepancy[]
+  documents         Document[]
+  dockAppointments  DockAppointment[]     @relation("inbound_appointment")
 
   @@index([clientId])
   @@index([status])
@@ -414,6 +423,8 @@ enum TransactionType {
   count
   allocate
   deallocate
+  return_receive
+  return_dispose
 }
 
 model InventoryTransaction {
@@ -615,6 +626,7 @@ model Order {
   lines     OrderLine[]
   shipments Shipment[]
   picks     PickTask[]
+  returns   ReturnAuthorization[]
 
   @@index([status])
   @@index([clientId])
@@ -719,8 +731,15 @@ model Shipment {
   deliveredAt     DateTime? @map("delivered_at")
   createdAt       DateTime  @default(now()) @map("created_at")
 
-  order Order @relation(fields: [orderId], references: [id])
-  items ShipmentItem[]
+  order            Order              @relation(fields: [orderId], references: [id])
+  items            ShipmentItem[]
+  dockAppointments DockAppointment[]  @relation("outbound_appointment")
+  packPlans        PackPlan[]
+
+  // Manifest / LTL fields
+  manifestUrl   String?  @map("manifest_url")
+  freightClass  String?  @map("freight_class")
+  bolNumber     String?  @map("bol_number")
 
   @@index([orderId])
   @@index([shippedAt])
@@ -810,6 +829,10 @@ enum BillingServiceType {
   handling_unit
   shipping_markup
   value_add_hour
+  labor_hour
+  labor_unit
+  returns_processing
+  shipping_carton
 }
 
 enum InvoiceStatus {
@@ -908,6 +931,450 @@ model InvoiceLine {
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_lines")
+}
+
+// ─── Slotting Optimization ──────────────────────────────
+
+model SlottingConfig {
+  id               String   @id @default(cuid())
+  warehouseId      String   @unique @map("warehouse_id")
+  abcAThreshold    Int      @default(80) @map("abc_a_threshold")
+  abcBThreshold    Int      @default(95) @map("abc_b_threshold")
+  lookbackDays     Int      @default(90) @map("lookback_days")
+  weightPenalty    Decimal  @default(1) @db.Decimal(10, 2) @map("weight_penalty")
+  zonePrefs        Json     @default("{}") @map("zone_prefs")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("slotting_configs")
+}
+
+enum SlottingRunStatus {
+  slotting_pending
+  slotting_running
+  slotting_completed
+  slotting_failed
+}
+
+model SlottingRun {
+  id                  String            @id @default(cuid())
+  warehouseId         String            @map("warehouse_id")
+  status              SlottingRunStatus @default(slotting_pending)
+  triggeredBy         String            @map("triggered_by")
+  productCount        Int               @default(0) @map("product_count")
+  recommendationCount Int               @default(0) @map("recommendation_count")
+  startedAt           DateTime?         @map("started_at")
+  completedAt         DateTime?         @map("completed_at")
+  error               String?
+  createdAt           DateTime          @default(now()) @map("created_at")
+
+  recommendations SlottingRecommendation[]
+
+  @@index([warehouseId])
+  @@index([status])
+  @@map("slotting_runs")
+}
+
+enum SlottingRecStatus {
+  rec_pending
+  rec_accepted
+  rec_rejected
+  rec_moved
+}
+
+model SlottingRecommendation {
+  id               String           @id @default(cuid())
+  runId            String           @map("run_id")
+  productId        String           @map("product_id")
+  currentBinId     String           @map("current_bin_id")
+  recommendedBinId String           @map("recommended_bin_id")
+  abcClass         String           @map("abc_class")
+  pickFrequency    Int              @default(0) @map("pick_frequency")
+  velocityScore    Decimal          @default(0) @db.Decimal(10, 2) @map("velocity_score")
+  weightScore      Decimal          @default(0) @db.Decimal(10, 2) @map("weight_score")
+  ergonomicScore   Decimal          @default(0) @db.Decimal(10, 2) @map("ergonomic_score")
+  totalScore       Decimal          @default(0) @db.Decimal(10, 2) @map("total_score")
+  status           SlottingRecStatus @default(rec_pending)
+  moveTaskId       String?          @map("move_task_id")
+
+  run SlottingRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([productId])
+  @@index([status])
+  @@map("slotting_recommendations")
+}
+
+// ─── Cartonization & Manifesting ────────────────────────
+
+model CartonType {
+  id         String   @id @default(cuid())
+  name       String
+  code       String   @unique
+  length     Decimal  @db.Decimal(10, 2)
+  width      Decimal  @db.Decimal(10, 2)
+  height     Decimal  @db.Decimal(10, 2)
+  dimUnit    String   @default("in") @map("dim_unit")
+  maxWeight  Decimal  @db.Decimal(10, 4) @map("max_weight")
+  weightUnit String   @default("lb") @map("weight_unit")
+  tareWeight Decimal  @default(0) @db.Decimal(10, 4) @map("tare_weight")
+  cost       Decimal? @db.Decimal(10, 2)
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  packPlans PackPlan[]
+
+  @@map("carton_types")
+}
+
+model PackPlan {
+  id           String   @id @default(cuid())
+  shipmentId   String   @map("shipment_id")
+  cartonTypeId String   @map("carton_type_id")
+  cartonSeq    Int      @map("carton_seq")
+  totalWeight  Decimal  @db.Decimal(10, 4) @map("total_weight")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  shipment   Shipment   @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  cartonType CartonType @relation(fields: [cartonTypeId], references: [id])
+  lines      PackPlanLine[]
+
+  @@index([shipmentId])
+  @@map("pack_plans")
+}
+
+model PackPlanLine {
+  id           String  @id @default(cuid())
+  packPlanId   String  @map("pack_plan_id")
+  productId    String  @map("product_id")
+  quantity     Int
+  lotNumber    String? @map("lot_number")
+  serialNumber String? @map("serial_number")
+
+  packPlan PackPlan @relation(fields: [packPlanId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([packPlanId])
+  @@map("pack_plan_lines")
+}
+
+// ─── Returns / RMA ──────────────────────────────────────
+
+enum RmaStatus {
+  requested
+  approved
+  in_transit
+  received
+  inspecting
+  dispositioned
+  rma_completed
+  rejected
+  rma_cancelled
+}
+
+enum DispositionType {
+  restock
+  quarantine
+  dispose
+  repair
+}
+
+model ReturnAuthorization {
+  id           String    @id @default(cuid())
+  rmaNumber    String    @unique @map("rma_number")
+  clientId     String    @map("client_id")
+  orderId      String?   @map("order_id")
+  status       RmaStatus @default(requested)
+  reason       String
+  notes        String?
+  requestedBy  String    @map("requested_by")
+  approvedBy   String?   @map("approved_by")
+  approvedAt   DateTime? @map("approved_at")
+  receivedAt   DateTime? @map("received_at")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  client      Client             @relation(fields: [clientId], references: [id])
+  order       Order?             @relation(fields: [orderId], references: [id])
+  lines       ReturnLine[]
+  inspections ReturnInspection[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("return_authorizations")
+}
+
+model ReturnLine {
+  id              String          @id @default(cuid())
+  rmaId           String          @map("rma_id")
+  productId       String          @map("product_id")
+  expectedQty     Int             @map("expected_qty")
+  receivedQty     Int             @default(0) @map("received_qty")
+  disposition     DispositionType?
+  dispositionQty  Int             @default(0) @map("disposition_qty")
+  dispositionNotes String?        @map("disposition_notes")
+  dispositionBy   String?         @map("disposition_by")
+  dispositionAt   DateTime?       @map("disposition_at")
+  uom             String          @default("EA")
+  lotNumber       String?         @map("lot_number")
+  serialNumber    String?         @map("serial_number")
+  notes           String?
+
+  rma     ReturnAuthorization @relation(fields: [rmaId], references: [id], onDelete: Cascade)
+  product Product             @relation(fields: [productId], references: [id])
+  inspections ReturnInspection[]
+
+  @@index([rmaId])
+  @@map("return_lines")
+}
+
+model ReturnInspection {
+  id          String        @id @default(cuid())
+  rmaId       String        @map("rma_id")
+  lineId      String        @map("line_id")
+  binId       String?       @map("bin_id")
+  quantity    Int
+  condition   ItemCondition @default(good)
+  disposition DispositionType
+  inspectedBy String        @map("inspected_by")
+  inspectedAt DateTime      @default(now()) @map("inspected_at")
+  notes       String?
+
+  rma  ReturnAuthorization @relation(fields: [rmaId], references: [id])
+  line ReturnLine          @relation(fields: [lineId], references: [id])
+  bin  Bin?                @relation(fields: [binId], references: [id])
+
+  @@index([rmaId])
+  @@map("return_inspections")
+}
+
+// ─── Labor Management ───────────────────────────────────
+
+enum ShiftStatus {
+  clocked_in
+  clocked_out
+}
+
+model OperatorShift {
+  id           String      @id @default(cuid())
+  operatorId   String      @map("operator_id")
+  clockIn      DateTime    @map("clock_in")
+  clockOut     DateTime?   @map("clock_out")
+  status       ShiftStatus @default(clocked_in)
+  breakMinutes Int         @default(0) @map("break_minutes")
+  hourlyRate   Decimal?    @db.Decimal(10, 2) @map("hourly_rate")
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  taskTimeLogs TaskTimeLog[]
+
+  @@index([operatorId])
+  @@index([clockIn])
+  @@map("operator_shifts")
+}
+
+enum TaskType {
+  pick
+  pack
+  receive
+  putaway
+  move
+  count
+}
+
+model TaskTimeLog {
+  id           String    @id @default(cuid())
+  shiftId      String?   @map("shift_id")
+  operatorId   String    @map("operator_id")
+  taskType     TaskType  @map("task_type")
+  referenceId  String    @map("reference_id")
+  clientId     String?   @map("client_id")
+  startedAt    DateTime  @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  unitsHandled Int       @default(0) @map("units_handled")
+  linesHandled Int       @default(0) @map("lines_handled")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  shift OperatorShift? @relation(fields: [shiftId], references: [id])
+
+  @@index([operatorId])
+  @@index([taskType])
+  @@index([clientId])
+  @@index([startedAt])
+  @@map("task_time_logs")
+}
+
+model LaborRate {
+  id            String    @id @default(cuid())
+  operatorId    String?   @map("operator_id")
+  role          String?
+  hourlyRate    Decimal   @db.Decimal(10, 2) @map("hourly_rate")
+  currency      String    @default("USD")
+  effectiveFrom DateTime  @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("labor_rates")
+}
+
+// ─── Yard & Dock Scheduling ─────────────────────────────
+
+enum DockDoorType {
+  inbound
+  outbound
+  both
+}
+
+enum DockDoorStatus {
+  available
+  occupied
+  maintenance
+  closed
+}
+
+model DockDoor {
+  id          String         @id @default(cuid())
+  warehouseId String         @map("warehouse_id")
+  code        String
+  name        String
+  type        DockDoorType   @default(both)
+  status      DockDoorStatus @default(available)
+  notes       String?
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  warehouse    Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  appointments DockAppointment[]
+
+  @@unique([warehouseId, code])
+  @@map("dock_doors")
+}
+
+enum YardSpotType {
+  parking
+  staging
+  refrigerated
+  hazmat
+}
+
+enum YardSpotStatus {
+  empty
+  occupied
+  reserved
+  blocked
+}
+
+model YardSpot {
+  id          String         @id @default(cuid())
+  warehouseId String         @map("warehouse_id")
+  code        String
+  name        String
+  type        YardSpotType   @default(parking)
+  status      YardSpotStatus @default(empty)
+  row         Int?
+  col         Int?           @map("col")
+  notes       String?
+  isActive    Boolean        @default(true) @map("is_active")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  warehouse  Warehouse   @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  yardVisits YardVisit[]
+
+  @@unique([warehouseId, code])
+  @@map("yard_spots")
+}
+
+enum AppointmentStatus {
+  scheduled
+  confirmed
+  checked_in
+  at_dock
+  loading
+  unloading
+  completed
+  cancelled
+  no_show
+}
+
+enum AppointmentDirection {
+  inbound
+  outbound
+}
+
+model DockAppointment {
+  id                  String               @id @default(cuid())
+  appointmentNumber   String               @unique @map("appointment_number")
+  warehouseId         String               @map("warehouse_id")
+  dockDoorId          String?              @map("dock_door_id")
+  direction           AppointmentDirection
+  status              AppointmentStatus    @default(scheduled)
+  // Timing
+  scheduledStart      DateTime             @map("scheduled_start")
+  scheduledEnd        DateTime             @map("scheduled_end")
+  actualArrival       DateTime?            @map("actual_arrival")
+  dockStart           DateTime?            @map("dock_start")
+  dockEnd             DateTime?            @map("dock_end")
+  // Driver / trailer info
+  carrier             String?
+  trailerNumber       String?              @map("trailer_number")
+  driverName          String?              @map("driver_name")
+  driverPhone         String?              @map("driver_phone")
+  driverLicense       String?              @map("driver_license")
+  // Linked entities
+  inboundShipmentId   String?              @map("inbound_shipment_id")
+  outboundShipmentId  String?              @map("outbound_shipment_id")
+  clientId            String?              @map("client_id")
+  // Metadata
+  notes               String?
+  cancelReason        String?              @map("cancel_reason")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  warehouse        Warehouse        @relation(fields: [warehouseId], references: [id])
+  dockDoor         DockDoor?        @relation(fields: [dockDoorId], references: [id])
+  inboundShipment  InboundShipment? @relation("inbound_appointment", fields: [inboundShipmentId], references: [id])
+  outboundShipment Shipment?        @relation("outbound_appointment", fields: [outboundShipmentId], references: [id])
+  client           Client?          @relation(fields: [clientId], references: [id])
+  yardVisits       YardVisit[]
+
+  @@index([warehouseId])
+  @@index([status])
+  @@index([scheduledStart])
+  @@index([dockDoorId])
+  @@index([clientId])
+  @@map("dock_appointments")
+}
+
+enum YardVisitStatus {
+  in_yard
+  at_dock
+  departed
+}
+
+model YardVisit {
+  id            String          @id @default(cuid())
+  yardSpotId    String          @map("yard_spot_id")
+  appointmentId String?         @map("appointment_id")
+  trailerNumber String          @map("trailer_number")
+  carrier       String?
+  sealNumber    String?         @map("seal_number")
+  status        YardVisitStatus @default(in_yard)
+  arrivedAt     DateTime        @default(now()) @map("arrived_at")
+  departedAt    DateTime?       @map("departed_at")
+  notes         String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  yardSpot    YardSpot         @relation(fields: [yardSpotId], references: [id])
+  appointment DockAppointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([yardSpotId])
+  @@index([status])
+  @@map("yard_visits")
 }
 
 // ─── Document Intelligence (DocAI) ─────────────────────

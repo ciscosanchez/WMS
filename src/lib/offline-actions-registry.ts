@@ -22,15 +22,10 @@ import {
 } from "@/modules/operator/actions";
 
 // Receiving actions
-import {
-  receiveLine,
-  updateShipmentStatus,
-} from "@/modules/receiving/actions";
+import { receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 
 // Inventory actions
-import {
-  moveInventory,
-} from "@/modules/inventory/actions";
+import { moveInventory } from "@/modules/inventory/actions";
 
 export function registerAllOfflineActions() {
   registerOfflineActions("operator", {

@@ -41,13 +41,19 @@ function UserActions({ user }: { user: UserRow }) {
     if (!confirm(`Remove ${user.name} from this tenant?`)) return;
     const result = await removeUser(user.id);
     if ("error" in result) toast.error(result.error);
-    else { toast.success("User removed"); router.refresh(); }
+    else {
+      toast.success("User removed");
+      router.refresh();
+    }
   }
 
   async function handleRoleChange(role: TenantRole) {
     const result = await updateUserRole(user.id, role);
     if ("error" in result) toast.error(result.error);
-    else { toast.success("Role updated"); router.refresh(); }
+    else {
+      toast.success("Role updated");
+      router.refresh();
+    }
   }
 
   return (

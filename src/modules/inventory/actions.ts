@@ -251,7 +251,10 @@ export async function getInventoryCursor(opts: {
   const pageSize = opts.pageSize ?? 50;
 
   if (config.useMockData) {
-    return buildCursorResult(mockInventory.slice(0, pageSize) as (typeof mockInventory[number] & { id: string })[], pageSize);
+    return buildCursorResult(
+      mockInventory.slice(0, pageSize) as ((typeof mockInventory)[number] & { id: string })[],
+      pageSize
+    );
   }
 
   const { tenant } = await getContext();
@@ -313,7 +316,10 @@ export async function getTransactionsCursor(opts: {
   const pageSize = opts.pageSize ?? 50;
 
   if (config.useMockData) {
-    return buildCursorResult(mockTransactions.slice(0, pageSize) as (typeof mockTransactions[number] & { id: string })[], pageSize);
+    return buildCursorResult(
+      mockTransactions.slice(0, pageSize) as ((typeof mockTransactions)[number] & { id: string })[],
+      pageSize
+    );
   }
 
   const { tenant } = await getContext();
@@ -369,69 +375,71 @@ export async function moveInventory(data: unknown) {
   }
 
   // Atomic: deduct source, credit destination, log ledger
-  const tx = await tenant.db.$transaction(async (prisma) => {
-    // Re-check availability inside the transaction to prevent races
-    const locked = await prisma.inventory.findFirst({
-      where: { id: source.id, available: { gte: parsed.quantity } },
-    });
-    if (!locked) throw new Error("Insufficient available inventory (concurrent modification)");
+  const tx = await tenant.db.$transaction(
+    async (prisma: Parameters<Parameters<typeof tenant.db.$transaction>[0]>[0]) => {
+      // Re-check availability inside the transaction to prevent races
+      const locked = await prisma.inventory.findFirst({
+        where: { id: source.id, available: { gte: parsed.quantity } },
+      });
+      if (!locked) throw new Error("Insufficient available inventory (concurrent modification)");
 
-    // Deduct from source
-    await prisma.inventory.update({
-      where: { id: source.id },
-      data: {
-        onHand: { decrement: parsed.quantity },
-        available: { decrement: parsed.quantity },
-      },
-    });
-
-    // Add to destination
-    const destExisting = await prisma.inventory.findFirst({
-      where: {
-        productId: parsed.productId,
-        binId: parsed.toBinId,
-        lotNumber: parsed.lotNumber || null,
-        serialNumber: parsed.serialNumber || null,
-      },
-    });
-
-    if (destExisting) {
+      // Deduct from source
       await prisma.inventory.update({
-        where: { id: destExisting.id },
+        where: { id: source.id },
         data: {
-          onHand: { increment: parsed.quantity },
-          available: { increment: parsed.quantity },
+          onHand: { decrement: parsed.quantity },
+          available: { decrement: parsed.quantity },
         },
       });
-    } else {
-      await prisma.inventory.create({
-        data: {
+
+      // Add to destination
+      const destExisting = await prisma.inventory.findFirst({
+        where: {
           productId: parsed.productId,
           binId: parsed.toBinId,
           lotNumber: parsed.lotNumber || null,
           serialNumber: parsed.serialNumber || null,
-          onHand: parsed.quantity,
-          allocated: 0,
-          available: parsed.quantity,
+        },
+      });
+
+      if (destExisting) {
+        await prisma.inventory.update({
+          where: { id: destExisting.id },
+          data: {
+            onHand: { increment: parsed.quantity },
+            available: { increment: parsed.quantity },
+          },
+        });
+      } else {
+        await prisma.inventory.create({
+          data: {
+            productId: parsed.productId,
+            binId: parsed.toBinId,
+            lotNumber: parsed.lotNumber || null,
+            serialNumber: parsed.serialNumber || null,
+            onHand: parsed.quantity,
+            allocated: 0,
+            available: parsed.quantity,
+          },
+        });
+      }
+
+      // Log transaction
+      return prisma.inventoryTransaction.create({
+        data: {
+          type: "move",
+          productId: parsed.productId,
+          fromBinId: parsed.fromBinId,
+          toBinId: parsed.toBinId,
+          quantity: parsed.quantity,
+          lotNumber: parsed.lotNumber || null,
+          serialNumber: parsed.serialNumber || null,
+          reason: parsed.reason || null,
+          performedBy: user.id,
         },
       });
     }
-
-    // Log transaction
-    return prisma.inventoryTransaction.create({
-      data: {
-        type: "move",
-        productId: parsed.productId,
-        fromBinId: parsed.fromBinId,
-        toBinId: parsed.toBinId,
-        quantity: parsed.quantity,
-        lotNumber: parsed.lotNumber || null,
-        serialNumber: parsed.serialNumber || null,
-        reason: parsed.reason || null,
-        performedBy: user.id,
-      },
-    });
-  });
+  );
 
   await logAudit(tenant.db, {
     userId: user.id,
@@ -508,74 +516,76 @@ export async function approveAdjustment(id: string) {
   if (adjustment.status === "completed") return; // Already applied — idempotent
 
   // Atomic: apply all adjustment lines + mark completed in one transaction
-  await tenant.db.$transaction(async (prisma) => {
-    // Re-check status inside transaction to prevent concurrent approvals
-    const current = await prisma.inventoryAdjustment.findUnique({
-      where: { id },
-      select: { status: true },
-    });
-    if (current?.status === "completed") return;
-
-    for (const line of adjustment.lines) {
-      const inv = await prisma.inventory.findFirst({
-        where: {
-          productId: line.productId,
-          binId: line.binId,
-          lotNumber: line.lotNumber,
-          serialNumber: line.serialNumber,
-        },
+  await tenant.db.$transaction(
+    async (prisma: Parameters<Parameters<typeof tenant.db.$transaction>[0]>[0]) => {
+      // Re-check status inside transaction to prevent concurrent approvals
+      const current = await prisma.inventoryAdjustment.findUnique({
+        where: { id },
+        select: { status: true },
       });
+      if (current?.status === "completed") return;
 
-      if (inv) {
-        const newOnHand = line.countedQty;
-        await prisma.inventory.update({
-          where: { id: inv.id },
-          data: {
-            onHand: newOnHand,
-            available: newOnHand - inv.allocated,
-          },
-        });
-      } else if (line.countedQty > 0) {
-        await prisma.inventory.create({
-          data: {
+      for (const line of adjustment.lines) {
+        const inv = await prisma.inventory.findFirst({
+          where: {
             productId: line.productId,
             binId: line.binId,
             lotNumber: line.lotNumber,
             serialNumber: line.serialNumber,
-            onHand: line.countedQty,
-            allocated: 0,
-            available: line.countedQty,
+          },
+        });
+
+        if (inv) {
+          const newOnHand = line.countedQty;
+          await prisma.inventory.update({
+            where: { id: inv.id },
+            data: {
+              onHand: newOnHand,
+              available: newOnHand - inv.allocated,
+            },
+          });
+        } else if (line.countedQty > 0) {
+          await prisma.inventory.create({
+            data: {
+              productId: line.productId,
+              binId: line.binId,
+              lotNumber: line.lotNumber,
+              serialNumber: line.serialNumber,
+              onHand: line.countedQty,
+              allocated: 0,
+              available: line.countedQty,
+            },
+          });
+        }
+
+        // Log transaction
+        await prisma.inventoryTransaction.create({
+          data: {
+            type: "adjust",
+            productId: line.productId,
+            toBinId: line.binId,
+            quantity: line.variance,
+            lotNumber: line.lotNumber,
+            serialNumber: line.serialNumber,
+            referenceType: "adjustment",
+            referenceId: id,
+            reason: adjustment.reason || null,
+            performedBy: user.id,
           },
         });
       }
 
-      // Log transaction
-      await prisma.inventoryTransaction.create({
+      await prisma.inventoryAdjustment.update({
+        where: { id },
         data: {
-          type: "adjust",
-          productId: line.productId,
-          toBinId: line.binId,
-          quantity: line.variance,
-          lotNumber: line.lotNumber,
-          serialNumber: line.serialNumber,
-          referenceType: "adjustment",
-          referenceId: id,
-          reason: adjustment.reason || null,
-          performedBy: user.id,
+          status: "completed",
+          approvedBy: user.id,
+          approvedAt: new Date(),
+          completedAt: new Date(),
         },
       });
     }
-
-    await prisma.inventoryAdjustment.update({
-      where: { id },
-      data: {
-        status: "completed",
-        approvedBy: user.id,
-        approvedAt: new Date(),
-        completedAt: new Date(),
-      },
-    });
-  });
+  );
 
   await logAudit(tenant.db, {
     userId: user.id,
@@ -590,16 +600,33 @@ export async function approveAdjustment(id: string) {
     try {
       const products = await tenant.db.product.findMany({
         where: { isActive: true, minStock: { not: null } },
-        select: { id: true, sku: true, name: true, minStock: true, inventory: { select: { available: true } } },
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          minStock: true,
+          inventory: { select: { available: true } },
+        },
       });
       const lowStock = products
-        .map((p) => ({
-          sku: p.sku,
-          name: p.name,
-          available: p.inventory.reduce((sum, inv) => sum + inv.available, 0),
-          minStock: p.minStock ?? 0,
-        }))
-        .filter((p) => p.available < p.minStock);
+        .map(
+          (p: {
+            id: string;
+            sku: string;
+            name: string;
+            minStock: number | null;
+            inventory: Array<{ available: number }>;
+          }) => ({
+            sku: p.sku,
+            name: p.name,
+            available: p.inventory.reduce(
+              (sum: number, inv: { available: number }) => sum + inv.available,
+              0
+            ),
+            minStock: p.minStock ?? 0,
+          })
+        )
+        .filter((p: { available: number; minStock: number }) => p.available < p.minStock);
 
       if (lowStock.length > 0) {
         await notificationQueue.add("low_stock_alert", {
@@ -694,32 +721,47 @@ export async function getPendingPutawayItems() {
     where: {
       type: "putaway",
       referenceType: "receiving_transaction",
-      referenceId: { in: receivingTxns.map((t) => t.id) },
+      referenceId: { in: receivingTxns.map((t: { id: string }) => t.id) },
     },
     select: { referenceId: true },
   });
-  const putawayIds = new Set(putawayTxns.map((t) => t.referenceId));
+  const putawayIds = new Set(putawayTxns.map((t: { referenceId: string | null }) => t.referenceId));
 
-  const pending = receivingTxns.filter((tx) => !putawayIds.has(tx.id));
+  const pending = receivingTxns.filter((tx: { id: string }) => !putawayIds.has(tx.id));
 
   // Enrich each pending item with putaway engine suggestions
   const results = await Promise.all(
-    pending.map(async (tx) => {
-      const suggestions = await suggestPutawayLocation(tx.line.productId, tx.quantity);
-      return {
-        id: tx.id,
-        productId: tx.line.productId,
-        productSku: tx.line.product.sku,
-        productName: tx.line.product.name,
-        clientCode: tx.line.product.client?.code ?? "-",
-        quantity: tx.quantity,
-        receivedAt: tx.receivedAt,
-        shipmentNumber: tx.shipment.shipmentNumber,
-        currentBinId: tx.binId,
-        currentBinBarcode: tx.bin?.barcode ?? null,
-        suggestions: suggestions.filter((s) => s.binId !== ""),
-      };
-    })
+    pending.map(
+      async (tx: {
+        id: string;
+        line: {
+          productId: string;
+          product: { sku: string; name: string; client: { code: string } | null };
+        };
+        quantity: number;
+        receivedAt: Date;
+        shipment: { shipmentNumber: string };
+        binId: string | null;
+        bin: { barcode: string } | null;
+        lotNumber: string | null;
+        serialNumber: string | null;
+      }) => {
+        const suggestions = await suggestPutawayLocation(tx.line.productId, tx.quantity);
+        return {
+          id: tx.id,
+          productId: tx.line.productId,
+          productSku: tx.line.product.sku,
+          productName: tx.line.product.name,
+          clientCode: tx.line.product.client?.code ?? "-",
+          quantity: tx.quantity,
+          receivedAt: tx.receivedAt,
+          shipmentNumber: tx.shipment.shipmentNumber,
+          currentBinId: tx.binId,
+          currentBinBarcode: tx.bin?.barcode ?? null,
+          suggestions: suggestions.filter((s) => s.binId !== ""),
+        };
+      }
+    )
   );
 
   return results;
@@ -752,13 +794,44 @@ export async function confirmPutaway(receivingTxId: string, targetBinId: string)
     return { success: true }; // Idempotent — already processed
   }
 
-  // Atomic: upsert inventory in target bin + log putaway transaction
-  await db.$transaction(async (prisma) => {
+  // Atomic: decrement source bin + upsert target bin + log putaway transaction
+  await db.$transaction(async (prisma: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     // Re-check inside transaction to prevent concurrent putaway
     const doubleCheck = await prisma.inventoryTransaction.findFirst({
-      where: { type: "putaway", referenceType: "receiving_transaction", referenceId: receivingTxId },
+      where: {
+        type: "putaway",
+        referenceType: "receiving_transaction",
+        referenceId: receivingTxId,
+      },
     });
     if (doubleCheck) return; // Already processed concurrently
+
+    // Decrement inventory in source bin (where finalizeReceiving placed it)
+    if (rxTx.binId) {
+      const sourceInv = await prisma.inventory.findFirst({
+        where: {
+          productId: rxTx.line.productId,
+          binId: rxTx.binId,
+          lotNumber: rxTx.lotNumber,
+          serialNumber: rxTx.serialNumber,
+        },
+      });
+      if (!sourceInv || sourceInv.onHand < rxTx.quantity) {
+        throw new Error(
+          "Source bin has insufficient inventory — receiving may not have been finalized yet"
+        );
+      }
+      const newSourceOnHand = sourceInv.onHand - rxTx.quantity;
+      await prisma.inventory.update({
+        where: { id: sourceInv.id },
+        data: {
+          onHand: newSourceOnHand,
+          available: newSourceOnHand - sourceInv.allocated,
+        },
+      });
+    }
+
+    // Increment inventory in target bin
     const existing = await prisma.inventory.findFirst({
       where: {
         productId: rxTx.line.productId,
@@ -831,16 +904,26 @@ export async function getPutawayRules() {
     orderBy: { priority: "asc" },
   });
 
-  return rules.map((r) => ({
-    id: r.id,
-    productId: r.productId,
-    productSku: r.product?.sku ?? null,
-    productName: r.product?.name ?? null,
-    zoneCode: r.zoneCode,
-    strategy: r.strategy,
-    priority: r.priority,
-    isActive: r.isActive,
-  }));
+  return rules.map(
+    (r: {
+      id: string;
+      productId: string | null;
+      product: { sku: string; name: string } | null;
+      zoneCode: string | null;
+      strategy: string;
+      priority: number;
+      isActive: boolean;
+    }) => ({
+      id: r.id,
+      productId: r.productId,
+      productSku: r.product?.sku ?? null,
+      productName: r.product?.name ?? null,
+      zoneCode: r.zoneCode,
+      strategy: r.strategy,
+      priority: r.priority,
+      isActive: r.isActive,
+    })
+  );
 }
 
 export async function createPutawayRule(data: {

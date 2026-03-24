@@ -44,13 +44,25 @@ const UPS_SERVICE_NAMES: Record<string, string> = {
 };
 
 const UPS_SERVICE_DAYS: Record<string, number> = {
-  "01": 1, "02": 2, "03": 5, "12": 3,
-  "13": 1, "14": 1, "59": 2, "65": 3,
+  "01": 1,
+  "02": 2,
+  "03": 5,
+  "12": 3,
+  "13": 1,
+  "14": 1,
+  "59": 2,
+  "65": 3,
 };
 
 const UPS_GUARANTEED: Record<string, boolean> = {
-  "01": true, "02": true, "03": false, "12": false,
-  "13": true, "14": true, "59": true, "65": true,
+  "01": true,
+  "02": true,
+  "03": false,
+  "12": false,
+  "13": true,
+  "14": true,
+  "59": true,
+  "65": true,
 };
 
 export class UPSAdapter implements CarrierAdapter {
@@ -74,9 +86,9 @@ export class UPSAdapter implements CarrierAdapter {
       return this.tokenCache.token;
     }
 
-    const credentials = Buffer.from(
-      `${this.config.clientId}:${this.config.clientSecret}`
-    ).toString("base64");
+    const credentials = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString(
+      "base64"
+    );
 
     const res = await fetch(`${this.baseUrl}/security/v1/oauth/token`, {
       method: "POST",
@@ -101,10 +113,7 @@ export class UPSAdapter implements CarrierAdapter {
     return this.tokenCache.token;
   }
 
-  private async authedFetch(
-    url: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
+  private async authedFetch(url: string, options: RequestInit = {}): Promise<Response> {
     const token = await this.getToken();
     return fetch(url, {
       ...options,
@@ -155,19 +164,21 @@ export class UPSAdapter implements CarrierAdapter {
               CountryCode: request.from.country,
             },
           },
-          Package: [{
-            PackagingType: { Code: "02" },
-            Dimensions: {
-              UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
-              Length: String(Math.ceil(pkg.length)),
-              Width: String(Math.ceil(pkg.width)),
-              Height: String(Math.ceil(pkg.height)),
+          Package: [
+            {
+              PackagingType: { Code: "02" },
+              Dimensions: {
+                UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
+                Length: String(Math.ceil(pkg.length)),
+                Width: String(Math.ceil(pkg.width)),
+                Height: String(Math.ceil(pkg.height)),
+              },
+              PackageWeight: {
+                UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
+                Weight: String(pkg.weight.toFixed(1)),
+              },
             },
-            PackageWeight: {
-              UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
-              Weight: String(pkg.weight.toFixed(1)),
-            },
-          }],
+          ],
           ShipmentRatingOptions: { NegotiatedRatesIndicator: "" },
         },
       },
@@ -184,7 +195,7 @@ export class UPSAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const shipments: any[] = Array.isArray(data.RateResponse?.RatedShipment)
       ? data.RateResponse.RatedShipment
@@ -261,22 +272,24 @@ export class UPSAdapter implements CarrierAdapter {
             },
           },
           Service: { Code: request.serviceCode },
-          Package: [{
-            Packaging: { Code: "02" },
-            Dimensions: {
-              UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
-              Length: String(Math.ceil(pkg.length)),
-              Width: String(Math.ceil(pkg.width)),
-              Height: String(Math.ceil(pkg.height)),
+          Package: [
+            {
+              Packaging: { Code: "02" },
+              Dimensions: {
+                UnitOfMeasurement: { Code: pkg.dimUnit === "in" ? "IN" : "CM" },
+                Length: String(Math.ceil(pkg.length)),
+                Width: String(Math.ceil(pkg.width)),
+                Height: String(Math.ceil(pkg.height)),
+              },
+              PackageWeight: {
+                UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
+                Weight: String(pkg.weight.toFixed(1)),
+              },
+              ReferenceNumber: request.reference
+                ? { Code: "PO", Value: request.reference }
+                : undefined,
             },
-            PackageWeight: {
-              UnitOfMeasurement: { Code: pkg.weightUnit === "lb" ? "LBS" : "KGS" },
-              Weight: String(pkg.weight.toFixed(1)),
-            },
-            ReferenceNumber: request.reference
-              ? { Code: "PO", Value: request.reference }
-              : undefined,
-          }],
+          ],
         },
         LabelSpecification: {
           LabelImageFormat: { Code: "PDF" },
@@ -296,19 +309,19 @@ export class UPSAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     const results = data.ShipmentResponse?.ShipmentResults;
     // PackageResults can be array or single object
     const pkgResults = Array.isArray(results?.PackageResults)
       ? results.PackageResults[0]
       : results?.PackageResults;
 
-    const trackingNumber =
-      pkgResults?.TrackingNumber ?? results?.ShipmentIdentificationNumber;
+    const trackingNumber = pkgResults?.TrackingNumber ?? results?.ShipmentIdentificationNumber;
     const labelData = pkgResults?.ShippingLabel?.GraphicImage ?? "";
     const cost = parseFloat(
       pkgResults?.BaseServiceCharge?.MonetaryValue ??
-      results?.ShipmentCharges?.TotalCharges?.MonetaryValue ?? "0"
+        results?.ShipmentCharges?.TotalCharges?.MonetaryValue ??
+        "0"
     );
 
     return {
@@ -336,7 +349,7 @@ export class UPSAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pkg = data.trackResponse?.shipment?.[0]?.package?.[0] as any;
     if (!pkg) throw new Error("UPS: no package data in tracking response");
@@ -346,9 +359,7 @@ export class UPSAdapter implements CarrierAdapter {
     const latestActivity = activities[0];
     const statusType = latestActivity?.status?.type ?? "I";
     const status: TrackingResult["status"] =
-      statusType === "D" ? "delivered"
-        : statusType === "X" ? "exception"
-          : "in_transit";
+      statusType === "D" ? "delivered" : statusType === "X" ? "exception" : "in_transit";
 
     // Parse UPS date "YYYYMMDD" + time "HHmmss" into Date
     function parseUPSDateTime(date: string, time: string): Date {
@@ -367,10 +378,7 @@ export class UPSAdapter implements CarrierAdapter {
       (a: any) => ({
         timestamp: parseUPSDateTime(a.date, a.time),
         status: a.status?.description ?? "Unknown",
-        location: [
-          a.location?.address?.city,
-          a.location?.address?.stateProvince,
-        ]
+        location: [a.location?.address?.city, a.location?.address?.stateProvince]
           .filter(Boolean)
           .join(", "),
         description: a.status?.description ?? "",
@@ -401,7 +409,7 @@ export class UPSAdapter implements CarrierAdapter {
 
     if (!res.ok) return false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     return data.VoidShipmentResponse?.SummaryResult?.Status?.Code === "1";
   }
 }

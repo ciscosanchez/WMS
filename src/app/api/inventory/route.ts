@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing tenantSlug" }, { status: 400 });
     }
 
-    const tenant = await publicDb.tenant.findUnique({ where: { slug: tenantSlug, status: "active" } });
+    const tenant = await publicDb.tenant.findUnique({
+      where: { slug: tenantSlug, status: "active" },
+    });
     if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
 
     // Validate API key is authorized for this specific tenant
@@ -45,24 +47,31 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const result = inventory.map((inv) => ({
-      productId: inv.productId,
-      sku: inv.product.sku,
-      name: inv.product.name,
-      clientId: inv.product.clientId,
-      bin: inv.bin?.code ?? null,
-      availableQty: inv.available,
-      onHandQty: inv.onHand,
-      allocatedQty: inv.allocated,
-      lotNumber: inv.lotNumber ?? null,
-    }));
+    const result = inventory.map(
+      (inv: {
+        productId: string;
+        product: { sku: string; name: string; clientId: string };
+        bin: { code: string } | null;
+        available: number;
+        onHand: number;
+        allocated: number;
+        lotNumber: string | null;
+      }) => ({
+        productId: inv.productId,
+        sku: inv.product.sku,
+        name: inv.product.name,
+        clientId: inv.product.clientId,
+        bin: inv.bin?.code ?? null,
+        availableQty: inv.available,
+        onHandQty: inv.onHand,
+        allocatedQty: inv.allocated,
+        lotNumber: inv.lotNumber ?? null,
+      })
+    );
 
     return NextResponse.json({ inventory: result, count: result.length });
   } catch (err) {
     console.error("[API /inventory] error:", err);
-    return NextResponse.json(
-      { error: "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

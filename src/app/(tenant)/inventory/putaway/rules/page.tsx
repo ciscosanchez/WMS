@@ -1,4 +1,8 @@
-import { getPutawayRules, getProductsForDropdown, getZonesForDropdown } from "@/modules/inventory/actions";
+import {
+  getPutawayRules,
+  getProductsForDropdown,
+  getZonesForDropdown,
+} from "@/modules/inventory/actions";
 import { PutawayRulesClient } from "./rules-client";
 
 export default async function PutawayRulesPage() {

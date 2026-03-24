@@ -53,9 +53,7 @@ export interface CarrierCredentials {
 /**
  * Get all active tenants from the public DB.
  */
-export async function getActiveTenants(
-  publicDb: PublicClient
-): Promise<TenantEntry[]> {
+export async function getActiveTenants(publicDb: PublicClient): Promise<TenantEntry[]> {
   const tenants = await publicDb.tenant.findMany({
     where: { status: "active" },
     select: { id: true, slug: true, dbSchema: true, settings: true },
@@ -89,13 +87,14 @@ export async function getShopifyConnectors(
     const config = (channel.config ?? {}) as Record<string, string>;
 
     // Try credentials from SalesChannel.config first, then env vars for legacy
+    // Channel secrets are encrypted at rest using the same pattern as carrier secrets.
     const shopDomain =
       config.shopDomain ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
         ? process.env.SHOPIFY_SHOP_DOMAIN
         : undefined);
     const accessToken =
-      config.accessToken ||
+      dec(config.accessToken) ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
         ? process.env.SHOPIFY_ACCESS_TOKEN
         : undefined);
@@ -112,7 +111,7 @@ export async function getShopifyConnectors(
       clientCode:
         config.clientCode ||
         (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-          ? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong"
+          ? (process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong")
           : ""),
     });
   }
@@ -165,20 +164,32 @@ export async function resolveAmazonTenant(
     const clientId =
       config.clientId ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-        ? process.env.AMAZON_CLIENT_ID ?? process.env.AMAZON_SP_CLIENT_ID
+        ? (process.env.AMAZON_CLIENT_ID ?? process.env.AMAZON_SP_CLIENT_ID)
         : undefined);
     const clientSecret =
-      config.clientSecret ||
+      dec(config.clientSecret) ||
       (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-        ? process.env.AMAZON_CLIENT_SECRET ?? process.env.AMAZON_SP_CLIENT_SECRET
+        ? (process.env.AMAZON_CLIENT_SECRET ?? process.env.AMAZON_SP_CLIENT_SECRET)
         : undefined);
 
     if (!clientId || !clientSecret || !cfgSellerId) continue;
 
-    // Resolve remaining required credentials
-    const refreshToken = config.refreshToken || process.env.AMAZON_REFRESH_TOKEN || process.env.AMAZON_SP_REFRESH_TOKEN || "";
-    const awsAccessKeyId = config.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "";
-    const awsSecretAccessKey = config.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "";
+    // Resolve remaining required credentials (decrypt from DB, fall back to env)
+    const refreshToken =
+      dec(config.refreshToken) ||
+      process.env.AMAZON_REFRESH_TOKEN ||
+      process.env.AMAZON_SP_REFRESH_TOKEN ||
+      "";
+    const awsAccessKeyId =
+      config.awsAccessKeyId ||
+      process.env.AMAZON_AWS_ACCESS_KEY_ID ||
+      process.env.AWS_ACCESS_KEY_ID ||
+      "";
+    const awsSecretAccessKey =
+      dec(config.awsSecretAccessKey) ||
+      process.env.AMAZON_AWS_SECRET_ACCESS_KEY ||
+      process.env.AWS_SECRET_ACCESS_KEY ||
+      "";
 
     // All five credentials are required for SP-API calls — skip if incomplete
     if (!refreshToken || !awsAccessKeyId || !awsSecretAccessKey) continue;
@@ -197,7 +208,9 @@ export async function resolveAmazonTenant(
       clientCode:
         config.clientCode ||
         (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
-          ? process.env.AMAZON_WMS_CLIENT_CODE ?? process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong"
+          ? (process.env.AMAZON_WMS_CLIENT_CODE ??
+            process.env.SHOPIFY_WMS_CLIENT_CODE ??
+            "Armstrong")
           : ""),
     };
   }

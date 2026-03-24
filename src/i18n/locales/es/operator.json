@@ -6,7 +6,24 @@
       "pick": "Recolectar",
       "pack": "Empacar",
       "move": "Mover",
-      "count": "Contar"
+      "count": "Contar",
+      "inspect": "Inspección",
+      "shift": "Turno"
+    },
+    "shift": {
+      "clockIn": "Registrar Entrada",
+      "clockOut": "Registrar Salida",
+      "clockedIn": "Registrado",
+      "notClockedIn": "Sin Registrar",
+      "clockInFirst": "Regístrate para comenzar a rastrear tu trabajo",
+      "shiftStarted": "Turno iniciado a las {time}",
+      "hoursWorked": "Horas Trabajadas",
+      "tasksToday": "Tareas Hoy",
+      "unitsToday": "Unidades Hoy",
+      "breakTime": "Descanso",
+      "addBreak": "Agregar Tiempo de Descanso",
+      "minutes": "minutos",
+      "confirmClockOut": "¿Terminar tu turno?"
     },
     "dashboard": {
       "activeTasks": "Tareas activas",

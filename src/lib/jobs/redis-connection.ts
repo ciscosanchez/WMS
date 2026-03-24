@@ -22,6 +22,4 @@ export function parseRedisUrl(url: string): Record<string, unknown> {
   return opts;
 }
 
-export const bullmqConnection = parseRedisUrl(
-  process.env.REDIS_URL ?? "redis://localhost:6379"
-);
+export const bullmqConnection = parseRedisUrl(process.env.REDIS_URL ?? "redis://localhost:6379");

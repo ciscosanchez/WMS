@@ -48,16 +48,22 @@ export default async function ShippingPage() {
           description={t("shippedTodayDesc")}
           icon={Truck}
         />
-        <KpiCard title={t("inTransit")} value={inTransit} description={t("inTransitDesc")} icon={Clock} />
-        <KpiCard title={t("delivered")} value={delivered} description={t("deliveredDesc")} icon={CheckCircle} />
+        <KpiCard
+          title={t("inTransit")}
+          value={inTransit}
+          description={t("inTransitDesc")}
+          icon={Clock}
+        />
+        <KpiCard
+          title={t("delivered")}
+          value={delivered}
+          description={t("deliveredDesc")}
+          icon={CheckCircle}
+        />
       </div>
 
       {shipments.length === 0 ? (
-        <EmptyState
-          icon={Truck}
-          title={t("noShipments")}
-          description={t("noShipmentsDesc")}
-        />
+        <EmptyState icon={Truck} title={t("noShipments")} description={t("noShipmentsDesc")} />
       ) : (
         <div className="rounded-md border">
           <Table>
@@ -92,7 +98,9 @@ export default async function ShippingPage() {
                   </TableCell>
                   <TableCell>{s.service ?? "-"}</TableCell>
                   <TableCell className="font-mono text-xs">
-                    {s.trackingNumber || <span className="text-muted-foreground">{t("pending")}</span>}
+                    {s.trackingNumber || (
+                      <span className="text-muted-foreground">{t("pending")}</span>
+                    )}
                   </TableCell>
                   <TableCell>{s.packageWeight ? `${s.packageWeight} lb` : "-"}</TableCell>
                   <TableCell>

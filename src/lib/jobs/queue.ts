@@ -27,6 +27,17 @@ export const integrationQueue = new Queue("wms-integrations", {
   },
 });
 
+/** Slotting queue: async ABC analysis + recommendation generation. */
+export const slottingQueue = new Queue("wms-slotting", {
+  connection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: "exponential", delay: 30_000 },
+    removeOnComplete: { count: 50 },
+    removeOnFail: { count: 50 },
+  },
+});
+
 /** Email queue: direct customer emails (shipment tracking, etc.). */
 export const emailQueue = new Queue("wms-email", {
   connection,

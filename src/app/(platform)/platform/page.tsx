@@ -10,10 +10,7 @@ export default async function PlatformDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("title")}
-        description={t("subtitle")}
-      />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

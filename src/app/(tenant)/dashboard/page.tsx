@@ -22,15 +22,33 @@ async function getDashboardData() {
       db.product.count({ where: { isActive: true } }),
       db.bin.count({ where: { status: "available" } }),
       // Low-stock: products where total available inventory < minStock
-      db.product.findMany({
-        where: { isActive: true, minStock: { not: null } },
-        select: { id: true, minStock: true, inventory: { select: { available: true } } },
-      }).then((products) =>
-        products.filter((p) => {
-          const totalAvailable = p.inventory.reduce((sum, inv) => sum + inv.available, 0);
-          return totalAvailable < (p.minStock ?? 0);
-        }).length
-      ),
+      db.product
+        .findMany({
+          where: { isActive: true, minStock: { not: null } },
+          select: { id: true, minStock: true, inventory: { select: { available: true } } },
+        })
+        .then(
+          (
+            products: Array<{
+              id: string;
+              minStock: number | null;
+              inventory: Array<{ available: number }>;
+            }>
+          ) =>
+            products.filter(
+              (p: {
+                id: string;
+                minStock: number | null;
+                inventory: Array<{ available: number }>;
+              }) => {
+                const totalAvailable = p.inventory.reduce(
+                  (sum: number, inv: { available: number }) => sum + inv.available,
+                  0
+                );
+                return totalAvailable < (p.minStock ?? 0);
+              }
+            ).length
+        ),
       db.inventoryTransaction.findMany({
         include: { product: true, toBin: true },
         orderBy: { performedAt: "desc" },
@@ -44,14 +62,23 @@ async function getDashboardData() {
     totalSkus,
     availableBins,
     lowStockAlerts,
-    recentActivity: transactions.map((tx) => ({
-      id: tx.id,
-      type: tx.type,
-      sku: tx.product.sku,
-      quantity: tx.quantity,
-      bin: tx.toBin?.barcode || "-",
-      at: tx.performedAt,
-    })),
+    recentActivity: transactions.map(
+      (tx: {
+        id: string;
+        type: string;
+        product: { sku: string };
+        quantity: number;
+        toBin: { barcode: string } | null;
+        performedAt: Date;
+      }) => ({
+        id: tx.id,
+        type: tx.type,
+        sku: tx.product.sku,
+        quantity: tx.quantity,
+        bin: tx.toBin?.barcode || "-",
+        at: tx.performedAt,
+      })
+    ),
   };
 }
 
@@ -127,24 +154,33 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
           ) : (
             <div className="space-y-3">
-              {data.recentActivity.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex items-center justify-between border-b pb-3 last:border-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} &mdash; {tx.sku}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {tx.quantity} units {tx.bin !== "-" && `→ ${tx.bin}`}
-                    </p>
+              {data.recentActivity.map(
+                (tx: {
+                  id: string;
+                  type: string;
+                  sku: string;
+                  quantity: number;
+                  bin: string;
+                  at: Date;
+                }) => (
+                  <div
+                    key={tx.id}
+                    className="flex items-center justify-between border-b pb-3 last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} &mdash; {tx.sku}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {tx.quantity} units {tx.bin !== "-" && `→ ${tx.bin}`}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(tx.at).toLocaleString()}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(tx.at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
         </CardContent>

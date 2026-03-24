@@ -75,9 +75,7 @@ export class USPSAdapter implements CarrierAdapter {
 
   constructor(config: USPSConfig) {
     this.config = config;
-    this.baseUrl = config.useSandbox
-      ? "https://api-cat.usps.com"
-      : "https://api.usps.com";
+    this.baseUrl = config.useSandbox ? "https://api-cat.usps.com" : "https://api.usps.com";
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -154,14 +152,14 @@ export class USPSAdapter implements CarrierAdapter {
           priceType: "RETAIL",
         };
 
-        const res = await this.authedFetch(
-          `${this.baseUrl}/prices/v3/total-rates/search`,
-          { method: "POST", body: JSON.stringify(body) }
-        );
+        const res = await this.authedFetch(`${this.baseUrl}/prices/v3/total-rates/search`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
 
         if (!res.ok) return null;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = await res.json() as any;
+        const data = (await res.json()) as any;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rates: any[] = data.totalRates ?? [];
         if (rates.length === 0) return null;
@@ -189,8 +187,7 @@ export class USPSAdapter implements CarrierAdapter {
 
     return results
       .filter(
-        (r): r is PromiseFulfilledResult<RateQuote> =>
-          r.status === "fulfilled" && r.value !== null
+        (r): r is PromiseFulfilledResult<RateQuote> => r.status === "fulfilled" && r.value !== null
       )
       .map((r) => r.value);
   }
@@ -204,8 +201,7 @@ export class USPSAdapter implements CarrierAdapter {
     const widthIn = pkg.dimUnit === "cm" ? pkg.width / 2.54 : pkg.width;
     const heightIn = pkg.dimUnit === "cm" ? pkg.height / 2.54 : pkg.height;
 
-    const mc = MAIL_CLASSES.find((m) => m.mailClass === request.serviceCode)
-      ?? MAIL_CLASSES[0];
+    const mc = MAIL_CLASSES.find((m) => m.mailClass === request.serviceCode) ?? MAIL_CLASSES[0];
 
     const body = {
       imageInfo: { imageType: "PDF", labelType: "4X6LABEL" },
@@ -256,7 +252,7 @@ export class USPSAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     const trackingNumber = data.labelMetadata?.trackingNumber ?? data.trackingNumber;
     const labelData = data.labelImage ?? "";
     const cost = parseFloat(data.labelMetadata?.postage ?? data.postage ?? "0");
@@ -274,9 +270,7 @@ export class USPSAdapter implements CarrierAdapter {
   // ── Tracking ──────────────────────────────────────────────────────────────
 
   async getTracking(trackingNumber: string): Promise<TrackingResult> {
-    const url = new URL(
-      `${this.baseUrl}/tracking/v3/tracking/${trackingNumber}`
-    );
+    const url = new URL(`${this.baseUrl}/tracking/v3/tracking/${trackingNumber}`);
     url.searchParams.set("expand", "DETAIL");
 
     const res = await this.authedFetch(url.toString());
@@ -287,15 +281,17 @@ export class USPSAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const events: any[] = data.trackingEvents ?? data.TrackSummary?.TrackDetail ?? [];
 
     const latestEvent = events[0];
     const eventType = (latestEvent?.eventType ?? "") as string;
     const status: TrackingResult["status"] =
-      eventType === "DELIVERED" || eventType.includes("DELIVERY") ? "delivered"
-        : eventType.includes("EXCEPTION") || eventType.includes("ALERT") ? "exception"
+      eventType === "DELIVERED" || eventType.includes("DELIVERY")
+        ? "delivered"
+        : eventType.includes("EXCEPTION") || eventType.includes("ALERT")
+          ? "exception"
           : "in_transit";
 
     const mappedEvents = events.map(
@@ -307,9 +303,7 @@ export class USPSAdapter implements CarrierAdapter {
         return {
           timestamp: ts,
           status: e.eventType ?? e.Event ?? "Unknown",
-          location: [e.eventCity, e.eventState]
-            .filter(Boolean)
-            .join(", "),
+          location: [e.eventCity, e.eventState].filter(Boolean).join(", "),
           description: e.eventDescription ?? e.EventDescription ?? "",
         };
       }
@@ -317,7 +311,7 @@ export class USPSAdapter implements CarrierAdapter {
 
     const deliveredAt =
       status === "delivered"
-        ? mappedEvents[0]?.timestamp ?? new Date(data.deliveryDateTime ?? Date.now())
+        ? (mappedEvents[0]?.timestamp ?? new Date(data.deliveryDateTime ?? Date.now()))
         : undefined;
 
     const estimatedDelivery = data.expectedDeliveryDateTime
@@ -337,10 +331,9 @@ export class USPSAdapter implements CarrierAdapter {
   // ── Void ──────────────────────────────────────────────────────────────────
 
   async voidLabel(trackingNumber: string): Promise<boolean> {
-    const res = await this.authedFetch(
-      `${this.baseUrl}/labels/v3/label/${trackingNumber}`,
-      { method: "DELETE" }
-    );
+    const res = await this.authedFetch(`${this.baseUrl}/labels/v3/label/${trackingNumber}`, {
+      method: "DELETE",
+    });
     return res.ok || res.status === 204;
   }
 }

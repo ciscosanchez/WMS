@@ -111,6 +111,10 @@ jest.mock("next/headers", () => ({
   }),
 }));
 
+// Ensure getTenantFromHeaders reads x-tenant-slug header
+beforeAll(() => { process.env.TENANT_RESOLUTION = "header"; });
+afterAll(() => { delete process.env.TENANT_RESOLUTION; });
+
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
@@ -135,6 +139,12 @@ jest.mock("@/modules/orders/shopify-sync", () => ({
   pushShopifyFulfillment: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock("@/lib/jobs/queue", () => ({
+  notificationQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  integrationQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  emailQueue: { add: jest.fn().mockResolvedValue(undefined) },
+}));
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function asAdmin() {
@@ -144,7 +154,7 @@ function asAdmin() {
       email: "admin@test.com",
       name: "Admin",
       isSuperadmin: false,
-      tenants: [{ tenantId: "tenant-1", slug: "test", role: "admin" }],
+      tenants: [{ tenantId: "tenant-1", slug: "test", role: "admin", portalClientId: null }],
     },
     role: "admin",
   });
@@ -718,7 +728,10 @@ describe("Transactional inventory integrity", () => {
           { productId: "prod-2", binId: "bin-B" },
         ],
       });
+      // Pre-flight check + decrement phase = 4 calls
       mockTxPrisma.inventory.findFirst
+        .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
+        .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 })
         .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
         .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 });
       mockTxPrisma.inventory.update.mockResolvedValue({});
@@ -735,18 +748,19 @@ describe("Transactional inventory integrity", () => {
       mockTxPrisma.shipment.update.mockResolvedValue({});
       mockTxPrisma.order.update.mockResolvedValue({});
 
-      // Same pick task returned for each item lookup
+      // Pick task queried once at the top of the transaction
       const pickTask = {
         lines: [
           { productId: "prod-1", binId: "bin-A" },
           { productId: "prod-2", binId: "bin-B" },
         ],
       };
-      mockTxPrisma.pickTask.findFirst
-        .mockResolvedValueOnce(pickTask)
-        .mockResolvedValueOnce(pickTask);
+      mockTxPrisma.pickTask.findFirst.mockResolvedValue(pickTask);
 
+      // Pre-flight stock check (2 items) + decrement phase (2 items) = 4 calls
       mockTxPrisma.inventory.findFirst
+        .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
+        .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 })
         .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
         .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 });
 
@@ -792,11 +806,12 @@ describe("Transactional inventory integrity", () => {
           { productId: "prod-2", binId: "bin-B" },
         ],
       };
-      mockTxPrisma.pickTask.findFirst
-        .mockResolvedValueOnce(pickTask)
-        .mockResolvedValueOnce(pickTask);
+      mockTxPrisma.pickTask.findFirst.mockResolvedValue(pickTask);
 
+      // Pre-flight stock check (2 items) + decrement phase (2 items) = 4 calls
       mockTxPrisma.inventory.findFirst
+        .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
+        .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 })
         .mockResolvedValueOnce({ id: "inv-1", onHand: 20, allocated: 5, available: 15 })
         .mockResolvedValueOnce({ id: "inv-2", onHand: 10, allocated: 3, available: 7 });
 
@@ -873,7 +888,7 @@ describe("Transactional inventory integrity", () => {
       );
     });
 
-    it("caps decrement at actual onHand (prevents negative inventory)", async () => {
+    it("rejects shipment when stock is insufficient (prevents negative inventory)", async () => {
       // Scenario: onHand is less than shipped quantity due to prior adjustment
       const lowStockShipment = {
         ...mockShipment,
@@ -883,13 +898,11 @@ describe("Transactional inventory integrity", () => {
       };
       mockDb.shipment.findUnique.mockResolvedValue(lowStockShipment);
 
-      mockTxPrisma.shipment.update.mockResolvedValue({});
-      mockTxPrisma.order.update.mockResolvedValue({});
       mockTxPrisma.pickTask.findFirst.mockResolvedValue({
         lines: [{ productId: "prod-1", binId: "bin-A" }],
       });
 
-      // Only 3 onHand, 2 allocated — shipping 10 but capped to min(10, 3) = 3
+      // Only 3 onHand — shipping 10 should be rejected
       mockTxPrisma.inventory.findFirst.mockResolvedValueOnce({
         id: "inv-1",
         onHand: 3,
@@ -897,23 +910,15 @@ describe("Transactional inventory integrity", () => {
         available: 1,
       });
 
-      mockTxPrisma.inventory.update.mockResolvedValue({});
-      mockTxPrisma.inventoryTransaction.create.mockResolvedValue({});
+      const result = await markShipmentShipped(shipmentId, "TRACK-X", "USPS");
 
-      await markShipmentShipped(shipmentId, "TRACK-X", "USPS");
+      expect(result).toEqual({
+        error: expect.stringContaining("Insufficient stock"),
+      });
 
-      // decrQty = min(10, 3) = 3, deallocQty = min(10, 2) = 2
-      // available = 1 - (3 - 2) = 0
-      expect(mockTxPrisma.inventory.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: "inv-1" },
-          data: {
-            onHand: { decrement: 3 },
-            allocated: { decrement: 2 },
-            available: 0,
-          },
-        })
-      );
+      // Shipment and order should NOT be updated
+      expect(mockTxPrisma.shipment.update).not.toHaveBeenCalled();
+      expect(mockTxPrisma.order.update).not.toHaveBeenCalled();
     });
 
     it("returns error object when shipment not found (no throw)", async () => {

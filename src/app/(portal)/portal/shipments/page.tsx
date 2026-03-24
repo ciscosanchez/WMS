@@ -40,26 +40,38 @@ export default async function PortalShipmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shipments.map((shipment: { id: string; shipmentNumber: string; orderNumber: string; carrier: string; trackingNumber: string | null; status: string; shippedAt: Date | string | null }) => (
-                <TableRow key={shipment.id}>
-                  <TableCell className="font-medium">{shipment.shipmentNumber}</TableCell>
-                  <TableCell>{shipment.orderNumber}</TableCell>
-                  <TableCell>{shipment.carrier}</TableCell>
-                  <TableCell>
-                    {shipment.trackingNumber ? (
-                      <span className="font-mono text-xs">{shipment.trackingNumber}</span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={shipment.status} />
-                  </TableCell>
-                  <TableCell>
-                    {shipment.shippedAt ? format(new Date(shipment.shippedAt), "MMM d, yyyy") : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {shipments.map(
+                (shipment: {
+                  id: string;
+                  shipmentNumber: string;
+                  orderNumber: string;
+                  carrier: string;
+                  trackingNumber: string | null;
+                  status: string;
+                  shippedAt: Date | string | null;
+                }) => (
+                  <TableRow key={shipment.id}>
+                    <TableCell className="font-medium">{shipment.shipmentNumber}</TableCell>
+                    <TableCell>{shipment.orderNumber}</TableCell>
+                    <TableCell>{shipment.carrier}</TableCell>
+                    <TableCell>
+                      {shipment.trackingNumber ? (
+                        <span className="font-mono text-xs">{shipment.trackingNumber}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={shipment.status} />
+                    </TableCell>
+                    <TableCell>
+                      {shipment.shippedAt
+                        ? format(new Date(shipment.shippedAt), "MMM d, yyyy")
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                )
+              )}
             </TableBody>
           </Table>
         </div>

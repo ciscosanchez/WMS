@@ -27,9 +27,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  return (
-    <OfflineContext.Provider value={offline}>{children}</OfflineContext.Provider>
-  );
+  return <OfflineContext.Provider value={offline}>{children}</OfflineContext.Provider>;
 }
 
 /**

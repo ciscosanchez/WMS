@@ -133,8 +133,7 @@ export default function OrderDetailPage() {
 
       {isShipByOverdue && (
         <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-          <strong>{t("overdue")}</strong> {t("overdueDesc")}{" "}
-          {format(shipByDate, "MMM d, yyyy")}
+          <strong>{t("overdue")}</strong> {t("overdueDesc")} {format(shipByDate, "MMM d, yyyy")}
         </div>
       )}
 
@@ -212,8 +211,12 @@ export default function OrderDetailPage() {
 
       <Tabs defaultValue="lines">
         <TabsList>
-          <TabsTrigger value="lines">{t("lines")} ({(order.lines ?? []).length})</TabsTrigger>
-          <TabsTrigger value="shipments">{t("shipments")} ({(order.shipments ?? []).length})</TabsTrigger>
+          <TabsTrigger value="lines">
+            {t("lines")} ({(order.lines ?? []).length})
+          </TabsTrigger>
+          <TabsTrigger value="shipments">
+            {t("shipments")} ({(order.shipments ?? []).length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lines">
@@ -256,9 +259,7 @@ export default function OrderDetailPage() {
 
         <TabsContent value="shipments">
           {(order.shipments ?? []).length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {t("noShipmentsYet")}
-            </p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noShipmentsYet")}</p>
           ) : (
             <div className="rounded-md border">
               <Table>

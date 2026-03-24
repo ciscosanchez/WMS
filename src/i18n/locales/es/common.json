@@ -51,6 +51,9 @@
     "orders": "Órdenes",
     "picking": "Recolección",
     "shipping": "Envíos",
+    "returns": "Devoluciones",
+    "slotting": "Slotting",
+    "cartonTypes": "Tipos de Caja",
     "inventory": "Inventario",
     "stockBrowser": "Explorador de stock",
     "putaway": "Almacenamiento",
@@ -65,6 +68,14 @@
     "system": "Sistema",
     "reports": "Reportes",
     "settings": "Configuración",
+    "labor": "Mano de Obra",
+    "laborDashboard": "Panel de Trabajo",
+    "shifts": "Turnos",
+    "laborCosts": "Costos Laborales",
+    "yardDock": "Patio y Muelle",
+    "dockSchedule": "Horario de Muelle",
+    "yardMap": "Mapa del Patio",
+    "driverCheckIn": "Registro de Conductor",
     "floorApp": "App de piso"
   }
 }

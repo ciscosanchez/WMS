@@ -58,7 +58,10 @@ export function ChannelsClient({ channels }: Props) {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className={channelLogos[channel.type] ?? "bg-gray-100 text-gray-700"}>
+                  <Badge
+                    variant="outline"
+                    className={channelLogos[channel.type] ?? "bg-gray-100 text-gray-700"}
+                  >
                     {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
                   </Badge>
                   <span className="text-sm text-muted-foreground">{channel.orderCount} orders</span>

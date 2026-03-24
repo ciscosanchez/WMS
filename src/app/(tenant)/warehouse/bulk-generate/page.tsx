@@ -60,10 +60,7 @@ export default function BulkGeneratePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("bulkGenerateTitle")}
-        description={t("bulkGenerateDesc")}
-      />
+      <PageHeader title={t("bulkGenerateTitle")} description={t("bulkGenerateDesc")} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
         <Card>
@@ -116,7 +113,9 @@ export default function BulkGeneratePage() {
         <Card>
           <CardHeader>
             <CardTitle>{t("locationStructure")}</CardTitle>
-            <CardDescription>{t("willCreate")} {totalBins} {t("binsTotal")}</CardDescription>
+            <CardDescription>
+              {t("willCreate")} {totalBins} {t("binsTotal")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">

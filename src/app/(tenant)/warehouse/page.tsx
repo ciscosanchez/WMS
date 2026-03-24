@@ -52,9 +52,7 @@ export default async function WarehousePage() {
             </Button>
           </div>
         </PageHeader>
-        <div className="text-center py-12 text-muted-foreground">
-          {t("noWarehousesDesc")}
-        </div>
+        <div className="text-center py-12 text-muted-foreground">{t("noWarehousesDesc")}</div>
       </div>
     );
   }

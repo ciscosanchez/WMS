@@ -2,27 +2,7 @@ import { headers } from "next/headers";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import type { SessionUser } from "@/lib/auth/session";
-
-const ROLE_LEVEL: Record<TenantRole, number> = {
-  admin: 40,
-  manager: 30,
-  warehouse_worker: 20,
-  viewer: 10,
-};
-
-const PERMISSION_LEVEL: Record<string, number> = {
-  "clients:read": 10, "clients:write": 40,
-  "products:read": 10, "products:write": 30,
-  "receiving:read": 10, "receiving:write": 20, "receiving:complete": 30,
-  "inventory:read": 10, "inventory:write": 20, "inventory:adjust": 30, "inventory:approve": 30, "inventory:count": 20,
-  "orders:read": 10, "orders:write": 30,
-  "warehouse:read": 10, "warehouse:write": 30,
-  "shipping:read": 10, "shipping:write": 20,
-  "operator:write": 20,
-  "reports:read": 10,
-  "settings:read": 30, "settings:write": 40,
-  "users:read": 30, "users:write": 40,
-};
+import { ROLE_LEVEL, PERMISSION_LEVEL } from "@/lib/auth/rbac";
 
 export interface TenantContext {
   tenantId: string;
@@ -97,6 +77,7 @@ export async function requireTenantContext(permission?: string): Promise<{
   user: SessionUser;
   role: TenantRole;
   tenant: TenantContext;
+  portalClientId?: string | null;
 }> {
   const slug = await getTenantFromHeaders();
   if (!slug) throw new Error("No tenant context");
@@ -123,6 +104,11 @@ export async function requireTenantContext(permission?: string): Promise<{
   if (!tenant) throw new Error("Tenant not found or inactive");
 
   const db = getTenantDb(tenant.dbSchema);
+
+  // Extract portalClientId from JWT token (no DB round-trip)
+  const membership = user.tenants.find((t) => t.slug === slug);
+  const portalClientId = membership?.portalClientId ?? null;
+
   return {
     user,
     role,
@@ -132,5 +118,6 @@ export async function requireTenantContext(permission?: string): Promise<{
       dbSchema: tenant.dbSchema,
       db,
     },
+    portalClientId,
   };
 }

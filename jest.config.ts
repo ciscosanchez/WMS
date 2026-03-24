@@ -17,6 +17,8 @@ const config: Config = {
     "!src/components/ui/**",
     "!src/app/**/layout.tsx",
   ],
+  // Force exit after tests complete to clean up BullMQ/Redis open handles
+  forceExit: true,
 };
 
 export default createJestConfig(config);

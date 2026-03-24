@@ -35,6 +35,13 @@ import {
   Store,
   ArrowDownToLine,
   Smartphone,
+  Calendar,
+  Map,
+  UserCheck,
+  HardHat,
+  Clock,
+  DollarSign,
+  RotateCcw,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -56,11 +63,29 @@ const navigation: NavGroup[] = [
     ],
   },
   {
+    labelKey: "labor",
+    items: [
+      { titleKey: "laborDashboard", href: "/labor", icon: HardHat },
+      { titleKey: "shifts", href: "/labor/shifts", icon: Clock },
+      { titleKey: "laborCosts", href: "/labor/costs", icon: DollarSign },
+    ],
+  },
+  {
+    labelKey: "yardDock",
+    items: [
+      { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar },
+      { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map },
+      { titleKey: "driverCheckIn", href: "/yard-dock/check-in", icon: UserCheck },
+    ],
+  },
+  {
     labelKey: "fulfillment",
     items: [
       { titleKey: "orders", href: "/orders", icon: ShoppingCart },
       { titleKey: "picking", href: "/picking", icon: ScanLine },
       { titleKey: "shipping", href: "/shipping", icon: Truck },
+      { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes },
+      { titleKey: "returns", href: "/returns", icon: RotateCcw },
     ],
   },
   {
@@ -71,6 +96,7 @@ const navigation: NavGroup[] = [
       { titleKey: "movements", href: "/inventory/movements", icon: ArrowLeftRight },
       { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
       { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks },
+      { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3 },
     ],
   },
   {

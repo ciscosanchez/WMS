@@ -15,6 +15,8 @@ import { format } from "date-fns";
 import { getCycleCounts } from "@/modules/inventory/actions";
 import { getTranslations } from "next-intl/server";
 
+type CycleCountItem = Awaited<ReturnType<typeof getCycleCounts>>[number];
+
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   pending_approval: "Pending Approval",
@@ -27,9 +29,11 @@ export default async function CycleCountsPage() {
   const t = await getTranslations("tenant.inventory");
   const counts = await getCycleCounts();
 
-  const activeCount = counts.filter((c) => !["completed", "rejected"].includes(c.status)).length;
-  const completedCount = counts.filter((c) => c.status === "completed").length;
-  const totalLines = counts.reduce((sum, c) => sum + c.lines.length, 0);
+  const activeCount = counts.filter(
+    (c: CycleCountItem) => !["completed", "rejected"].includes(c.status)
+  ).length;
+  const completedCount = counts.filter((c: CycleCountItem) => c.status === "completed").length;
+  const totalLines = counts.reduce((sum: number, c: CycleCountItem) => sum + c.lines.length, 0);
 
   return (
     <div className="space-y-6">
@@ -85,9 +89,11 @@ export default async function CycleCountsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                counts.map((count) => (
+                counts.map((count: CycleCountItem) => (
                   <TableRow key={count.id}>
-                    <TableCell className="font-medium font-mono">{count.adjustmentNumber}</TableCell>
+                    <TableCell className="font-medium font-mono">
+                      {count.adjustmentNumber}
+                    </TableCell>
                     <TableCell>{count.reason ?? "-"}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{count.lines.length} items</Badge>

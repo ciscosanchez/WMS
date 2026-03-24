@@ -23,11 +23,7 @@ export default async function ProductsPage() {
       </PageHeader>
 
       {products.length === 0 ? (
-        <EmptyState
-          icon={Package}
-          title={t("noProducts")}
-          description={t("noProductsDesc")}
-        >
+        <EmptyState icon={Package} title={t("noProducts")} description={t("noProductsDesc")}>
           <Button asChild>
             <Link href="/products/new">
               <Plus className="mr-2 h-4 w-4" />

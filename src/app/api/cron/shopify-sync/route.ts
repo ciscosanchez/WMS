@@ -31,7 +31,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ skipped: "No tenants with Shopify configured" });
     }
 
-    const tenantResults: Array<{ tenant: string; imported: number; skipped: number; inventorySynced: number }> = [];
+    const tenantResults: Array<{
+      tenant: string;
+      imported: number;
+      skipped: number;
+      inventorySynced: number;
+    }> = [];
 
     for (const connector of connectors) {
       const { tenant, db, clientCode } = connector;
@@ -87,16 +92,21 @@ export async function GET(req: NextRequest) {
           where: { externalId: { in: externalIds } },
           select: { externalId: true },
         });
-        const existingIds = new Set(existing.map((o) => o.externalId));
+        const existingIds = new Set(
+          existing.map((o: { externalId: string | null }) => o.externalId)
+        );
 
         // Resolve SKUs
-        const skus = [...new Set(shopifyOrders.flatMap((o) => o.lineItems.map((li) => li.sku).filter(Boolean)))] as string[];
-        const products = skus.length > 0
-          ? await db.product.findMany({
-              where: { clientId: client.id, sku: { in: skus } },
-              select: { id: true, sku: true, imageUrl: true, weight: true },
-            })
-          : [];
+        const skus = [
+          ...new Set(shopifyOrders.flatMap((o) => o.lineItems.map((li) => li.sku).filter(Boolean))),
+        ] as string[];
+        const products =
+          skus.length > 0
+            ? await db.product.findMany({
+                where: { clientId: client.id, sku: { in: skus } },
+                select: { id: true, sku: true, imageUrl: true, weight: true },
+              })
+            : [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const productBySku = new Map(products.map((p: any) => [p.sku, p]));
 
@@ -104,14 +114,25 @@ export async function GET(req: NextRequest) {
         let skipped = 0;
 
         for (const so of shopifyOrders) {
-          if (existingIds.has(so.externalId)) { skipped++; continue; }
+          if (existingIds.has(so.externalId)) {
+            skipped++;
+            continue;
+          }
 
           const resolvedLines = so.lineItems
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((li) => ({ productId: (productBySku.get(li.sku) as any)?.id, quantity: li.quantity, uom: "EA", unitPrice: li.unitPrice }))
+            .map((li) => ({
+              productId: (productBySku.get(li.sku) as any)?.id,
+              quantity: li.quantity,
+              uom: "EA",
+              unitPrice: li.unitPrice,
+            }))
             .filter((li) => li.productId != null);
 
-          if (resolvedLines.length === 0) { skipped++; continue; }
+          if (resolvedLines.length === 0) {
+            skipped++;
+            continue;
+          }
 
           // Enrich products
           for (const li of so.lineItems) {
@@ -134,12 +155,24 @@ export async function GET(req: NextRequest) {
           const addr = so.shipTo;
           const created = await db.order.create({
             data: {
-              orderNumber, externalId: so.externalId, channelId: channel.id, clientId: client.id,
-              status: "pending", priority: so.priority as "standard" | "expedited" | "rush" | "same_day",
-              shipToName: addr.name, shipToAddress1: addr.address1, shipToAddress2: addr.address2 ?? null,
-              shipToCity: addr.city, shipToState: addr.state ?? null, shipToZip: addr.zip,
-              shipToCountry: addr.country ?? "US", shipToPhone: addr.phone ?? null, shipToEmail: addr.email ?? null,
-              shippingMethod: so.shippingMethod ?? null, orderDate: so.orderDate, notes: so.notes ?? null,
+              orderNumber,
+              externalId: so.externalId,
+              channelId: channel.id,
+              clientId: client.id,
+              status: "pending",
+              priority: so.priority as "standard" | "expedited" | "rush" | "same_day",
+              shipToName: addr.name,
+              shipToAddress1: addr.address1,
+              shipToAddress2: addr.address2 ?? null,
+              shipToCity: addr.city,
+              shipToState: addr.state ?? null,
+              shipToZip: addr.zip,
+              shipToCountry: addr.country ?? "US",
+              shipToPhone: addr.phone ?? null,
+              shipToEmail: addr.email ?? null,
+              shippingMethod: so.shippingMethod ?? null,
+              orderDate: so.orderDate,
+              notes: so.notes ?? null,
               totalItems: resolvedLines.reduce((s, li) => s + li.quantity, 0),
               lines: { create: resolvedLines },
             },
@@ -166,7 +199,9 @@ export async function GET(req: NextRequest) {
           console.error(`[Shopify Cron] ${tenant.slug} inventory sync error:`, invErr);
         }
 
-        console.log(`[Shopify Cron] ${tenant.slug}: imported=${imported} skipped=${skipped} inventorySynced=${inventorySynced}`);
+        console.log(
+          `[Shopify Cron] ${tenant.slug}: imported=${imported} skipped=${skipped} inventorySynced=${inventorySynced}`
+        );
         tenantResults.push({ tenant: tenant.slug, imported, skipped, inventorySynced });
       } catch (tenantErr) {
         console.error(`[Shopify Cron] Error processing tenant ${tenant.slug}:`, tenantErr);

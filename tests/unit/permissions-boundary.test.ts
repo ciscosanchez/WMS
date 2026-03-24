@@ -38,6 +38,10 @@ jest.mock("next/headers", () => ({
   }),
 }));
 
+// Ensure getTenantFromHeaders reads x-tenant-slug header
+beforeAll(() => { process.env.TENANT_RESOLUTION = "header"; });
+afterAll(() => { delete process.env.TENANT_RESOLUTION; });
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function asRole(role: TenantRole, isSuperadmin = false) {
@@ -47,7 +51,7 @@ function asRole(role: TenantRole, isSuperadmin = false) {
       email: "test@test.com",
       name: "Test",
       isSuperadmin,
-      tenants: [{ tenantId: "tenant-1", slug: "test", role }],
+      tenants: [{ tenantId: "tenant-1", slug: "test", role, portalClientId: null }],
     },
     role,
   });

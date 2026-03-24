@@ -3,7 +3,15 @@ import { getRecentJobs } from "@/modules/receiving/docai-actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PackageOpen, Sparkles, CheckCircle, AlertTriangle, Loader2, XCircle } from "lucide-react";
+import {
+  Plus,
+  PackageOpen,
+  Sparkles,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { ShipmentsTable } from "@/components/receiving/shipments-table";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -13,13 +21,33 @@ import { getTranslations } from "next-intl/server";
 function JobStatusBadge({ status, confidence }: { status: string; confidence: number | null }) {
   switch (status) {
     case "processing":
-      return <Badge className="bg-blue-100 text-blue-700 gap-1 text-xs"><Loader2 className="h-3 w-3 animate-spin" />Processing</Badge>;
+      return (
+        <Badge className="bg-blue-100 text-blue-700 gap-1 text-xs">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Processing
+        </Badge>
+      );
     case "review":
-      return <Badge className="bg-yellow-100 text-yellow-700 gap-1 text-xs"><AlertTriangle className="h-3 w-3" />Review {confidence ? `${Math.round(confidence * 100)}%` : ""}</Badge>;
+      return (
+        <Badge className="bg-yellow-100 text-yellow-700 gap-1 text-xs">
+          <AlertTriangle className="h-3 w-3" />
+          Review {confidence ? `${Math.round(confidence * 100)}%` : ""}
+        </Badge>
+      );
     case "completed":
-      return <Badge className="bg-green-100 text-green-700 gap-1 text-xs"><CheckCircle className="h-3 w-3" />Done</Badge>;
+      return (
+        <Badge className="bg-green-100 text-green-700 gap-1 text-xs">
+          <CheckCircle className="h-3 w-3" />
+          Done
+        </Badge>
+      );
     case "failed":
-      return <Badge className="bg-red-100 text-red-700 gap-1 text-xs"><XCircle className="h-3 w-3" />Failed</Badge>;
+      return (
+        <Badge className="bg-red-100 text-red-700 gap-1 text-xs">
+          <XCircle className="h-3 w-3" />
+          Failed
+        </Badge>
+      );
     default:
       return null;
   }
@@ -27,10 +55,7 @@ function JobStatusBadge({ status, confidence }: { status: string; confidence: nu
 
 export default async function ReceivingPage() {
   const t = await getTranslations("tenant.receiving");
-  const [shipments, recentJobs] = await Promise.all([
-    getShipments(),
-    getRecentJobs(5),
-  ]);
+  const [shipments, recentJobs] = await Promise.all([getShipments(), getRecentJobs(5)]);
 
   return (
     <div className="space-y-6">
@@ -52,11 +77,7 @@ export default async function ReceivingPage() {
       </PageHeader>
 
       {shipments.length === 0 ? (
-        <EmptyState
-          icon={PackageOpen}
-          title={t("noShipments")}
-          description={t("noShipmentsDesc")}
-        >
+        <EmptyState icon={PackageOpen} title={t("noShipments")} description={t("noShipmentsDesc")}>
           <Button asChild>
             <Link href="/receiving/new">
               <Plus className="mr-2 h-4 w-4" />

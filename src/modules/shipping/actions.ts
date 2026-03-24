@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
-import { pushShopifyFulfillment } from "@/modules/orders/shopify-sync";
 import type { RateQuote, LabelRequest } from "@/lib/integrations/carriers/types";
 import { publicDb } from "@/lib/db/public-client";
 import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
@@ -93,32 +92,42 @@ export async function getRatesForShipment(
     // Build adapters from tenant-scoped credentials
     const adapterList = [];
     if (creds.ups) {
-      adapterList.push(new UPSAdapter({
-        accountNumber: creds.ups.accountNumber,
-        clientId: creds.ups.clientId,
-        clientSecret: creds.ups.clientSecret,
-        useSandbox: process.env.UPS_SANDBOX === "true",
-      }));
+      adapterList.push(
+        new UPSAdapter({
+          accountNumber: creds.ups.accountNumber,
+          clientId: creds.ups.clientId,
+          clientSecret: creds.ups.clientSecret,
+          useSandbox: process.env.UPS_SANDBOX === "true",
+        })
+      );
     }
     if (creds.fedex) {
-      adapterList.push(new FedExAdapter({
-        accountNumber: creds.fedex.accountNumber,
-        clientId: creds.fedex.clientId,
-        clientSecret: creds.fedex.clientSecret,
-        useSandbox: process.env.FEDEX_SANDBOX === "true",
-      }));
+      adapterList.push(
+        new FedExAdapter({
+          accountNumber: creds.fedex.accountNumber,
+          clientId: creds.fedex.clientId,
+          clientSecret: creds.fedex.clientSecret,
+          useSandbox: process.env.FEDEX_SANDBOX === "true",
+        })
+      );
     }
     if (creds.usps) {
-      adapterList.push(new USPSAdapter({
-        clientId: creds.usps.clientId,
-        clientSecret: creds.usps.clientSecret,
-        useSandbox: process.env.USPS_SANDBOX === "true",
-      }));
+      adapterList.push(
+        new USPSAdapter({
+          clientId: creds.usps.clientId,
+          clientSecret: creds.usps.clientSecret,
+          useSandbox: process.env.USPS_SANDBOX === "true",
+        })
+      );
     }
 
     // Fail closed: no credentials → no rates
     if (adapterList.length === 0) {
-      return { rates: [], error: "No carrier credentials configured. Add UPS, FedEx, or USPS API keys to enable rate shopping." };
+      return {
+        rates: [],
+        error:
+          "No carrier credentials configured. Add UPS, FedEx, or USPS API keys to enable rate shopping.",
+      };
     }
 
     const results = await Promise.allSettled(adapterList.map((a) => a.getRates(rateRequest)));
@@ -164,11 +173,17 @@ async function getTenantEntry(tenantId: string): Promise<TenantEntry | null> {
     select: { id: true, slug: true, dbSchema: true, settings: true },
   });
   if (!row) return null;
-  return { id: row.id, slug: row.slug, dbSchema: row.dbSchema, settings: (row.settings ?? {}) as Record<string, unknown> };
+  return {
+    id: row.id,
+    slug: row.slug,
+    dbSchema: row.dbSchema,
+    settings: (row.settings ?? {}) as Record<string, unknown>,
+  };
 }
 
 function getWarehouseAddress(tenantEntry: TenantEntry | null) {
-  const wh = (tenantEntry?.settings as Record<string, Record<string, string>> | undefined)?.warehouse;
+  const wh = (tenantEntry?.settings as Record<string, Record<string, string>> | undefined)
+    ?.warehouse;
   return {
     name: wh?.name || "Warehouse",
     company: wh?.company || process.env.WAREHOUSE_COMPANY || "Armstrong WMS",
@@ -265,14 +280,16 @@ export async function generateShipmentLabel(
       isResidential: true,
     };
 
-    const packages: LabelRequest["packages"] = [{
-      weight: shipment.packageWeight ? Number(shipment.packageWeight) : 1,
-      weightUnit: "lb",
-      length: shipment.packageLength ? Number(shipment.packageLength) : 12,
-      width: shipment.packageWidth ? Number(shipment.packageWidth) : 10,
-      height: shipment.packageHeight ? Number(shipment.packageHeight) : 6,
-      dimUnit: "in",
-    }];
+    const packages: LabelRequest["packages"] = [
+      {
+        weight: shipment.packageWeight ? Number(shipment.packageWeight) : 1,
+        weightUnit: "lb",
+        length: shipment.packageLength ? Number(shipment.packageLength) : 12,
+        width: shipment.packageWidth ? Number(shipment.packageWidth) : 10,
+        height: shipment.packageHeight ? Number(shipment.packageHeight) : 6,
+        dimUnit: "in",
+      },
+    ];
 
     const labelRequest: LabelRequest = {
       from,
@@ -285,13 +302,20 @@ export async function generateShipmentLabel(
     const adapter = await getAdapterForCarrier(shipment.carrier, tenant.tenantId);
 
     if (!adapter) {
-      return { error: `No credentials configured for carrier "${shipment.carrier}". Add API keys before generating labels.` };
+      return {
+        error: `No credentials configured for carrier "${shipment.carrier}". Add API keys before generating labels.`,
+      };
     }
 
     const result = await adapter.createLabel(labelRequest);
     const trackingNumber = result.trackingNumber;
     const labelBase64 = result.labelData;
-    const labelCost = result.totalCost > 0 ? result.totalCost : (shipment.shippingCost ? Number(shipment.shippingCost) : 0);
+    const labelCost =
+      result.totalCost > 0
+        ? result.totalCost
+        : shipment.shippingCost
+          ? Number(shipment.shippingCost)
+          : 0;
 
     // Store PDF in MinIO
     const labelKey = `labels/${shipment.shipmentNumber}.pdf`;
@@ -314,7 +338,10 @@ export async function generateShipmentLabel(
       action: "update",
       entityType: "shipment",
       entityId: shipmentId,
-      changes: { status: { old: shipment.status, new: "label_created" }, trackingNumber: { old: null, new: trackingNumber } },
+      changes: {
+        status: { old: shipment.status, new: "label_created" },
+        trackingNumber: { old: null, new: trackingNumber },
+      },
     });
 
     // Generate a short-lived presigned URL to open immediately
@@ -372,119 +399,157 @@ export async function markShipmentShipped(
     });
     if (!shipment) throw new Error("Shipment not found");
 
+    // Idempotency guard: if already shipped, return success (no double-decrement)
+    if (shipment.status === "shipped") return {};
+
     // Atomic: update shipment + order status + decrement inventory + write ledger
-    await tenant.db.$transaction(async (prisma) => {
-      // Update shipment
-      await prisma.shipment.update({
-        where: { id: shipmentId },
-        data: {
-          trackingNumber,
-          carrier,
-          status: "shipped",
-          shippedAt: new Date(),
-        },
-      });
-
-      // Update order status to shipped
-      await prisma.order.update({
-        where: { id: shipment.orderId },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { status: "shipped" as any, shippedDate: new Date() },
-      });
-
-      // Decrement inventory: release allocation and reduce onHand for each shipped item
-      for (const item of shipment.items) {
-        // Find the inventory record for this product (use the pick task's bin if available)
+    await tenant.db.$transaction(
+      async (prisma: Parameters<Parameters<typeof tenant.db.$transaction>[0]>[0]) => {
+        // Pre-flight: verify ALL lines have sufficient stock before any mutations.
+        // Abort the entire transaction if any line is short.
         const pickTask = await prisma.pickTask.findFirst({
           where: { orderId: shipment.orderId },
           include: { lines: true },
         });
-        const pickLine = pickTask?.lines.find(
-          (l) => l.productId === item.productId
-        );
 
-        if (pickLine?.binId) {
-          const inv = await prisma.inventory.findFirst({
-            where: {
-              productId: item.productId,
-              binId: pickLine.binId,
-              lotNumber: item.lotNumber,
-              serialNumber: item.serialNumber,
-            },
-          });
-
-          if (inv) {
-            const decrQty = Math.min(item.quantity, inv.onHand);
-            const deallocQty = Math.min(item.quantity, inv.allocated);
-            await prisma.inventory.update({
-              where: { id: inv.id },
-              data: {
-                onHand: { decrement: decrQty },
-                allocated: { decrement: deallocQty },
-                // available stays the same: (onHand - decrQty) - (allocated - deallocQty)
-                // only adjust if allocated was less than what we're shipping
-                available: inv.available - (decrQty - deallocQty),
-              },
-            });
-
-            // Write ledger entry
-            await prisma.inventoryTransaction.create({
-              data: {
-                type: "deallocate",
+        const shortItems: string[] = [];
+        for (const item of shipment.items) {
+          const pickLine = pickTask?.lines.find(
+            (l: { productId: string }) => l.productId === item.productId
+          );
+          if (pickLine?.binId) {
+            const inv = await prisma.inventory.findFirst({
+              where: {
                 productId: item.productId,
-                fromBinId: pickLine.binId,
-                quantity: item.quantity,
+                binId: pickLine.binId,
                 lotNumber: item.lotNumber,
                 serialNumber: item.serialNumber,
-                referenceType: "shipment",
-                referenceId: shipmentId,
-                performedBy: user.id,
               },
             });
+            if (!inv || inv.onHand < item.quantity) {
+              shortItems.push(`${item.productId}: need ${item.quantity}, have ${inv?.onHand ?? 0}`);
+            }
+          }
+        }
+
+        if (shortItems.length > 0) {
+          throw new Error(`Insufficient stock for shipment. Short items: ${shortItems.join("; ")}`);
+        }
+
+        // Update shipment
+        await prisma.shipment.update({
+          where: { id: shipmentId },
+          data: {
+            trackingNumber,
+            carrier,
+            status: "shipped",
+            shippedAt: new Date(),
+          },
+        });
+
+        // Update order status to shipped
+        await prisma.order.update({
+          where: { id: shipment.orderId },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: { status: "shipped" as any, shippedDate: new Date() },
+        });
+
+        // Decrement inventory: release allocation and reduce onHand for each shipped item
+        for (const item of shipment.items) {
+          const pickLine = pickTask?.lines.find(
+            (l: { productId: string }) => l.productId === item.productId
+          );
+
+          if (pickLine?.binId) {
+            const inv = await prisma.inventory.findFirst({
+              where: {
+                productId: item.productId,
+                binId: pickLine.binId,
+                lotNumber: item.lotNumber,
+                serialNumber: item.serialNumber,
+              },
+            });
+
+            if (inv) {
+              await prisma.inventory.update({
+                where: { id: inv.id },
+                data: {
+                  onHand: { decrement: item.quantity },
+                  allocated: { decrement: Math.min(item.quantity, inv.allocated) },
+                  available:
+                    inv.available - (item.quantity - Math.min(item.quantity, inv.allocated)),
+                },
+              });
+
+              // Write ledger entry
+              await prisma.inventoryTransaction.create({
+                data: {
+                  type: "deallocate",
+                  productId: item.productId,
+                  fromBinId: pickLine.binId,
+                  quantity: item.quantity,
+                  lotNumber: item.lotNumber,
+                  serialNumber: item.serialNumber,
+                  referenceType: "shipment",
+                  referenceId: shipmentId,
+                  performedBy: user.id,
+                },
+              });
+            }
           }
         }
       }
-    });
+    );
 
-    await logAudit(tenant.db, {
-      userId: user.id,
-      action: "update",
-      entityType: "shipment",
-      entityId: shipmentId,
-      changes: { status: { old: "pending", new: "shipped" }, trackingNumber: { old: null, new: trackingNumber } },
-    });
+    // Post-commit side-effects: audit + queues.
+    // These must NOT throw — a failure here should not cause a retry
+    // (which would double-decrement inventory since the tx already committed).
+    try {
+      await logAudit(tenant.db, {
+        userId: user.id,
+        action: "update",
+        entityType: "shipment",
+        entityId: shipmentId,
+        changes: {
+          status: { old: "pending", new: "shipped" },
+          trackingNumber: { old: null, new: trackingNumber },
+        },
+      });
 
-    // Enqueue background jobs (durable, retried on failure)
-    const orderNumber = shipment.order?.orderNumber ?? shipment.shipmentNumber;
+      const orderNumber = shipment.order?.orderNumber ?? shipment.shipmentNumber;
 
-    if (shipment.order.externalId) {
-      await integrationQueue.add("shopify_fulfillment", {
-        type: "shopify_fulfillment",
+      if (shipment.order.externalId) {
+        await integrationQueue.add("shopify_fulfillment", {
+          type: "shopify_fulfillment",
+          tenantId: tenant.tenantId,
+          orderId: shipment.orderId,
+          trackingNumber,
+          carrier,
+        });
+      }
+
+      await notificationQueue.add("order_shipped", {
+        type: "warehouse_team",
         tenantId: tenant.tenantId,
-        orderId: shipment.orderId,
-        trackingNumber,
-        carrier,
+        title: "Order Shipped",
+        message: `${orderNumber} shipped via ${carrier} — ${trackingNumber}`,
+        link: `/shipping/${shipmentId}`,
       });
-    }
 
-    await notificationQueue.add("order_shipped", {
-      type: "warehouse_team",
-      tenantId: tenant.tenantId,
-      title: "Order Shipped",
-      message: `${orderNumber} shipped via ${carrier} — ${trackingNumber}`,
-      link: `/shipping/${shipmentId}`,
-    });
-
-    const customerEmail = shipment.order?.shipToEmail;
-    if (customerEmail) {
-      await emailQueue.add("order_shipped_customer", {
-        template: "order_shipped_customer",
-        to: customerEmail,
-        customerName: shipment.order?.shipToName ?? "Customer",
-        orderNumber,
-        trackingNumber,
-        carrier,
-      });
+      const customerEmail = shipment.order?.shipToEmail;
+      if (customerEmail) {
+        await emailQueue.add("order_shipped_customer", {
+          template: "order_shipped_customer",
+          to: customerEmail,
+          customerName: shipment.order?.shipToName ?? "Customer",
+          orderNumber,
+          trackingNumber,
+          carrier,
+        });
+      }
+    } catch (postCommitErr) {
+      // Log but do NOT propagate — the shipment is already shipped
+      console.error("[markShipmentShipped] post-commit side-effect failed:", postCommitErr);
     }
 
     revalidatePath("/shipping");

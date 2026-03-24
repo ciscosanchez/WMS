@@ -8,7 +8,12 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { ScanLine, Clock, CheckCircle, AlertCircle, Eye } from "lucide-react";
@@ -56,9 +61,24 @@ export function PickingClient({ tasks, kpis }: { tasks: PickTask[]; kpis: Kpis }
 
       <div className="grid gap-4 md:grid-cols-4">
         <KpiCard title="Pending" value={kpis.pending} description="Tasks waiting" icon={Clock} />
-        <KpiCard title="In Progress" value={kpis.inProgress} description="Being picked" icon={ScanLine} />
-        <KpiCard title="Completed Today" value={kpis.completedToday} description="Tasks done" icon={CheckCircle} />
-        <KpiCard title="Short Picks" value={kpis.shortPicked} description="Needs attention" icon={AlertCircle} />
+        <KpiCard
+          title="In Progress"
+          value={kpis.inProgress}
+          description="Being picked"
+          icon={ScanLine}
+        />
+        <KpiCard
+          title="Completed Today"
+          value={kpis.completedToday}
+          description="Tasks done"
+          icon={CheckCircle}
+        />
+        <KpiCard
+          title="Short Picks"
+          value={kpis.shortPicked}
+          description="Needs attention"
+          icon={AlertCircle}
+        />
       </div>
 
       <Card>
@@ -90,7 +110,8 @@ export function PickingClient({ tasks, kpis }: { tasks: PickTask[]; kpis: Kpis }
               {displayTasks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    No pick tasks yet. Tasks are created when orders move to &quot;picking&quot; status.
+                    No pick tasks yet. Tasks are created when orders move to &quot;picking&quot;
+                    status.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -99,10 +120,15 @@ export function PickingClient({ tasks, kpis }: { tasks: PickTask[]; kpis: Kpis }
                     <TableCell className="font-medium">{task.taskNumber}</TableCell>
                     <TableCell>
                       {task.orderId ? (
-                        <Link href={`/orders/${task.orderId}`} className="text-primary hover:underline">
+                        <Link
+                          href={`/orders/${task.orderId}`}
+                          className="text-primary hover:underline"
+                        >
                           {task.orderNumber}
                         </Link>
-                      ) : "-"}
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">

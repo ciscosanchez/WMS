@@ -297,7 +297,9 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
         <Dialog open={addingZone} onOpenChange={setAddingZone}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("addZoneTo")} {wh.name}</DialogTitle>
+              <DialogTitle>
+                {t("addZoneTo")} {wh.name}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

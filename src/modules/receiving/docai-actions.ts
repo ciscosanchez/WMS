@@ -37,90 +37,89 @@ export async function processDocument(opts: {
   }
 
   try {
+    const { user, tenant } = await getContext();
 
-  const { user, tenant } = await getContext();
-
-  // Create the processing job
-  const job = await tenant.db.documentProcessingJob.create({
-    data: {
-      sourceType: opts.sourceType,
-      status: "processing",
-      fileUrl: opts.fileKey,
-      fileName: opts.fileName,
-      mimeType: opts.mimeType,
-      tenantId: tenant.tenantId,
-      ...(opts.shipmentId && {
-        document: {
-          create: {
-            type: "other",
-            fileName: opts.fileName,
-            fileUrl: opts.fileKey,
-            entityType: "shipment",
-            entityId: opts.shipmentId,
-            uploadedBy: user.id,
+    // Create the processing job
+    const job = await tenant.db.documentProcessingJob.create({
+      data: {
+        sourceType: opts.sourceType,
+        status: "processing",
+        fileUrl: opts.fileKey,
+        fileName: opts.fileName,
+        mimeType: opts.mimeType,
+        tenantId: tenant.tenantId,
+        ...(opts.shipmentId && {
+          document: {
+            create: {
+              type: "other",
+              fileName: opts.fileName,
+              fileUrl: opts.fileKey,
+              entityType: "shipment",
+              entityId: opts.shipmentId,
+              uploadedBy: user.id,
+            },
           },
-        },
-      }),
-    },
-  });
-
-  // Fetch the file from S3 and convert to base64
-  let result: ExtractForReceiptResponse;
-  try {
-    const s3 = getS3Client();
-    const bucket = process.env.S3_BUCKET || "armstrong-wms";
-    const stream = await s3.getObject(bucket, opts.fileKey);
-
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(Buffer.from(chunk));
-    }
-    const fileBase64 = Buffer.concat(chunks).toString("base64");
-
-    result = await extractForReceipt({
-      fileBase64,
-      mimeType: opts.mimeType,
-      tenantId: tenant.tenantId,
-      context: {
-        clientName: opts.clientName,
+        }),
       },
     });
-  } catch (err) {
-    // Mark job as failed
-    await tenant.db.documentProcessingJob.update({
+
+    // Fetch the file from S3 and convert to base64
+    let result: ExtractForReceiptResponse;
+    try {
+      const s3 = getS3Client();
+      const bucket = process.env.S3_BUCKET || "armstrong-wms";
+      const stream = await s3.getObject(bucket, opts.fileKey);
+
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const fileBase64 = Buffer.concat(chunks).toString("base64");
+
+      result = await extractForReceipt({
+        fileBase64,
+        mimeType: opts.mimeType,
+        tenantId: tenant.tenantId,
+        context: {
+          clientName: opts.clientName,
+        },
+      });
+    } catch (err) {
+      // Mark job as failed
+      await tenant.db.documentProcessingJob.update({
+        where: { id: job.id },
+        data: {
+          status: "failed",
+          processedAt: new Date(),
+        },
+      });
+      return { error: err instanceof Error ? err.message : "Document processing failed" };
+    }
+
+    // Update job with extraction results
+    const updated = await tenant.db.documentProcessingJob.update({
       where: { id: job.id },
       data: {
-        status: "failed",
+        status: "review",
+        documentType: result.sourceDocumentType,
+        extractedData: JSON.parse(JSON.stringify(result.receipt)),
+        confidence: result.overallConfidence,
+        aiModel: "claude-sonnet",
+        aiCost: result.usage?.estimatedCostUsd ?? null,
+        requestId: result.requestId,
         processedAt: new Date(),
       },
     });
-    return { error: err instanceof Error ? err.message : "Document processing failed" };
-  }
 
-  // Update job with extraction results
-  const updated = await tenant.db.documentProcessingJob.update({
-    where: { id: job.id },
-    data: {
-      status: "review",
-      documentType: result.sourceDocumentType,
-      extractedData: JSON.parse(JSON.stringify(result.receipt)),
-      confidence: result.overallConfidence,
-      aiModel: "claude-sonnet",
-      aiCost: result.usage?.estimatedCostUsd ?? null,
-      requestId: result.requestId,
-      processedAt: new Date(),
-    },
-  });
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "create",
+      entityType: "document_processing_job",
+      entityId: job.id,
+    });
 
-  await logAudit(tenant.db, {
-    userId: user.id,
-    action: "create",
-    entityType: "document_processing_job",
-    entityId: job.id,
-  });
-
-  revalidatePath("/receiving");
-  return updated;
+    revalidatePath("/receiving");
+    return updated;
   } catch (outerErr) {
     return { error: outerErr instanceof Error ? outerErr.message : "Unexpected error" };
   }
@@ -272,13 +271,14 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
   const lineItems = data.lineItems?.value ?? [];
   if (lineItems.length > 0) {
     const skus = lineItems.map((item) => item.sku).filter(Boolean) as string[];
-    const products = skus.length > 0
-      ? await tenant.db.product.findMany({
-          where: { clientId, sku: { in: skus } },
-          select: { id: true, sku: true },
-        })
-      : [];
-    const productBySku = new Map(products.map((p) => [p.sku, p.id]));
+    const products =
+      skus.length > 0
+        ? await tenant.db.product.findMany({
+            where: { clientId, sku: { in: skus } },
+            select: { id: true, sku: true },
+          })
+        : [];
+    const productBySku = new Map(products.map((p: { id: string; sku: string }) => [p.sku, p.id]));
 
     const linesToCreate = lineItems
       .filter((item) => item.sku && productBySku.has(item.sku))
@@ -322,10 +322,10 @@ export async function updateShipmentFromExtraction(shipmentId: string, jobId: st
   if (!data) throw new Error("No extraction data available");
 
   const updateFields: Record<string, unknown> = {};
-  if (data.carrier?.value)           updateFields.carrier        = data.carrier.value;
-  if (data.proNumber?.value)         updateFields.bolNumber      = data.proNumber.value;
-  if (data.trackingNumber?.value)    updateFields.trackingNumber = data.trackingNumber.value;
-  if (data.poNumbers?.value?.[0])    updateFields.poNumber       = data.poNumbers.value[0];
+  if (data.carrier?.value) updateFields.carrier = data.carrier.value;
+  if (data.proNumber?.value) updateFields.bolNumber = data.proNumber.value;
+  if (data.trackingNumber?.value) updateFields.trackingNumber = data.trackingNumber.value;
+  if (data.poNumbers?.value?.[0]) updateFields.poNumber = data.poNumbers.value[0];
 
   const shipment = await tenant.db.inboundShipment.update({
     where: { id: shipmentId },

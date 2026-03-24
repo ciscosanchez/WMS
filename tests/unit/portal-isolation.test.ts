@@ -4,7 +4,7 @@
  * Portal client isolation tests.
  *
  * Verifies that resolvePortalClient (private) correctly isolates data
- * by contactEmail with no fallback, tested through the public functions:
+ * by portalClientId from JWT, tested through the public functions:
  * getPortalInventory, getPortalOrders, createPortalOrder.
  */
 
@@ -30,40 +30,6 @@ const mockDb = {
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockRequireTenantAccess = jest.fn();
-
-jest.mock("@/lib/auth/session", () => ({
-  requireTenantAccess: (...args: unknown[]) => mockRequireTenantAccess(...args),
-}));
-
-jest.mock("@/lib/db/public-client", () => ({
-  publicDb: {
-    tenant: {
-      findUnique: jest.fn().mockResolvedValue({
-        id: "tenant-1",
-        slug: "test",
-        dbSchema: "test_schema",
-        status: "active",
-      }),
-    },
-    tenantUser: {
-      findUnique: jest.fn().mockResolvedValue({
-        portalClientId: null, // No explicit binding — falls back to email match
-      }),
-    },
-  },
-}));
-
-jest.mock("@/lib/db/tenant-client", () => ({
-  getTenantDb: jest.fn().mockReturnValue(mockDb),
-}));
-
-jest.mock("next/headers", () => ({
-  headers: jest.fn().mockResolvedValue({
-    get: (key: string) => (key === "x-tenant-slug" ? "test" : null),
-  }),
-}));
-
 // Use a getter so the mock factory doesn't capture mockDb before initialization
 jest.mock("@/lib/tenant/context", () => ({
   requireTenantContext: jest.fn().mockImplementation(() =>
@@ -73,7 +39,7 @@ jest.mock("@/lib/tenant/context", () => ({
         email: "portal@client.com",
         name: "Portal User",
         isSuperadmin: false,
-        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer" }],
+        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId: "client-1" }],
       },
       role: "viewer",
       tenant: {
@@ -86,8 +52,13 @@ jest.mock("@/lib/tenant/context", () => ({
           return require("@/lib/db/tenant-client").getTenantDb();
         },
       },
+      portalClientId: "client-1",
     })
   ),
+}));
+
+jest.mock("@/lib/db/tenant-client", () => ({
+  getTenantDb: jest.fn().mockReturnValue(mockDb),
 }));
 
 jest.mock("@/lib/sequences", () => ({
@@ -115,18 +86,19 @@ import { requireTenantContext } from "@/lib/tenant/context";
 
 const CLIENT = { id: "client-1", name: "Acme Corp", contactEmail: "portal@client.com", isActive: true };
 
-function setUserEmail(email: string) {
+function setPortalClientId(portalClientId: string | null) {
   (requireTenantContext as jest.Mock).mockImplementation(() =>
     Promise.resolve({
       user: {
         id: "user-1",
-        email,
+        email: "portal@client.com",
         name: "Portal User",
         isSuperadmin: false,
-        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer" }],
+        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId }],
       },
       role: "viewer",
       tenant: { tenantId: "tenant-1", slug: "test", dbSchema: "test_schema", db: mockDb },
+      portalClientId,
     })
   );
 }
@@ -135,40 +107,39 @@ function setUserEmail(email: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Default: user email matches client
-  setUserEmail("portal@client.com");
+  // Default: user has portalClientId binding
+  setPortalClientId("client-1");
 });
 
-describe("Portal client isolation (resolvePortalClient)", () => {
+describe("Portal client isolation (resolvePortalClient via portalClientId)", () => {
   // ── getPortalInventory ───────────────────────────────────────────────────
 
   describe("getPortalInventory", () => {
-    it("returns [] when user email does not match any client", async () => {
+    it("returns [] when portalClientId is null (no client binding)", async () => {
+      setPortalClientId(null);
+
+      const result = await getPortalInventory();
+
+      expect(result).toEqual([]);
+      // resolvePortalClient short-circuits on null portalClientId — no DB call
+      expect(mockClientFindFirst).not.toHaveBeenCalled();
+      expect(mockProductFindMany).not.toHaveBeenCalled();
+      expect(mockInventoryGroupBy).not.toHaveBeenCalled();
+    });
+
+    it("returns [] when portalClientId points to an inactive client", async () => {
       mockClientFindFirst.mockResolvedValue(null);
 
       const result = await getPortalInventory();
 
       expect(result).toEqual([]);
       expect(mockClientFindFirst).toHaveBeenCalledWith({
-        where: { contactEmail: "portal@client.com", isActive: true },
+        where: { id: "client-1", isActive: true },
       });
-      // Should NOT query products or inventory when no client found
       expect(mockProductFindMany).not.toHaveBeenCalled();
-      expect(mockInventoryGroupBy).not.toHaveBeenCalled();
     });
 
-    it("returns [] when user email is empty", async () => {
-      setUserEmail("");
-      mockClientFindFirst.mockResolvedValue(null);
-
-      const result = await getPortalInventory();
-
-      expect(result).toEqual([]);
-      // resolvePortalClient short-circuits on empty email — no DB call
-      expect(mockClientFindFirst).not.toHaveBeenCalled();
-    });
-
-    it("returns inventory data when email matches a client", async () => {
+    it("returns inventory data when portalClientId resolves to an active client", async () => {
       mockClientFindFirst.mockResolvedValue(CLIENT);
       mockProductFindMany.mockResolvedValue([
         {
@@ -198,7 +169,7 @@ describe("Portal client isolation (resolvePortalClient)", () => {
         },
       ]);
       expect(mockClientFindFirst).toHaveBeenCalledWith({
-        where: { contactEmail: "portal@client.com", isActive: true },
+        where: { id: "client-1", isActive: true },
       });
     });
   });
@@ -206,8 +177,8 @@ describe("Portal client isolation (resolvePortalClient)", () => {
   // ── getPortalOrders ──────────────────────────────────────────────────────
 
   describe("getPortalOrders", () => {
-    it("returns [] when user email does not match any client", async () => {
-      mockClientFindFirst.mockResolvedValue(null);
+    it("returns [] when portalClientId is null", async () => {
+      setPortalClientId(null);
 
       const result = await getPortalOrders();
 
@@ -215,7 +186,7 @@ describe("Portal client isolation (resolvePortalClient)", () => {
       expect(mockOrderFindMany).not.toHaveBeenCalled();
     });
 
-    it("returns orders when email matches a client", async () => {
+    it("returns orders when portalClientId resolves to a client", async () => {
       mockClientFindFirst.mockResolvedValue(CLIENT);
       mockOrderFindMany.mockResolvedValue([
         {
@@ -256,8 +227,8 @@ describe("Portal client isolation (resolvePortalClient)", () => {
       lineItems: [{ productId: "prod-1", quantity: 2 }],
     };
 
-    it("returns error when user email does not match any client", async () => {
-      mockClientFindFirst.mockResolvedValue(null);
+    it("returns error when portalClientId is null", async () => {
+      setPortalClientId(null);
 
       const result = await createPortalOrder(validOrderData);
 
@@ -325,22 +296,19 @@ describe("Portal client isolation (resolvePortalClient)", () => {
   // ── resolvePortalClient query shape ──────────────────────────────────────
 
   describe("client lookup query shape", () => {
-    it("queries with contactEmail and isActive — no fallback to first client", async () => {
-      setUserEmail("unknown@other.com");
+    it("queries by portalClientId — not by email", async () => {
       mockClientFindFirst.mockResolvedValue(null);
 
       await getPortalInventory();
 
       expect(mockClientFindFirst).toHaveBeenCalledTimes(1);
       expect(mockClientFindFirst).toHaveBeenCalledWith({
-        where: { contactEmail: "unknown@other.com", isActive: true },
+        where: { id: "client-1", isActive: true },
       });
-      // Verify there was only ONE call — no second fallback query
-      expect(mockClientFindFirst).toHaveBeenCalledTimes(1);
     });
 
-    it("does not call findFirst at all when email is empty string", async () => {
-      setUserEmail("");
+    it("does not call findFirst at all when portalClientId is null", async () => {
+      setPortalClientId(null);
 
       await getPortalOrders();
 

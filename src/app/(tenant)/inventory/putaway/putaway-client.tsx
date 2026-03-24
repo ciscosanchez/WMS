@@ -149,7 +149,9 @@ export function PutawayClient({ initialPending, bins }: Props) {
                   {item.currentBinBarcode && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
                       <MapPin className="h-3 w-3" />
-                      <span>Currently at: <span className="font-mono">{item.currentBinBarcode}</span></span>
+                      <span>
+                        Currently at: <span className="font-mono">{item.currentBinBarcode}</span>
+                      </span>
                     </div>
                   )}
                   {item.suggestions.length > 0 && (

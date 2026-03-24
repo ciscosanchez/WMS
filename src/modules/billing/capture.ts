@@ -19,6 +19,10 @@ export const SERVICE_LABELS: Record<string, string> = {
   handling_unit: "Handling (per unit)",
   shipping_markup: "Shipping markup",
   value_add_hour: "Value-add (per hour)",
+  labor_hour: "Labor (per hour)",
+  labor_unit: "Labor (per unit handled)",
+  returns_processing: "Returns processing (per unit)",
+  shipping_carton: "Shipping (per carton packed)",
 };
 
 export async function captureEvent(

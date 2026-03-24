@@ -1,91 +1,92 @@
-import { TenantRole } from "../../../node_modules/.prisma/public-client";
+import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 
-export type Permission =
-  | "clients:read"
-  | "clients:write"
-  | "products:read"
-  | "products:write"
-  | "warehouse:read"
-  | "warehouse:write"
-  | "receiving:read"
-  | "receiving:write"
-  | "receiving:complete"
-  | "inventory:read"
-  | "inventory:write"
-  | "inventory:adjust"
-  | "inventory:approve"
-  | "inventory:count"
-  | "reports:read"
-  | "settings:read"
-  | "settings:write"
-  | "users:read"
-  | "users:write";
+// ─── Single source of truth: role hierarchy ──────────────────────────────────
 
-const rolePermissions: Record<TenantRole, Permission[]> = {
-  admin: [
-    "clients:read",
-    "clients:write",
-    "products:read",
-    "products:write",
-    "warehouse:read",
-    "warehouse:write",
-    "receiving:read",
-    "receiving:write",
-    "receiving:complete",
-    "inventory:read",
-    "inventory:write",
-    "inventory:adjust",
-    "inventory:approve",
-    "inventory:count",
-    "reports:read",
-    "settings:read",
-    "settings:write",
-    "users:read",
-    "users:write",
-  ],
-  manager: [
-    "clients:read",
-    "clients:write",
-    "products:read",
-    "products:write",
-    "warehouse:read",
-    "warehouse:write",
-    "receiving:read",
-    "receiving:write",
-    "receiving:complete",
-    "inventory:read",
-    "inventory:write",
-    "inventory:adjust",
-    "inventory:approve",
-    "inventory:count",
-    "reports:read",
-    "settings:read",
-    "users:read",
-  ],
-  warehouse_worker: [
-    "clients:read",
-    "products:read",
-    "warehouse:read",
-    "receiving:read",
-    "receiving:write",
-    "inventory:read",
-    "inventory:write",
-    "inventory:count",
-  ],
-  viewer: [
-    "clients:read",
-    "products:read",
-    "warehouse:read",
-    "receiving:read",
-    "inventory:read",
-    "reports:read",
-  ],
+export const ROLE_LEVEL: Record<TenantRole, number> = {
+  admin: 40,
+  manager: 30,
+  warehouse_worker: 20,
+  viewer: 10,
 };
 
-export function hasPermission(role: TenantRole, permission: Permission): boolean {
+// ─── Single source of truth: permission → minimum role level ─────────────────
+
+export const PERMISSION_LEVEL: Record<string, number> = {
+  // Clients
+  "clients:read": 10,
+  "clients:write": 40,
+  // Products
+  "products:read": 10,
+  "products:write": 30,
+  // Receiving
+  "receiving:read": 10,
+  "receiving:write": 20,
+  "receiving:complete": 30,
+  // Inventory
+  "inventory:read": 10,
+  "inventory:write": 20,
+  "inventory:adjust": 30,
+  "inventory:approve": 30,
+  "inventory:count": 20,
+  // Orders
+  "orders:read": 10,
+  "orders:write": 30,
+  // Warehouse / bins
+  "warehouse:read": 10,
+  "warehouse:write": 30,
+  // Shipping / outbound
+  "shipping:read": 10,
+  "shipping:write": 20,
+  // Operator floor screens
+  "operator:write": 20,
+  // Returns / RMA
+  "returns:read": 10,
+  "returns:write": 20,
+  "returns:approve": 30,
+  "returns:dispose": 30,
+  // Yard & dock scheduling
+  "yard-dock:read": 10,
+  "yard-dock:write": 20,
+  "yard-dock:manage": 30,
+  // Reports
+  "reports:read": 10,
+  // Settings (admin-only)
+  "settings:read": 30,
+  "settings:write": 40,
+  // User management
+  "users:read": 30,
+  "users:write": 40,
+};
+
+// ─── Permission type (union of all known permission keys) ────────────────────
+
+export type Permission = keyof typeof PERMISSION_LEVEL;
+
+// ─── Derived role → permissions map ──────────────────────────────────────────
+
+const rolePermissions: Record<TenantRole, string[]> = {
+  admin: Object.keys(PERMISSION_LEVEL).filter((p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.admin),
+  manager: Object.keys(PERMISSION_LEVEL).filter((p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.manager),
+  warehouse_worker: Object.keys(PERMISSION_LEVEL).filter(
+    (p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.warehouse_worker
+  ),
+  viewer: Object.keys(PERMISSION_LEVEL).filter((p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.viewer),
+};
+
+export function hasPermission(role: TenantRole, permission: string): boolean {
   return rolePermissions[role]?.includes(permission) ?? false;
 }
 
-export function getPermissions(role: TenantRole): Permission[] {
+export function getPermissions(role: TenantRole): string[] {
   return rolePermissions[role] ?? [];
+}
+
+/**
+ * Check if a role meets the minimum level for a permission.
+ * Unknown permissions require admin (fail-closed).
+ */
+export function checkPermissionLevel(role: TenantRole, permission: string): boolean {
+  const userLevel = ROLE_LEVEL[role] ?? 0;
+  const requiredLevel = PERMISSION_LEVEL[permission] ?? 40;
+  return userLevel >= requiredLevel;
 }

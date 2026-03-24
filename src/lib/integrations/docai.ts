@@ -130,9 +130,7 @@ Rules:
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it to .env to enable DocAI extraction."
-    );
+    throw new Error("ANTHROPIC_API_KEY is not set. Add it to .env to enable DocAI extraction.");
   }
   return new Anthropic({ apiKey });
 }
@@ -214,7 +212,10 @@ export async function extractForReceipt(opts: {
   let parsed: { sourceDocumentType: string; overallConfidence: number; receipt: ShipmentData };
   try {
     // Strip any accidental markdown code fences
-    const jsonText = rawText.replace(/^```(?:json)?\n?/m, "").replace(/```$/m, "").trim();
+    const jsonText = rawText
+      .replace(/^```(?:json)?\n?/m, "")
+      .replace(/```$/m, "")
+      .trim();
     parsed = JSON.parse(jsonText);
   } catch {
     throw new Error(`DocAI returned invalid JSON: ${rawText.slice(0, 200)}`);

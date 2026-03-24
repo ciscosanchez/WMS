@@ -22,7 +22,9 @@ export function ShopifySyncButton({ clientId }: Props) {
       } else {
         setLastResult({ imported: result.imported, skipped: result.skipped });
         if (result.imported > 0) {
-          toast.success(`Imported ${result.imported} new order${result.imported !== 1 ? "s" : ""} from Shopify`);
+          toast.success(
+            `Imported ${result.imported} new order${result.imported !== 1 ? "s" : ""} from Shopify`
+          );
         } else {
           toast.info(`No new orders — ${result.skipped} already imported`);
         }
@@ -36,8 +38,8 @@ export function ShopifySyncButton({ clientId }: Props) {
       {isPending
         ? "Syncing..."
         : lastResult
-        ? `Sync Shopify (${lastResult.imported} imported)`
-        : "Sync Shopify"}
+          ? `Sync Shopify (${lastResult.imported} imported)`
+          : "Sync Shopify"}
     </Button>
   );
 }

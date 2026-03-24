@@ -92,7 +92,11 @@ export function ReportsClient({
             <PieChartCard title="Revenue by Service" data={billing} />
             <BarChartCard
               title="Receiving Volume by Client"
-              data={receiving.clientVolume.length > 0 ? receiving.clientVolume : [{ name: "No data", value: 0 }]}
+              data={
+                receiving.clientVolume.length > 0
+                  ? receiving.clientVolume
+                  : [{ name: "No data", value: 0 }]
+              }
             />
             <BarChartCard
               title="Orders per Day"
@@ -113,7 +117,11 @@ export function ReportsClient({
           <div className="grid gap-4 md:grid-cols-2">
             <BarChartCard
               title="Receiving Volume by Client"
-              data={receiving.clientVolume.length > 0 ? receiving.clientVolume : [{ name: "No data", value: 0 }]}
+              data={
+                receiving.clientVolume.length > 0
+                  ? receiving.clientVolume
+                  : [{ name: "No data", value: 0 }]
+              }
             />
             <Card>
               <CardHeader>
@@ -126,7 +134,9 @@ export function ReportsClient({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Items Received</span>
-                  <span className="font-medium">{receiving.totalItemsReceived.toLocaleString()}</span>
+                  <span className="font-medium">
+                    {receiving.totalItemsReceived.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Discrepancy Rate</span>
@@ -170,7 +180,9 @@ export function ReportsClient({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Low Stock Alerts</span>
-                  <span className={`font-medium ${inventory.lowStockCount > 0 ? "text-orange-600" : ""}`}>
+                  <span
+                    className={`font-medium ${inventory.lowStockCount > 0 ? "text-orange-600" : ""}`}
+                  >
                     {inventory.lowStockCount}
                   </span>
                 </div>
@@ -277,28 +289,39 @@ export function ReportsClient({
             <>
               <div className="grid gap-4 md:grid-cols-3">
                 <Card>
-                  <CardHeader><CardTitle className="text-base">Moves (MTD)</CardTitle></CardHeader>
-                  <CardContent><p className="text-3xl font-bold">{movement.totalMovesMTD}</p></CardContent>
+                  <CardHeader>
+                    <CardTitle className="text-base">Moves (MTD)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{movement.totalMovesMTD}</p>
+                  </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader><CardTitle className="text-base">Moves (7 days)</CardTitle></CardHeader>
-                  <CardContent><p className="text-3xl font-bold">{movement.totalMovesWeek}</p></CardContent>
+                  <CardHeader>
+                    <CardTitle className="text-base">Moves (7 days)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{movement.totalMovesWeek}</p>
+                  </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader><CardTitle className="text-base">Repeat Trips</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="text-base">Repeat Trips</CardTitle>
+                  </CardHeader>
                   <CardContent>
                     <p className="text-3xl font-bold text-amber-600">{movement.repeatTrips}</p>
-                    <p className="text-xs text-muted-foreground">Same from→to path used multiple times</p>
+                    <p className="text-xs text-muted-foreground">
+                      Same from→to path used multiple times
+                    </p>
                   </CardContent>
                 </Card>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <BarChartCard
-                  title="Moves per Day (7 days)"
-                  data={movement.movesPerDay}
-                />
+                <BarChartCard title="Moves per Day (7 days)" data={movement.movesPerDay} />
                 <Card>
-                  <CardHeader><CardTitle className="text-base">Moves per Operator</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="text-base">Moves per Operator</CardTitle>
+                  </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     {movement.movesPerOperator.map((op) => (
                       <div key={op.name} className="flex justify-between">
@@ -314,7 +337,9 @@ export function ReportsClient({
               </div>
               {movement.topPaths.length > 0 && (
                 <Card>
-                  <CardHeader><CardTitle className="text-base">Top Bin-to-Bin Paths</CardTitle></CardHeader>
+                  <CardHeader>
+                    <CardTitle className="text-base">Top Bin-to-Bin Paths</CardTitle>
+                  </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     {movement.topPaths.map((p) => (
                       <div key={p.path} className="flex justify-between">

@@ -362,7 +362,9 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
 
           {/* Line items */}
           <div>
-            <p className="text-sm font-medium mb-2">Line Items ({data.lineItems?.value?.length || 0})</p>
+            <p className="text-sm font-medium mb-2">
+              Line Items ({data.lineItems?.value?.length || 0})
+            </p>
             {data.lineItems?.value && data.lineItems.value.length > 0 ? (
               <ScrollArea className="max-h-[250px]">
                 <div className="rounded-md border">
@@ -379,7 +381,9 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
                     <TableBody>
                       {data.lineItems.value.map((item, i) => (
                         <TableRow key={i}>
-                          <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {item.description}
+                          </TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">{item.pieces}</TableCell>
                           <TableCell>{item.packageType || "-"}</TableCell>

@@ -74,9 +74,7 @@ export class FedExAdapter implements CarrierAdapter {
 
   constructor(config: FedExConfig) {
     this.config = config;
-    this.baseUrl = config.useSandbox
-      ? "https://apis-sandbox.fedex.com"
-      : "https://apis.fedex.com";
+    this.baseUrl = config.useSandbox ? "https://apis-sandbox.fedex.com" : "https://apis.fedex.com";
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -151,18 +149,20 @@ export class FedExAdapter implements CarrierAdapter {
         },
         pickupType: "DROPOFF_AT_FEDEX_LOCATION",
         rateRequestType: ["ACCOUNT", "LIST"],
-        requestedPackageLineItems: [{
-          weight: {
-            units: pkg.weightUnit === "lb" ? "LB" : "KG",
-            value: pkg.weight,
+        requestedPackageLineItems: [
+          {
+            weight: {
+              units: pkg.weightUnit === "lb" ? "LB" : "KG",
+              value: pkg.weight,
+            },
+            dimensions: {
+              length: Math.ceil(pkg.length),
+              width: Math.ceil(pkg.width),
+              height: Math.ceil(pkg.height),
+              units: pkg.dimUnit === "in" ? "IN" : "CM",
+            },
           },
-          dimensions: {
-            length: Math.ceil(pkg.length),
-            width: Math.ceil(pkg.width),
-            height: Math.ceil(pkg.height),
-            units: pkg.dimUnit === "in" ? "IN" : "CM",
-          },
-        }],
+        ],
       },
     };
 
@@ -177,7 +177,7 @@ export class FedExAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const details: any[] = data.output?.rateReplyDetails ?? [];
 
@@ -201,20 +201,20 @@ export class FedExAdapter implements CarrierAdapter {
       if (!rateDetail) return [];
 
       const cost = parseFloat(
-        rateDetail.totalNetFedExCharge?.amount ??
-        rateDetail.totalNetCharge?.amount ??
-        "0"
+        rateDetail.totalNetFedExCharge?.amount ?? rateDetail.totalNetCharge?.amount ?? "0"
       );
 
-      return [{
-        carrier: "FedEx",
-        service: FEDEX_SERVICE_NAMES[serviceType] ?? serviceType,
-        serviceCode: serviceType,
-        totalCost: cost,
-        currency: rateDetail.totalNetCharge?.currency ?? "USD",
-        estimatedDays: days,
-        guaranteed: FEDEX_EXPRESS_SERVICES.has(serviceType),
-      } satisfies RateQuote];
+      return [
+        {
+          carrier: "FedEx",
+          service: FEDEX_SERVICE_NAMES[serviceType] ?? serviceType,
+          serviceCode: serviceType,
+          totalCost: cost,
+          currency: rateDetail.totalNetCharge?.currency ?? "USD",
+          estimatedDays: days,
+          guaranteed: FEDEX_EXPRESS_SERVICES.has(serviceType),
+        } satisfies RateQuote,
+      ];
     });
   }
 
@@ -240,21 +240,23 @@ export class FedExAdapter implements CarrierAdapter {
             countryCode: request.from.country,
           },
         },
-        recipients: [{
-          contact: {
-            personName: request.to.name,
-            companyName: request.to.company ?? "",
-            phoneNumber: request.to.phone ?? "",
+        recipients: [
+          {
+            contact: {
+              personName: request.to.name,
+              companyName: request.to.company ?? "",
+              phoneNumber: request.to.phone ?? "",
+            },
+            address: {
+              streetLines: [request.to.street1, request.to.street2].filter(Boolean),
+              city: request.to.city,
+              stateOrProvinceCode: request.to.state,
+              postalCode: request.to.zip,
+              countryCode: request.to.country,
+              residential: request.to.isResidential ?? false,
+            },
           },
-          address: {
-            streetLines: [request.to.street1, request.to.street2].filter(Boolean),
-            city: request.to.city,
-            stateOrProvinceCode: request.to.state,
-            postalCode: request.to.zip,
-            countryCode: request.to.country,
-            residential: request.to.isResidential ?? false,
-          },
-        }],
+        ],
         pickupType: "DROPOFF_AT_FEDEX_LOCATION",
         serviceType: request.serviceCode,
         packagingType: "YOUR_PACKAGING",
@@ -271,21 +273,27 @@ export class FedExAdapter implements CarrierAdapter {
           imageType: "PDF",
           labelStockType: "PAPER_4X6",
         },
-        requestedPackageLineItems: [{
-          weight: {
-            units: pkg.weightUnit === "lb" ? "LB" : "KG",
-            value: pkg.weight,
+        requestedPackageLineItems: [
+          {
+            weight: {
+              units: pkg.weightUnit === "lb" ? "LB" : "KG",
+              value: pkg.weight,
+            },
+            dimensions: {
+              length: Math.ceil(pkg.length),
+              width: Math.ceil(pkg.width),
+              height: Math.ceil(pkg.height),
+              units: pkg.dimUnit === "in" ? "IN" : "CM",
+            },
+            ...(request.reference
+              ? {
+                  customerReferences: [
+                    { customerReferenceType: "CUSTOMER_REFERENCE", value: request.reference },
+                  ],
+                }
+              : {}),
           },
-          dimensions: {
-            length: Math.ceil(pkg.length),
-            width: Math.ceil(pkg.width),
-            height: Math.ceil(pkg.height),
-            units: pkg.dimUnit === "in" ? "IN" : "CM",
-          },
-          ...(request.reference
-            ? { customerReferences: [{ customerReferenceType: "CUSTOMER_REFERENCE", value: request.reference }] }
-            : {}),
-        }],
+        ],
       },
     };
 
@@ -300,7 +308,7 @@ export class FedExAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const shipment = data.output?.transactionShipments?.[0] as any;
     const piece = shipment?.pieceResponses?.[0];
@@ -317,7 +325,8 @@ export class FedExAdapter implements CarrierAdapter {
       "";
 
     const cost = parseFloat(
-      shipment?.completedShipmentDetail?.shipmentRating?.shipmentRateDetails?.[0]?.totalNetCharge?.amount ?? "0"
+      shipment?.completedShipmentDetail?.shipmentRating?.shipmentRateDetails?.[0]?.totalNetCharge
+        ?.amount ?? "0"
     );
 
     return {
@@ -335,13 +344,15 @@ export class FedExAdapter implements CarrierAdapter {
   async getTracking(trackingNumber: string): Promise<TrackingResult> {
     const body = {
       includeDetailedScans: true,
-      trackingInfo: [{
-        trackingNumberInfo: {
-          trackingNumber,
-          carrierCode: "FDXE",
-          trackingNumberUniqueId: "",
+      trackingInfo: [
+        {
+          trackingNumberInfo: {
+            trackingNumber,
+            carrierCode: "FDXE",
+            trackingNumberUniqueId: "",
+          },
         },
-      }],
+      ],
     };
 
     const res = await this.authedFetch(`${this.baseUrl}/track/v1/trackingnumbers`, {
@@ -355,14 +366,16 @@ export class FedExAdapter implements CarrierAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     const trackResult = data.output?.completeTrackResults?.[0]?.trackResults?.[0];
     if (!trackResult) throw new Error("FedEx: no track result in response");
 
     const derivedCode = trackResult.latestStatusDetail?.derivedCode as string | undefined;
     const status: TrackingResult["status"] =
-      derivedCode === "DL" ? "delivered"
-        : (derivedCode === "OC" || derivedCode === "DE") ? "exception"
+      derivedCode === "DL"
+        ? "delivered"
+        : derivedCode === "OC" || derivedCode === "DE"
+          ? "exception"
           : "in_transit";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -372,10 +385,7 @@ export class FedExAdapter implements CarrierAdapter {
       (s: any) => ({
         timestamp: new Date(s.date),
         status: s.derivedStatus ?? s.eventType ?? "Unknown",
-        location: [
-          s.scanLocation?.city,
-          s.scanLocation?.stateOrProvinceCode,
-        ]
+        location: [s.scanLocation?.city, s.scanLocation?.stateOrProvinceCode]
           .filter(Boolean)
           .join(", "),
         description: s.eventDescription ?? "",
@@ -417,7 +427,7 @@ export class FedExAdapter implements CarrierAdapter {
 
     if (!res.ok) return false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await res.json() as any;
+    const data = (await res.json()) as any;
     return data.output?.cancelledShipment === true;
   }
 }

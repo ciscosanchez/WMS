@@ -249,11 +249,7 @@ export default function NewOrderPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!clientId && (
-              <p className="text-sm text-muted-foreground">
-                {t("selectClientFirst")}
-              </p>
-            )}
+            {!clientId && <p className="text-sm text-muted-foreground">{t("selectClientFirst")}</p>}
 
             {clientId && (
               <div className="flex gap-2">

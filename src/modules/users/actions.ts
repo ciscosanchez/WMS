@@ -131,7 +131,10 @@ export async function setPasswordWithToken(
   return {};
 }
 
-export async function updateUserRole(userId: string, role: TenantRole): Promise<{ error: string } | { ok: true }> {
+export async function updateUserRole(
+  userId: string,
+  role: TenantRole
+): Promise<{ error: string } | { ok: true }> {
   const { tenant } = await getAdminContext();
   try {
     await publicDb.tenantUser.update({
@@ -149,9 +152,7 @@ export async function updateUserRole(userId: string, role: TenantRole): Promise<
  * Update the current user's locale preference.
  * Null = use tenant default.
  */
-export async function updateUserLocale(
-  locale: string | null
-): Promise<{ error?: string }> {
+export async function updateUserLocale(locale: string | null): Promise<{ error?: string }> {
   const { user } = await requireTenantContext();
   try {
     await publicDb.user.update({

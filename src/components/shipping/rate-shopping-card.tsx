@@ -117,18 +117,14 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold">
-                    ${rate.totalCost.toFixed(2)}
-                  </span>
+                  <span className="font-semibold">${rate.totalCost.toFixed(2)}</span>
                   <Button
                     size="sm"
                     variant={selectedCode === rate.serviceCode ? "default" : "outline"}
                     disabled={isPending}
                     onClick={() => handleSelect(rate)}
                   >
-                    {selectedCode === rate.serviceCode && isPending
-                      ? "Saving…"
-                      : "Select"}
+                    {selectedCode === rate.serviceCode && isPending ? "Saving…" : "Select"}
                   </Button>
                 </div>
               </div>

@@ -17,12 +17,7 @@ const ALLOWED_MIME_TYPES = new Set([
   "text/plain",
 ]);
 
-const ALLOWED_ENTITY_TYPES = new Set([
-  "shipment",
-  "product",
-  "order",
-  "docai",
-]);
+const ALLOWED_ENTITY_TYPES = new Set(["shipment", "product", "order", "docai"]);
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
@@ -33,7 +28,12 @@ export async function POST(request: NextRequest) {
   if (!rateCheck.allowed) {
     return NextResponse.json(
       { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000)) } }
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000)),
+        },
+      }
     );
   }
 
@@ -51,8 +51,7 @@ export async function POST(request: NextRequest) {
 
   // Verify the user is a member of this tenant
   const isMember =
-    session.user.isSuperadmin ||
-    session.user.tenants.some((t) => t.tenantId === tenant.tenantId);
+    session.user.isSuperadmin || session.user.tenants.some((t) => t.tenantId === tenant.tenantId);
   if (!isMember) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -90,16 +89,31 @@ export async function POST(request: NextRequest) {
     // ── Entity ownership check ──────────────────────────────────────────────
     // Verify the entityId actually exists in this tenant's DB before handing
     // out a presigned URL — prevents cross-tenant path pollution in MinIO.
+    // Portal users with a portalClientId can only upload for their own client's entities.
     if (entityType !== "docai") {
       const { getTenantDb } = await import("@/lib/db/tenant-client");
       const db = getTenantDb(tenant.dbSchema);
+
+      // Resolve portalClientId from JWT for portal-scoped uploads
+      const userTenant = session.user.tenants.find(
+        (t: { tenantId: string }) => t.tenantId === tenant.tenantId
+      );
+      const portalClientId = (userTenant as { portalClientId?: string | null } | undefined)
+        ?.portalClientId;
+
       let exists = false;
       if (entityType === "shipment") {
-        exists = !!(await db.shipment.findFirst({ where: { id: entityId }, select: { id: true } }));
+        const shipmentWhere: Record<string, unknown> = { id: entityId };
+        if (portalClientId) shipmentWhere.order = { clientId: portalClientId };
+        exists = !!(await db.shipment.findFirst({ where: shipmentWhere, select: { id: true } }));
       } else if (entityType === "product") {
-        exists = !!(await db.product.findFirst({ where: { id: entityId }, select: { id: true } }));
+        const where: Record<string, unknown> = { id: entityId };
+        if (portalClientId) where.clientId = portalClientId;
+        exists = !!(await db.product.findFirst({ where, select: { id: true } }));
       } else if (entityType === "order") {
-        exists = !!(await db.order.findFirst({ where: { id: entityId }, select: { id: true } }));
+        const where: Record<string, unknown> = { id: entityId };
+        if (portalClientId) where.clientId = portalClientId;
+        exists = !!(await db.order.findFirst({ where, select: { id: true } }));
       }
       if (!exists) {
         return NextResponse.json({ error: "Entity not found" }, { status: 404 });
@@ -108,7 +122,10 @@ export async function POST(request: NextRequest) {
 
     // Sanitize extension
     const rawExt = fileName.split(".").pop() || "bin";
-    const ext = rawExt.replace(/[^a-zA-Z0-9]/g, "").toLowerCase().slice(0, 10);
+    const ext = rawExt
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase()
+      .slice(0, 10);
 
     const key = `${entityType}/${entityId}/${uuid()}.${ext}`;
 
@@ -125,9 +142,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("[API /uploads] error:", error);
-    return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

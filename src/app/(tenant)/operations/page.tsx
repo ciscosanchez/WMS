@@ -8,7 +8,7 @@ import { getTranslations } from "next-intl/server";
 
 type BoardData = Awaited<ReturnType<typeof getOperationsBoard>>;
 type UnassignedTask = BoardData["unassignedTasks"][number];
-type Operator = BoardData["operators"][number];
+type _Operator = BoardData["operators"][number];
 type Receiving = BoardData["receivingActive"][number];
 
 export default async function OperationsPage() {
@@ -27,8 +27,16 @@ export default async function OperationsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard title={t("completedToday")} value={data.kpis.completedToday} icon={CheckCircle2} />
         <KpiCard title={t("avgMinutes")} value={data.kpis.avgMinutes} icon={Clock} />
-        <KpiCard title={t("pendingUnassigned")} value={data.kpis.pendingTasks} icon={AlertTriangle} />
-        <KpiCard title={t("activeReceiving")} value={data.kpis.activeReceiving} icon={PackageOpen} />
+        <KpiCard
+          title={t("pendingUnassigned")}
+          value={data.kpis.pendingTasks}
+          icon={AlertTriangle}
+        />
+        <KpiCard
+          title={t("activeReceiving")}
+          value={data.kpis.activeReceiving}
+          icon={PackageOpen}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -46,25 +54,29 @@ export default async function OperationsPage() {
             ) : (
               <div className="space-y-3">
                 {data.unassignedTasks.map((task: UnassignedTask) => (
-                  <div key={task.id} className="flex items-center justify-between gap-2 rounded-lg border p-3">
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{task.taskNumber}</span>
                         {task.priority === "rush" && (
-                          <Badge variant="destructive" className="text-xs">{t("rush")}</Badge>
+                          <Badge variant="destructive" className="text-xs">
+                            {t("rush")}
+                          </Badge>
                         )}
                         {task.priority === "expedited" && (
-                          <Badge variant="secondary" className="text-xs">{t("expedited")}</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {t("expedited")}
+                          </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {task.orderNumber} — {task.shipTo} ({task.lineCount} {tc("lines")})
                       </p>
                     </div>
-                    <AssignTaskButton
-                      taskId={task.id}
-                      operators={data.availableOperators ?? []}
-                    />
+                    <AssignTaskButton taskId={task.id} operators={data.availableOperators ?? []} />
                   </div>
                 ))}
               </div>
@@ -112,7 +124,9 @@ export default async function OperationsPage() {
                       <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${((op.completed + op.shortPicked) / op.total) * 100}%` }}
+                          style={{
+                            width: `${((op.completed + op.shortPicked) / op.total) * 100}%`,
+                          }}
                         />
                       </div>
                     )}
@@ -140,14 +154,19 @@ export default async function OperationsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{s.shipmentNumber}</span>
-                      <Badge variant={s.status === "receiving" ? "default" : "secondary"} className="text-xs">
+                      <Badge
+                        variant={s.status === "receiving" ? "default" : "secondary"}
+                        className="text-xs"
+                      >
                         {s.status}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{s.clientName}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-medium">{s.totalReceived}/{s.totalExpected}</div>
+                    <div className="text-sm font-medium">
+                      {s.totalReceived}/{s.totalExpected}
+                    </div>
                     <div className="text-xs text-muted-foreground">{tc("units")}</div>
                   </div>
                 </div>

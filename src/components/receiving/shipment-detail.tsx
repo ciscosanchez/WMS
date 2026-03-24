@@ -85,7 +85,8 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
   }
 
   async function handleFinalizePdf() {
-    if (!confirm("Generate master PDF combining all documents and photos for this shipment?")) return;
+    if (!confirm("Generate master PDF combining all documents and photos for this shipment?"))
+      return;
     setFinalizing(true);
     try {
       const result = await finalizeShipmentPdf(shipment.id);
@@ -431,7 +432,10 @@ export function ShipmentDetail({ shipment: initialShipment }: ShipmentDetailProp
 
       <DocScanModal
         open={scanning}
-        onClose={() => { setScanning(false); router.refresh(); }}
+        onClose={() => {
+          setScanning(false);
+          router.refresh();
+        }}
         shipmentId={shipment.id}
         shipmentNumber={shipment.shipmentNumber}
         clientName={shipment.client?.name}

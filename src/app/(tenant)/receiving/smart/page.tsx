@@ -104,10 +104,7 @@ export default function SmartReceivingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("smartReceiving")}
-        description={t("smartReceivingDesc")}
-      />
+      <PageHeader title={t("smartReceiving")} description={t("smartReceivingDesc")} />
 
       <Card>
         <CardContent className="pt-6">
@@ -121,18 +118,14 @@ export default function SmartReceivingPage() {
                 {processing ? t("extractingData") : t("uploadDoc")}
               </h3>
               <p className="text-sm text-muted-foreground max-w-md">
-                {processing
-                  ? t("extractingDesc")
-                  : t("uploadDocDesc")}
+                {processing ? t("extractingDesc") : t("uploadDocDesc")}
               </p>
             </div>
 
             {processing ? (
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-                <span className="text-sm text-muted-foreground">
-                  {t("processingAI")}
-                </span>
+                <span className="text-sm text-muted-foreground">{t("processingAI")}</span>
               </div>
             ) : (
               <div className="flex gap-3">

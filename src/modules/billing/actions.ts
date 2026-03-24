@@ -63,7 +63,8 @@ export async function getBillingConfig() {
 
   return {
     defaultCard: defaultCard ?? null,
-    clients: clients.map((c: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
+    clients: clients.map((c: any) => ({
+      // eslint-disable-line @typescript-eslint/no-explicit-any
       id: c.id,
       name: c.name,
       rateCard: cardByClientId[c.id] ?? null,
@@ -87,7 +88,13 @@ export async function saveDefaultRateCard(
       where: { id: existing.id },
       data: {
         monthlyMinimum,
-        lines: { create: lines.map((l) => ({ serviceType: l.serviceType, unitRate: l.unitRate, uom: l.uom })) },
+        lines: {
+          create: lines.map((l) => ({
+            serviceType: l.serviceType,
+            unitRate: l.unitRate,
+            uom: l.uom,
+          })),
+        },
       },
     });
   } else {
@@ -95,7 +102,13 @@ export async function saveDefaultRateCard(
       data: {
         clientId: null,
         monthlyMinimum,
-        lines: { create: lines.map((l) => ({ serviceType: l.serviceType, unitRate: l.unitRate, uom: l.uom })) },
+        lines: {
+          create: lines.map((l) => ({
+            serviceType: l.serviceType,
+            unitRate: l.unitRate,
+            uom: l.uom,
+          })),
+        },
       },
     });
   }
@@ -127,7 +140,13 @@ export async function saveClientRateCard(
       where: { id: existing.id },
       data: {
         monthlyMinimum,
-        lines: { create: lines.map((l) => ({ serviceType: l.serviceType, unitRate: l.unitRate, uom: l.uom })) },
+        lines: {
+          create: lines.map((l) => ({
+            serviceType: l.serviceType,
+            unitRate: l.unitRate,
+            uom: l.uom,
+          })),
+        },
       },
     });
   } else {
@@ -135,7 +154,13 @@ export async function saveClientRateCard(
       data: {
         clientId,
         monthlyMinimum,
-        lines: { create: lines.map((l) => ({ serviceType: l.serviceType, unitRate: l.unitRate, uom: l.uom })) },
+        lines: {
+          create: lines.map((l) => ({
+            serviceType: l.serviceType,
+            unitRate: l.unitRate,
+            uom: l.uom,
+          })),
+        },
       },
     });
   }
@@ -185,11 +210,7 @@ export async function getInvoice(id: string) {
  * Aggregate uninvoiced billing events for a client in the date range,
  * group by service type, apply monthly minimum, and create an invoice.
  */
-export async function generateInvoice(
-  clientId: string,
-  fromDate: Date,
-  toDate: Date
-) {
+export async function generateInvoice(clientId: string, fromDate: Date, toDate: Date) {
   const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -208,21 +229,27 @@ export async function generateInvoice(
 
   // Group by service type
   type GroupEntry = { qty: number; unitRate: number; amount: number };
-  const grouped = events.reduce((acc: Record<string, GroupEntry>, ev: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    const key = ev.serviceType;
-    if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
-    acc[key].qty += Number(ev.qty);
-    acc[key].amount += Number(ev.amount);
-    return acc;
-  }, {} as Record<string, GroupEntry>);
+  const grouped = events.reduce(
+    (acc: Record<string, GroupEntry>, ev: any) => {
+      // eslint-disable-line @typescript-eslint/no-explicit-any
+      const key = ev.serviceType;
+      if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
+      acc[key].qty += Number(ev.qty);
+      acc[key].amount += Number(ev.amount);
+      return acc;
+    },
+    {} as Record<string, GroupEntry>
+  );
 
-  const invoiceLines = (Object.entries(grouped) as [string, GroupEntry][]).map(([serviceType, data]) => ({
-    description: SERVICE_LABELS[serviceType] ?? serviceType,
-    serviceType,
-    qty: data.qty,
-    unitRate: data.unitRate,
-    amount: data.amount,
-  }));
+  const invoiceLines = (Object.entries(grouped) as [string, GroupEntry][]).map(
+    ([serviceType, data]) => ({
+      description: SERVICE_LABELS[serviceType] ?? serviceType,
+      serviceType,
+      qty: data.qty,
+      unitRate: data.unitRate,
+      amount: data.amount,
+    })
+  );
 
   const subtotal = invoiceLines.reduce((sum, l) => sum + l.amount, 0);
 
@@ -322,7 +349,9 @@ export async function getPortalBillingData() {
 
   let client;
   if (membership?.portalClientId) {
-    client = await db.client.findFirst({ where: { id: membership.portalClientId, isActive: true } });
+    client = await db.client.findFirst({
+      where: { id: membership.portalClientId, isActive: true },
+    });
   } else {
     client = await db.client.findFirst({ where: { contactEmail: user.email, isActive: true } });
   }

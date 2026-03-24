@@ -68,7 +68,9 @@ export function useOffline() {
   const syncingRef = useRef(false);
 
   const refreshCount = useCallback(() => {
-    getQueueSize().then(setPendingCount).catch(() => {});
+    getQueueSize()
+      .then(setPendingCount)
+      .catch(() => {});
   }, []);
 
   // Track online/offline
@@ -102,7 +104,7 @@ export function useOffline() {
       window.removeEventListener("offline", goOffline);
       navigator.serviceWorker?.removeEventListener("message", handleMessage);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -113,8 +115,9 @@ export function useOffline() {
     try {
       const reg = await navigator.serviceWorker?.ready;
       if (reg && "sync" in reg) {
-        await (reg as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } })
-          .sync.register("offline-queue-sync");
+        await (
+          reg as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }
+        ).sync.register("offline-queue-sync");
       }
     } catch {
       // Background Sync not supported — client-side replay is the fallback

@@ -11,10 +11,7 @@
 import { redis } from "@/lib/redis/client";
 
 /** How long to allow in-memory fallback before failing closed (ms) */
-const REDIS_GRACE_PERIOD_MS = parseInt(
-  process.env.RATE_LIMIT_GRACE_MS ?? "30000",
-  10
-); // 30 seconds default
+const REDIS_GRACE_PERIOD_MS = parseInt(process.env.RATE_LIMIT_GRACE_MS ?? "30000", 10); // 30 seconds default
 
 export class RateLimiter {
   private fallbackStore = new Map<string, { count: number; resetAt: number }>();
@@ -60,7 +57,9 @@ export class RateLimiter {
     }
   }
 
-  private async checkRedis(key: string): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+  private async checkRedis(
+    key: string
+  ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
     const redisKey = `rl:${key}`;
     const windowSec = Math.ceil(this.windowMs / 1000);
 
@@ -101,7 +100,11 @@ export class RateLimiter {
 
     if (!existing || existing.resetAt <= now) {
       this.fallbackStore.set(key, { count: 1, resetAt: now + this.windowMs });
-      return { allowed: true, remaining: this.maxRequests - 1, resetAt: new Date(now + this.windowMs) };
+      return {
+        allowed: true,
+        remaining: this.maxRequests - 1,
+        resetAt: new Date(now + this.windowMs),
+      };
     }
 
     existing.count += 1;

@@ -19,10 +19,7 @@ import { logAudit } from "@/lib/audit";
 // ─── Signature verification ──────────────────────────────────────────────────
 
 function verifyShopifyHmac(body: string, hmacHeader: string, secret: string): boolean {
-  const computed = crypto
-    .createHmac("sha256", secret)
-    .update(body, "utf8")
-    .digest("base64");
+  const computed = crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64");
   const a = Buffer.from(computed);
   const b = Buffer.from(hmacHeader);
   if (a.length !== b.length) return false;
@@ -38,7 +35,10 @@ export async function POST(req: NextRequest) {
   const shopDomain = req.headers.get("x-shopify-shop-domain") ?? "";
 
   // Verify signature — fail closed: require secret to be configured
-  if (!process.env.SHOPIFY_WEBHOOK_SECRET || !verifyShopifyHmac(body, hmacHeader, process.env.SHOPIFY_WEBHOOK_SECRET)) {
+  if (
+    !process.env.SHOPIFY_WEBHOOK_SECRET ||
+    !verifyShopifyHmac(body, hmacHeader, process.env.SHOPIFY_WEBHOOK_SECRET)
+  ) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -88,8 +88,10 @@ export async function POST(req: NextRequest) {
 // ─── Tenant resolution helper ────────────────────────────────────────────────
 
 async function resolveTenantDb(
-  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
-  shopDomain: string
+  connector: Awaited<
+    ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>
+  > | null,
+  _shopDomain: string
 ): Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any;
@@ -117,11 +119,12 @@ async function resolveTenantDb(
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function handleOrderCreate(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any,
-  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  connector: Awaited<
+    ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>
+  > | null,
   shopDomain: string
 ) {
   if (order.fulfillment_status && order.fulfillment_status !== null) return;
@@ -174,12 +177,13 @@ async function handleOrderCreate(
 
   // Resolve SKUs to products
   const skus = mapped.lineItems.map((li: { sku: string }) => li.sku).filter(Boolean);
-  const products = skus.length > 0
-    ? await tenantDb.product.findMany({
-        where: { clientId: client.id, sku: { in: skus } },
-        select: { id: true, sku: true, imageUrl: true, weight: true },
-      })
-    : [];
+  const products =
+    skus.length > 0
+      ? await tenantDb.product.findMany({
+          where: { clientId: client.id, sku: { in: skus } },
+          select: { id: true, sku: true, imageUrl: true, weight: true },
+        })
+      : [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const productBySku = new Map(products.map((p: any) => [p.sku, p]));
 
@@ -218,12 +222,24 @@ async function handleOrderCreate(
   const addr = mapped.shipTo;
   const created = await tenantDb.order.create({
     data: {
-      orderNumber, externalId, channelId: channel.id, clientId: client.id,
-      status: "pending", priority: mapped.priority,
-      shipToName: addr.name, shipToAddress1: addr.address1, shipToAddress2: addr.address2 ?? null,
-      shipToCity: addr.city, shipToState: addr.state ?? null, shipToZip: addr.zip,
-      shipToCountry: addr.country ?? "US", shipToPhone: addr.phone ?? null, shipToEmail: addr.email ?? null,
-      shippingMethod: mapped.shippingMethod ?? null, orderDate: mapped.orderDate, notes: mapped.notes ?? null,
+      orderNumber,
+      externalId,
+      channelId: channel.id,
+      clientId: client.id,
+      status: "pending",
+      priority: mapped.priority,
+      shipToName: addr.name,
+      shipToAddress1: addr.address1,
+      shipToAddress2: addr.address2 ?? null,
+      shipToCity: addr.city,
+      shipToState: addr.state ?? null,
+      shipToZip: addr.zip,
+      shipToCountry: addr.country ?? "US",
+      shipToPhone: addr.phone ?? null,
+      shipToEmail: addr.email ?? null,
+      shippingMethod: mapped.shippingMethod ?? null,
+      orderDate: mapped.orderDate,
+      notes: mapped.notes ?? null,
       totalItems: resolvedLines.reduce((s: number, li: { quantity: number }) => s + li.quantity, 0),
       lines: { create: resolvedLines },
     },
@@ -241,7 +257,9 @@ async function handleOrderCreate(
 async function handleOrderCancelled(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any,
-  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  connector: Awaited<
+    ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>
+  > | null,
   shopDomain: string
 ) {
   const resolved = await resolveTenantDb(connector, shopDomain);
@@ -272,7 +290,9 @@ async function handleOrderCancelled(
 async function handleOrderUpdated(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   order: any,
-  connector: Awaited<ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>> | null,
+  connector: Awaited<
+    ReturnType<typeof import("@/lib/integrations/tenant-connectors").resolveShopifyTenant>
+  > | null,
   shopDomain: string
 ) {
   if (order.fulfillment_status !== "fulfilled") return;

@@ -124,7 +124,11 @@ export class AmazonAdapter implements MarketplaceAdapter {
   ): Record<string, string> {
     const parsedUrl = new URL(url);
     const now = new Date();
-    const datetime = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
+    const datetime =
+      now
+        .toISOString()
+        .replace(/[:-]|\.\d{3}/g, "")
+        .slice(0, 15) + "Z";
     const date = datetime.slice(0, 8);
     const { region } = this.config;
     const service = "execute-api";

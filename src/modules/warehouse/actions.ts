@@ -5,7 +5,11 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { generateBinBarcode } from "@/lib/barcode";
-import { warehouseSchemaStatic as warehouseSchema, zoneSchemaStatic as zoneSchema, bulkLocationSchema } from "./schemas";
+import {
+  warehouseSchemaStatic as warehouseSchema,
+  zoneSchemaStatic as zoneSchema,
+  bulkLocationSchema,
+} from "./schemas";
 import { mockWarehouses } from "@/lib/mock-data";
 
 async function getContext() {

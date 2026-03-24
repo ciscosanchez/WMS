@@ -51,6 +51,9 @@
     "orders": "Orders",
     "picking": "Picking",
     "shipping": "Shipping",
+    "returns": "Returns",
+    "slotting": "Slotting",
+    "cartonTypes": "Carton Types",
     "inventory": "Inventory",
     "stockBrowser": "Stock Browser",
     "putaway": "Putaway",
@@ -65,6 +68,14 @@
     "system": "System",
     "reports": "Reports",
     "settings": "Settings",
+    "labor": "Labor",
+    "laborDashboard": "Labor Dashboard",
+    "shifts": "Shifts",
+    "laborCosts": "Labor Costs",
+    "yardDock": "Yard & Dock",
+    "dockSchedule": "Dock Schedule",
+    "yardMap": "Yard Map",
+    "driverCheckIn": "Driver Check-In",
     "floorApp": "Floor App"
   }
 }

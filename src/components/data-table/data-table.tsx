@@ -137,7 +137,10 @@ export function DataTable<TData, TValue>({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm">
-            {t("pageOf", { page: table.getState().pagination.pageIndex + 1, total: table.getPageCount() })}
+            {t("pageOf", {
+              page: table.getState().pagination.pageIndex + 1,
+              total: table.getPageCount(),
+            })}
           </span>
           <Button
             variant="outline"

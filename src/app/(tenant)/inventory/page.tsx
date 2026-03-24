@@ -25,11 +25,7 @@ export default async function InventoryPage({ searchParams }: Props) {
       />
 
       {result.total === 0 && !search ? (
-        <EmptyState
-          icon={Boxes}
-          title={t("noInventory")}
-          description={t("noInventoryDesc")}
-        />
+        <EmptyState icon={Boxes} title={t("noInventory")} description={t("noInventoryDesc")} />
       ) : (
         <InventoryTable
           data={result.data}

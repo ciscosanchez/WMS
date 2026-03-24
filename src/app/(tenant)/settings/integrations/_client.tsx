@@ -105,9 +105,7 @@ export function IntegrationsClient({ shopify, amazon, netsuite, dispatchpro }: P
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">{mp.description}</p>
-                  {mp.connected && (
-                    <p className="text-sm font-medium">{mp.detail}</p>
-                  )}
+                  {mp.connected && <p className="text-sm font-medium">{mp.detail}</p>}
                   <div className="flex gap-2">
                     {mp.connected ? (
                       <>
@@ -180,9 +178,7 @@ export function IntegrationsClient({ shopify, amazon, netsuite, dispatchpro }: P
                       disabled={testing === "NetSuite"}
                       onClick={() => handleTest("NetSuite")}
                     >
-                      {testing === "NetSuite" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
+                      {testing === "NetSuite" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Test Connection
                     </Button>
                   </div>
@@ -222,17 +218,15 @@ export function IntegrationsClient({ shopify, amazon, netsuite, dispatchpro }: P
                     disabled={testing === "DispatchPro"}
                     onClick={() => handleTest("DispatchPro")}
                   >
-                    {testing === "DispatchPro" && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
+                    {testing === "DispatchPro" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Test Connection
                   </Button>
                 </div>
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Connect DispatchPro to sync LTL/FTL loads, tracking updates, and dock appointments.
-                    Orders automatically route to DispatchPro when packed.
+                    Connect DispatchPro to sync LTL/FTL loads, tracking updates, and dock
+                    appointments. Orders automatically route to DispatchPro when packed.
                   </p>
                   <Button onClick={() => setConfiguring("dispatchpro")}>Connect DispatchPro</Button>
                 </>

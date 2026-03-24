@@ -32,7 +32,7 @@ export default function OperatorPackPage() {
   const [submitting, setSubmitting] = useState(false);
   const { executeAction } = useSharedOffline();
   const t = useTranslations("operator.pack");
-  const tc = useTranslations("common");
+  const _tc = useTranslations("common");
 
   useEffect(() => {
     getTasksReadyToPack()
@@ -42,9 +42,7 @@ export default function OperatorPackPage() {
   }, [t]);
 
   function handleTaskScan(value: string) {
-    const task = tasks.find(
-      (t) => t.taskNumber === value || t.order?.orderNumber === value
-    );
+    const task = tasks.find((t) => t.taskNumber === value || t.order?.orderNumber === value);
     if (!task) {
       toast.error(t("noTaskFound", { value }));
       return;
@@ -57,7 +55,7 @@ export default function OperatorPackPage() {
   function handleItemScan(value: string) {
     if (!activeTask) return;
     const line = activeTask.lines.find(
-      (l) => l.product.sku === value || l.product.barcode === value
+      (l: PackTask["lines"][number]) => l.product.sku === value || l.product.barcode === value
     );
     if (!line) {
       toast.error(t("itemNotInTask", { value }));
@@ -99,7 +97,7 @@ export default function OperatorPackPage() {
   }
 
   const allVerified = activeTask
-    ? activeTask.lines.every((l) => verified.has(l.id))
+    ? activeTask.lines.every((l: PackTask["lines"][number]) => verified.has(l.id))
     : false;
 
   return (
@@ -122,23 +120,22 @@ export default function OperatorPackPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-bold">{activeTask.order?.orderNumber ?? activeTask.taskNumber}</p>
+                <p className="text-lg font-bold">
+                  {activeTask.order?.orderNumber ?? activeTask.taskNumber}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {activeTask.order?.shipToName ?? "—"} &middot; {activeTask.order?.shipToCity ?? "—"}
+                  {activeTask.order?.shipToName ?? "—"} &middot;{" "}
+                  {activeTask.order?.shipToCity ?? "—"}
                 </p>
               </div>
               {activeTask.order?.priority && (
-                <Badge className="bg-blue-100 text-blue-700">
-                  {activeTask.order.priority}
-                </Badge>
+                <Badge className="bg-blue-100 text-blue-700">{activeTask.order.priority}</Badge>
               )}
             </div>
 
             {/* Items to verify */}
             <div className="mt-4">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                {t("scanEachItem")}
-              </p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t("scanEachItem")}</p>
               <BarcodeScannerInput
                 placeholder={t("scanItemBarcode")}
                 onScan={handleItemScan}
@@ -154,7 +151,7 @@ export default function OperatorPackPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeTask.lines.map((line) => (
+                  {activeTask.lines.map((line: PackTask["lines"][number]) => (
                     <TableRow key={line.id}>
                       <TableCell className="font-mono font-medium">{line.product.sku}</TableCell>
                       <TableCell>{line.product.name}</TableCell>

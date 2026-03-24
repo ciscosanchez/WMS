@@ -17,7 +17,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing tenantSlug or wmsOrderId" }, { status: 400 });
     }
 
-    const tenant = await publicDb.tenant.findUnique({ where: { slug: tenantSlug, status: "active" } });
+    const tenant = await publicDb.tenant.findUnique({
+      where: { slug: tenantSlug, status: "active" },
+    });
     if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
 
     const settings = (tenant.settings ?? {}) as Record<string, unknown>;
@@ -42,9 +44,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, wmsOrderId, dispatchOrderId });
   } catch (err) {
     console.error("[API /shipments] error:", err);
-    return NextResponse.json(
-      { error: "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

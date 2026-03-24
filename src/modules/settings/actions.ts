@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { publicDb } from "@/lib/db/public-client";
 import { logAudit } from "@/lib/audit";
-import { encryptCarrierCreds, decryptCarrierCreds } from "@/lib/crypto/secrets";
+import { encryptCarrierCreds } from "@/lib/crypto/secrets";
 
 interface TenantSettings {
   companyName: string;
@@ -56,9 +56,7 @@ export async function getTenantSettings(): Promise<TenantSettings> {
   };
 }
 
-export async function saveTenantSettings(
-  data: TenantSettings
-): Promise<{ error?: string }> {
+export async function saveTenantSettings(data: TenantSettings): Promise<{ error?: string }> {
   const { user, tenant } = await requireTenantContext("settings:write");
 
   try {
@@ -217,7 +215,9 @@ export async function getEdiPartners(): Promise<unknown[]> {
   return (s.ediPartners as unknown[]) ?? [];
 }
 
-export async function saveEdiPartner(partner: Record<string, unknown>): Promise<{ error?: string }> {
+export async function saveEdiPartner(
+  partner: Record<string, unknown>
+): Promise<{ error?: string }> {
   const { user, tenant } = await requireTenantContext("settings:write");
 
   try {
@@ -233,7 +233,12 @@ export async function saveEdiPartner(partner: Record<string, unknown>): Promise<
     if (idx >= 0) {
       partners[idx] = { ...partners[idx], ...partner, updatedAt: new Date().toISOString() };
     } else {
-      partners.push({ ...partner, id: `edi-${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      partners.push({
+        ...partner,
+        id: `edi-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     }
     settings.ediPartners = partners;
 
@@ -266,8 +271,9 @@ export async function deleteEdiPartner(partnerId: string): Promise<{ error?: str
       select: { settings: true },
     });
     const settings = { ...((existing?.settings ?? {}) as Record<string, unknown>) };
-    const partners = ((settings.ediPartners as Record<string, unknown>[]) ?? [])
-      .filter((p) => p.id !== partnerId);
+    const partners = ((settings.ediPartners as Record<string, unknown>[]) ?? []).filter(
+      (p) => p.id !== partnerId
+    );
     settings.ediPartners = partners;
 
     await publicDb.tenant.update({

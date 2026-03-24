@@ -10,7 +10,12 @@ import { startOfDay } from "date-fns";
  */
 export async function getMyTasksSummary() {
   if (config.useMockData) {
-    return { pickTasks: [], receivingShipments: [], cycleCounts: [], stats: { active: 0, completedToday: 0 } };
+    return {
+      pickTasks: [],
+      receivingShipments: [],
+      cycleCounts: [],
+      stats: { active: 0, completedToday: 0 },
+    };
   }
 
   const { user, tenant } = await requireTenantContext();
@@ -24,7 +29,11 @@ export async function getMyTasksSummary() {
       where: {
         OR: [
           { assignedTo: user.id, status: { in: ["assigned", "in_progress"] } },
-          { assignedTo: user.id, status: { in: ["completed", "short_picked"] }, completedAt: { gte: today } },
+          {
+            assignedTo: user.id,
+            status: { in: ["completed", "short_picked"] },
+            completedAt: { gte: today },
+          },
         ],
       },
       include: {
@@ -49,74 +58,85 @@ export async function getMyTasksSummary() {
 
   // Aggregate receiving by shipment
   const shipmentIds = [...new Set(receivingTxns.map((t: { shipmentId: string }) => t.shipmentId))];
-  const receivingShipments = shipmentIds.length > 0
-    ? await db.inboundShipment.findMany({
-        where: { id: { in: shipmentIds } },
-        select: {
-          id: true,
-          shipmentNumber: true,
-          status: true,
-          client: { select: { name: true } },
-          lines: { select: { id: true, expectedQty: true, receivedQty: true } },
-        },
-      })
-    : [];
+  const receivingShipments =
+    shipmentIds.length > 0
+      ? await db.inboundShipment.findMany({
+          where: { id: { in: shipmentIds } },
+          select: {
+            id: true,
+            shipmentNumber: true,
+            status: true,
+            client: { select: { name: true } },
+            lines: { select: { id: true, expectedQty: true, receivedQty: true } },
+          },
+        })
+      : [];
 
   // Map pick tasks for the UI
-  const mappedPicks = pickTasks.map((t: {
-    id: string;
-    taskNumber: string;
-    status: string;
-    startedAt: Date | null;
-    completedAt: Date | null;
-    order: { orderNumber: string; priority: string; shipToName: string } | null;
-    lines: Array<{ id: string; quantity: number; pickedQty: number }>;
-  }) => ({
-    id: t.id,
-    taskNumber: t.taskNumber,
-    type: "pick" as const,
-    status: t.status,
-    orderNumber: t.order?.orderNumber ?? "",
-    priority: t.order?.priority ?? "standard",
-    shipTo: t.order?.shipToName ?? "",
-    totalLines: t.lines.length,
-    completedLines: t.lines.filter((l) => l.pickedQty >= l.quantity).length,
-    startedAt: t.startedAt,
-    completedAt: t.completedAt,
-  }));
+  const mappedPicks = pickTasks.map(
+    (t: {
+      id: string;
+      taskNumber: string;
+      status: string;
+      startedAt: Date | null;
+      completedAt: Date | null;
+      order: { orderNumber: string; priority: string; shipToName: string } | null;
+      lines: Array<{ id: string; quantity: number; pickedQty: number }>;
+    }) => ({
+      id: t.id,
+      taskNumber: t.taskNumber,
+      type: "pick" as const,
+      status: t.status,
+      orderNumber: t.order?.orderNumber ?? "",
+      priority: t.order?.priority ?? "standard",
+      shipTo: t.order?.shipToName ?? "",
+      totalLines: t.lines.length,
+      completedLines: t.lines.filter((l) => l.pickedQty >= l.quantity).length,
+      startedAt: t.startedAt,
+      completedAt: t.completedAt,
+    })
+  );
 
   // Map receiving shipments
-  const mappedReceiving = receivingShipments.map((s: {
-    id: string;
-    shipmentNumber: string;
-    status: string;
-    client: { name: string } | null;
-    lines: Array<{ id: string; expectedQty: number; receivedQty: number }>;
-  }) => ({
-    id: s.id,
-    shipmentNumber: s.shipmentNumber,
-    type: "receive" as const,
-    status: s.status,
-    clientName: s.client?.name ?? "",
-    totalLines: s.lines.length,
-    completedLines: s.lines.filter((l) => l.receivedQty >= l.expectedQty).length,
-  }));
+  const mappedReceiving = receivingShipments.map(
+    (s: {
+      id: string;
+      shipmentNumber: string;
+      status: string;
+      client: { name: string } | null;
+      lines: Array<{ id: string; expectedQty: number; receivedQty: number }>;
+    }) => ({
+      id: s.id,
+      shipmentNumber: s.shipmentNumber,
+      type: "receive" as const,
+      status: s.status,
+      clientName: s.client?.name ?? "",
+      totalLines: s.lines.length,
+      completedLines: s.lines.filter((l) => l.receivedQty >= l.expectedQty).length,
+    })
+  );
 
   // Stats
-  const active = mappedPicks.filter((t: { status: string }) => t.status === "assigned" || t.status === "in_progress").length;
-  const completedToday = mappedPicks.filter((t: { status: string }) => t.status === "completed" || t.status === "short_picked").length
-    + cycleCounts.filter((c: { status: string }) => c.status === "completed").length;
+  const active = mappedPicks.filter(
+    (t: { status: string }) => t.status === "assigned" || t.status === "in_progress"
+  ).length;
+  const completedToday =
+    mappedPicks.filter(
+      (t: { status: string }) => t.status === "completed" || t.status === "short_picked"
+    ).length + cycleCounts.filter((c: { status: string }) => c.status === "completed").length;
 
   return {
     pickTasks: mappedPicks,
     receivingShipments: mappedReceiving,
-    cycleCounts: cycleCounts.map((c: { id: string; status: string; reason: string | null; createdAt: Date }) => ({
-      id: c.id,
-      type: "count" as const,
-      status: c.status,
-      reason: c.reason,
-      createdAt: c.createdAt,
-    })),
+    cycleCounts: cycleCounts.map(
+      (c: { id: string; status: string; reason: string | null; createdAt: Date }) => ({
+        id: c.id,
+        type: "count" as const,
+        status: c.status,
+        reason: c.reason,
+        createdAt: c.createdAt,
+      })
+    ),
     stats: { active, completedToday },
   };
 }

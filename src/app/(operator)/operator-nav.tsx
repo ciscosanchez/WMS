@@ -11,6 +11,8 @@ import {
   Package,
   ArrowLeftRight,
   ListChecks,
+  Clock,
+  RotateCcw,
   Sun,
   LogIn,
 } from "lucide-react";
@@ -28,6 +30,8 @@ const navKeys = [
   { href: "/pack", key: "pack" as const, icon: Package },
   { href: "/move", key: "move" as const, icon: ArrowLeftRight },
   { href: "/count", key: "count" as const, icon: ListChecks },
+  { href: "/inspect", key: "inspect" as const, icon: RotateCcw },
+  { href: "/shift", key: "shift" as const, icon: Clock },
 ];
 
 export default function OperatorLayout({ children }: { children: React.ReactNode }) {
@@ -57,9 +61,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
           <div className="mx-4 rounded-lg bg-white p-6 text-center shadow-xl">
             <LogIn className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <h2 className="text-lg font-bold">{tc("sessionExpired")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {tc("sessionExpiredMessage")}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{tc("sessionExpiredMessage")}</p>
             <button
               onClick={refreshSession}
               className="mt-4 h-12 w-full rounded-md bg-primary px-4 text-primary-foreground font-semibold"

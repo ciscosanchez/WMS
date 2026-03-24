@@ -1,4 +1,9 @@
-import { getReceivingStats, getInventoryStats, getFulfillmentStats, getMovementAnalytics } from "@/modules/reports/actions";
+import {
+  getReceivingStats,
+  getInventoryStats,
+  getFulfillmentStats,
+  getMovementAnalytics,
+} from "@/modules/reports/actions";
 import { getBillingSummaryMTD } from "@/modules/billing/actions";
 import { ReportsClient } from "./_client";
 
@@ -47,7 +52,9 @@ export default async function ReportsPage() {
           ? fulfillment.value
           : { ordersMTD: 0, unitsMTD: 0, shortPicksMTD: 0, avgShippingCost: "—", ordersPerDay: [] }
       }
-      billing={billing.status === "fulfilled" && billing.value.length > 0 ? billing.value : billingFallback}
+      billing={
+        billing.status === "fulfilled" && billing.value.length > 0 ? billing.value : billingFallback
+      }
       storageUtilTrend={storageUtilTrend}
       movement={movement.status === "fulfilled" ? movement.value : undefined}
     />

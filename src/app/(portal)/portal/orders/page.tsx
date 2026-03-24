@@ -50,36 +50,50 @@ export default async function PortalOrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order: { id: string; orderNumber: string; status: string; shipToName: string; shipToCity: string; shipToState: string; totalItems: number; trackingNumber: string | null; carrier: string | null; orderDate: Date | string | null; shipByDate: Date | string | null }) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{order.shipToName}</div>
-                    {(order.shipToCity || order.shipToState) && (
-                      <div className="text-xs text-muted-foreground">
-                        {[order.shipToCity, order.shipToState].filter(Boolean).join(", ")}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">{order.totalItems}</TableCell>
-                  <TableCell>
-                    {order.trackingNumber ? (
-                      <span className="font-mono text-xs">{order.trackingNumber}</span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {order.orderDate ? format(new Date(order.orderDate), "MMM d, yyyy") : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {order.shipByDate ? format(new Date(order.shipByDate), "MMM d, yyyy") : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {orders.map(
+                (order: {
+                  id: string;
+                  orderNumber: string;
+                  status: string;
+                  shipToName: string;
+                  shipToCity: string;
+                  shipToState: string;
+                  totalItems: number;
+                  trackingNumber: string | null;
+                  carrier: string | null;
+                  orderDate: Date | string | null;
+                  shipByDate: Date | string | null;
+                }) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{order.shipToName}</div>
+                      {(order.shipToCity || order.shipToState) && (
+                        <div className="text-xs text-muted-foreground">
+                          {[order.shipToCity, order.shipToState].filter(Boolean).join(", ")}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">{order.totalItems}</TableCell>
+                    <TableCell>
+                      {order.trackingNumber ? (
+                        <span className="font-mono text-xs">{order.trackingNumber}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {order.orderDate ? format(new Date(order.orderDate), "MMM d, yyyy") : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {order.shipByDate ? format(new Date(order.shipByDate), "MMM d, yyyy") : "—"}
+                    </TableCell>
+                  </TableRow>
+                )
+              )}
             </TableBody>
           </Table>
         </div>

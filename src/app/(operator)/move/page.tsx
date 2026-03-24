@@ -52,7 +52,7 @@ export default function OperatorMovePage() {
   async function handleProductScan(barcode: string) {
     if (!fromBin) return;
     const item = fromBin.inventory.find(
-      (i) => i.product.sku === barcode || i.product.barcode === barcode
+      (i: InventoryItem) => i.product.sku === barcode || i.product.barcode === barcode
     );
     if (!item) {
       toast.error(t("productNotInBin", { barcode }));
@@ -80,7 +80,10 @@ export default function OperatorMovePage() {
     if (!fromBin || !selectedItem || !toBin || !quantity) return;
 
     const qty = parseInt(quantity);
-    if (qty < 1) { toast.error(t("invalidQuantity")); return; }
+    if (qty < 1) {
+      toast.error(t("invalidQuantity"));
+      return;
+    }
     if (qty > selectedItem.available) {
       toast.error(t("onlyAvailable", { available: selectedItem.available }));
       return;
@@ -129,7 +132,9 @@ export default function OperatorMovePage() {
         <CardContent className="space-y-4 p-4">
           {/* Step 1: Source bin */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{t("scanSourceBin")}</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              {t("scanSourceBin")}
+            </label>
             <div className="mt-1">
               <BarcodeScannerInput
                 placeholder={t("scanSourcePlaceholder")}
@@ -159,14 +164,12 @@ export default function OperatorMovePage() {
               </div>
               {/* Tap to select from list */}
               <div className="mt-2 space-y-1">
-                {fromBin.inventory.map((item) => (
+                {fromBin.inventory.map((item: InventoryItem) => (
                   <button
                     key={item.id}
                     onClick={() => setSelectedItem(item)}
                     className={`w-full rounded border p-2 text-left text-sm transition-colors ${
-                      selectedItem?.id === item.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
+                      selectedItem?.id === item.id ? "border-primary bg-primary/5" : "border-border"
                     }`}
                   >
                     <span className="font-mono font-medium">{item.product.sku}</span>
@@ -218,7 +221,9 @@ export default function OperatorMovePage() {
                 />
               </div>
               {toBin && (
-                <p className="mt-1 text-xs text-green-600">{t("destLabel", { binBarcode: toBin.barcode })}</p>
+                <p className="mt-1 text-xs text-green-600">
+                  {t("destLabel", { binBarcode: toBin.barcode })}
+                </p>
               )}
             </div>
           )}
@@ -228,9 +233,7 @@ export default function OperatorMovePage() {
             <div className="rounded-lg bg-muted p-3 text-sm">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  {t("moveSummary", { quantity, sku: selectedItem!.product.sku })}
-                </span>
+                <span>{t("moveSummary", { quantity, sku: selectedItem!.product.sku })}</span>
               </div>
               <p className="mt-1 text-muted-foreground">
                 {fromBin!.barcode} → {toBin!.barcode}
@@ -244,9 +247,7 @@ export default function OperatorMovePage() {
             disabled={!canConfirm || submitting}
             onClick={handleConfirmMove}
           >
-            {submitting ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : null}
+            {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
             {t("confirmMove")}
           </Button>
         </CardContent>

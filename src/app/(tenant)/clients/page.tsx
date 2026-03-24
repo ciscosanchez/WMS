@@ -23,11 +23,7 @@ export default async function ClientsPage() {
       </PageHeader>
 
       {clients.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title={t("noClients")}
-          description={t("noClientsDesc")}
-        >
+        <EmptyState icon={Users} title={t("noClients")} description={t("noClientsDesc")}>
           <Button asChild>
             <Link href="/clients/new">
               <Plus className="mr-2 h-4 w-4" />

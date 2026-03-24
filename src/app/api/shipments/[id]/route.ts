@@ -24,7 +24,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Missing tenantSlug or status" }, { status: 400 });
     }
 
-    const tenant = await publicDb.tenant.findUnique({ where: { slug: tenantSlug, status: "active" } });
+    const tenant = await publicDb.tenant.findUnique({
+      where: { slug: tenantSlug, status: "active" },
+    });
     if (!tenant) return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
 
     const settings = (tenant.settings ?? {}) as Record<string, unknown>;
@@ -89,9 +91,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ success: true, order: { id: updated.id, status: updated.status } });
   } catch (err) {
     console.error("[API /shipments/:id] error:", err);
-    return NextResponse.json(
-      { error: "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

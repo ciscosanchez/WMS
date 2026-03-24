@@ -73,7 +73,8 @@ export default function InviteUserPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                The user will receive a secure link to set their own password. The link expires in 48 hours.
+                The user will receive a secure link to set their own password. The link expires in
+                48 hours.
               </p>
             </CardContent>
           </Card>
@@ -81,7 +82,12 @@ export default function InviteUserPage() {
 
         <div className="flex gap-3">
           <Button onClick={() => router.push("/settings/users")}>Done</Button>
-          <Button variant="outline" onClick={() => { setResult(null); }}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setResult(null);
+            }}
+          >
             Invite Another
           </Button>
         </div>
@@ -138,7 +144,9 @@ export default function InviteUserPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Inviting...</>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Inviting...
+              </>
             ) : (
               "Send Invite"
             )}

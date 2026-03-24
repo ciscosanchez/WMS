@@ -41,10 +41,14 @@ export async function GET(req: NextRequest) {
     for (const tenant of tenants) {
       // Check if NetSuite is configured for this tenant
       // For now: use global env vars (legacy), or per-tenant settings.netsuite
-      const nsSettings = (tenant.settings as Record<string, unknown>).netsuite as Record<string, string> | undefined;
+      const nsSettings = (tenant.settings as Record<string, unknown>).netsuite as
+        | Record<string, string>
+        | undefined;
       const ns = nsSettings
         ? getNetSuiteClient(nsSettings)
-        : (tenant.slug === process.env.ARMSTRONG_TENANT_SLUG ? getNetSuiteClient() : null);
+        : tenant.slug === process.env.ARMSTRONG_TENANT_SLUG
+          ? getNetSuiteClient()
+          : null;
 
       if (!ns) continue;
 
@@ -86,7 +90,12 @@ export async function GET(req: NextRequest) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               events.map((e: any) => ({
                 clientId: e.clientId,
-                eventType: e.serviceType.split("_")[0] as "receiving" | "storage" | "handling" | "shipping" | "value_add",
+                eventType: e.serviceType.split("_")[0] as
+                  | "receiving"
+                  | "storage"
+                  | "handling"
+                  | "shipping"
+                  | "value_add",
                 description: e.serviceType,
                 quantity: Number(e.qty),
                 unitRate: Number(e.unitRate),
@@ -103,10 +112,15 @@ export async function GET(req: NextRequest) {
             });
 
             results.billing.invoicesPushed++;
-            console.log(`[NetSuite Cron] ${tenant.slug}: Pushed ${events.length} events for ${client.name} → NS invoice ${invoiceId}`);
+            console.log(
+              `[NetSuite Cron] ${tenant.slug}: Pushed ${events.length} events for ${client.name} → NS invoice ${invoiceId}`
+            );
           } catch (err) {
             results.billing.invoiceErrors++;
-            console.error(`[NetSuite Cron] ${tenant.slug}: Failed to push events for ${client.name}:`, err);
+            console.error(
+              `[NetSuite Cron] ${tenant.slug}: Failed to push events for ${client.name}:`,
+              err
+            );
           }
         }
 
@@ -135,7 +149,10 @@ export async function GET(req: NextRequest) {
             results.fulfillments.fulfillmentsPushed++;
           } catch (err) {
             results.fulfillments.fulfillmentErrors++;
-            console.error(`[NetSuite Cron] ${tenant.slug}: Failed to push fulfillment ${shipment.shipmentNumber}:`, err);
+            console.error(
+              `[NetSuite Cron] ${tenant.slug}: Failed to push fulfillment ${shipment.shipmentNumber}:`,
+              err
+            );
           }
         }
 

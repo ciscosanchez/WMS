@@ -48,15 +48,23 @@ export default function OperatorDashboardPage() {
   type ReceiveItem = Summary["receivingShipments"][number];
   type CountItem = Summary["cycleCounts"][number];
 
-  const activePicks = data.pickTasks.filter((t: PickItem) => t.status === "assigned" || t.status === "in_progress");
-  const completedPicks = data.pickTasks.filter((t: PickItem) => t.status === "completed" || t.status === "short_picked");
+  const activePicks = data.pickTasks.filter(
+    (t: PickItem) => t.status === "assigned" || t.status === "in_progress"
+  );
+  const completedPicks = data.pickTasks.filter(
+    (t: PickItem) => t.status === "completed" || t.status === "short_picked"
+  );
 
   return (
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
         <KpiCard title={t("activeTasks")} value={data.stats.active} icon={ClipboardList} />
-        <KpiCard title={t("completedToday")} value={data.stats.completedToday} icon={CheckCircle2} />
+        <KpiCard
+          title={t("completedToday")}
+          value={data.stats.completedToday}
+          icon={CheckCircle2}
+        />
       </div>
 
       {/* Active Pick Tasks */}
@@ -77,10 +85,14 @@ export default function OperatorDashboardPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{task.taskNumber}</span>
                       {task.priority === "rush" && (
-                        <Badge variant="destructive" className="text-xs">{t("rush")}</Badge>
+                        <Badge variant="destructive" className="text-xs">
+                          {t("rush")}
+                        </Badge>
                       )}
                       {task.priority === "expedited" && (
-                        <Badge variant="secondary" className="text-xs">{t("expedited")}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {t("expedited")}
+                        </Badge>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
@@ -89,14 +101,18 @@ export default function OperatorDashboardPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
-                      <div className="text-sm font-medium">{task.completedLines}/{task.totalLines}</div>
+                      <div className="text-sm font-medium">
+                        {task.completedLines}/{task.totalLines}
+                      </div>
                       <div className="text-xs text-muted-foreground">{tc("lines")}</div>
                     </div>
                     {/* Progress bar */}
                     <div className="h-8 w-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="w-full rounded-full bg-primary transition-all"
-                        style={{ height: `${task.totalLines > 0 ? (task.completedLines / task.totalLines) * 100 : 0}%` }}
+                        style={{
+                          height: `${task.totalLines > 0 ? (task.completedLines / task.totalLines) * 100 : 0}%`,
+                        }}
                       />
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -128,10 +144,15 @@ export default function OperatorDashboardPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
-                      <div className="text-sm font-medium">{s.completedLines}/{s.totalLines}</div>
+                      <div className="text-sm font-medium">
+                        {s.completedLines}/{s.totalLines}
+                      </div>
                       <div className="text-xs text-muted-foreground">{tc("lines")}</div>
                     </div>
-                    <Badge variant={s.status === "receiving" ? "default" : "secondary"} className="text-xs">
+                    <Badge
+                      variant={s.status === "receiving" ? "default" : "secondary"}
+                      className="text-xs"
+                    >
                       {s.status}
                     </Badge>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -159,9 +180,14 @@ export default function OperatorDashboardPage() {
                 <CardContent className="flex items-center justify-between py-3">
                   <div>
                     <span className="font-medium">{t("count")}</span>
-                    {c.reason && <span className="ml-2 text-sm text-muted-foreground">{c.reason}</span>}
+                    {c.reason && (
+                      <span className="ml-2 text-sm text-muted-foreground">{c.reason}</span>
+                    )}
                   </div>
-                  <Badge variant={c.status === "completed" ? "secondary" : "default"} className="text-xs">
+                  <Badge
+                    variant={c.status === "completed" ? "secondary" : "default"}
+                    className="text-xs"
+                  >
                     {c.status}
                   </Badge>
                 </CardContent>
@@ -186,7 +212,10 @@ export default function OperatorDashboardPage() {
                     <span className="font-medium">{task.taskNumber}</span>
                     <span className="ml-2 text-sm text-muted-foreground">{task.orderNumber}</span>
                   </div>
-                  <Badge variant={task.status === "short_picked" ? "destructive" : "secondary"} className="text-xs">
+                  <Badge
+                    variant={task.status === "short_picked" ? "destructive" : "secondary"}
+                    className="text-xs"
+                  >
                     {task.status === "short_picked" ? t("short") : tc("done")}
                   </Badge>
                 </CardContent>
@@ -197,15 +226,15 @@ export default function OperatorDashboardPage() {
       )}
 
       {/* Empty state */}
-      {data.pickTasks.length === 0 && data.receivingShipments.length === 0 && data.cycleCounts.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-semibold">{t("noTasksTitle")}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("noTasksMessage")}
-          </p>
-        </div>
-      )}
+      {data.pickTasks.length === 0 &&
+        data.receivingShipments.length === 0 &&
+        data.cycleCounts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mt-4 text-lg font-semibold">{t("noTasksTitle")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{t("noTasksMessage")}</p>
+          </div>
+        )}
     </div>
   );
 }

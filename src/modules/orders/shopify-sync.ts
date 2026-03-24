@@ -15,8 +15,9 @@ import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
  * Reads from SalesChannel.config first, falls back to env vars.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveShopifyAdapter(db: any): Promise<{ adapter: ShopifyAdapter; channel: any } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveShopifyAdapter(
+  db: any
+): Promise<{ adapter: ShopifyAdapter; channel: any } | null> {
   let channel = await db.salesChannel.findFirst({
     where: { type: "shopify", isActive: true },
   });
@@ -64,7 +65,8 @@ export async function syncShopifyOrders(
 
     // Resolve Shopify credentials (DB first, env var fallback)
     const resolved = await resolveShopifyAdapter(tenant.db);
-    if (!resolved) return { imported: 0, skipped: 0, error: "Shopify not configured for this tenant" };
+    if (!resolved)
+      return { imported: 0, skipped: 0, error: "Shopify not configured for this tenant" };
     const { adapter, channel } = resolved;
 
     // Fetch orders updated in the last 7 days
@@ -80,22 +82,21 @@ export async function syncShopifyOrders(
       where: { externalId: { in: externalIds } },
       select: { externalId: true },
     });
-    const existingIds = new Set(existing.map((o) => o.externalId));
+    const existingIds = new Set(existing.map((o: { externalId: string | null }) => o.externalId));
 
     // Build a SKU → product map for this client
     const skus = [
-      ...new Set(
-        shopifyOrders.flatMap((o) => o.lineItems.map((li) => li.sku).filter(Boolean))
-      ),
+      ...new Set(shopifyOrders.flatMap((o) => o.lineItems.map((li) => li.sku).filter(Boolean))),
     ] as string[];
-    const products =
+    type ProductLookup = { id: string; sku: string; imageUrl: string | null; weight: unknown };
+    const products: ProductLookup[] =
       skus.length > 0
         ? await tenant.db.product.findMany({
             where: { clientId, sku: { in: skus } },
             select: { id: true, sku: true, imageUrl: true, weight: true },
           })
         : [];
-    const productBySku = new Map(products.map((p) => [p.sku, p]));
+    const productBySku = new Map<string, ProductLookup>(products.map((p) => [p.sku, p]));
 
     // Enrich WMS product records with Shopify data (image, weight, vendor) if blank
     await enrichProductsFromShopify(tenant.db, clientId, shopifyOrders, productBySku);
@@ -249,12 +250,15 @@ export async function syncInventoryToShopify(
       _sum: { available: true },
     });
     const availableById = new Map(
-      inventoryRows.map((r) => [r.productId, Math.max(0, Number(r._sum?.available ?? 0))])
+      inventoryRows.map((r: { productId: string; _sum: { available: number | null } | null }) => [
+        r.productId,
+        Math.max(0, Number(r._sum?.available ?? 0)),
+      ])
     );
 
     const updates = products
-      .filter((p) => p.sku)
-      .map((p) => ({
+      .filter((p: { id: string; sku: string }) => p.sku)
+      .map((p: { id: string; sku: string }) => ({
         sku: p.sku,
         availableQuantity: availableById.get(p.id) ?? 0,
       }));
@@ -285,7 +289,8 @@ export async function syncInventoryToAmazon(
     const { tenant } = await requireTenantContext();
 
     // Resolve Amazon adapter: tenant-scoped credentials first, global env fallback
-    const { getAmazonAdapter, getAmazonAdapterForTenant } = await import("@/lib/integrations/marketplaces/amazon");
+    const { getAmazonAdapter, getAmazonAdapterForTenant } =
+      await import("@/lib/integrations/marketplaces/amazon");
     let adapter: ReturnType<typeof getAmazonAdapter> = null;
 
     // Try tenant-scoped SalesChannel config
@@ -303,7 +308,8 @@ export async function syncInventoryToAmazon(
         sellerId: cfg.sellerId,
         marketplaceId: cfg.marketplaceId,
         awsAccessKeyId: cfg.awsAccessKeyId || process.env.AMAZON_AWS_ACCESS_KEY_ID || "",
-        awsSecretAccessKey: cfg.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || "",
+        awsSecretAccessKey:
+          cfg.awsSecretAccessKey || process.env.AMAZON_AWS_SECRET_ACCESS_KEY || "",
         region: cfg.region,
       });
     } else {
@@ -325,12 +331,15 @@ export async function syncInventoryToAmazon(
       _sum: { available: true },
     });
     const availableById = new Map(
-      inventoryRows.map((r) => [r.productId, Math.max(0, Number(r._sum?.available ?? 0))])
+      inventoryRows.map((r: { productId: string; _sum: { available: number | null } | null }) => [
+        r.productId,
+        Math.max(0, Number(r._sum?.available ?? 0)),
+      ])
     );
 
     const updates = products
-      .filter((p) => p.sku)
-      .map((p) => ({
+      .filter((p: { id: string; sku: string }) => p.sku)
+      .map((p: { id: string; sku: string }) => ({
         sku: p.sku,
         availableQuantity: availableById.get(p.id) ?? 0,
       }));
@@ -356,15 +365,17 @@ async function enrichProductsFromShopify(
   db: PrismaClient,
   clientId: string,
   orders: MarketplaceOrder[],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  productBySku: Map<string, { id: string; imageUrl: string | null; weight: any }>
+  productBySku: Map<string, { id: string; sku: string; imageUrl: string | null; weight: unknown }>
 ): Promise<void> {
   // Build SKU → enrichment data map from all line items
-  const enrichment = new Map<string, {
-    imageUrl?: string;
-    weightGrams?: number;
-    vendor?: string;
-  }>();
+  const enrichment = new Map<
+    string,
+    {
+      imageUrl?: string;
+      weightGrams?: number;
+      vendor?: string;
+    }
+  >();
 
   for (const order of orders) {
     for (const li of order.lineItems) {
