@@ -39,7 +39,9 @@ jest.mock("@/lib/tenant/context", () => ({
         email: "portal@client.com",
         name: "Portal User",
         isSuperadmin: false,
-        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId: "client-1" }],
+        tenants: [
+          { tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId: "client-1" },
+        ],
       },
       role: "viewer",
       tenant: {
@@ -75,16 +77,17 @@ jest.mock("next/cache", () => ({
 
 // ── Imports ──────────────────────────────────────────────────────────────────
 
-import {
-  getPortalInventory,
-  getPortalOrders,
-  createPortalOrder,
-} from "@/modules/portal/actions";
+import { getPortalInventory, getPortalOrders, createPortalOrder } from "@/modules/portal/actions";
 import { requireTenantContext } from "@/lib/tenant/context";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const CLIENT = { id: "client-1", name: "Acme Corp", contactEmail: "portal@client.com", isActive: true };
+const CLIENT = {
+  id: "client-1",
+  name: "Acme Corp",
+  contactEmail: "portal@client.com",
+  isActive: true,
+};
 
 function setPortalClientId(portalClientId: string | null) {
   (requireTenantContext as jest.Mock).mockImplementation(() =>

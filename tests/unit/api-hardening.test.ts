@@ -46,14 +46,20 @@ jest.mock("@/lib/db/public-client", () => ({
 jest.mock("@/lib/db/tenant-client", () => ({
   getTenantDb: jest.fn().mockReturnValue({
     inventory: {
-      findMany: jest.fn().mockRejectedValue(
-        new Error("relation \"test_schema.inventory\" does not exist — DETAIL: Prisma query engine error at /engine/query.rs:442")
-      ),
+      findMany: jest
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'relation "test_schema.inventory" does not exist — DETAIL: Prisma query engine error at /engine/query.rs:442'
+          )
+        ),
     },
     order: {
-      findUnique: jest.fn().mockRejectedValue(
-        new Error("PrismaClientKnownRequestError: Invalid `prisma.order.findUnique()` invocation")
-      ),
+      findUnique: jest
+        .fn()
+        .mockRejectedValue(
+          new Error("PrismaClientKnownRequestError: Invalid `prisma.order.findUnique()` invocation")
+        ),
     },
   }),
 }));

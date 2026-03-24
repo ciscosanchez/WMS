@@ -46,8 +46,12 @@ jest.mock("next/headers", () => ({
 }));
 
 // Ensure getTenantFromHeaders reads x-tenant-slug header
-beforeAll(() => { process.env.TENANT_RESOLUTION = "header"; });
-afterAll(() => { delete process.env.TENANT_RESOLUTION; });
+beforeAll(() => {
+  process.env.TENANT_RESOLUTION = "header";
+});
+afterAll(() => {
+  delete process.env.TENANT_RESOLUTION;
+});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

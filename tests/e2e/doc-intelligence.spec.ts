@@ -55,9 +55,9 @@ test.describe("Doc Intelligence", () => {
 
     test("Close & Finalize PDF button is visible", async ({ page }) => {
       await page.goto(shipmentUrl);
-      await expect(
-        page.getByRole("button", { name: /Close & Finalize PDF/i })
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole("button", { name: /Close & Finalize PDF/i })).toBeVisible({
+        timeout: 10_000,
+      });
     });
 
     test("Close & Finalize PDF runs and surfaces a result toast", async ({ page }) => {
@@ -102,15 +102,13 @@ test.describe("Doc Intelligence", () => {
     const firstShipmentLink = page.getByRole("link", { name: /ASN-/ }).first();
     await firstShipmentLink.click();
 
-    await expect(
-      page.getByRole("tab", { name: /Documents/i })
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("tab", { name: /Documents/i })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole("tab", { name: /Documents/i }).click();
 
     // Panel loads — either has documents or shows upload UI
-    await expect(
-      page.getByText(/Documents|Upload|No documents/i).first()
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Documents|Upload|No documents/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });

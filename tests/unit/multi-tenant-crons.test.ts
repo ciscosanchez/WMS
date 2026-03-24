@@ -180,7 +180,8 @@ describe("tracking-update cron — per-tenant carrier credentials", () => {
         { id: "t1", slug: "tenant-a", dbSchema: "tenant_a", settings: {} },
         { id: "t2", slug: "tenant-b", dbSchema: "tenant_b", settings: {} },
       ]),
-      getCarrierCredentials: jest.fn()
+      getCarrierCredentials: jest
+        .fn()
         .mockReturnValueOnce({ ups: { accountNumber: "UPS-A", apiKey: "key-a" } })
         .mockReturnValueOnce({ ups: { accountNumber: "UPS-B", apiKey: "key-b" } }),
     }));
@@ -235,7 +236,7 @@ describe("netsuite-sync cron — skips unconfigured tenants", () => {
           id: "t2",
           slug: "tenant-b",
           dbSchema: "tenant_b",
-          settings: {},  // No NetSuite configured
+          settings: {}, // No NetSuite configured
         },
       ]),
     }));

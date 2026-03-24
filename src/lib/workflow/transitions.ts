@@ -83,10 +83,10 @@ export const YARD_VISIT_TRANSITIONS: Record<string, string[]> = {
 // ── Cross-dock lifecycle ──────────────────────────────────────────────────
 export const CROSS_DOCK_TRANSITIONS: Record<string, string[]> = {
   cd_identified: ["cd_approved", "cd_cancelled"],
-  cd_approved:   ["cd_in_progress", "cd_cancelled"],
+  cd_approved: ["cd_in_progress", "cd_cancelled"],
   cd_in_progress: ["cd_completed"],
-  cd_completed:  [],
-  cd_cancelled:  [],
+  cd_completed: [],
+  cd_cancelled: [],
 };
 
 /**

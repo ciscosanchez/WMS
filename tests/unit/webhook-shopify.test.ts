@@ -10,7 +10,11 @@
 import crypto from "crypto";
 import { NextRequest } from "next/server";
 
-function makeShopifyRequest(body: string, secret: string | null, topic = "orders/create"): NextRequest {
+function makeShopifyRequest(
+  body: string,
+  secret: string | null,
+  topic = "orders/create"
+): NextRequest {
   const hmac = secret
     ? crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64")
     : "bad-hmac";

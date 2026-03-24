@@ -16,9 +16,14 @@ test.describe("Operator App — Receive", () => {
     await expect(page.getByRole("button", { name: /Start|Continue/ }).first()).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByRole("button", { name: /Start|Continue/ }).first().click();
+    await page
+      .getByRole("button", { name: /Start|Continue/ })
+      .first()
+      .click();
     await page.waitForURL(/\/receive\/.+/, { timeout: 10_000 });
-    await expect(page.getByText("Confirm Receive").or(page.getByText("All lines received"))).toBeVisible({
+    await expect(
+      page.getByText("Confirm Receive").or(page.getByText("All lines received"))
+    ).toBeVisible({
       timeout: 10_000,
     });
   });
@@ -28,11 +33,17 @@ test.describe("Operator App — Receive", () => {
     await expect(page.getByRole("button", { name: /Start|Continue/ }).first()).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByRole("button", { name: /Start|Continue/ }).first().click();
+    await page
+      .getByRole("button", { name: /Start|Continue/ })
+      .first()
+      .click();
     await page.waitForURL(/\/receive\/.+/, { timeout: 10_000 });
     // Line grid and active line product should appear
     // Product SKU appears in line grid + active card — check via first match
-    const sku = page.getByText("WIDGET-001").or(page.getByText("GADGET-001")).or(page.getByText("PART-A100"));
+    const sku = page
+      .getByText("WIDGET-001")
+      .or(page.getByText("GADGET-001"))
+      .or(page.getByText("PART-A100"));
     await expect(sku.nth(0)).toBeVisible({ timeout: 10_000 });
   });
 });

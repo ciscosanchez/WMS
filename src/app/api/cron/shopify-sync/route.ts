@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
           }
 
           const resolvedLines = so.lineItems
-             
+
             .map((li) => ({
               productId: (productBySku.get(li.sku) as any)?.id,
               quantity: li.quantity,

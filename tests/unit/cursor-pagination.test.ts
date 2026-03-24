@@ -1,7 +1,4 @@
-import {
-  cursorPaginateQuery,
-  buildCursorResult,
-} from "@/lib/pagination";
+import { cursorPaginateQuery, buildCursorResult } from "@/lib/pagination";
 
 describe("cursorPaginateQuery", () => {
   it("returns take = pageSize + 1 for the first page (no cursor)", () => {
@@ -60,11 +57,7 @@ describe("buildCursorResult", () => {
     ];
     const result = buildCursorResult(data, 3);
     expect(result.nextCursor).toBe("ccc");
-    expect(result.data).toEqual([
-      { id: "aaa" },
-      { id: "bbb" },
-      { id: "ccc" },
-    ]);
+    expect(result.data).toEqual([{ id: "aaa" }, { id: "bbb" }, { id: "ccc" }]);
   });
 
   it("handles empty data", () => {

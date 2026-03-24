@@ -112,8 +112,12 @@ jest.mock("next/headers", () => ({
 }));
 
 // Ensure getTenantFromHeaders reads x-tenant-slug header
-beforeAll(() => { process.env.TENANT_RESOLUTION = "header"; });
-afterAll(() => { delete process.env.TENANT_RESOLUTION; });
+beforeAll(() => {
+  process.env.TENANT_RESOLUTION = "header";
+});
+afterAll(() => {
+  delete process.env.TENANT_RESOLUTION;
+});
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
@@ -337,9 +341,7 @@ describe("Transactional inventory integrity", () => {
         available: 5,
       });
 
-      await expect(moveInventory(moveData)).rejects.toThrow(
-        "Insufficient available inventory"
-      );
+      await expect(moveInventory(moveData)).rejects.toThrow("Insufficient available inventory");
 
       expect(mockDb.$transaction).not.toHaveBeenCalled();
     });
@@ -347,9 +349,7 @@ describe("Transactional inventory integrity", () => {
     it("throws when source not found at all", async () => {
       mockDb.inventory.findFirst.mockResolvedValue(null);
 
-      await expect(moveInventory(moveData)).rejects.toThrow(
-        "Insufficient available inventory"
-      );
+      await expect(moveInventory(moveData)).rejects.toThrow("Insufficient available inventory");
 
       expect(mockDb.$transaction).not.toHaveBeenCalled();
     });
@@ -563,8 +563,18 @@ describe("Transactional inventory integrity", () => {
       shipToState: "TX",
       shipToZip: "75201",
       lines: [
-        { id: "ol-1", productId: "prod-1", quantity: 5, product: { sku: "SKU-1", name: "Widget", weight: 1 } },
-        { id: "ol-2", productId: "prod-2", quantity: 3, product: { sku: "SKU-2", name: "Gadget", weight: 2 } },
+        {
+          id: "ol-1",
+          productId: "prod-1",
+          quantity: 5,
+          product: { sku: "SKU-1", name: "Widget", weight: 1 },
+        },
+        {
+          id: "ol-2",
+          productId: "prod-2",
+          quantity: 3,
+          product: { sku: "SKU-2", name: "Gadget", weight: 2 },
+        },
       ],
     };
 
@@ -669,9 +679,7 @@ describe("Transactional inventory integrity", () => {
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       // No inventory found for either line
-      mockTxPrisma.inventory.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
+      mockTxPrisma.inventory.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
       mockTxPrisma.pickTask.create.mockResolvedValue({ id: "pick-1" });
 

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Loader2, Check, SkipForward, XCircle, Route, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -214,7 +213,12 @@ export default function OperatorInterleavePage() {
             {completedCount}/{totalSteps} steps
           </span>
         </div>
-        <Progress value={progressPct} className="h-3" />
+        <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
       {/* Step list */}

@@ -86,9 +86,7 @@ export async function deleteCrossDockRule(id: string): Promise<{ error?: string 
 
 // ─── Cross-Dock Candidate Identification ─────────────────────────────────────
 
-export async function identifyCrossDockCandidates(
-  inboundShipmentId: string
-): Promise<{
+export async function identifyCrossDockCandidates(inboundShipmentId: string): Promise<{
   candidates: Array<{ productId: string; orderId: string; quantity: number }>;
   error?: string;
 }> {

@@ -16,12 +16,7 @@ const ROUTES = [
   () => import("@/app/api/cron/netsuite-sync/route"),
 ];
 
-const ROUTE_NAMES = [
-  "shopify-sync",
-  "storage-billing",
-  "tracking-update",
-  "netsuite-sync",
-];
+const ROUTE_NAMES = ["shopify-sync", "storage-billing", "tracking-update", "netsuite-sync"];
 
 function makeRequest(secret?: string): NextRequest {
   const url = "http://localhost/api/cron/test";
