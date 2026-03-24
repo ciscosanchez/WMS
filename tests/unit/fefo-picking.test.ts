@@ -85,9 +85,7 @@ describe("FEFO Picking Logic", () => {
   });
 
   it("handles single item", () => {
-    const inventory = [
-      { id: "only", available: 42, expirationDate: new Date("2026-12-31") },
-    ];
+    const inventory = [{ id: "only", available: 42, expirationDate: new Date("2026-12-31") }];
     const sorted = fefoSort(inventory);
     expect(sorted).toHaveLength(1);
     expect(sorted[0].id).toBe("only");

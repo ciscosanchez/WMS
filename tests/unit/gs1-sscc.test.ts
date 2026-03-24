@@ -7,10 +7,7 @@
 
 import { generateSSCC, validateSSCC, calculateCheckDigit } from "@/modules/gs1/sscc";
 import { generateGS1Barcode, parseGS1Barcode } from "@/modules/gs1/barcode";
-import {
-  getComplianceLabelTemplate,
-  listAvailableTemplates,
-} from "@/modules/gs1/label-templates";
+import { getComplianceLabelTemplate, listAvailableTemplates } from "@/modules/gs1/label-templates";
 
 describe("SSCC-18 Generation", () => {
   it("generates an 18-digit SSCC", () => {
@@ -104,7 +101,7 @@ describe("GS1-128 Barcode Formatting", () => {
       sscc: "003401234500000018",
       gtin: "12345678901234",
       lotNumber: "LOT-A123",
-      expirationDate: new Date("2026-06-15"),
+      expirationDate: new Date(2026, 5, 15), // June 15 local time
     });
     expect(barcode).toContain("(00)003401234500000018");
     expect(barcode).toContain("(01)12345678901234");
@@ -169,8 +166,9 @@ describe("Compliance Label Templates", () => {
     expect(templates).toContain("costco");
   });
 
-  it("is case-insensitive", () => {
+  it("is case-insensitive for single-case input", () => {
     expect(getComplianceLabelTemplate("Walmart")).not.toBeNull();
-    expect(getComplianceLabelTemplate("WALMART")).toBeNull(); // Only lowercase keys
+    expect(getComplianceLabelTemplate("WALMART")).not.toBeNull();
+    expect(getComplianceLabelTemplate("wAlMaRt")).not.toBeNull();
   });
 });

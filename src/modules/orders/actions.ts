@@ -171,10 +171,7 @@ async function generatePickTasksForOrder(
         // Find the best bin with enough available stock
         const inv = await prisma.inventory.findFirst({
           where: { productId: line.productId, available: { gte: line.quantity } },
-          orderBy: [
-            { expirationDate: { sort: "asc", nulls: "last" } },
-            { available: "desc" },
-          ],
+          orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
         });
 
         if (inv) {

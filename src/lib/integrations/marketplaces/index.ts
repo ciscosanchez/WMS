@@ -1,9 +1,11 @@
 import type { MarketplaceAdapter } from "./types";
 import { ShopifyAdapter } from "./shopify";
 import { AmazonAdapter } from "./amazon";
+import { WalmartAdapter } from "./walmart";
 
 export { ShopifyAdapter } from "./shopify";
 export { AmazonAdapter } from "./amazon";
+export { WalmartAdapter } from "./walmart";
 
 export type ChannelType = "shopify" | "amazon" | "walmart" | "manual" | "api";
 
@@ -33,6 +35,12 @@ export function createAdapter(config: ChannelConfig): MarketplaceAdapter | null 
         awsAccessKeyId: config.credentials.awsAccessKeyId || "",
         awsSecretAccessKey: config.credentials.awsSecretAccessKey || "",
         region: "us-east-1",
+      });
+    case "walmart":
+      return new WalmartAdapter({
+        clientId: config.credentials.clientId || "",
+        clientSecret: config.credentials.clientSecret || "",
+        environment: (config.credentials.environment as "production" | "sandbox") ?? "production",
       });
     default:
       return null;
