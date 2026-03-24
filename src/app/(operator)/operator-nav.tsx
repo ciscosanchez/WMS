@@ -13,6 +13,7 @@ import {
   ListChecks,
   Clock,
   RotateCcw,
+  Combine,
   Sun,
   LogIn,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navKeys = [
   { href: "/pack", key: "pack" as const, icon: Package },
   { href: "/move", key: "move" as const, icon: ArrowLeftRight },
   { href: "/count", key: "count" as const, icon: ListChecks },
+  { href: "/interleave", key: "interleave" as const, icon: Combine },
   { href: "/inspect", key: "inspect" as const, icon: RotateCcw },
   { href: "/shift", key: "shift" as const, icon: Clock },
 ];

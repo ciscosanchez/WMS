@@ -109,10 +109,11 @@ model Warehouse {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  zones      Zone[]
-  dockDoors  DockDoor[]
-  yardSpots  YardSpot[]
-  appointments DockAppointment[]
+  zones               Zone[]
+  dockDoors            DockDoor[]
+  yardSpots            YardSpot[]
+  appointments         DockAppointment[]
+  interleavingEnabled  Boolean  @default(false) @map("interleaving_enabled")
 
   @@map("warehouses")
 }
@@ -933,6 +934,61 @@ model InvoiceLine {
   @@map("invoice_lines")
 }
 
+// ─── Task Interleaving ─────────────────────────────────
+
+enum InterleavedStepType {
+  il_pick
+  il_putaway
+  il_replenish
+}
+
+enum InterleavedStepStatus {
+  il_pending
+  il_completed
+  il_skipped
+}
+
+enum InterleavedRouteStatus {
+  route_pending
+  route_assigned
+  route_in_progress
+  route_completed
+}
+
+model InterleavedRoute {
+  id          String                 @id @default(cuid())
+  routeNumber String                 @unique @map("route_number")
+  operatorId  String                 @map("operator_id")
+  status      InterleavedRouteStatus @default(route_pending)
+  startedAt   DateTime?              @map("started_at")
+  completedAt DateTime?              @map("completed_at")
+  createdAt   DateTime               @default(now()) @map("created_at")
+
+  steps InterleavedStep[]
+
+  @@index([operatorId])
+  @@index([status])
+  @@map("interleaved_routes")
+}
+
+model InterleavedStep {
+  id          String                @id @default(cuid())
+  routeId     String                @map("route_id")
+  seq         Int
+  type        InterleavedStepType
+  referenceId String                @map("reference_id")
+  binId       String                @map("bin_id")
+  productId   String                @map("product_id")
+  quantity    Int
+  status      InterleavedStepStatus @default(il_pending)
+  completedAt DateTime?             @map("completed_at")
+
+  route InterleavedRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId])
+  @@map("interleaved_steps")
+}
+
 // ─── Slotting Optimization ──────────────────────────────
 
 model SlottingConfig {
@@ -1182,6 +1238,7 @@ enum TaskType {
   putaway
   move
   count
+  interleaved
 }
 
 model TaskTimeLog {

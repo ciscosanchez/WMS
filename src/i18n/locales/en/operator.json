@@ -7,6 +7,7 @@
       "pack": "Pack",
       "move": "Move",
       "count": "Count",
+      "interleave": "Route",
       "inspect": "Inspect",
       "shift": "Shift"
     },
