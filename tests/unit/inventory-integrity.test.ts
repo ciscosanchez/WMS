@@ -173,9 +173,9 @@ function resetMocks() {
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
-import { moveInventory, approveAdjustment } from "@/modules/inventory/actions";
+import { moveInventory, approveAdjustment } from "@/modules/inventory/mutations";
 import { updateOrderStatus } from "@/modules/orders/actions";
-import { markShipmentShipped } from "@/modules/shipping/actions";
+import { markShipmentShipped } from "@/modules/shipping/ship-actions";
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 

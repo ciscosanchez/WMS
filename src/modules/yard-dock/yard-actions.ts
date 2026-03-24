@@ -5,7 +5,10 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { assertTransition, YARD_VISIT_TRANSITIONS } from "@/lib/workflow/transitions";
-import { yardVisitSchemaStatic as yardVisitSchema } from "./schemas";
+import {
+  yardVisitSchemaStatic as yardVisitSchema,
+  driverCheckInSchemaStatic as driverCheckInSchema,
+} from "./schemas";
 
 // ─── Yard Visits ────────────────────────────────────────────────────────────
 
@@ -279,4 +282,59 @@ export async function getYardDockStats(warehouseId?: string) {
     spotsOccupied: spots.filter((s: { status: string }) => s.status === "occupied").length,
     spotsTotal: spots.length,
   };
+}
+
+// ─── Driver Check-In ────────────────────────────────────────────────────────
+
+export async function driverCheckIn(
+  data: unknown
+): Promise<{ error?: string; appointmentId?: string }> {
+  if (config.useMockData) return { appointmentId: "mock-1" };
+
+  try {
+    const { user, tenant } = await requireTenantContext("yard-dock:write");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = tenant.db as any;
+    const parsed = driverCheckInSchema.parse(data);
+
+    // Look up appointment by number
+    const appointment = await db.dockAppointment.findUnique({
+      where: { appointmentNumber: parsed.appointmentNumber },
+    });
+
+    if (!appointment) {
+      return { error: `Appointment ${parsed.appointmentNumber} not found` };
+    }
+
+    // Must be in "confirmed" status to check in
+    if (appointment.status !== "confirmed") {
+      return { error: `Appointment is in "${appointment.status}" status — expected "confirmed"` };
+    }
+
+    // Update appointment with driver info and transition to checked_in
+    await db.dockAppointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: "checked_in",
+        driverName: parsed.driverName,
+        driverLicense: parsed.driverLicense || null,
+        driverPhone: parsed.driverPhone || null,
+        trailerNumber: parsed.trailerNumber,
+        actualArrival: new Date(),
+      },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "dock_appointment",
+      entityId: appointment.id,
+      changes: { status: { old: "confirmed", new: "checked_in" } },
+    });
+
+    revalidatePath("/yard-dock");
+    return { appointmentId: appointment.id };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Check-in failed" };
+  }
 }

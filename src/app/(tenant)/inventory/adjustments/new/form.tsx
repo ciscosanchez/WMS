@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createAdjustment } from "@/modules/inventory/actions";
+import { createAdjustment } from "@/modules/inventory/mutations";
 
 interface Props {
   products: { id: string; sku: string; name: string }[];

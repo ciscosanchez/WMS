@@ -1,4 +1,4 @@
-import { getPendingPutawayItems, getBinsForDropdown } from "@/modules/inventory/actions";
+import { getPendingPutawayItems, getBinsForDropdown } from "@/modules/inventory/putaway-actions";
 import { PutawayClient } from "./putaway-client";
 
 export default async function PutawayPage() {

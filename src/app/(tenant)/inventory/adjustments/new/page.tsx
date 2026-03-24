@@ -1,4 +1,4 @@
-import { getProductsForDropdown, getBinsForDropdown } from "@/modules/inventory/actions";
+import { getProductsForDropdown, getBinsForDropdown } from "@/modules/inventory/putaway-actions";
 import { NewAdjustmentForm } from "./form";
 
 export default async function NewAdjustmentPage() {

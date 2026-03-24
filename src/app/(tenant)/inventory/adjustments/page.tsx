@@ -1,4 +1,4 @@
-import { getAdjustments } from "@/modules/inventory/actions";
+import { getAdjustments } from "@/modules/inventory/putaway-actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, ClipboardCheck } from "lucide-react";

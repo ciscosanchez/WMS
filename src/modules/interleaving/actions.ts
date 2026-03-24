@@ -194,7 +194,7 @@ export async function completeInterleavedStep(
       await confirmPickLine(step.referenceId, qty);
     } else if (step.type === "il_putaway") {
       const { suggestPutawayBin } = await import("@/modules/operator/actions");
-      const { confirmPutaway } = await import("@/modules/inventory/actions");
+      const { confirmPutaway } = await import("@/modules/inventory/putaway-actions");
       const suggestion = await suggestPutawayBin(step.productId);
       if (suggestion) {
         await confirmPutaway(step.referenceId, suggestion.binId);

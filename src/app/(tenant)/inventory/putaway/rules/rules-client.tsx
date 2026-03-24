@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { createPutawayRule, deletePutawayRule } from "@/modules/inventory/actions";
+import { createPutawayRule, deletePutawayRule } from "@/modules/inventory/rules";
 
 interface PutawayRule {
   id: string;

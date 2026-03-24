@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Printer, Loader2, FileDown } from "lucide-react";
 import { toast } from "sonner";
-import { generateShipmentLabel, getLabelDownloadUrl } from "@/modules/shipping/actions";
+import { generateShipmentLabel } from "@/modules/shipping/actions";
+import { getLabelDownloadUrl } from "@/modules/shipping/ship-actions";
 
 // ── Generate Label ────────────────────────────────────────────────────────────
 

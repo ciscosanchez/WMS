@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { ListChecks } from "lucide-react";
 import { format } from "date-fns";
-import { getCycleCounts } from "@/modules/inventory/actions";
+import { getCycleCounts } from "@/modules/inventory/putaway-actions";
 import { getTranslations } from "next-intl/server";
 
 type CycleCountItem = Awaited<ReturnType<typeof getCycleCounts>>[number];

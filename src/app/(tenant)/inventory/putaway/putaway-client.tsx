@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowDownToLine, CheckCircle2, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { confirmPutaway } from "@/modules/inventory/actions";
+import { confirmPutaway } from "@/modules/inventory/putaway-actions";
 
 interface PendingItem {
   id: string;

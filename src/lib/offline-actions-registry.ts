@@ -25,7 +25,7 @@ import {
 import { receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 
 // Inventory actions
-import { moveInventory } from "@/modules/inventory/actions";
+import { moveInventory } from "@/modules/inventory/mutations";
 
 export function registerAllOfflineActions() {
   registerOfflineActions("operator", {

@@ -236,7 +236,7 @@ export async function executeReSlot(runId: string): Promise<{ moved?: number; er
       return { error: "No accepted recommendations to execute" };
     }
 
-    const { moveInventory } = await import("@/modules/inventory/actions");
+    const { moveInventory } = await import("@/modules/inventory/mutations");
     let moved = 0;
 
     for (const rec of accepted) {

@@ -9,7 +9,7 @@ import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
 import { ArrowRight, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { getBinByBarcode } from "@/modules/operator/actions";
-import { moveInventory } from "@/modules/inventory/actions";
+import { moveInventory } from "@/modules/inventory/mutations";
 import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
