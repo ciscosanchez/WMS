@@ -13,6 +13,7 @@ import {
 import { ListChecks } from "lucide-react";
 import { format } from "date-fns";
 import { getCycleCounts } from "@/modules/inventory/actions";
+import { getTranslations } from "next-intl/server";
 
 const statusLabels: Record<string, string> = {
   draft: "Draft",
@@ -23,6 +24,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function CycleCountsPage() {
+  const t = await getTranslations("tenant.inventory");
   const counts = await getCycleCounts();
 
   const activeCount = counts.filter((c) => !["completed", "rejected"].includes(c.status)).length;
@@ -31,7 +33,7 @@ export default async function CycleCountsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Cycle Counts" description="Inventory count adjustments (type: cycle_count)" />
+      <PageHeader title={t("cycleCounts")} description={t("cycleCountsDesc")} />
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -39,20 +41,20 @@ export default async function CycleCountsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <ListChecks className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Active</span>
+              <span className="text-sm text-muted-foreground">{t("active")}</span>
             </div>
             <p className="mt-1 text-2xl font-bold">{activeCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <span className="text-sm text-muted-foreground">Completed</span>
+            <span className="text-sm text-muted-foreground">{t("completed")}</span>
             <p className="mt-1 text-2xl font-bold text-green-600">{completedCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <span className="text-sm text-muted-foreground">Total Lines Counted</span>
+            <span className="text-sm text-muted-foreground">{t("totalLinesCounted")}</span>
             <p className="mt-1 text-2xl font-bold">{totalLines}</p>
           </CardContent>
         </Card>
@@ -61,25 +63,25 @@ export default async function CycleCountsPage() {
       {/* Counts table */}
       <Card>
         <CardHeader>
-          <CardTitle>Cycle Counts</CardTitle>
+          <CardTitle>{t("cycleCounts")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Lines</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Completed</TableHead>
+                <TableHead>{t("number")}</TableHead>
+                <TableHead>{t("reason")}</TableHead>
+                <TableHead>{t("lines")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("created")}</TableHead>
+                <TableHead>{t("completed")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {counts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No cycle counts yet. Create one from the Adjustments page with type &quot;Cycle Count&quot;.
+                    {t("noCycleCounts")}
                   </TableCell>
                 </TableRow>
               ) : (

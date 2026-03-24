@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getWarehouses } from "@/modules/warehouse/actions";
+import { getTranslations } from "next-intl/server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function computeZoneBinCount(zone: any): number {
@@ -32,26 +33,27 @@ function computeZoneBinCount(zone: any): number {
 }
 
 export default async function WarehousePage() {
+  const t = await getTranslations("tenant.warehouse");
   const warehouses = await getWarehouses();
 
   if (!warehouses || warehouses.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Warehouse Locations" description="No warehouses configured">
+        <PageHeader title={t("title")} description={t("noWarehouses")}>
           <div className="flex gap-2">
             <Button asChild variant="outline">
-              <Link href="/warehouse/bulk-generate">Bulk Generate</Link>
+              <Link href="/warehouse/bulk-generate">{t("bulkGenerate")}</Link>
             </Button>
             <Button asChild>
               <Link href="/warehouse/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Add Warehouse
+                {t("addWarehouse")}
               </Link>
             </Button>
           </div>
         </PageHeader>
         <div className="text-center py-12 text-muted-foreground">
-          No warehouses found. Create your first warehouse to get started.
+          {t("noWarehousesDesc")}
         </div>
       </div>
     );
@@ -68,17 +70,17 @@ export default async function WarehousePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Warehouse Locations"
-        description={`${warehouses.length} warehouses, ${totalBins} bins`}
+        title={t("title")}
+        description={`${warehouses.length} ${t("warehouses")}, ${totalBins} ${t("bins")}`}
       >
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href="/warehouse/bulk-generate">Bulk Generate</Link>
+            <Link href="/warehouse/bulk-generate">{t("bulkGenerate")}</Link>
           </Button>
           <Button asChild>
             <Link href="/warehouse/new">
               <Plus className="mr-2 h-4 w-4" />
-              Add Warehouse
+              {t("addWarehouse")}
             </Link>
           </Button>
         </div>
@@ -106,11 +108,11 @@ export default async function WarehousePage() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Zones</p>
+                      <p className="text-muted-foreground">{t("zones")}</p>
                       <p className="text-lg font-semibold">{wh.zones?.length ?? 0}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Bins</p>
+                      <p className="text-muted-foreground">{t("bins")}</p>
                       <p className="text-lg font-semibold">{binCount}</p>
                     </div>
                   </div>

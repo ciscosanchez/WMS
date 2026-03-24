@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createTenant } from "@/modules/platform/actions";
+import { useTranslations } from "next-intl";
 
 function slugify(text: string): string {
   return text
@@ -18,6 +19,7 @@ function slugify(text: string): string {
 }
 
 export default function NewTenantPage() {
+  const t = useTranslations("platform.tenants");
   const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -43,11 +45,11 @@ export default function NewTenantPage() {
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        toast.success(`Tenant "${name}" provisioned`);
+        toast.success(`${t("tenantProvisioned")}: "${name}"`);
         router.push("/platform/tenants");
       }
     } catch {
-      toast.error("Provisioning failed");
+      toast.error(t("provisioningFailed"));
     } finally {
       setLoading(false);
     }
@@ -55,18 +57,18 @@ export default function NewTenantPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Create Tenant" description="Provision a new tenant on the platform" />
+      <PageHeader title={t("createTenant")} description={t("createTenantDesc")} />
 
       <div className="mx-auto max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>Tenant Details</CardTitle>
+            <CardTitle>{t("tenantDetails")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium leading-none">
-                  Tenant Name
+                  {t("tenantName")}
                 </label>
                 <Input
                   id="name"
@@ -79,7 +81,7 @@ export default function NewTenantPage() {
 
               <div className="space-y-2">
                 <label htmlFor="slug" className="text-sm font-medium leading-none">
-                  Slug
+                  {t("slug")}
                 </label>
                 <Input
                   id="slug"
@@ -89,13 +91,13 @@ export default function NewTenantPage() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Used in URLs and as the database schema prefix. Auto-generated from the name.
+                  {t("slugDesc")}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="plan" className="text-sm font-medium leading-none">
-                  Plan
+                  {t("plan")}
                 </label>
                 <select
                   id="plan"
@@ -103,9 +105,9 @@ export default function NewTenantPage() {
                   onChange={(e) => setPlan(e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="starter">Starter — $99/mo</option>
-                  <option value="professional">Professional — $299/mo</option>
-                  <option value="enterprise">Enterprise — $799/mo</option>
+                  <option value="starter">{t("starter")}</option>
+                  <option value="professional">{t("professional")}</option>
+                  <option value="enterprise">{t("enterprise")}</option>
                 </select>
               </div>
 
@@ -114,13 +116,13 @@ export default function NewTenantPage() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-4 w-4 text-blue-600" />
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium text-blue-900">Schema Creation</p>
+                      <p className="font-medium text-blue-900">{t("schemaCreation")}</p>
                       <p className="text-blue-700">
-                        Provisioning will create PostgreSQL schema{" "}
+                        {t("schemaDesc")}{" "}
                         <code className="rounded bg-blue-100 px-1 py-0.5 text-xs font-mono">
                           tenant_{slug.replace(/-/g, "_")}
                         </code>{" "}
-                        and run all migrations. This takes a few seconds.
+                        {t("schemaDescSuffix")}
                       </p>
                     </div>
                   </div>
@@ -131,10 +133,10 @@ export default function NewTenantPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Provisioning...
+                    {t("provisioning")}
                   </>
                 ) : (
-                  "Provision Tenant"
+                  t("provisionTenant")
                 )}
               </Button>
             </form>

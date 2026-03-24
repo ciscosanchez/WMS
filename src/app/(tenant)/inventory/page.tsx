@@ -3,12 +3,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Boxes } from "lucide-react";
 import { InventoryTable } from "@/components/inventory/inventory-table";
 import { EmptyState } from "@/components/shared/empty-state";
+import { getTranslations } from "next-intl/server";
 
 interface Props {
   searchParams: Promise<{ page?: string; search?: string }>;
 }
 
 export default async function InventoryPage({ searchParams }: Props) {
+  const t = await getTranslations("tenant.inventory");
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10) || 1);
   const search = params.search || "";
@@ -18,15 +20,15 @@ export default async function InventoryPage({ searchParams }: Props) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Stock Browser"
-        description={`Current inventory across all locations — ${result.total.toLocaleString()} records`}
+        title={t("stockBrowser")}
+        description={`${t("stockBrowserDesc")} — ${result.total.toLocaleString()} ${t("records")}`}
       />
 
       {result.total === 0 && !search ? (
         <EmptyState
           icon={Boxes}
-          title="No inventory yet"
-          description="Inventory will appear here after receiving shipments."
+          title={t("noInventory")}
+          description={t("noInventoryDesc")}
         />
       ) : (
         <InventoryTable

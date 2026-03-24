@@ -11,18 +11,20 @@ import {
 import { format } from "date-fns";
 import { getPortalShipments } from "@/modules/portal/actions";
 import { Truck } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function PortalShipmentsPage() {
+  const t = await getTranslations("portal.shipments");
   const shipments = await getPortalShipments();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Shipments" description="Track shipments for your orders" />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       {shipments.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <Truck className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No shipments yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noShipments")}</p>
         </div>
       ) : (
         <div className="rounded-md border">

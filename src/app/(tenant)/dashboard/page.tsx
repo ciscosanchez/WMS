@@ -4,6 +4,7 @@ import { DashboardCharts } from "@/components/shared/dashboard-charts";
 import { getDashboardChartData } from "@/modules/dashboard/actions";
 import { PackageOpen, PackageCheck, Boxes, MapPin, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTranslations } from "next-intl/server";
 
 async function getDashboardData() {
   const tenant = await resolveTenant();
@@ -62,48 +63,49 @@ const fallbackCharts = {
 };
 
 export default async function DashboardPage() {
+  const t = await getTranslations("tenant.dashboard");
   const [data, chartData] = await Promise.all([
     getDashboardData(),
     getDashboardChartData().catch(() => fallbackCharts),
   ]);
-  if (!data) return <div>Tenant not found</div>;
+  if (!data) return <div>{t("tenantNotFound")}</div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your warehouse operations</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <KpiCard
-          title="Pending Receipts"
+          title={t("pendingReceipts")}
           value={data.pendingReceipts}
-          description="Shipments awaiting processing"
+          description={t("pendingReceiptsDesc")}
           icon={PackageOpen}
         />
         <KpiCard
-          title="Received Today"
+          title={t("receivedToday")}
           value={data.receivedToday}
-          description="Items received today"
+          description={t("receivedTodayDesc")}
           icon={PackageCheck}
         />
         <KpiCard
-          title="Total SKUs"
+          title={t("totalSkus")}
           value={data.totalSkus}
-          description="Active products"
+          description={t("totalSkusDesc")}
           icon={Boxes}
         />
         <KpiCard
-          title="Available Bins"
+          title={t("availableBins")}
           value={data.availableBins}
-          description="Storage locations available"
+          description={t("availableBinsDesc")}
           icon={MapPin}
         />
         <KpiCard
-          title="Low Stock Alerts"
+          title={t("lowStockAlerts")}
           value={data.lowStockAlerts}
-          description="Products below minimum"
+          description={t("lowStockAlertsDesc")}
           icon={AlertTriangle}
         />
       </div>
@@ -118,11 +120,11 @@ export default async function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>{t("recentActivity")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.recentActivity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No recent activity</p>
+            <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
           ) : (
             <div className="space-y-3">
               {data.recentActivity.map((tx) => (

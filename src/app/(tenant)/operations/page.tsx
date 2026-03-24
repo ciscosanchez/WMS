@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, AlertTriangle, PackageOpen, Users, Zap } from "lucide-react";
 import { getOperationsBoard } from "@/modules/dashboard/manager-actions";
 import { AssignTaskButton } from "./assign-task-button";
+import { getTranslations } from "next-intl/server";
 
 type BoardData = Awaited<ReturnType<typeof getOperationsBoard>>;
 type UnassignedTask = BoardData["unassignedTasks"][number];
@@ -11,21 +12,23 @@ type Operator = BoardData["operators"][number];
 type Receiving = BoardData["receivingActive"][number];
 
 export default async function OperationsPage() {
+  const t = await getTranslations("tenant.operations");
+  const tc = await getTranslations("common");
   const data = await getOperationsBoard();
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Operations Board</h1>
-        <p className="text-sm text-muted-foreground">Real-time warehouse operations and operator workload</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard title="Completed Today" value={data.kpis.completedToday} icon={CheckCircle2} />
-        <KpiCard title="Avg Minutes/Task" value={data.kpis.avgMinutes} icon={Clock} />
-        <KpiCard title="Pending (Unassigned)" value={data.kpis.pendingTasks} icon={AlertTriangle} />
-        <KpiCard title="Active Receiving" value={data.kpis.activeReceiving} icon={PackageOpen} />
+        <KpiCard title={t("completedToday")} value={data.kpis.completedToday} icon={CheckCircle2} />
+        <KpiCard title={t("avgMinutes")} value={data.kpis.avgMinutes} icon={Clock} />
+        <KpiCard title={t("pendingUnassigned")} value={data.kpis.pendingTasks} icon={AlertTriangle} />
+        <KpiCard title={t("activeReceiving")} value={data.kpis.activeReceiving} icon={PackageOpen} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -34,12 +37,12 @@ export default async function OperationsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Unassigned Tasks ({data.unassignedTasks.length})
+              {t("unassignedTasks")} ({data.unassignedTasks.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {data.unassignedTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All tasks are assigned.</p>
+              <p className="text-sm text-muted-foreground">{t("allAssigned")}</p>
             ) : (
               <div className="space-y-3">
                 {data.unassignedTasks.map((task: UnassignedTask) => (
@@ -48,14 +51,14 @@ export default async function OperationsPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{task.taskNumber}</span>
                         {task.priority === "rush" && (
-                          <Badge variant="destructive" className="text-xs">Rush</Badge>
+                          <Badge variant="destructive" className="text-xs">{t("rush")}</Badge>
                         )}
                         {task.priority === "expedited" && (
-                          <Badge variant="secondary" className="text-xs">Expedited</Badge>
+                          <Badge variant="secondary" className="text-xs">{t("expedited")}</Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
-                        {task.orderNumber} — {task.shipTo} ({task.lineCount} lines)
+                        {task.orderNumber} — {task.shipTo} ({task.lineCount} {tc("lines")})
                       </p>
                     </div>
                     <AssignTaskButton
@@ -74,12 +77,12 @@ export default async function OperationsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4" />
-              Operator Workload
+              {t("operatorWorkload")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {data.operators.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No operator activity today.</p>
+              <p className="text-sm text-muted-foreground">{t("noOperatorActivity")}</p>
             ) : (
               <div className="space-y-3">
                 {data.operators.map((op) => (
@@ -89,17 +92,17 @@ export default async function OperationsPage() {
                       <div className="flex items-center gap-1.5">
                         {op.active > 0 && (
                           <Badge variant="default" className="text-xs">
-                            <Zap className="mr-0.5 h-3 w-3" /> {op.active} active
+                            <Zap className="mr-0.5 h-3 w-3" /> {op.active} {t("active")}
                           </Badge>
                         )}
                         {op.completed > 0 && (
                           <Badge variant="secondary" className="text-xs">
-                            {op.completed} done
+                            {op.completed} {t("done")}
                           </Badge>
                         )}
                         {op.shortPicked > 0 && (
                           <Badge variant="destructive" className="text-xs">
-                            {op.shortPicked} short
+                            {op.shortPicked} {t("short")}
                           </Badge>
                         )}
                       </div>
@@ -127,7 +130,7 @@ export default async function OperationsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <PackageOpen className="h-4 w-4" />
-              Active Receiving
+              {t("activeReceiving")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -145,7 +148,7 @@ export default async function OperationsPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-sm font-medium">{s.totalReceived}/{s.totalExpected}</div>
-                    <div className="text-xs text-muted-foreground">units</div>
+                    <div className="text-xs text-muted-foreground">{tc("units")}</div>
                   </div>
                 </div>
               ))}

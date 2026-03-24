@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function EditClientPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const t = useTranslations("tenant.clients");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -76,10 +78,10 @@ export default function EditClientPage() {
   async function onSubmit(data: ClientFormData) {
     try {
       await updateClient(params.id, data);
-      toast.success("Client updated");
+      toast.success(t("clientUpdated"));
       router.push("/clients");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to update client");
+      toast.error(e instanceof Error ? e.message : t("failedUpdate"));
     }
   }
 
@@ -87,57 +89,57 @@ export default function EditClientPage() {
     try {
       setDeleting(true);
       await deleteClient(params.id);
-      toast.success("Client deleted");
+      toast.success(t("clientDeleted"));
       router.push("/clients");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete client");
+      toast.error(e instanceof Error ? e.message : t("failedDelete"));
     } finally {
       setDeleting(false);
     }
   }
 
   if (loading) {
-    return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("loading")}</div>;
   }
 
   if (notFound) {
-    return <div className="py-10 text-center text-muted-foreground">Client not found</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("clientNotFound")}</div>;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit Client" description="Update client details" />
+      <PageHeader title={t("editClient")} description={t("editClientDesc")} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>General Information</CardTitle>
+            <CardTitle>{t("generalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="code">Code *</Label>
+              <Label htmlFor="code">{t("code") + " *"}</Label>
               <Input id="code" {...register("code")} placeholder="ACME" />
               {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t("name") + " *"}</Label>
               <Input id="name" {...register("name")} placeholder="Acme Corporation" />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactName">Contact Name</Label>
+              <Label htmlFor="contactName">{t("contactName")}</Label>
               <Input id="contactName" {...register("contactName")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail">{t("contactEmail")}</Label>
               <Input id="contactEmail" type="email" {...register("contactEmail")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
+              <Label htmlFor="contactPhone">{t("contactPhone")}</Label>
               <Input id="contactPhone" {...register("contactPhone")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="taxId">Tax ID</Label>
+              <Label htmlFor="taxId">{t("taxId")}</Label>
               <Input id="taxId" {...register("taxId")} />
             </div>
           </CardContent>
@@ -145,27 +147,27 @@ export default function EditClientPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Address</CardTitle>
+            <CardTitle>{t("address")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t("address")}</Label>
               <Input id="address" {...register("address")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">{t("city")}</Label>
               <Input id="city" {...register("city")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state">{t("state")}</Label>
               <Input id="state" {...register("state")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
+              <Label htmlFor="country">{t("country")}</Label>
               <Input id="country" {...register("country")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="zipCode">Zip Code</Label>
+              <Label htmlFor="zipCode">{t("zipCode")}</Label>
               <Input id="zipCode" {...register("zipCode")} />
             </div>
           </CardContent>
@@ -173,38 +175,37 @@ export default function EditClientPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>{t("notes")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea {...register("notes")} placeholder="Additional notes..." rows={4} />
+            <Textarea {...register("notes")} placeholder={t("notesPlaceholder")} rows={4} />
           </CardContent>
         </Card>
 
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Changes"}
+            {isSubmitting ? t("saving") : t("saveChanges")}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {t("cancel")}
           </Button>
           <div className="ml-auto">
             <AlertDialog>
               <AlertDialogTrigger
                 render={<Button type="button" variant="destructive" disabled={deleting} />}
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? "Deleting..." : t("delete")}
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Client</AlertDialogTitle>
+                  <AlertDialogTitle>{t("deleteClient")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the client and all
-                    associated data.
+                    {t("deleteConfirm")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>{t("delete")}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

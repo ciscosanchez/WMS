@@ -9,18 +9,20 @@ import {
 } from "@/components/ui/table";
 import { getPortalInventory } from "@/modules/portal/actions";
 import { Package } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 export default async function PortalInventoryPage() {
+  const t = await getTranslations("portal.inventory");
   const inventory = await getPortalInventory();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Inventory" description="Current stock levels for your products" />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       {inventory.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <Package className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No inventory on file yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noInventory")}</p>
         </div>
       ) : (
         <div className="rounded-md border">

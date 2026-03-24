@@ -19,6 +19,7 @@ import { getClients } from "@/modules/clients/actions";
 import { ShopifySyncButton } from "./_shopify-sync-button";
 import { ShopifyInventorySyncButton } from "./_shopify-inventory-sync-button";
 import { AmazonInventorySyncButton } from "./_amazon-inventory-sync-button";
+import { getTranslations } from "next-intl/server";
 
 const priorityColors: Record<string, string> = {
   standard: "bg-gray-100 text-gray-700",
@@ -28,6 +29,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export default async function OrdersPage() {
+  const t = await getTranslations("tenant.orders");
   const [orders, clients] = await Promise.all([getOrders(), getClients()]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const defaultClient = (clients as any[])[0];
@@ -38,7 +40,7 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Orders" description="Manage fulfillment orders from all channels">
+      <PageHeader title={t("title")} description={t("subtitle")}>
         <div className="flex gap-2">
           {amazonEnabled && defaultClient && (
             <AmazonInventorySyncButton clientId={defaultClient.id} />
@@ -52,7 +54,7 @@ export default async function OrdersPage() {
           <Button asChild>
             <Link href="/orders/new">
               <Plus className="mr-2 h-4 w-4" />
-              New Order
+              {t("newOrder")}
             </Link>
           </Button>
         </div>
@@ -61,22 +63,22 @@ export default async function OrdersPage() {
       {orders.length === 0 ? (
         <EmptyState
           icon={ShoppingCart}
-          title="No orders yet"
-          description="Create your first fulfillment order to get started."
+          title={t("noOrders")}
+          description={t("noOrdersDesc")}
         />
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order #</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Ship To</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ship By</TableHead>
+                <TableHead>{t("orderNumber")}</TableHead>
+                <TableHead>{t("channel")}</TableHead>
+                <TableHead>{t("client")}</TableHead>
+                <TableHead>{t("shipTo")}</TableHead>
+                <TableHead>{t("items")}</TableHead>
+                <TableHead>{t("priority")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("shipBy")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,7 +102,7 @@ export default async function OrdersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {order.channel?.name ?? order.channel ?? "Manual"}
+                      {order.channel?.name ?? order.channel ?? t("manual")}
                     </Badge>
                   </TableCell>
                   <TableCell>{order.client?.code ?? order.clientCode ?? "-"}</TableCell>

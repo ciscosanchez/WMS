@@ -27,10 +27,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const t = useTranslations("tenant.products");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -93,10 +95,10 @@ export default function EditProductPage() {
   async function onSubmit(data: ProductFormData) {
     try {
       await updateProduct(params.id, data);
-      toast.success("Product updated");
+      toast.success(t("productUpdated"));
       router.push("/products");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to update product");
+      toast.error(e instanceof Error ? e.message : t("failedUpdate"));
     }
   }
 
@@ -104,26 +106,26 @@ export default function EditProductPage() {
     try {
       setDeleting(true);
       await deleteProduct(params.id);
-      toast.success("Product deleted");
+      toast.success(t("productDeleted"));
       router.push("/products");
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete product");
+      toast.error(e instanceof Error ? e.message : t("failedDelete"));
     } finally {
       setDeleting(false);
     }
   }
 
   if (loading) {
-    return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("loading")}</div>;
   }
 
   if (notFound) {
-    return <div className="py-10 text-center text-muted-foreground">Product not found</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("productNotFound")}</div>;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Edit Product" description="Update product details" />
+      <PageHeader title={t("editProduct")} description={t("editProductDesc")} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
         {imageUrl && (
@@ -138,7 +140,7 @@ export default function EditProductPage() {
                 unoptimized
               />
               <div className="text-sm text-muted-foreground">
-                Product image synced from Shopify
+                {t("shopifyImage")}
               </div>
             </CardContent>
           </Card>
@@ -146,17 +148,17 @@ export default function EditProductPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>General Information</CardTitle>
+            <CardTitle>{t("generalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="clientId">Client *</Label>
+              <Label htmlFor="clientId">{t("client")} *</Label>
               <select
                 id="clientId"
                 {...register("clientId")}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="">Select client...</option>
+                <option value="">{t("selectClient")}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} - {c.name}
@@ -168,29 +170,29 @@ export default function EditProductPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sku">SKU *</Label>
+              <Label htmlFor="sku">{t("sku")} *</Label>
               <Input id="sku" {...register("sku")} />
               {errors.sku && <p className="text-xs text-destructive">{errors.sku.message}</p>}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t("name")} *</Label>
               <Input id="name" {...register("name")} />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea id="description" {...register("description")} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hsCode">HS Code</Label>
+              <Label htmlFor="hsCode">{t("hsCode")}</Label>
               <Input id="hsCode" {...register("hsCode")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="barcode">Barcode</Label>
+              <Label htmlFor="barcode">{t("barcode")}</Label>
               <Input id="barcode" {...register("barcode")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="baseUom">Base UOM</Label>
+              <Label htmlFor="baseUom">{t("baseUom")}</Label>
               <Input id="baseUom" {...register("baseUom")} />
             </div>
           </CardContent>
@@ -198,11 +200,11 @@ export default function EditProductPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Dimensions & Weight</CardTitle>
+            <CardTitle>{t("dimensionsWeight")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="weight">Weight</Label>
+              <Label htmlFor="weight">{t("weight")}</Label>
               <div className="flex gap-2">
                 <Input id="weight" type="number" step="0.0001" {...register("weight")} />
                 <select
@@ -217,15 +219,15 @@ export default function EditProductPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="length">Length</Label>
+              <Label htmlFor="length">{t("length")}</Label>
               <Input id="length" type="number" step="0.01" {...register("length")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="width">Width</Label>
+              <Label htmlFor="width">{t("width")}</Label>
               <Input id="width" type="number" step="0.01" {...register("width")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="height">Height</Label>
+              <Label htmlFor="height">{t("height")}</Label>
               <Input id="height" type="number" step="0.01" {...register("height")} />
             </div>
           </CardContent>
@@ -233,7 +235,7 @@ export default function EditProductPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Tracking & Stock Levels</CardTitle>
+            <CardTitle>{t("trackingStockLevels")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
@@ -243,7 +245,7 @@ export default function EditProductPage() {
                   checked={watch("trackLot")}
                   onCheckedChange={(v) => setValue("trackLot", !!v)}
                 />
-                <Label htmlFor="trackLot">Track by Lot Number</Label>
+                <Label htmlFor="trackLot">{t("trackByLot")}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -251,16 +253,16 @@ export default function EditProductPage() {
                   checked={watch("trackSerial")}
                   onCheckedChange={(v) => setValue("trackSerial", !!v)}
                 />
-                <Label htmlFor="trackSerial">Track by Serial Number</Label>
+                <Label htmlFor="trackSerial">{t("trackBySerial")}</Label>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="minStock">Minimum Stock</Label>
+                <Label htmlFor="minStock">{t("minStock")}</Label>
                 <Input id="minStock" type="number" {...register("minStock")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxStock">Maximum Stock</Label>
+                <Label htmlFor="maxStock">{t("maxStock")}</Label>
                 <Input id="maxStock" type="number" {...register("maxStock")} />
               </div>
             </div>
@@ -269,7 +271,7 @@ export default function EditProductPage() {
 
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Changes"}
+            {isSubmitting ? t("saving") : t("saveChanges")}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
@@ -279,19 +281,18 @@ export default function EditProductPage() {
               <AlertDialogTrigger
                 render={<Button type="button" variant="destructive" disabled={deleting} />}
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? t("deleting") : t("delete")}
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                  <AlertDialogTitle>{t("deleteProduct")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the product and all
-                    associated inventory data.
+                    {t("deleteProductConfirm")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  <AlertDialogAction onClick={handleDelete}>{t("delete")}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

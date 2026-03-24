@@ -14,17 +14,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdjustmentsPage() {
+  const t = await getTranslations("tenant.inventory");
   const adjustments = await getAdjustments();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inventory Adjustments" description="Corrections and cycle count results">
+      <PageHeader title={t("adjustments")} description={t("adjustmentsDesc")}>
         <Button asChild>
           <Link href="/inventory/adjustments/new">
             <Plus className="mr-2 h-4 w-4" />
-            New Adjustment
+            {t("newAdjustment")}
           </Link>
         </Button>
       </PageHeader>
@@ -32,13 +34,13 @@ export default async function AdjustmentsPage() {
       {adjustments.length === 0 ? (
         <EmptyState
           icon={ClipboardCheck}
-          title="No adjustments"
-          description="Create an adjustment to correct inventory discrepancies."
+          title={t("noAdjustments")}
+          description={t("noAdjustmentsDesc")}
         >
           <Button asChild>
             <Link href="/inventory/adjustments/new">
               <Plus className="mr-2 h-4 w-4" />
-              New Adjustment
+              {t("newAdjustment")}
             </Link>
           </Button>
         </EmptyState>
@@ -47,12 +49,12 @@ export default async function AdjustmentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Lines</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>{t("number")}</TableHead>
+                <TableHead>{t("type")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("lines")}</TableHead>
+                <TableHead>{t("reason")}</TableHead>
+                <TableHead>{t("created")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

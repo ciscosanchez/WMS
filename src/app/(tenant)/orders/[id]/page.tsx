@@ -20,24 +20,26 @@ import { ShoppingCart, Package, Truck, MapPin, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { getOrder, updateOrderStatus } from "@/modules/orders/actions";
-
-const orderStatusFlow: Record<string, { next: string; label: string; confirm?: string }> = {
-  pending: { next: "awaiting_fulfillment", label: "Accept Order" },
-  awaiting_fulfillment: { next: "allocated", label: "Allocate Inventory" },
-  allocated: { next: "picking", label: "Generate Pick Task" },
-  picking: { next: "picked", label: "Mark Picked" },
-  picked: { next: "packing", label: "Start Packing" },
-  packing: { next: "packed", label: "Mark Packed" },
-  packed: { next: "shipped", label: "Ship Order", confirm: "Create shipment and mark as shipped?" },
-  shipped: { next: "delivered", label: "Mark Delivered" },
-};
+import { useTranslations } from "next-intl";
 
 export default function OrderDetailPage() {
+  const t = useTranslations("tenant.orders");
   const params = useParams<{ id: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+
+  const orderStatusFlow: Record<string, { next: string; label: string; confirm?: string }> = {
+    pending: { next: "awaiting_fulfillment", label: t("acceptOrder") },
+    awaiting_fulfillment: { next: "allocated", label: t("allocateInventory") },
+    allocated: { next: "picking", label: t("generatePickTask") },
+    picking: { next: "picked", label: t("markPicked") },
+    picked: { next: "packing", label: t("startPacking") },
+    packing: { next: "packed", label: t("markPacked") },
+    packed: { next: "shipped", label: t("shipOrder"), confirm: t("shipConfirm") },
+    shipped: { next: "delivered", label: t("markDelivered") },
+  };
 
   useEffect(() => {
     getOrder(params.id)
@@ -46,11 +48,11 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   if (loading) {
-    return <div className="py-10 text-center text-muted-foreground">Loading...</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("loading")}</div>;
   }
 
   if (!order) {
-    return <div className="py-10 text-center text-muted-foreground">Order not found</div>;
+    return <div className="py-10 text-center text-muted-foreground">{t("orderNotFound")}</div>;
   }
 
   const flow = orderStatusFlow[order.status];
@@ -77,14 +79,14 @@ export default function OrderDetailPage() {
   }
 
   async function handleCancel() {
-    if (!confirm("Cancel this order? Allocated inventory will be released.")) return;
+    if (!confirm(t("cancelConfirm"))) return;
     setProcessing(true);
     try {
       await updateOrderStatus(order.id, "cancelled");
       setOrder((prev: typeof order) => ({ ...prev, status: "cancelled" }));
-      toast.success("Order cancelled");
+      toast.success(t("orderCancelled"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to cancel order");
+      toast.error(e instanceof Error ? e.message : t("failedCancel"));
     } finally {
       setProcessing(false);
     }
@@ -119,10 +121,10 @@ export default function OrderDetailPage() {
           {flow && !["cancelled", "delivered"].includes(order.status) && (
             <>
               <Button onClick={handleStatusChange} disabled={processing}>
-                {processing ? "Processing..." : flow.label}
+                {processing ? t("processing") : flow.label}
               </Button>
               <Button variant="outline" onClick={handleCancel} disabled={processing}>
-                Cancel
+                {t("cancel")}
               </Button>
             </>
           )}
@@ -131,7 +133,7 @@ export default function OrderDetailPage() {
 
       {isShipByOverdue && (
         <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-          <strong>Overdue!</strong> This order was due to ship by{" "}
+          <strong>{t("overdue")}</strong> {t("overdueDesc")}{" "}
           {format(shipByDate, "MMM d, yyyy")}
         </div>
       )}
@@ -141,7 +143,7 @@ export default function OrderDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Client</span>
+              <span className="text-sm text-muted-foreground">{t("client")}</span>
             </div>
             <p className="mt-1 font-medium">{order.client?.name ?? order.clientName ?? "-"}</p>
           </CardContent>
@@ -150,7 +152,7 @@ export default function OrderDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Items</span>
+              <span className="text-sm text-muted-foreground">{t("items")}</span>
             </div>
             <p className="mt-1 font-medium">
               {(order.lines ?? []).reduce(
@@ -165,10 +167,10 @@ export default function OrderDetailPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Shipping</span>
+              <span className="text-sm text-muted-foreground">{t("shippingMethod")}</span>
             </div>
             <p className="mt-1 font-medium">
-              {order.requestedService ?? order.shippingMethod ?? "Best available"}
+              {order.requestedService ?? order.shippingMethod ?? t("bestAvailable")}
             </p>
           </CardContent>
         </Card>
@@ -178,10 +180,10 @@ export default function OrderDetailPage() {
               <Clock
                 className={`h-4 w-4 ${isShipByOverdue ? "text-red-500" : "text-muted-foreground"}`}
               />
-              <span className="text-sm text-muted-foreground">Ship By</span>
+              <span className="text-sm text-muted-foreground">{t("shipBy")}</span>
             </div>
             <p className={`mt-1 font-medium ${isShipByOverdue ? "text-red-600" : ""}`}>
-              {shipByDate ? format(shipByDate, "MMM d, yyyy") : "No deadline"}
+              {shipByDate ? format(shipByDate, "MMM d, yyyy") : t("noDeadline")}
             </p>
           </CardContent>
         </Card>
@@ -192,7 +194,7 @@ export default function OrderDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              Ship To
+              {t("shipTo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm space-y-1">
@@ -210,8 +212,8 @@ export default function OrderDetailPage() {
 
       <Tabs defaultValue="lines">
         <TabsList>
-          <TabsTrigger value="lines">Lines ({(order.lines ?? []).length})</TabsTrigger>
-          <TabsTrigger value="shipments">Shipments ({(order.shipments ?? []).length})</TabsTrigger>
+          <TabsTrigger value="lines">{t("lines")} ({(order.lines ?? []).length})</TabsTrigger>
+          <TabsTrigger value="shipments">{t("shipments")} ({(order.shipments ?? []).length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="lines">
@@ -219,13 +221,13 @@ export default function OrderDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Picked</TableHead>
-                  <TableHead className="text-right">Packed</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>{t("sku")}</TableHead>
+                  <TableHead>{t("product")}</TableHead>
+                  <TableHead className="text-right">{t("qty")}</TableHead>
+                  <TableHead className="text-right">{t("picked")}</TableHead>
+                  <TableHead className="text-right">{t("packed")}</TableHead>
+                  <TableHead className="text-right">{t("unitPrice")}</TableHead>
+                  <TableHead className="text-right">{t("total")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,17 +257,17 @@ export default function OrderDetailPage() {
         <TabsContent value="shipments">
           {(order.shipments ?? []).length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No shipments yet — order is still being processed
+              {t("noShipmentsYet")}
             </p>
           ) : (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Shipment #</TableHead>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Tracking</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("shipmentNumber")}</TableHead>
+                    <TableHead>{t("carrier")}</TableHead>
+                    <TableHead>{t("tracking")}</TableHead>
+                    <TableHead>{t("status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -275,7 +277,7 @@ export default function OrderDetailPage() {
                       <TableCell className="font-medium">{s.shipmentNumber}</TableCell>
                       <TableCell>{s.carrier ?? "-"}</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {s.trackingNumber ?? "Pending"}
+                        {s.trackingNumber ?? t("pending")}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={s.status} />
@@ -292,7 +294,7 @@ export default function OrderDetailPage() {
       {order.notes && (
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>{t("notes")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm">{order.notes}</p>

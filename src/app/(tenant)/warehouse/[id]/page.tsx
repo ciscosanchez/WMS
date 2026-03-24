@@ -20,6 +20,7 @@ import {
 import { Plus, MapPin, Boxes, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getWarehouse, createZone } from "@/modules/warehouse/actions";
+import { useTranslations } from "next-intl";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function countBinsInAisle(aisle: any): number {
@@ -68,6 +69,7 @@ function countShelvesInAisle(aisle: any): number {
 }
 
 export default function WarehouseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = useTranslations("tenant.warehouse");
   const { id } = use(params);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [wh, setWh] = useState<any>(null);
@@ -160,7 +162,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Zones</span>
+              <span className="text-sm text-muted-foreground">{t("zones")}</span>
             </div>
             <p className="mt-1 text-2xl font-bold">{(wh.zones ?? []).length}</p>
           </CardContent>
@@ -169,7 +171,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Boxes className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Total Bins</span>
+              <span className="text-sm text-muted-foreground">{t("totalBins")}</span>
             </div>
             <p className="mt-1 text-2xl font-bold">{totalBins}</p>
           </CardContent>
@@ -178,7 +180,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Boxes className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-muted-foreground">Available</span>
+              <span className="text-sm text-muted-foreground">{t("available")}</span>
             </div>
             <p className="mt-1 text-2xl font-bold text-green-600">
               {totalAvail}{" "}
@@ -194,10 +196,10 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
 
       {/* Zones */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Zones</h2>
+        <h2 className="text-lg font-semibold">{t("zones")}</h2>
         <Button onClick={() => setAddingZone(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Zone
+          {t("addZone")}
         </Button>
       </div>
 
@@ -224,7 +226,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                     <Badge variant="secondary">{zone.type}</Badge>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {zoneAvail}/{zoneBins} bins available
+                    {zoneAvail}/{zoneBins} {t("bins")} {t("available").toLowerCase()}
                   </span>
                 </div>
               </CardHeader>
@@ -232,14 +234,14 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Aisle</TableHead>
-                      <TableHead>Racks</TableHead>
-                      <TableHead>Shelves</TableHead>
-                      <TableHead>Total Bins</TableHead>
-                      <TableHead>Available</TableHead>
-                      <TableHead>Full</TableHead>
-                      <TableHead>Reserved</TableHead>
-                      <TableHead>Utilization</TableHead>
+                      <TableHead>{t("aisle")}</TableHead>
+                      <TableHead>{t("racks")}</TableHead>
+                      <TableHead>{t("shelves")}</TableHead>
+                      <TableHead>{t("totalBins")}</TableHead>
+                      <TableHead>{t("available")}</TableHead>
+                      <TableHead>{t("full")}</TableHead>
+                      <TableHead>{t("reserved")}</TableHead>
+                      <TableHead>{t("utilization")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -295,12 +297,12 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
         <Dialog open={addingZone} onOpenChange={setAddingZone}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Zone to {wh.name}</DialogTitle>
+              <DialogTitle>{t("addZoneTo")} {wh.name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Zone Code</Label>
+                  <Label>{t("zoneCode")}</Label>
                   <Input
                     placeholder="C"
                     value={zoneCode}
@@ -308,7 +310,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Zone Name</Label>
+                  <Label>{t("zoneName")}</Label>
                   <Input
                     placeholder="Zone C - Returns"
                     value={zoneName}
@@ -317,25 +319,25 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label>{t("type")}</Label>
                 <select
                   value={zoneType}
                   onChange={(e) => setZoneType(e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 >
-                  <option value="storage">Storage</option>
-                  <option value="staging">Staging</option>
-                  <option value="dock">Dock</option>
-                  <option value="quarantine">Quarantine</option>
+                  <option value="storage">{t("storage")}</option>
+                  <option value="staging">{t("staging")}</option>
+                  <option value="dock">{t("dock")}</option>
+                  <option value="quarantine">{t("quarantine")}</option>
                 </select>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setAddingZone(false)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button onClick={handleCreateZone} disabled={creating}>
                   {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Zone
+                  {t("createZone")}
                 </Button>
               </div>
             </div>

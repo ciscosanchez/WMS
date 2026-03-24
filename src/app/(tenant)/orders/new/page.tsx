@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { getClients } from "@/modules/clients/actions";
 import { getProducts } from "@/modules/products/actions";
 import { createOrder } from "@/modules/orders/actions";
+import { useTranslations } from "next-intl";
 
 interface OrderLine {
   id: string;
@@ -32,6 +33,7 @@ interface OrderLine {
 }
 
 export default function NewOrderPage() {
+  const t = useTranslations("tenant.orders");
   const router = useRouter();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [clients, setClients] = useState<any[]>([]);
@@ -117,17 +119,17 @@ export default function NewOrderPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="New Order" description="Create a fulfillment order" />
+      <PageHeader title={t("newOrder")} description={t("createOrder")} />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
         {/* Client & Priority */}
         <Card>
           <CardHeader>
-            <CardTitle>Order Details</CardTitle>
+            <CardTitle>{t("orderDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Client *</Label>
+              <Label>{t("client")} *</Label>
               <select
                 value={clientId}
                 onChange={(e) => {
@@ -137,7 +139,7 @@ export default function NewOrderPage() {
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 required
               >
-                <option value="">Select client...</option>
+                <option value="">{t("selectClient")}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code} - {c.name}
@@ -146,30 +148,30 @@ export default function NewOrderPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Priority</Label>
+              <Label>{t("priority")}</Label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="standard">Standard</option>
-                <option value="expedited">Expedited</option>
-                <option value="rush">Rush</option>
-                <option value="same_day">Same Day</option>
+                <option value="standard">{t("standard")}</option>
+                <option value="expedited">{t("expedited")}</option>
+                <option value="rush">{t("rush")}</option>
+                <option value="same_day">{t("sameDay")}</option>
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Shipping Method</Label>
+              <Label>{t("shippingMethod")}</Label>
               <select
                 value={shippingMethod}
                 onChange={(e) => setShippingMethod(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="">Best available</option>
-                <option value="ground">Ground</option>
-                <option value="2day">2-Day</option>
-                <option value="overnight">Overnight</option>
-                <option value="ltl">LTL Freight</option>
+                <option value="">{t("bestAvailable")}</option>
+                <option value="ground">{t("ground")}</option>
+                <option value="2day">{t("twoDay")}</option>
+                <option value="overnight">{t("overnight")}</option>
+                <option value="ltl">{t("ltlFreight")}</option>
               </select>
             </div>
           </CardContent>
@@ -178,11 +180,11 @@ export default function NewOrderPage() {
         {/* Ship To */}
         <Card>
           <CardHeader>
-            <CardTitle>Ship To</CardTitle>
+            <CardTitle>{t("shipTo")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label>Name *</Label>
+              <Label>{t("name")} *</Label>
               <Input
                 value={shipToName}
                 onChange={(e) => setShipToName(e.target.value)}
@@ -191,7 +193,7 @@ export default function NewOrderPage() {
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Address *</Label>
+              <Label>{t("address")} *</Label>
               <Input
                 value={shipToAddress}
                 onChange={(e) => setShipToAddress(e.target.value)}
@@ -200,12 +202,12 @@ export default function NewOrderPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>City *</Label>
+              <Label>{t("city")} *</Label>
               <Input value={shipToCity} onChange={(e) => setShipToCity(e.target.value)} required />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>State *</Label>
+                <Label>{t("state")} *</Label>
                 <Input
                   value={shipToState}
                   onChange={(e) => setShipToState(e.target.value)}
@@ -214,7 +216,7 @@ export default function NewOrderPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Zip *</Label>
+                <Label>{t("zip")} *</Label>
                 <Input
                   value={shipToZip}
                   onChange={(e) => setShipToZip(e.target.value)}
@@ -224,11 +226,11 @@ export default function NewOrderPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Phone</Label>
+              <Label>{t("phone")}</Label>
               <Input value={shipToPhone} onChange={(e) => setShipToPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t("email")}</Label>
               <Input
                 type="email"
                 value={shipToEmail}
@@ -242,14 +244,14 @@ export default function NewOrderPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Line Items</CardTitle>
+              <CardTitle>{t("lineItems")}</CardTitle>
               {lines.length > 0 && <Badge variant="secondary">{lines.length} items</Badge>}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {!clientId && (
               <p className="text-sm text-muted-foreground">
-                Select a client first to add products.
+                {t("selectClientFirst")}
               </p>
             )}
 
@@ -260,7 +262,7 @@ export default function NewOrderPage() {
                   onChange={(e) => setAddProductId(e.target.value)}
                   className="flex h-9 flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 >
-                  <option value="">Select product...</option>
+                  <option value="">{t("selectProduct")}</option>
                   {availableProducts.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.sku} - {p.name}
@@ -284,9 +286,9 @@ export default function NewOrderPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead>{t("sku")}</TableHead>
+                    <TableHead>{t("product")}</TableHead>
+                    <TableHead className="text-right">{t("qty")}</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -317,13 +319,13 @@ export default function NewOrderPage() {
         {/* Notes */}
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <CardTitle>{t("notes")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Special instructions, packing requirements..."
+              placeholder={t("notesPlaceholder")}
               rows={3}
             />
           </CardContent>
@@ -334,10 +336,10 @@ export default function NewOrderPage() {
             type="submit"
             disabled={submitting || !clientId || !shipToName || lines.length === 0}
           >
-            {submitting ? "Creating..." : "Create Order"}
+            {submitting ? t("creating") : t("createOrder")}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </form>

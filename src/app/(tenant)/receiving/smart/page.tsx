@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, Camera, FileText, Loader2, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function SmartReceivingPage() {
   const _router = useRouter();
+  const t = useTranslations("tenant.receiving");
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,10 +69,10 @@ export default function SmartReceivingPage() {
         toast.error(result.error as string);
       } else {
         setJob(result);
-        toast.success("Extraction complete — review the results below");
+        toast.success(t("extractionComplete"));
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Processing failed");
+      toast.error(e instanceof Error ? e.message : t("processingFailed"));
     } finally {
       setProcessing(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -80,7 +82,7 @@ export default function SmartReceivingPage() {
   if (job) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Review Extraction">
+        <PageHeader title={t("reviewExtraction")}>
           <Button
             variant="outline"
             onClick={() => {
@@ -88,7 +90,7 @@ export default function SmartReceivingPage() {
               setPreviewUrl(undefined);
             }}
           >
-            Extract Another
+            {t("extractAnother")}
           </Button>
         </PageHeader>
         <ExtractionReview
@@ -103,8 +105,8 @@ export default function SmartReceivingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Smart Receiving"
-        description="Upload a document and AI will extract shipment data automatically"
+        title={t("smartReceiving")}
+        description={t("smartReceivingDesc")}
       />
 
       <Card>
@@ -116,12 +118,12 @@ export default function SmartReceivingPage() {
 
             <div className="text-center space-y-2">
               <h3 className="text-lg font-semibold">
-                {processing ? "Extracting data..." : "Upload a shipping document"}
+                {processing ? t("extractingData") : t("uploadDoc")}
               </h3>
               <p className="text-sm text-muted-foreground max-w-md">
                 {processing
-                  ? "AI is reading the document and extracting shipment details. This usually takes 10-30 seconds."
-                  : "Drop a BOL, packing list, shipping label, or any receiving document. AI will read it and pre-fill a new shipment."}
+                  ? t("extractingDesc")
+                  : t("uploadDocDesc")}
               </p>
             </div>
 
@@ -129,14 +131,14 @@ export default function SmartReceivingPage() {
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
                 <span className="text-sm text-muted-foreground">
-                  Processing with Claude Vision...
+                  {t("processingAI")}
                 </span>
               </div>
             ) : (
               <div className="flex gap-3">
                 <Button size="lg" onClick={() => inputRef.current?.click()}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload File
+                  {t("uploadFile")}
                 </Button>
                 <Button
                   size="lg"
@@ -151,7 +153,7 @@ export default function SmartReceivingPage() {
                   }}
                 >
                   <Camera className="h-4 w-4 mr-2" />
-                  Take Photo
+                  {t("takePhoto")}
                 </Button>
               </div>
             )}
@@ -171,7 +173,7 @@ export default function SmartReceivingPage() {
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" /> JPG / PNG
               </span>
-              <span>Max 20MB</span>
+              <span>{t("maxSize")}</span>
             </div>
           </div>
         </CardContent>

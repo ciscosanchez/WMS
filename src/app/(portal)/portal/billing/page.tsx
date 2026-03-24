@@ -13,6 +13,7 @@ import {
 import { DollarSign, FileText, Warehouse, PackageCheck, Download } from "lucide-react";
 import { format } from "date-fns";
 import { getPortalBillingData } from "@/modules/billing/actions";
+import { getTranslations } from "next-intl/server";
 
 const statusMap: Record<string, string> = {
   paid: "completed",
@@ -23,13 +24,14 @@ const statusMap: Record<string, string> = {
 };
 
 export default async function PortalBillingPage() {
+  const t = await getTranslations("portal.billing");
   const data = await getPortalBillingData();
 
   if (!data) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Billing" description="Invoices and charges for your account" />
-        <p className="text-sm text-muted-foreground">No billing data available.</p>
+        <PageHeader title={t("title")} description={t("subtitle")} />
+        <p className="text-sm text-muted-foreground">{t("noBillingData")}</p>
       </div>
     );
   }
@@ -46,50 +48,50 @@ export default async function PortalBillingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Billing" description="Invoices and charges for your account" />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <KpiCard
-          title="Outstanding Balance"
+          title={t("outstandingBalance")}
           value={`$${outstanding.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-          description="Unpaid invoices"
+          description={t("outstandingBalanceDesc")}
           icon={DollarSign}
         />
         <KpiCard
-          title="Last Invoice"
+          title={t("lastInvoice")}
           value={lastInvoice ? `$${Number(lastInvoice.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
-          description={lastInvoice?.invoiceNumber ?? "No invoices yet"}
+          description={lastInvoice?.invoiceNumber ?? t("noInvoices")}
           icon={FileText}
         />
         <KpiCard
-          title="Storage Charges (MTD)"
+          title={t("storageMtd")}
           value={`$${storageMTD.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-          description="Current month storage"
+          description={t("storageMtdDesc")}
           icon={Warehouse}
         />
         <KpiCard
-          title="Handling Charges (MTD)"
+          title={t("handlingMtd")}
           value={`$${handlingMTD.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
-          description="Current month handling"
+          description={t("handlingMtdDesc")}
           icon={PackageCheck}
         />
       </div>
 
       {/* Invoices Table */}
       {invoices.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">No invoices generated yet.</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">{t("noInvoicesGenerated")}</p>
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("invoiceNumber")}</TableHead>
+                <TableHead>{t("period")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("dueDate")}</TableHead>
+                <TableHead className="text-right">{t("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,7 +113,7 @@ export default async function PortalBillingPage() {
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm">
                       <Download className="mr-1 h-4 w-4" />
-                      PDF
+                      {t("pdf")}
                     </Button>
                   </TableCell>
                 </TableRow>

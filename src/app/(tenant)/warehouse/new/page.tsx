@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export default function NewWarehousePage() {
+  const t = useTranslations("tenant.warehouse");
   const router = useRouter();
   const {
     register,
@@ -35,26 +37,26 @@ export default function NewWarehousePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="New Warehouse" />
+      <PageHeader title={t("newWarehouse")} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
         <Card>
           <CardHeader>
-            <CardTitle>Warehouse Details</CardTitle>
+            <CardTitle>{t("warehouseDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Code *</Label>
+              <Label htmlFor="code">{t("code")} *</Label>
               <Input id="code" {...register("code")} placeholder="WH1" />
               {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t("name")} *</Label>
               <Input id="name" {...register("name")} placeholder="Main Warehouse" />
               {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t("address")}</Label>
               <Input id="address" {...register("address")} />
             </div>
           </CardContent>
@@ -62,10 +64,10 @@ export default function NewWarehousePage() {
 
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Warehouse"}
+            {isSubmitting ? t("creating") : t("createWarehouse")}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </form>

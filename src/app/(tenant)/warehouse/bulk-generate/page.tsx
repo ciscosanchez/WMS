@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const INITIAL_WAREHOUSES = [
   { id: "1", code: "WH1", name: "Main Warehouse" },
@@ -19,6 +20,7 @@ const INITIAL_WAREHOUSES = [
 ];
 
 export default function BulkGeneratePage() {
+  const t = useTranslations("tenant.warehouse");
   const router = useRouter();
   const [warehouses] = useState(INITIAL_WAREHOUSES);
 
@@ -59,23 +61,23 @@ export default function BulkGeneratePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Bulk Generate Locations"
-        description="Create an entire zone hierarchy at once"
+        title={t("bulkGenerateTitle")}
+        description={t("bulkGenerateDesc")}
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
         <Card>
           <CardHeader>
-            <CardTitle>Warehouse & Zone</CardTitle>
+            <CardTitle>{t("warehouseZone")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="space-y-2">
-              <Label>Warehouse *</Label>
+              <Label>{t("warehouse")} *</Label>
               <select
                 {...register("warehouseId")}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="">Select warehouse...</option>
+                <option value="">{t("selectWarehouse")}</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code} - {w.name}
@@ -88,24 +90,24 @@ export default function BulkGeneratePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Zone Code *</Label>
+                <Label>{t("zoneCode")} *</Label>
                 <Input {...register("zoneCode")} placeholder="B" />
               </div>
               <div className="space-y-2">
-                <Label>Zone Name *</Label>
+                <Label>{t("zoneName")} *</Label>
                 <Input {...register("zoneName")} placeholder="Zone B - Bulk" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Zone Type</Label>
+              <Label>{t("type")}</Label>
               <select
                 {...register("zoneType")}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="storage">Storage</option>
-                <option value="staging">Staging</option>
-                <option value="dock">Dock</option>
-                <option value="quarantine">Quarantine</option>
+                <option value="storage">{t("storage")}</option>
+                <option value="staging">{t("staging")}</option>
+                <option value="dock">{t("dock")}</option>
+                <option value="quarantine">{t("quarantine")}</option>
               </select>
             </div>
           </CardContent>
@@ -113,35 +115,35 @@ export default function BulkGeneratePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Location Structure</CardTitle>
-            <CardDescription>This will create {totalBins} bins total</CardDescription>
+            <CardTitle>{t("locationStructure")}</CardTitle>
+            <CardDescription>{t("willCreate")} {totalBins} {t("binsTotal")}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Aisles</Label>
+              <Label>{t("aisles")}</Label>
               <Input type="number" min={1} {...register("aisles")} />
             </div>
             <div className="space-y-2">
-              <Label>Racks per Aisle</Label>
+              <Label>{t("racksPerAisle")}</Label>
               <Input type="number" min={1} {...register("racksPerAisle")} />
             </div>
             <div className="space-y-2">
-              <Label>Shelves per Rack</Label>
+              <Label>{t("shelvesPerRack")}</Label>
               <Input type="number" min={1} {...register("shelvesPerRack")} />
             </div>
             <div className="space-y-2">
-              <Label>Bins per Shelf</Label>
+              <Label>{t("binsPerShelf")}</Label>
               <Input type="number" min={1} {...register("binsPerShelf")} />
             </div>
             <div className="space-y-2">
-              <Label>Bin Type</Label>
+              <Label>{t("binType")}</Label>
               <select
                 {...register("binType")}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="standard">Standard</option>
-                <option value="bulk">Bulk</option>
-                <option value="pick">Pick</option>
+                <option value="standard">{t("standard")}</option>
+                <option value="bulk">{t("bulk")}</option>
+                <option value="pick">{t("pick")}</option>
               </select>
             </div>
           </CardContent>
@@ -149,10 +151,10 @@ export default function BulkGeneratePage() {
 
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Generating..." : `Generate ${totalBins} Bins`}
+            {isSubmitting ? t("generating") : `${t("generate")} ${totalBins} ${t("bins")}`}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </form>

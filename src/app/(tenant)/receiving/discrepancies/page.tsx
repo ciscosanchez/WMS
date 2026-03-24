@@ -10,35 +10,37 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { getDiscrepancies } from "@/modules/receiving/actions";
+import { getTranslations } from "next-intl/server";
 
 export default async function DiscrepanciesPage() {
+  const t = await getTranslations("tenant.receiving");
   const discrepancies = await getDiscrepancies();
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Receiving Discrepancies"
-        description="Shortages, overages, and damage reports"
+        title={t("discrepancies")}
+        description={t("discrepanciesDesc")}
       />
 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Shipment</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Expected</TableHead>
-              <TableHead>Actual</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>{t("shipment")}</TableHead>
+              <TableHead>{t("type")}</TableHead>
+              <TableHead>{t("description")}</TableHead>
+              <TableHead>{t("expected")}</TableHead>
+              <TableHead>{t("actual")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
+              <TableHead>{t("created")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {discrepancies.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No discrepancies recorded
+                  {t("noDiscrepancies")}
                 </TableCell>
               </TableRow>
             ) : (

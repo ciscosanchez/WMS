@@ -15,8 +15,10 @@ import {
 import { Truck, Package, Clock, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { getShipments } from "@/modules/shipping/actions";
+import { getTranslations } from "next-intl/server";
 
 export default async function ShippingPage() {
+  const t = await getTranslations("tenant.shipping");
   const shipments = await getShipments();
 
   const readyToShip = shipments.filter((s) => s.status === "label_created").length;
@@ -31,45 +33,45 @@ export default async function ShippingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Shipping" description="Outbound shipments, labels, and tracking" />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="grid gap-4 md:grid-cols-4">
         <KpiCard
-          title="Ready to Ship"
+          title={t("readyToShip")}
           value={readyToShip}
-          description="Labels pending"
+          description={t("readyToShipDesc")}
           icon={Package}
         />
         <KpiCard
-          title="Shipped Today"
+          title={t("shippedToday")}
           value={shippedToday}
-          description="Out the door"
+          description={t("shippedTodayDesc")}
           icon={Truck}
         />
-        <KpiCard title="In Transit" value={inTransit} description="With carriers" icon={Clock} />
-        <KpiCard title="Delivered" value={delivered} description="Total" icon={CheckCircle} />
+        <KpiCard title={t("inTransit")} value={inTransit} description={t("inTransitDesc")} icon={Clock} />
+        <KpiCard title={t("delivered")} value={delivered} description={t("deliveredDesc")} icon={CheckCircle} />
       </div>
 
       {shipments.length === 0 ? (
         <EmptyState
           icon={Truck}
-          title="No shipments yet"
-          description="Shipments will appear here when orders are fulfilled."
+          title={t("noShipments")}
+          description={t("noShipmentsDesc")}
         />
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Shipment #</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Carrier</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Tracking</TableHead>
-                <TableHead>Weight</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Shipped</TableHead>
+                <TableHead>{t("shipmentNumber")}</TableHead>
+                <TableHead>{t("order")}</TableHead>
+                <TableHead>{t("carrier")}</TableHead>
+                <TableHead>{t("service")}</TableHead>
+                <TableHead>{t("tracking")}</TableHead>
+                <TableHead>{t("weight")}</TableHead>
+                <TableHead>{t("cost")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead>{t("shipped")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,7 +92,7 @@ export default async function ShippingPage() {
                   </TableCell>
                   <TableCell>{s.service ?? "-"}</TableCell>
                   <TableCell className="font-mono text-xs">
-                    {s.trackingNumber || <span className="text-muted-foreground">Pending</span>}
+                    {s.trackingNumber || <span className="text-muted-foreground">{t("pending")}</span>}
                   </TableCell>
                   <TableCell>{s.packageWeight ? `${s.packageWeight} lb` : "-"}</TableCell>
                   <TableCell>

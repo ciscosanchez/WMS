@@ -16,8 +16,10 @@ import { Truck, Package, MapPin, DollarSign, ExternalLink } from "lucide-react";
 import { MarkShippedForm } from "@/components/shipping/mark-shipped-form";
 import { RateShoppingCard } from "@/components/shipping/rate-shopping-card";
 import { GenerateLabelButton, ReprintLabelButton } from "@/components/shipping/label-buttons";
+import { getTranslations } from "next-intl/server";
 
 export default async function ShipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getTranslations("tenant.shipping");
   const { id } = await params;
   const s = await getShipment(id);
   if (!s) notFound();
@@ -35,7 +37,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
       <PageHeader title={s.shipmentNumber}>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
-            {s.carrier ?? "No carrier"} {s.service ?? ""}
+            {s.carrier ?? t("noCarrier")} {s.service ?? ""}
           </Badge>
           <StatusBadge status={s.status} />
           {canGenerateLabel && <GenerateLabelButton shipmentId={s.id} />}
@@ -48,7 +50,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Carrier</span>
+              <span className="text-sm text-muted-foreground">{t("carrier")}</span>
             </div>
             <p className="mt-1 font-medium">
               {s.carrier ?? "TBD"} {s.service ?? ""}
@@ -59,13 +61,13 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Package</span>
+              <span className="text-sm text-muted-foreground">{t("package")}</span>
             </div>
             <p className="mt-1 font-medium">
               {s.packageLength && s.packageWidth && s.packageHeight
                 ? `${s.packageLength}\u00d7${s.packageWidth}\u00d7${s.packageHeight}" \u00b7 `
                 : ""}
-              {s.packageWeight ? `${s.packageWeight} lb` : "No dimensions"}
+              {s.packageWeight ? `${s.packageWeight} lb` : t("noDimensions")}
             </p>
           </CardContent>
         </Card>
@@ -73,7 +75,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Cost</span>
+              <span className="text-sm text-muted-foreground">{t("cost")}</span>
             </div>
             <p className="mt-1 font-medium">
               {s.shippingCost ? `$${parseFloat(s.shippingCost).toFixed(2)}` : "-"}
@@ -84,10 +86,10 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Tracking</span>
+              <span className="text-sm text-muted-foreground">{t("tracking")}</span>
             </div>
             <p className="mt-1 font-mono text-sm font-medium">
-              {s.trackingNumber ?? "Pending"}
+              {s.trackingNumber ?? t("pending")}
             </p>
           </CardContent>
         </Card>
@@ -109,7 +111,7 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              Ship To
+              {t("shipTo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm space-y-1">
@@ -124,18 +126,18 @@ export default async function ShipmentDetailPage({ params }: { params: Promise<{
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Items ({(s.items ?? []).length})</CardTitle>
+            <CardTitle>{t("items")} ({(s.items ?? []).length})</CardTitle>
           </CardHeader>
           <CardContent>
             {(s.items ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No items recorded</p>
+              <p className="text-sm text-muted-foreground">{t("noItems")}</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead>{t("sku")}</TableHead>
+                    <TableHead>{t("product")}</TableHead>
+                    <TableHead className="text-right">{t("qty")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

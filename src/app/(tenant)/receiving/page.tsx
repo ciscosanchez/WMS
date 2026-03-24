@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ShipmentsTable } from "@/components/receiving/shipments-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatDistanceToNow } from "date-fns";
+import { getTranslations } from "next-intl/server";
 
 function JobStatusBadge({ status, confidence }: { status: string; confidence: number | null }) {
   switch (status) {
@@ -25,6 +26,7 @@ function JobStatusBadge({ status, confidence }: { status: string; confidence: nu
 }
 
 export default async function ReceivingPage() {
+  const t = await getTranslations("tenant.receiving");
   const [shipments, recentJobs] = await Promise.all([
     getShipments(),
     getRecentJobs(5),
@@ -32,18 +34,18 @@ export default async function ReceivingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inbound Shipments" description="Manage ASNs and receiving">
+      <PageHeader title={t("title")} description={t("subtitle")}>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link href="/receiving/smart">
               <Sparkles className="mr-2 h-4 w-4" />
-              Smart Receiving
+              {t("smartReceiving")}
             </Link>
           </Button>
           <Button asChild>
             <Link href="/receiving/new">
               <Plus className="mr-2 h-4 w-4" />
-              New Shipment
+              {t("newShipment")}
             </Link>
           </Button>
         </div>
@@ -52,13 +54,13 @@ export default async function ReceivingPage() {
       {shipments.length === 0 ? (
         <EmptyState
           icon={PackageOpen}
-          title="No shipments yet"
-          description="Create an inbound shipment to start receiving inventory."
+          title={t("noShipments")}
+          description={t("noShipmentsDesc")}
         >
           <Button asChild>
             <Link href="/receiving/new">
               <Plus className="mr-2 h-4 w-4" />
-              New Shipment
+              {t("newShipment")}
             </Link>
           </Button>
         </EmptyState>
@@ -72,10 +74,10 @@ export default async function ReceivingPage() {
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
               <Sparkles className="h-3 w-3 text-purple-500" />
-              Recent AI Extractions
+              {t("recentExtractions")}
             </p>
             <Button variant="ghost" size="sm" asChild className="text-xs h-7">
-              <Link href="/receiving/smart">New Extraction</Link>
+              <Link href="/receiving/smart">{t("newExtraction")}</Link>
             </Button>
           </div>
           <div className="rounded-md border divide-y">

@@ -13,17 +13,19 @@ import {
 import { Plus, ShoppingCart } from "lucide-react";
 import { format } from "date-fns";
 import { getPortalOrders } from "@/modules/portal/actions";
+import { getTranslations } from "next-intl/server";
 
 export default async function PortalOrdersPage() {
+  const t = await getTranslations("portal.orders");
   const orders = await getPortalOrders();
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Orders" description="View and manage your fulfillment orders">
+      <PageHeader title={t("title")} description={t("subtitle")}>
         <Button asChild>
           <Link href="/portal/orders/new">
             <Plus className="mr-2 h-4 w-4" />
-            Place Order
+            {t("placeOrder")}
           </Link>
         </Button>
       </PageHeader>
@@ -31,7 +33,7 @@ export default async function PortalOrdersPage() {
       {orders.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
           <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No orders yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noOrders")}</p>
         </div>
       ) : (
         <div className="rounded-md border">

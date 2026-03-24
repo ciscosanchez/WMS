@@ -10,6 +10,7 @@ import { getPortalBillingData } from "@/modules/billing/actions";
 import { exportToCsv } from "@/lib/export/csv";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 
 function useDownload() {
   const [isPending, startTransition] = useTransition();
@@ -31,10 +32,14 @@ function DownloadButton({
   label,
   onClick,
   disabled,
+  preparingText,
+  downloadText,
 }: {
   label: string;
   onClick: () => void;
   disabled: boolean;
+  preparingText: string;
+  downloadText: string;
 }) {
   return (
     <Button variant="outline" size="sm" onClick={onClick} disabled={disabled}>
@@ -43,12 +48,13 @@ function DownloadButton({
       ) : (
         <Download className="mr-2 h-4 w-4" />
       )}
-      {disabled ? "Preparing…" : "Download CSV"}
+      {disabled ? preparingText : downloadText}
     </Button>
   );
 }
 
 export default function PortalReportsPage() {
+  const t = useTranslations("portal.reports");
   const { isPending, download } = useDownload();
 
   async function downloadInventory() {
@@ -119,37 +125,34 @@ export default function PortalReportsPage() {
 
   const reports = [
     {
-      title: "Inventory Snapshot",
-      description:
-        "Current on-hand, allocated, and available quantities for all your products. Includes location details.",
+      title: t("inventorySnapshot"),
+      description: t("inventorySnapshotDesc"),
       icon: Package,
-      onDownload: () => download("Inventory Snapshot", downloadInventory),
+      onDownload: () => download(t("inventorySnapshot"), downloadInventory),
     },
     {
-      title: "Activity Summary",
-      description:
-        "All orders and shipments including statuses, dates, and tracking numbers.",
+      title: t("activitySummary"),
+      description: t("activitySummaryDesc"),
       icon: Activity,
-      onDownload: () => download("Activity Summary", downloadActivity),
+      onDownload: () => download(t("activitySummary"), downloadActivity),
     },
     {
-      title: "Billing Detail",
-      description: "Itemized invoices with amounts, periods, and payment status.",
+      title: t("billingDetail"),
+      description: t("billingDetailDesc"),
       icon: Receipt,
-      onDownload: () => download("Billing Detail", downloadBilling),
+      onDownload: () => download(t("billingDetail"), downloadBilling),
     },
     {
-      title: "Shipment History",
-      description:
-        "Complete history of all shipments with carrier, tracking, and delivery status.",
+      title: t("shipmentHistory"),
+      description: t("shipmentHistoryDesc"),
       icon: Truck,
-      onDownload: () => download("Shipment History", downloadShipments),
+      onDownload: () => download(t("shipmentHistory"), downloadShipments),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Reports" description="Download reports for your account" />
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="grid gap-4 md:grid-cols-2">
         {reports.map((report) => {
@@ -170,6 +173,8 @@ export default function PortalReportsPage() {
                   label={report.title}
                   onClick={report.onDownload}
                   disabled={isPending}
+                  preparingText={t("preparing")}
+                  downloadText={t("downloadCsv")}
                 />
               </CardContent>
             </Card>
