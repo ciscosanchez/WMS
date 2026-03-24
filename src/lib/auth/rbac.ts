@@ -52,6 +52,10 @@ export const PERMISSION_LEVEL: Record<string, number> = {
   "yard-dock:read": 10,
   "yard-dock:write": 20,
   "yard-dock:manage": 30,
+  // Billing operations
+  "billing:read": 10,
+  "billing:write": 30,
+  "billing:approve": 40,
   // Reports
   "reports:read": 10,
   // Settings (admin-only)

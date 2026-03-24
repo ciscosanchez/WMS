@@ -81,6 +81,8 @@
     "crossDock": "Cross-Dock",
     "compliance": "Compliance",
     "automation": "Automation",
+    "billing": "Billing",
+    "billingDashboard": "Billing",
     "floorApp": "Floor App"
   }
 }

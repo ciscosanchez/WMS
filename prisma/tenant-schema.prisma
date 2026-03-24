@@ -37,6 +37,7 @@ model Client {
   invoices          Invoice[]
   dockAppointments  DockAppointment[]
   returns           ReturnAuthorization[]
+  billingDisputes   BillingDispute[]
 
   @@map("clients")
 }
@@ -847,6 +848,20 @@ enum InvoiceStatus {
   cancelled
 }
 
+enum InvoiceReviewStatus {
+  review_pending
+  review_approved
+  review_rejected
+}
+
+enum DisputeStatus {
+  dispute_open
+  dispute_under_review
+  dispute_resolved_credit
+  dispute_resolved_rejected
+  dispute_resolved_adjusted
+}
+
 // Null clientId = global default rate card
 model RateCard {
   id             String   @id @default(cuid())
@@ -888,6 +903,12 @@ model BillingEvent {
   invoiceId     String?            @map("invoice_id")
   occurredAt    DateTime           @default(now()) @map("occurred_at")
   createdAt     DateTime           @default(now()) @map("created_at")
+  // Manual adjustment fields
+  isManual      Boolean            @default(false) @map("is_manual")
+  description   String?
+  adjustedById  String?            @map("adjusted_by_id")
+  voidedAt      DateTime?          @map("voided_at")
+  voidReason    String?            @map("void_reason")
 
   client  Client   @relation(fields: [clientId], references: [id])
   invoice Invoice? @relation(fields: [invoiceId], references: [id])
@@ -913,13 +934,46 @@ model Invoice {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  client        Client        @relation(fields: [clientId], references: [id])
+  // Review workflow
+  reviewStatus  InvoiceReviewStatus @default(review_pending) @map("review_status")
+  reviewedById  String?             @map("reviewed_by_id")
+  reviewedAt    DateTime?           @map("reviewed_at")
+  reviewNotes   String?             @map("review_notes")
+  // Delivery tracking
+  sentAt        DateTime?           @map("sent_at")
+  sentMethod    String?             @map("sent_method")
+  pdfUrl        String?             @map("pdf_url")
+
+  client        Client              @relation(fields: [clientId], references: [id])
   lines         InvoiceLine[]
   billingEvents BillingEvent[]
+  disputes      BillingDispute[]
 
   @@index([clientId])
   @@index([status])
   @@map("invoices")
+}
+
+model BillingDispute {
+  id           String        @id @default(cuid())
+  invoiceId    String        @map("invoice_id")
+  clientId     String        @map("client_id")
+  status       DisputeStatus @default(dispute_open)
+  reason       String
+  amount       Decimal       @db.Decimal(10, 2)
+  resolution   String?
+  resolvedById String?       @map("resolved_by_id")
+  resolvedAt   DateTime?     @map("resolved_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+
+  @@index([invoiceId])
+  @@index([clientId])
+  @@index([status])
+  @@map("billing_disputes")
 }
 
 model InvoiceLine {

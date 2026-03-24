@@ -47,6 +47,7 @@ import {
   TrendingUp,
   Shield,
   Bot,
+  Receipt,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -116,6 +117,10 @@ const navigation: NavGroup[] = [
       { titleKey: "channels", href: "/channels", icon: Store },
       { titleKey: "automation", href: "/warehouse/automation", icon: Bot },
     ],
+  },
+  {
+    labelKey: "billing",
+    items: [{ titleKey: "billingDashboard", href: "/billing", icon: Receipt }],
   },
   {
     labelKey: "system",

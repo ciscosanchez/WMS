@@ -81,6 +81,8 @@
     "crossDock": "Cross-Dock",
     "compliance": "Cumplimiento",
     "automation": "Automatizacion",
+    "billing": "Facturación",
+    "billingDashboard": "Facturación",
     "floorApp": "App de piso"
   }
 }
