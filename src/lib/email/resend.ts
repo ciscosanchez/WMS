@@ -96,6 +96,34 @@ export async function sendPasswordSetLink(opts: {
   return { sent: true };
 }
 
+export async function sendPasswordResetLink(opts: {
+  to: string;
+  name: string;
+  resetPasswordUrl: string;
+  locale?: string;
+}): Promise<SendResult> {
+  const client = getClient();
+  if (!client) {
+    return { sent: false, warning: "RESEND_API_KEY not set — email skipped." };
+  }
+
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
+  await client.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: t("passwordReset.subject"),
+    html: `
+      <p>${t("passwordReset.greeting", { name: opts.name })}</p>
+      <p>${t("passwordReset.body")}</p>
+      <p><a href="${opts.resetPasswordUrl}" style="display:inline-block;padding:10px 24px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">${t("passwordReset.buttonText")}</a></p>
+      <p style="color:#888;font-size:12px;">${t("passwordReset.footer")}</p>
+    `,
+  });
+
+  return { sent: true };
+}
+
 // ── Warehouse notification emails ───────────────────────────────────────────
 
 export async function sendShipmentArrived(opts: {

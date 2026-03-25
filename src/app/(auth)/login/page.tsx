@@ -1,17 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { Warehouse } from "lucide-react";
+import type { TenantAuthMode } from "@/lib/auth/tenant-auth";
+import { Building2, Warehouse } from "lucide-react";
+import { EmailField, PasswordField } from "@/components/auth/auth-fields";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+
+type SsoDiscoveryResult = {
+  tenantSlug: string | null;
+  mode: TenantAuthMode;
+  sso: Array<{
+    id: string;
+    label: string;
+    startUrl: string;
+    type: "oidc" | "saml";
+  }>;
+};
+
+const DEFAULT_SSO_DISCOVERY: SsoDiscoveryResult = {
+  tenantSlug: null,
+  mode: "password",
+  sso: [],
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,8 +38,49 @@ export default function LoginPage() {
   const t = useTranslations("auth.login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [ssoDiscovery, setSsoDiscovery] = useState<SsoDiscoveryResult | null>(
+    USE_MOCK ? DEFAULT_SSO_DISCOVERY : null
+  );
+
+  useEffect(() => {
+    if (USE_MOCK) return;
+
+    let active = true;
+    const callbackUrl = searchParams.get("callbackUrl");
+
+    async function loadSsoDiscovery() {
+      try {
+        const response = await fetch("/api/auth/sso/discover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            callbackUrl: callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : null,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load sign-in options");
+        }
+
+        const result = (await response.json()) as SsoDiscoveryResult;
+        if (active) {
+          setSsoDiscovery(result);
+        }
+      } catch {
+        if (active) {
+          setSsoDiscovery(DEFAULT_SSO_DISCOVERY);
+        }
+      }
+    }
+
+    void loadSsoDiscovery();
+    return () => {
+      active = false;
+    };
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +118,10 @@ export default function LoginPage() {
     router.push("/dashboard");
   }
 
+  const passwordAllowed = USE_MOCK || ssoDiscovery?.mode !== "sso_only";
+  const ssoOptions = ssoDiscovery?.sso ?? [];
+  const showSsoDivider = ssoOptions.length > 0 && passwordAllowed;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
@@ -85,36 +149,80 @@ export default function LoginPage() {
             <Button className="w-full" onClick={handleDemoLogin}>
               {t("continueAsAdmin")}
             </Button>
+          ) : !ssoDiscovery ? (
+            <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+              {t("checkingSignIn")}
+            </div>
           ) : (
-            <form onSubmit={handleSubmit} className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">{t("email")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t("emailPlaceholder")}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">{t("password")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder={t("passwordPlaceholder")}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t("signingIn") : t("signIn")}
-              </Button>
-            </form>
+            <div className="grid gap-4">
+              {ssoOptions.length > 0 && (
+                <div className="grid gap-2">
+                  {ssoOptions.map((provider) => (
+                    <Button key={provider.id} type="button" variant="outline" className="w-full" asChild>
+                      <Link href={provider.startUrl}>
+                        <Building2 className="h-4 w-4" />
+                        {provider.label}
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {showSsoDivider && (
+                <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  <Separator className="flex-1" />
+                  <span>{t("continueWithEmail")}</span>
+                  <Separator className="flex-1" />
+                </div>
+              )}
+
+              {passwordAllowed ? (
+                <form onSubmit={handleSubmit} className="grid gap-4">
+                  <EmailField
+                    id="email"
+                    label={t("email")}
+                    placeholder={t("emailPlaceholder")}
+                    value={email}
+                    onChange={(value) => {
+                      setEmail(value);
+                      setError(null);
+                    }}
+                    required
+                  />
+                  <PasswordField
+                    id="password"
+                    label={t("password")}
+                    placeholder={t("passwordPlaceholder")}
+                    value={password}
+                    onChange={(value) => {
+                      setPassword(value);
+                      setError(null);
+                    }}
+                    required
+                    autoComplete="current-password"
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword((current) => !current)}
+                  />
+                  <div className="flex justify-end">
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {t("forgotPassword")}
+                    </Link>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? t("signingIn") : t("signIn")}
+                  </Button>
+                </form>
+              ) : ssoOptions.length > 0 ? (
+                <p className="text-center text-sm text-muted-foreground">{t("ssoOnly")}</p>
+              ) : (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-center text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+                  {t("ssoUnavailable")}
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

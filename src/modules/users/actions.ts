@@ -130,7 +130,12 @@ export async function setPasswordWithToken(
       passwordHash,
       passwordSetToken: null,
       passwordSetExpires: null,
+      authVersion: { increment: 1 },
     },
+  });
+
+  await publicDb.session.deleteMany({
+    where: { userId: user.id },
   });
 
   return {};

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { PasswordField } from "@/components/auth/auth-fields";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import { setPasswordWithToken } from "@/modules/users/actions";
@@ -18,6 +17,7 @@ export function SetPasswordForm() {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,29 +68,29 @@ export function SetPasswordForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">{t("password")}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t("passwordPlaceholder")}
-                minLength={8}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm">{t("confirmPassword")}</Label>
-              <Input
-                id="confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder={t("confirmPlaceholder")}
-                required
-              />
-            </div>
+            <PasswordField
+              id="password"
+              label={t("password")}
+              value={password}
+              onChange={setPassword}
+              placeholder={t("passwordPlaceholder")}
+              minLength={8}
+              required
+              autoComplete="new-password"
+              showPassword={showPassword}
+              onTogglePassword={() => setShowPassword((current) => !current)}
+            />
+            <PasswordField
+              id="confirm"
+              label={t("confirmPassword")}
+              value={confirm}
+              onChange={setConfirm}
+              placeholder={t("confirmPlaceholder")}
+              required
+              autoComplete="new-password"
+              showPassword={showPassword}
+              onTogglePassword={() => setShowPassword((current) => !current)}
+            />
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? t("settingPassword") : t("setPassword")}
             </Button>

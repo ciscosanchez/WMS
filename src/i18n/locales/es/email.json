@@ -18,6 +18,13 @@
       "buttonText": "Establecer contraseña",
       "footer": "Este enlace expira en 48 horas. Si no esperabas esta invitación, puedes ignorarla."
     },
+    "passwordReset": {
+      "subject": "Restablece tu contraseña de Ramola WMS",
+      "greeting": "Hola {name},",
+      "body": "Recibimos una solicitud para restablecer tu contraseña de Ramola WMS. Usa el enlace de abajo para elegir una nueva contraseña.",
+      "buttonText": "Restablecer contraseña",
+      "footer": "Este enlace expira en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo."
+    },
     "shipmentArrived": {
       "subject": "El envío {shipmentNumber} ha llegado",
       "body": "El envío <strong>{shipmentNumber}</strong> de <strong>{clientName}</strong> ha llegado al muelle.",

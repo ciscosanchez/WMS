@@ -18,6 +18,13 @@
       "buttonText": "Set Your Password",
       "footer": "This link expires in 48 hours. If you didn't expect this invitation, you can ignore it."
     },
+    "passwordReset": {
+      "subject": "Reset your Ramola WMS password",
+      "greeting": "Hi {name},",
+      "body": "We received a request to reset your Ramola WMS password. Use the link below to choose a new password.",
+      "buttonText": "Reset Password",
+      "footer": "This link expires in 1 hour. If you didn't request a password reset, you can ignore this email."
+    },
     "shipmentArrived": {
       "subject": "Shipment {shipmentNumber} has arrived",
       "body": "Shipment <strong>{shipmentNumber}</strong> from <strong>{clientName}</strong> has arrived at the dock.",

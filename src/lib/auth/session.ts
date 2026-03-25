@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { publicDb } from "@/lib/db/public-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import { config } from "@/lib/config";
 import { ROLE_LEVEL, PERMISSION_LEVEL } from "@/lib/auth/rbac";
@@ -8,6 +9,7 @@ export interface SessionUser {
   email: string;
   name: string;
   isSuperadmin: boolean;
+  authVersion: number;
   locale?: string;
   tenants: Array<{
     tenantId: string;
@@ -22,8 +24,20 @@ const MOCK_USER: SessionUser = {
   email: "admin@ramola.io",
   name: "Admin User",
   isSuperadmin: true,
+  authVersion: 0,
   tenants: [{ tenantId: "mock-tenant-1", slug: "demo", role: "admin" }],
 };
+
+async function validateSessionUser(user: SessionUser): Promise<SessionUser | null> {
+  const current = await publicDb.user.findUnique({
+    where: { id: user.id },
+    select: { authVersion: true },
+  });
+
+  if (!current) return null;
+  if (current.authVersion !== user.authVersion) return null;
+  return user;
+}
 
 // ─── Core auth helpers ─────────────────────────────────────────────────────────
 
@@ -36,7 +50,10 @@ export async function getSession(): Promise<{ user: SessionUser } | null> {
   const session = await auth();
   if (!session?.user) return null;
 
-  return { user: session.user as unknown as SessionUser };
+  const user = await validateSessionUser(session.user as unknown as SessionUser);
+  if (!user) return null;
+
+  return { user };
 }
 
 export async function requireAuth(): Promise<SessionUser> {
@@ -50,7 +67,12 @@ export async function requireAuth(): Promise<SessionUser> {
     redirect("/login");
   }
 
-  return session.user as unknown as SessionUser;
+  const user = await validateSessionUser(session.user as unknown as SessionUser);
+  if (!user) {
+    redirect("/login");
+  }
+
+  return user;
 }
 
 // ─── Tenant-scoped auth helpers ────────────────────────────────────────────────

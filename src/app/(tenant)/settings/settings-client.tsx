@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import type { TenantAuthMode, TenantSsoProviderConfig } from "@/lib/auth/tenant-auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Building2, DollarSign, Users, Save, Plug } from "lucide-react";
+import { Building2, DollarSign, KeyRound, Plus, Save, Shield, Trash2, Users, Plug } from "lucide-react";
 import { saveTenantSettings } from "@/modules/settings/actions";
 
 interface Settings {
@@ -23,6 +24,8 @@ interface Settings {
   orderPrefix: string;
   adjustmentPrefix: string;
   pickPrefix: string;
+  authMode: TenantAuthMode;
+  ssoProviders: TenantSsoProviderConfig[];
 }
 
 export function SettingsClient({ initialSettings }: { initialSettings: Settings }) {
@@ -36,7 +39,37 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
   const [orderPrefix, setOrderPrefix] = useState(initialSettings.orderPrefix);
   const [adjustmentPrefix, setAdjustmentPrefix] = useState(initialSettings.adjustmentPrefix);
   const [pickPrefix, setPickPrefix] = useState(initialSettings.pickPrefix);
+  const [authMode, setAuthMode] = useState<TenantAuthMode>(initialSettings.authMode);
+  const [ssoProviders, setSsoProviders] = useState<TenantSsoProviderConfig[]>(
+    initialSettings.ssoProviders
+  );
   const [saving, setSaving] = useState(false);
+
+  function addSsoProvider() {
+    setSsoProviders((current) => [
+      ...current,
+      {
+        id: `sso-${Date.now()}`,
+        label: "",
+        type: "microsoft",
+        startUrl: "",
+        enabled: true,
+        domains: [],
+      },
+    ]);
+  }
+
+  function updateSsoProvider(index: number, patch: Partial<TenantSsoProviderConfig>) {
+    setSsoProviders((current) =>
+      current.map((provider, providerIndex) =>
+        providerIndex === index ? { ...provider, ...patch } : provider
+      )
+    );
+  }
+
+  function removeSsoProvider(index: number) {
+    setSsoProviders((current) => current.filter((_, providerIndex) => providerIndex !== index));
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -52,6 +85,8 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
         orderPrefix,
         adjustmentPrefix,
         pickPrefix,
+        authMode,
+        ssoProviders,
       });
       if (result.error) {
         toast.error(result.error);
@@ -205,6 +240,168 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
                 value={pickPrefix}
                 onChange={(e) => setPickPrefix(e.target.value)}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Authentication</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="authMode">Tenant sign-in mode</Label>
+              <select
+                id="authMode"
+                value={authMode}
+                onChange={(e) => setAuthMode(e.target.value as TenantAuthMode)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              >
+                <option value="password">Password only</option>
+                <option value="hybrid">Password + SSO</option>
+                <option value="sso_only">SSO only</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Tenant subdomain login will follow this mode. Base-domain platform admin login
+                stays password-based.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-medium">SSO providers</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Configure Microsoft Entra ID or redirect-based enterprise login options.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addSsoProvider}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add provider
+                </Button>
+              </div>
+
+              {ssoProviders.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No SSO providers configured.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {ssoProviders.map((provider, index) => (
+                    <div key={provider.id} className="rounded-lg border p-4">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <KeyRound className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">
+                            {provider.label || `Provider ${index + 1}`}
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSsoProvider(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor={`provider-label-${provider.id}`}>Provider label</Label>
+                          <Input
+                            id={`provider-label-${provider.id}`}
+                            value={provider.label}
+                            onChange={(e) =>
+                              updateSsoProvider(index, {
+                                label: e.target.value,
+                              })
+                            }
+                            placeholder="Sign in with Acme SSO"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`provider-type-${provider.id}`}>Provider type</Label>
+                          <select
+                            id={`provider-type-${provider.id}`}
+                            value={provider.type}
+                            onChange={(e) =>
+                              updateSsoProvider(index, {
+                                type: e.target.value as TenantSsoProviderConfig["type"],
+                              })
+                            }
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                          >
+                            <option value="microsoft">Microsoft Entra ID</option>
+                            <option value="oidc">OIDC</option>
+                            <option value="saml">SAML</option>
+                          </select>
+                        </div>
+                        {provider.type === "microsoft" ? (
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label>Provider routing</Label>
+                            <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                              Uses the built-in Microsoft Entra ID flow configured on this
+                              deployment. No custom start URL is required for this provider type.
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 sm:col-span-2">
+                            <Label htmlFor={`provider-start-${provider.id}`}>Start URL</Label>
+                            <Input
+                              id={`provider-start-${provider.id}`}
+                              value={provider.startUrl}
+                              onChange={(e) =>
+                                updateSsoProvider(index, {
+                                  startUrl: e.target.value,
+                                })
+                              }
+                              placeholder="https://login.example.com/oidc/start"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Use a relative WMS route or an HTTPS provider URL.
+                            </p>
+                          </div>
+                        )}
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor={`provider-domains-${provider.id}`}>
+                            Email domains (optional)
+                          </Label>
+                          <Input
+                            id={`provider-domains-${provider.id}`}
+                            value={provider.domains.join(", ")}
+                            onChange={(e) =>
+                              updateSsoProvider(index, {
+                                domains: e.target.value
+                                  .split(",")
+                                  .map((value) => value.trim().toLowerCase())
+                                  .filter(Boolean),
+                              })
+                            }
+                            placeholder="acme.com, subsidiary.acme.com"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 sm:col-span-2">
+                          <Checkbox
+                            id={`provider-enabled-${provider.id}`}
+                            checked={provider.enabled}
+                            onCheckedChange={(value) =>
+                              updateSsoProvider(index, {
+                                enabled: !!value,
+                              })
+                            }
+                          />
+                          <Label htmlFor={`provider-enabled-${provider.id}`}>Enabled</Label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

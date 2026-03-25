@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/api/auth", "/set-password"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth",
+  "/set-password",
+];
 const PLATFORM_PATHS = ["/platform"];
 
 export function tenantMiddleware(request: NextRequest) {

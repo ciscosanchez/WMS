@@ -4,9 +4,17 @@ import { revalidatePath } from "next/cache";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { publicDb } from "@/lib/db/public-client";
 import { logAudit } from "@/lib/audit";
+import {
+  type TenantAuthMode,
+  type TenantSsoProviderConfig,
+  getEnabledSsoProviders,
+  isMicrosoftEntraConfigured,
+  isValidConfiguredSsoStartUrl,
+  normalizeTenantAuthConfig,
+} from "@/lib/auth/tenant-auth";
 import { encryptCarrierCreds } from "@/lib/crypto/secrets";
 
-interface TenantSettings {
+export interface TenantSettings {
   companyName: string;
   timezone: string;
   dateFormat: string;
@@ -17,6 +25,8 @@ interface TenantSettings {
   orderPrefix: string;
   adjustmentPrefix: string;
   pickPrefix: string;
+  authMode: TenantAuthMode;
+  ssoProviders: TenantSsoProviderConfig[];
 }
 
 const DEFAULTS: TenantSettings = {
@@ -30,6 +40,8 @@ const DEFAULTS: TenantSettings = {
   orderPrefix: "ORD-",
   adjustmentPrefix: "ADJ-",
   pickPrefix: "PCK-",
+  authMode: "password",
+  ssoProviders: [],
 };
 
 export async function getTenantSettings(): Promise<TenantSettings> {
@@ -41,6 +53,7 @@ export async function getTenantSettings(): Promise<TenantSettings> {
   });
 
   const saved = (row?.settings ?? {}) as Record<string, unknown>;
+  const authConfig = normalizeTenantAuthConfig(saved);
 
   return {
     companyName: (saved.companyName as string) ?? row?.name ?? DEFAULTS.companyName,
@@ -53,6 +66,8 @@ export async function getTenantSettings(): Promise<TenantSettings> {
     orderPrefix: (saved.orderPrefix as string) ?? DEFAULTS.orderPrefix,
     adjustmentPrefix: (saved.adjustmentPrefix as string) ?? DEFAULTS.adjustmentPrefix,
     pickPrefix: (saved.pickPrefix as string) ?? DEFAULTS.pickPrefix,
+    authMode: authConfig.mode,
+    ssoProviders: authConfig.ssoProviders,
   };
 }
 
@@ -60,6 +75,33 @@ export async function saveTenantSettings(data: TenantSettings): Promise<{ error?
   const { user, tenant } = await requireTenantContext("settings:write");
 
   try {
+    const authConfig = normalizeTenantAuthConfig({
+      auth: {
+        mode: data.authMode,
+        ssoProviders: data.ssoProviders,
+      },
+    });
+
+    const invalidProvider = authConfig.ssoProviders.find((provider) => {
+      if (!provider.enabled) return false;
+      if (provider.type === "microsoft") return !isMicrosoftEntraConfigured();
+      return !isValidConfiguredSsoStartUrl(provider.startUrl);
+    });
+    if (invalidProvider) {
+      return {
+        error:
+          invalidProvider.type === "microsoft"
+            ? `SSO provider "${invalidProvider.label}" requires Microsoft Entra ID environment variables on this deployment.`
+            : `SSO provider "${invalidProvider.label}" must use a relative URL or an HTTPS start URL.`,
+      };
+    }
+
+    if (authConfig.mode !== "password" && getEnabledSsoProviders(authConfig).length === 0) {
+      return {
+        error: "Hybrid and SSO-only modes require at least one enabled SSO provider.",
+      };
+    }
+
     // Merge into existing settings (don't overwrite carrier creds, etc.)
     const existing = await publicDb.tenant.findUnique({
       where: { id: tenant.tenantId },
@@ -77,6 +119,10 @@ export async function saveTenantSettings(data: TenantSettings): Promise<{ error?
       orderPrefix: data.orderPrefix,
       adjustmentPrefix: data.adjustmentPrefix,
       pickPrefix: data.pickPrefix,
+      auth: {
+        mode: authConfig.mode,
+        ssoProviders: authConfig.ssoProviders,
+      },
     };
 
     await publicDb.tenant.update({

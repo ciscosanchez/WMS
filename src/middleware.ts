@@ -60,7 +60,15 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const hostParts = host.split(".");
   const isBaseDomain = hostParts.length < 4; // wms.ramola.app = 3 parts
-  if (isBaseDomain && !pathname.startsWith("/login") && !pathname.startsWith("/set-password") && !pathname.startsWith("/platform") && !pathname.startsWith("/api")) {
+  if (
+    isBaseDomain &&
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/forgot-password") &&
+    !pathname.startsWith("/reset-password") &&
+    !pathname.startsWith("/set-password") &&
+    !pathname.startsWith("/platform") &&
+    !pathname.startsWith("/api")
+  ) {
     if (token?.isSuperadmin) {
       return NextResponse.redirect(new URL("/platform", request.url));
     }
