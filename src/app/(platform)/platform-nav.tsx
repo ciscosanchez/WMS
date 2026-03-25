@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { LayoutDashboard, Building2, Users, CreditCard, Shield } from "lucide-react";
+import type { SessionUser } from "@/lib/auth/session";
 
 const platformNav = [
   { title: "Dashboard", href: "/platform", icon: LayoutDashboard },
@@ -12,8 +13,20 @@ const platformNav = [
   { title: "Billing", href: "/platform/billing", icon: CreditCard },
 ];
 
-export default function PlatformLayout({ children }: { children: React.ReactNode }) {
+export default function PlatformLayout({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: Pick<SessionUser, "email" | "name">;
+}) {
   const pathname = usePathname();
+  const initials = user.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -54,9 +67,12 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-slate-400">cisco@ramola.io</span>
+            <div className="text-right">
+              <p className="text-sm font-medium text-white">{user.name}</p>
+              <p className="text-xs text-slate-400">{user.email}</p>
+            </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-xs font-medium">
-              CS
+              {initials || "U"}
             </div>
           </div>
         </div>

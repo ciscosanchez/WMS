@@ -9,6 +9,8 @@ import { provisionTenant } from "@/lib/db/provisioner";
 import { runTenantMigrations } from "@/lib/db/tenant-migrations";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 
+const VALID_TENANT_PLANS = new Set(["starter", "professional", "enterprise"]);
+
 async function requireSuperadmin() {
   const user = await requireAuth();
   if (!user.isSuperadmin) throw new Error("Forbidden: superadmin required");
@@ -40,6 +42,51 @@ export async function getPlatformStats() {
     publicDb.user.count(),
   ]);
   return { tenantCount, userCount };
+}
+
+export async function getPlatformUsers(tenantSlug?: string) {
+  await requireSuperadmin();
+
+  const users = await publicDb.user.findMany({
+    where: tenantSlug
+      ? {
+          tenantUsers: {
+            some: {
+              tenant: {
+                slug: tenantSlug,
+              },
+            },
+          },
+        }
+      : undefined,
+    include: {
+      tenantUsers: {
+        include: {
+          tenant: true,
+        },
+        orderBy: {
+          tenant: {
+            name: "asc",
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return users.map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    isSuperadmin: user.isSuperadmin,
+    createdAt: user.createdAt.toISOString(),
+    tenants: user.tenantUsers.map((membership) => ({
+      tenantId: membership.tenantId,
+      tenantName: membership.tenant.name,
+      tenantSlug: membership.tenant.slug,
+      role: membership.role,
+    })),
+  }));
 }
 
 export async function createTenant(
@@ -170,6 +217,31 @@ export async function getBillingData() {
   };
 }
 
+export async function updateTenantPlan(
+  id: string,
+  plan: string
+): Promise<{ error: string } | { ok: true }> {
+  await requireSuperadmin();
+
+  if (!VALID_TENANT_PLANS.has(plan)) {
+    return { error: "Invalid tenant plan" };
+  }
+
+  try {
+    await publicDb.tenant.update({
+      where: { id },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { plan: plan as any },
+    });
+
+    revalidatePath("/platform/tenants");
+    revalidatePath("/platform/billing");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to update tenant plan" };
+  }
+}
+
 export async function suspendTenant(id: string): Promise<{ error: string } | { ok: true }> {
   await requireSuperadmin();
   try {
@@ -200,5 +272,40 @@ export async function reactivateTenant(id: string): Promise<{ error: string } | 
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to reactivate tenant" };
+  }
+}
+
+export async function deleteTenant(id: string): Promise<{ error: string } | { ok: true }> {
+  await requireSuperadmin();
+  try {
+    const tenant = await publicDb.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        dbSchema: true,
+      },
+    });
+
+    if (!tenant) {
+      return { error: "Tenant not found" };
+    }
+
+    if (tenant.status === "active") {
+      return { error: "Suspend the tenant before deleting it" };
+    }
+
+    await publicDb.$transaction(async (tx) => {
+      await tx.tenant.delete({ where: { id } });
+      await tx.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${tenant.dbSchema}" CASCADE`);
+    });
+
+    revalidatePath("/platform/tenants");
+    revalidatePath("/platform/billing");
+    revalidatePath("/platform/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to delete tenant" };
   }
 }

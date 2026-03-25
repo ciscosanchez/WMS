@@ -5,5 +5,5 @@ import PlatformNav from "./platform-nav";
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAuth();
   if (!user.isSuperadmin) redirect("/");
-  return <PlatformNav>{children}</PlatformNav>;
+  return <PlatformNav user={user}>{children}</PlatformNav>;
 }
