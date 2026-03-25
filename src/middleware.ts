@@ -33,13 +33,14 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // --- Fetch JWT token once for all checks below ---
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET,
+  }).catch(() => null);
+
   // --- /platform/* route protection (superadmin only) ---
-  // Uses next-auth/jwt getToken so we never hit the DB from Edge Runtime.
   if (pathname.startsWith("/platform")) {
-    const token = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET,
-    });
     if (!token?.isSuperadmin) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
@@ -53,11 +54,8 @@ export async function middleware(request: NextRequest) {
   // --- Locale resolution ---
   // Priority: cookie (instant update) > JWT locale > tenant default > "en"
   const localeCookie = request.cookies.get("locale")?.value;
-  const token2 = pathname.startsWith("/platform")
-    ? null
-    : await getToken({ req: request, secret: process.env.AUTH_SECRET }).catch(() => null);
   const locale =
-    localeCookie ?? (token2?.locale as string | undefined) ?? (token2?.tenantLocale as string | undefined) ?? "en";
+    localeCookie ?? (token?.locale as string | undefined) ?? (token?.tenantLocale as string | undefined) ?? "en";
   response.headers.set("x-locale", locale);
 
   // --- Security headers ---
