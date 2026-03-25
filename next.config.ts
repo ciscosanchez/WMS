@@ -5,11 +5,6 @@ import createNextIntlPlugin from "next-intl/plugin";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  experimental: {
-    // Trust X-Forwarded-Host from Traefik so request.url uses the public domain
-    // instead of the container's internal 0.0.0.0:3000
-    trustHostHeader: true,
-  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "cdn.shopify.com" },

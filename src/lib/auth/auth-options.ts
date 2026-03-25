@@ -87,4 +87,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  // Use cookies scoped to .wms.ramola.app so the session is shared
+  // across all tenant subdomains (armstrong.wms.ramola.app, etc.)
+  cookies:
+    process.env.NODE_ENV === "production"
+      ? {
+          sessionToken: {
+            name: "__Secure-authjs.session-token",
+            options: {
+              httpOnly: true,
+              sameSite: "lax",
+              path: "/",
+              secure: true,
+              domain: ".wms.ramola.app",
+            },
+          },
+          callbackUrl: {
+            name: "__Secure-authjs.callback-url",
+            options: {
+              httpOnly: true,
+              sameSite: "lax",
+              path: "/",
+              secure: true,
+              domain: ".wms.ramola.app",
+            },
+          },
+          csrfToken: {
+            name: "__Secure-authjs.csrf-token",
+            options: {
+              httpOnly: true,
+              sameSite: "lax",
+              path: "/",
+              secure: true,
+              domain: ".wms.ramola.app",
+            },
+          },
+        }
+      : undefined,
 });
