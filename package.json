@@ -12,6 +12,7 @@
     "db:push:tenant": "prisma db push --schema=prisma/tenant-schema.prisma",
     "db:seed": "npx tsx scripts/seed-demo.ts",
     "db:provision": "npx tsx scripts/provision-tenant.ts",
+    "admin:superadmin": "npx tsx scripts/create-superadmin.ts",
     "db:studio": "prisma studio --schema=prisma/schema.prisma",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -20,8 +21,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "lint:filesize": "node scripts/check-file-lengths.mjs",
     "i18n:check": "npx tsx scripts/check-i18n-keys.ts",
-    "validate": "npm run typecheck && npm run lint && npm run format:check && npm run i18n:check && npm run test"
+    "validate": "npm run typecheck && npm run lint && npm run lint:filesize && npm run format:check && npm run i18n:check && npm run test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
