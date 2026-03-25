@@ -159,6 +159,20 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
       where: { id: user.id },
       data: { locale },
     });
+    // Set a cookie so the middleware picks up the change immediately
+    // (JWT won't refresh until next sign-in)
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    if (locale) {
+      cookieStore.set("locale", locale, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    } else {
+      cookieStore.delete("locale");
+    }
     revalidatePath("/");
     return {};
   } catch (err) {

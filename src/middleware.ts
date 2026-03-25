@@ -51,12 +51,13 @@ export async function middleware(request: NextRequest) {
   const response = tenantMiddleware(request);
 
   // --- Locale resolution ---
-  // Priority: user locale from JWT > tenant default > "en"
-  const token = pathname.startsWith("/platform")
-    ? null // already read above
+  // Priority: cookie (instant update) > JWT locale > tenant default > "en"
+  const localeCookie = request.cookies.get("locale")?.value;
+  const token2 = pathname.startsWith("/platform")
+    ? null
     : await getToken({ req: request, secret: process.env.AUTH_SECRET }).catch(() => null);
   const locale =
-    (token?.locale as string | undefined) ?? (token?.tenantLocale as string | undefined) ?? "en";
+    localeCookie ?? (token2?.locale as string | undefined) ?? (token2?.tenantLocale as string | undefined) ?? "en";
   response.headers.set("x-locale", locale);
 
   // --- Security headers ---
