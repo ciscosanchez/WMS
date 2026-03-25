@@ -154,16 +154,20 @@ export async function updateUserRole(
  */
 export async function updateUserLocale(locale: string | null): Promise<{ error?: string }> {
   try {
+    console.log("[updateUserLocale] called with locale:", locale);
     const { user } = await requireTenantContext();
+    console.log("[updateUserLocale] user:", user.id, user.email);
     await publicDb.user.update({
       where: { id: user.id },
       data: { locale },
     });
+    console.log("[updateUserLocale] DB updated");
     // Set a cookie so the middleware picks up the change immediately
     // (JWT won't refresh until next sign-in)
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const isProd = process.env.NODE_ENV === "production";
+    console.log("[updateUserLocale] isProd:", isProd, "setting cookie with domain:", isProd ? ".wms.ramola.app" : "default");
     if (locale) {
       cookieStore.set("locale", locale, {
         path: "/",
@@ -180,7 +184,9 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
         ...(isProd && { domain: ".wms.ramola.app" }),
       });
     }
+    console.log("[updateUserLocale] cookie set, revalidating...");
     revalidatePath("/");
+    console.log("[updateUserLocale] done, returning success");
     return {};
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to update locale" };

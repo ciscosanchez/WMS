@@ -50,22 +50,37 @@ export function Topbar() {
   const initials = getInitials(userName);
 
   function handleSignOut() {
+    // Build the callback URL on the current origin so the user stays on
+    // the tenant subdomain (e.g. armstrong.wms.ramola.app/login) instead
+    // of being redirected to the bare wms.ramola.app/login.
+    const callbackUrl = `${window.location.origin}/login`;
     if (USE_MOCK) {
-      window.location.href = "/login";
+      window.location.href = callbackUrl;
     } else {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl });
     }
   }
 
   async function handleLocaleChange(newLocale: string) {
-    if (newLocale === locale) return;
-    const result = await updateUserLocale(newLocale);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      // Full page reload required — router.refresh() doesn't re-run the
-      // root layout where NextIntlClientProvider loads translations
-      window.location.reload();
+    console.log("[locale] switching from", locale, "to", newLocale);
+    if (newLocale === locale) {
+      console.log("[locale] same locale, skipping");
+      return;
+    }
+    try {
+      console.log("[locale] calling updateUserLocale...");
+      const result = await updateUserLocale(newLocale);
+      console.log("[locale] result:", JSON.stringify(result));
+      if (result.error) {
+        console.error("[locale] error:", result.error);
+        toast.error(result.error);
+      } else {
+        console.log("[locale] success, reloading page...");
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("[locale] exception:", err);
+      toast.error("Failed to change language");
     }
   }
 
