@@ -120,13 +120,13 @@ export function Topbar() {
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 {Object.entries(LOCALE_LABELS).map(([code, label]) => (
-                  <DropdownMenuItem key={code} onSelect={() => handleLocaleChange(code)}>
+                  <DropdownMenuItem key={code} onClick={() => handleLocaleChange(code)}>
                     {locale === code && <Check className="mr-2 h-4 w-4" />}
                     <span className={locale !== code ? "ml-6" : ""}>{label}</span>
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={handleResetLocale}>
+                <DropdownMenuItem onClick={() => handleResetLocale()}>
                   <span className="ml-6 text-muted-foreground">Use tenant default</span>
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
