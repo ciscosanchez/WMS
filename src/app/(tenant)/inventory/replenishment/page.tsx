@@ -16,7 +16,7 @@ export default async function ReplenishmentPage() {
             Replenishment Needed ({needs.length})
           </h2>
           <div className="space-y-1">
-            {needs.map((need) => (
+            {needs.map((need: { ruleId: string; productSku: string; binBarcode: string; currentQty: number; reorderPoint: number; suggestedQty: number }) => (
               <div
                 key={need.ruleId}
                 className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400"

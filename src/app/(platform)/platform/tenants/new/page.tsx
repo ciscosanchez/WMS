@@ -24,6 +24,8 @@ export default function NewTenantPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("starter");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminName, setAdminName] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -41,11 +43,20 @@ export default function NewTenantPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await createTenant(name, slug, plan);
+      const result = await createTenant(
+        name,
+        slug,
+        plan,
+        adminEmail || undefined,
+        adminName || undefined
+      );
       if ("error" in result) {
         toast.error(result.error);
       } else {
-        toast.success(`${t("tenantProvisioned")}: "${name}"`);
+        const msg = result.adminInvited
+          ? `${t("tenantProvisioned")}: "${name}" — admin invite sent to ${adminEmail}`
+          : `${t("tenantProvisioned")}: "${name}"`;
+        toast.success(msg);
         router.push("/platform/tenants");
       }
     } catch {
@@ -107,6 +118,38 @@ export default function NewTenantPage() {
                   <option value="professional">{t("professional")}</option>
                   <option value="enterprise">{t("enterprise")}</option>
                 </select>
+              </div>
+
+              <div className="space-y-4 rounded-md border p-4">
+                <p className="text-sm font-medium">Initial Admin (optional)</p>
+                <p className="text-xs text-muted-foreground">
+                  Creates an admin user and sends them an invite email to set their password.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="adminEmail" className="text-sm font-medium leading-none">
+                      Admin Email
+                    </label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      placeholder="admin@company.com"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="adminName" className="text-sm font-medium leading-none">
+                      Admin Name
+                    </label>
+                    <Input
+                      id="adminName"
+                      placeholder="Jane Smith"
+                      value={adminName}
+                      onChange={(e) => setAdminName(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {slug && (

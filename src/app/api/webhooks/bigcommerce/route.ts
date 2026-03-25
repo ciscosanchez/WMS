@@ -163,7 +163,7 @@ async function handleOrderCreated(orderId: number) {
       shipToZip: addr.zip ?? "",
       shipToCountry: addr.country_iso2 ?? "US",
       orderDate: order.date_created ? new Date(order.date_created) : new Date(),
-      totalItems: resolvedLines.reduce((s: number, li: { quantity: number }) => s + li.quantity, 0),
+      totalItems: resolvedLines.reduce((s: number, li: { quantity: number } | null) => s + (li?.quantity ?? 0), 0),
       lines: { create: resolvedLines },
     },
   });

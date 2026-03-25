@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomBytes } from "crypto";
+import { hash } from "bcryptjs";
 import { requireAuth } from "@/lib/auth/session";
 import { publicDb } from "@/lib/db/public-client";
 import { provisionTenant } from "@/lib/db/provisioner";
+import { sendPasswordSetLink } from "@/lib/email/resend";
 
 async function requireSuperadmin() {
   const user = await requireAuth();
@@ -41,8 +44,10 @@ export async function getPlatformStats() {
 export async function createTenant(
   name: string,
   slug: string,
-  plan: string
-): Promise<{ error: string } | { id: string }> {
+  plan: string,
+  adminEmail?: string,
+  adminName?: string
+): Promise<{ error: string } | { id: string; adminInvited?: boolean }> {
   await requireSuperadmin();
   try {
     // Check slug uniqueness before provisioning
@@ -58,11 +63,74 @@ export async function createTenant(
       data: { plan: plan as any },
     });
 
+    // Create and link admin user if email provided
+    let adminInvited = false;
+    if (adminEmail) {
+      const result = await createTenantAdmin(id, adminEmail, adminName || adminEmail, name);
+      adminInvited = !("error" in result);
+    }
+
     revalidatePath("/platform/tenants");
-    return { id };
+    return { id, adminInvited };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Provisioning failed" };
   }
+}
+
+/** Create or find a user and link them as admin to a tenant, sending invite email. */
+async function createTenantAdmin(
+  tenantId: string,
+  email: string,
+  displayName: string,
+  tenantName: string
+): Promise<{ error: string } | { userId: string }> {
+  const passwordSetToken = randomBytes(32).toString("hex");
+  const passwordSetExpires = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+  let userId: string;
+  let isNewUser = false;
+
+  const existingUser = await publicDb.user.findUnique({ where: { email } });
+
+  if (existingUser) {
+    userId = existingUser.id;
+  } else {
+    isNewUser = true;
+    const placeholderHash = await hash(randomBytes(32).toString("hex"), 12);
+    const newUser = await publicDb.user.create({
+      data: {
+        email,
+        name: displayName,
+        passwordHash: placeholderHash,
+        passwordSetToken,
+        passwordSetExpires,
+      },
+    });
+    userId = newUser.id;
+  }
+
+  // Link as admin (upsert in case they're already linked)
+  await publicDb.tenantUser.upsert({
+    where: { tenantId_userId: { tenantId, userId } },
+    update: { role: "admin" },
+    create: { tenantId, userId, role: "admin" },
+  });
+
+  // Send invite email
+  const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+  const setPasswordUrl = isNewUser
+    ? `${baseUrl}/set-password?token=${passwordSetToken}`
+    : `${baseUrl}/login`;
+
+  await sendPasswordSetLink({
+    to: email,
+    name: displayName,
+    tenantName,
+    role: "admin",
+    setPasswordUrl,
+  });
+
+  return { userId };
 }
 
 const PLAN_FEES: Record<string, number> = {
