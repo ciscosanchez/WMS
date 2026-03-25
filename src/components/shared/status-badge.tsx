@@ -65,6 +65,10 @@ const statusColors: Record<string, string> = {
   shortage: "bg-red-100 text-red-700 border-red-200",
   overage: "bg-yellow-100 text-yellow-700 border-yellow-200",
   damage: "bg-orange-100 text-orange-700 border-orange-200",
+  // LPN statuses
+  lpn_active: "bg-green-100 text-green-700 border-green-200",
+  lpn_in_transit: "bg-blue-100 text-blue-700 border-blue-200",
+  lpn_consumed: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
 interface StatusBadgeProps {

@@ -102,6 +102,7 @@ const navigation: NavGroup[] = [
     labelKey: "inventory",
     items: [
       { titleKey: "stockBrowser", href: "/inventory", icon: Boxes },
+      { titleKey: "lpn", href: "/inventory/lpn", icon: Package },
       { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine },
       { titleKey: "movements", href: "/inventory/movements", icon: ArrowLeftRight },
       { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
