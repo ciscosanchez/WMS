@@ -36,6 +36,13 @@ export async function provisionTenant(name: string, slug: string): Promise<strin
 
     return tenant.id;
   } catch (error) {
+    console.error("Tenant provisioning failed", {
+      tenantId: tenant.id,
+      slug,
+      dbSchema,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
     // Mark as failed so we can inspect and retry — don't delete the record
     await publicDb.tenant.update({
       where: { id: tenant.id },

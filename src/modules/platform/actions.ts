@@ -6,6 +6,7 @@ import { hash } from "bcryptjs";
 import { requireAuth } from "@/lib/auth/session";
 import { publicDb } from "@/lib/db/public-client";
 import { provisionTenant } from "@/lib/db/provisioner";
+import { runTenantMigrations } from "@/lib/db/tenant-migrations";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 
 async function requireSuperadmin() {
@@ -183,7 +184,18 @@ export async function suspendTenant(id: string): Promise<{ error: string } | { o
 export async function reactivateTenant(id: string): Promise<{ error: string } | { ok: true }> {
   await requireSuperadmin();
   try {
+    const tenant = await publicDb.tenant.findUnique({
+      where: { id },
+      select: { id: true, dbSchema: true },
+    });
+    if (!tenant) {
+      return { error: "Tenant not found" };
+    }
+
+    await publicDb.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${tenant.dbSchema}"`);
+    await runTenantMigrations(tenant.dbSchema);
     await publicDb.tenant.update({ where: { id }, data: { status: "active" } });
+
     revalidatePath("/platform/tenants");
     return { ok: true };
   } catch (err) {

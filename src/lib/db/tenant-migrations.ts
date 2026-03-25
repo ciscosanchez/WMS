@@ -25,10 +25,15 @@ function getPool(): pg.Pool {
  * files that separate statements with `;\n\n`.
  */
 function splitStatements(sql: string): string[] {
-  return sql
-    .split(/;\s*\n/)
+  const withoutLineComments = sql
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("--"))
+    .join("\n");
+
+  return withoutLineComments
+    .split(/;\s*(?:\n|$)/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("--"));
+    .filter((s) => s.length > 0);
 }
 
 export async function runTenantMigrations(dbSchema: string): Promise<void> {
@@ -67,6 +72,10 @@ export async function runTenantMigrations(dbSchema: string): Promise<void> {
       const sql = readFileSync(path.join(MIGRATIONS_DIR, file), "utf-8");
       const statements = splitStatements(sql);
 
+      if (statements.length === 0) {
+        throw new Error(`Tenant migration "${file}" contains no executable SQL statements`);
+      }
+
       for (const stmt of statements) {
         await client.query(stmt);
       }
@@ -77,7 +86,8 @@ export async function runTenantMigrations(dbSchema: string): Promise<void> {
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
-    throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Tenant migration failed for schema "${dbSchema}": ${message}`);
   } finally {
     client.release();
     await pool.end();

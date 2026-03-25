@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
@@ -36,24 +37,31 @@ const planColors: Record<string, string> = {
 
 function TenantActions({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
+  const [pending, setPending] = useState<"suspend" | "reactivate" | null>(null);
 
   async function handleSuspend() {
     if (!confirm(`Suspend "${tenant.name}"? They will lose access immediately.`)) return;
+    setPending("suspend");
     const result = await suspendTenant(tenant.id);
-    if ("error" in result) toast.error(result.error);
-    else {
+    if ("error" in result) {
+      toast.error(result.error);
+    } else {
       toast.success("Tenant suspended");
       router.refresh();
     }
+    setPending(null);
   }
 
   async function handleReactivate() {
+    setPending("reactivate");
     const result = await reactivateTenant(tenant.id);
-    if ("error" in result) toast.error(result.error);
-    else {
+    if ("error" in result) {
+      toast.error(result.error);
+    } else {
       toast.success("Tenant reactivated");
       router.refresh();
     }
+    setPending(null);
   }
 
   return (
@@ -66,15 +74,19 @@ function TenantActions({ tenant }: { tenant: Tenant }) {
         {tenant.status === "active" ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={handleSuspend}>
+            <DropdownMenuItem
+              variant="destructive"
+              disabled={pending !== null}
+              onClick={() => void handleSuspend()}
+            >
               <Ban className="mr-2 h-4 w-4" />
-              Suspend
+              {pending === "suspend" ? "Suspending..." : "Suspend"}
             </DropdownMenuItem>
           </>
         ) : (
-          <DropdownMenuItem onSelect={handleReactivate}>
+          <DropdownMenuItem disabled={pending !== null} onClick={() => void handleReactivate()}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Reactivate
+            {pending === "reactivate" ? "Reactivating..." : "Reactivate"}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
