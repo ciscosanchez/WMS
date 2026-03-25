@@ -188,7 +188,7 @@ function TenantActions({ tenant }: { tenant: Tenant }) {
             <label className="text-sm font-medium" htmlFor={`tenant-plan-${tenant.id}`}>
               Plan
             </label>
-            <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+            <Select value={selectedPlan} onValueChange={(value) => setSelectedPlan(value ?? tenant.plan)}>
               <SelectTrigger id={`tenant-plan-${tenant.id}`} className="w-full">
                 <SelectValue placeholder="Select a plan" />
               </SelectTrigger>
