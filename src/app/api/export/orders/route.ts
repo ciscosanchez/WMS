@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { resolveTenant } from "@/lib/tenant/context";
+import { requireTenantContext } from "@/lib/tenant/context";
 import { generateCsv, csvResponse, type ExportColumn } from "@/lib/export/server-csv";
 import { format } from "date-fns";
 
@@ -25,11 +24,12 @@ const COLUMNS: ExportColumn[] = [
 ];
 
 export async function GET(request: NextRequest) {
-  const session = await getSession();
-  if (!session) return new Response("Unauthorized", { status: 401 });
-
-  const tenant = await resolveTenant();
-  if (!tenant) return new Response("Tenant not found", { status: 403 });
+  let tenant;
+  try {
+    ({ tenant } = await requireTenantContext("orders:read"));
+  } catch {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;

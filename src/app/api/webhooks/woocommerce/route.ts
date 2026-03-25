@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveWcTenant(pub: any, getDb: any, src: string) {
-  for (const t of await pub.tenant.findMany({ where: { isActive: true } })) {
+  // Webhook handler — no user session, resolves tenant by matching store URL in SalesChannel config.
+  for (const t of await pub.tenant.findMany({ where: { status: "active" } })) {
     const db = getDb(t.dbSchema);
     const ch = await db.salesChannel.findFirst({ where: { type: "woocommerce", isActive: true } });
     if (!ch) continue;
