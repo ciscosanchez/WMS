@@ -89,6 +89,16 @@ export const CROSS_DOCK_TRANSITIONS: Record<string, string[]> = {
   cd_cancelled: [],
 };
 
+// ── Transfer order lifecycle ─────────────────────────────────────────────
+export const TRANSFER_ORDER_TRANSITIONS: Record<string, string[]> = {
+  draft: ["approved", "cancelled"],
+  approved: ["in_transit", "cancelled"],
+  in_transit: ["received"],
+  received: ["completed"],
+  completed: [],
+  cancelled: [],
+};
+
 /**
  * Throws if `from → to` is not an allowed transition in `map`.
  */

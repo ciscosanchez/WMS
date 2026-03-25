@@ -85,6 +85,9 @@
     "billingDashboard": "Facturación",
     "floorApp": "App de piso",
     "expiring": "Items por Vencer",
-    "gs1Labels": "Etiquetas GS1"
+    "gs1Labels": "Etiquetas GS1",
+    "lpn": "Rastreo LPN",
+    "transfers": "Transferencias",
+    "replenishment": "Reabastecimiento"
   }
 }

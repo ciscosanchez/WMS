@@ -2,12 +2,14 @@ import type { MarketplaceAdapter } from "./types";
 import { ShopifyAdapter } from "./shopify";
 import { AmazonAdapter } from "./amazon";
 import { WalmartAdapter } from "./walmart";
+import { BigCommerceAdapter } from "./bigcommerce";
 
 export { ShopifyAdapter } from "./shopify";
 export { AmazonAdapter } from "./amazon";
 export { WalmartAdapter } from "./walmart";
+export { BigCommerceAdapter } from "./bigcommerce";
 
-export type ChannelType = "shopify" | "amazon" | "walmart" | "manual" | "api";
+export type ChannelType = "shopify" | "amazon" | "walmart" | "bigcommerce" | "manual" | "api";
 
 export interface ChannelConfig {
   type: ChannelType;
@@ -41,6 +43,11 @@ export function createAdapter(config: ChannelConfig): MarketplaceAdapter | null 
         clientId: config.credentials.clientId || "",
         clientSecret: config.credentials.clientSecret || "",
         environment: (config.credentials.environment as "production" | "sandbox") ?? "production",
+      });
+    case "bigcommerce":
+      return new BigCommerceAdapter({
+        storeHash: config.credentials.storeHash || "",
+        accessToken: config.credentials.accessToken || "",
       });
     default:
       return null;

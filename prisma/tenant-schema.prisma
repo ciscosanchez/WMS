@@ -84,6 +84,9 @@ model Product {
   kitDefinition     KitDefinition?
   kitComponents     KitComponent[] @relation("kit_component_product")
   hazmatFlag        HazmatFlag?
+  lpnContents       LpnContent[]
+  transferLines     TransferOrderLine[]
+  replenishmentRules ReplenishmentRule[]
 
   @@unique([clientId, sku])
   @@map("products")
@@ -118,6 +121,8 @@ model Warehouse {
   yardSpots            YardSpot[]
   appointments         DockAppointment[]
   interleavingEnabled  Boolean  @default(false) @map("interleaving_enabled")
+  transfersOut         TransferOrder[] @relation("transfer_from")
+  transfersIn          TransferOrder[] @relation("transfer_to")
 
   @@map("warehouses")
 }
@@ -203,6 +208,8 @@ model Bin {
   putawayRules        PutawayRule[]
   pickTaskLines       PickTaskLine[]
   returnInspections   ReturnInspection[]
+  lpns                Lpn[]
+  replenishmentRules  ReplenishmentRule[]
 
   @@unique([shelfId, code])
   @@map("bins")
@@ -1585,6 +1592,48 @@ model HazmatFlag {
   @@map("hazmat_flags")
 }
 
+// ─── LPN / Container Tracking ──────────────────────────
+
+enum LpnStatus {
+  lpn_active
+  lpn_in_transit
+  lpn_consumed
+}
+
+model Lpn {
+  id          String    @id @default(cuid())
+  lpnNumber   String    @unique @map("lpn_number")
+  binId       String?   @map("bin_id")
+  status      LpnStatus @default(lpn_active)
+  palletType  String?   @map("pallet_type")
+  totalWeight Decimal?  @db.Decimal(10,4) @map("total_weight")
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  bin      Bin?        @relation(fields: [binId], references: [id])
+  contents LpnContent[]
+
+  @@index([binId])
+  @@index([status])
+  @@map("lpns")
+}
+
+model LpnContent {
+  id           String  @id @default(cuid())
+  lpnId        String  @map("lpn_id")
+  productId    String  @map("product_id")
+  quantity     Int
+  lotNumber    String? @map("lot_number")
+  serialNumber String? @map("serial_number")
+
+  lpn     Lpn     @relation(fields: [lpnId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([lpnId])
+  @@map("lpn_contents")
+}
+
 // ─── Cross-Dock Orchestration ──────────────────────────────────────
 
 enum CrossDockStatus {
@@ -1723,4 +1772,78 @@ model DocumentProcessingJob {
   @@index([tenantId])
   @@index([createdAt])
   @@map("document_processing_jobs")
+}
+
+// ─── Transfer Orders (Multi-Warehouse) ──────────────────
+
+enum TransferOrderStatus {
+  draft
+  approved
+  in_transit
+  received
+  completed
+  cancelled
+}
+
+model TransferOrder {
+  id                 String              @id @default(cuid())
+  transferNumber     String              @unique @map("transfer_number")
+  fromWarehouseId    String              @map("from_warehouse_id")
+  toWarehouseId      String              @map("to_warehouse_id")
+  status             TransferOrderStatus @default(draft)
+  requestedBy        String              @map("requested_by")
+  approvedBy         String?             @map("approved_by")
+  approvedAt         DateTime?           @map("approved_at")
+  shippedAt          DateTime?           @map("shipped_at")
+  receivedAt         DateTime?           @map("received_at")
+  notes              String?
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  fromWarehouse Warehouse           @relation("transfer_from", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse           @relation("transfer_to", fields: [toWarehouseId], references: [id])
+  lines         TransferOrderLine[]
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([status])
+  @@map("transfer_orders")
+}
+
+model TransferOrderLine {
+  id              String  @id @default(cuid())
+  transferOrderId String  @map("transfer_order_id")
+  productId       String  @map("product_id")
+  quantity        Int
+  receivedQty     Int     @default(0) @map("received_qty")
+  lotNumber       String? @map("lot_number")
+  notes           String?
+
+  transferOrder TransferOrder @relation(fields: [transferOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@index([transferOrderId])
+  @@map("transfer_order_lines")
+}
+
+// ─── Replenishment Rules ────────────────────────────────
+
+model ReplenishmentRule {
+  id           String   @id @default(cuid())
+  productId    String   @map("product_id")
+  binId        String   @map("bin_id")
+  minQty       Int      @map("min_qty")
+  maxQty       Int      @map("max_qty")
+  reorderPoint Int      @map("reorder_point")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  bin     Bin     @relation(fields: [binId], references: [id])
+
+  @@unique([productId, binId])
+  @@index([productId])
+  @@index([binId])
+  @@map("replenishment_rules")
 }

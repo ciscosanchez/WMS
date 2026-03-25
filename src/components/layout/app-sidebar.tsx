@@ -48,6 +48,7 @@ import {
   Shield,
   Bot,
   Receipt,
+  Container,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -107,6 +108,9 @@ const navigation: NavGroup[] = [
       { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks },
       { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3 },
       { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle },
+      { titleKey: "lpn", href: "/inventory/lpn", icon: Container },
+      { titleKey: "transfers", href: "/inventory/transfers", icon: Truck },
+      { titleKey: "replenishment", href: "/inventory/replenishment", icon: ArrowDownToLine },
     ],
   },
   {

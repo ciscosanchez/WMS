@@ -60,6 +60,7 @@
     "movements": "Movements",
     "adjustments": "Adjustments",
     "cycleCounts": "Cycle Counts",
+    "lpn": "LPN / Pallets",
     "setup": "Setup",
     "locations": "Locations",
     "clients": "Clients",
@@ -85,6 +86,9 @@
     "billingDashboard": "Billing",
     "floorApp": "Floor App",
     "expiring": "Expiring Items",
-    "gs1Labels": "GS1 Labels"
+    "gs1Labels": "GS1 Labels",
+    "lpn": "LPN Tracking",
+    "transfers": "Transfers",
+    "replenishment": "Replenishment"
   }
 }
