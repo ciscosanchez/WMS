@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Warehouse } from "lucide-react";
@@ -14,6 +15,7 @@ const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations("auth.login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,16 +28,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      const requestedCallbackUrl = searchParams.get("callbackUrl");
+      const callbackUrl =
+        requestedCallbackUrl && requestedCallbackUrl.startsWith("/")
+          ? requestedCallbackUrl
+          : "/dashboard";
+
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
         setError(t("invalidCredentials"));
       } else {
-        router.push("/dashboard");
+        router.push(result?.url ?? callbackUrl);
         router.refresh();
       }
     } catch {

@@ -24,10 +24,10 @@ import { NextRequest } from "next/server";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-const mockValidateDispatchApiKey = jest.fn().mockReturnValue(true);
+const mockValidateTenantApiKey = jest.fn().mockReturnValue(true);
 
 jest.mock("@/lib/integrations/dispatchpro/auth", () => ({
-  validateDispatchApiKey: (...args: unknown[]) => mockValidateDispatchApiKey(...args),
+  validateTenantApiKey: (...args: unknown[]) => mockValidateTenantApiKey(...args),
 }));
 
 jest.mock("@/lib/db/public-client", () => ({
