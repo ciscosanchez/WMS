@@ -99,6 +99,16 @@ export const TRANSFER_ORDER_TRANSITIONS: Record<string, string[]> = {
   cancelled: [],
 };
 
+// ── Customs entry lifecycle ──────────────────────────────────────────────
+export const CUSTOMS_ENTRY_TRANSITIONS: Record<string, string[]> = {
+  ce_draft: ["ce_pending", "ce_filed"],
+  ce_pending: ["ce_filed", "ce_draft"],
+  ce_filed: ["ce_cleared", "ce_held", "ce_rejected"],
+  ce_held: ["ce_cleared", "ce_rejected"],
+  ce_cleared: [],
+  ce_rejected: ["ce_draft"],
+};
+
 /**
  * Throws if `from → to` is not an allowed transition in `map`.
  */

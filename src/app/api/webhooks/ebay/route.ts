@@ -1,34 +1,29 @@
 /**
- * WooCommerce Webhook Receiver — verifies HMAC-SHA256, handles order.created / order.updated.
- * Multi-tenant: resolves target tenant by matching x-wc-webhook-source against SalesChannel configs.
+ * eBay Notification Handler — verifies signature, handles order.created / order.updated.
+ * Multi-tenant: resolves target tenant by matching eBay SalesChannel configs.
  */
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { nextSequence } from "@/lib/sequences";
 import { logAudit } from "@/lib/audit";
 
-export function verifyWooCommerceHmac(body: string, sig: string, secret: string): boolean {
-  const computed = crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64");
-  const a = Buffer.from(computed),
-    b = Buffer.from(sig);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+export function verifyEbaySignature(body: string, signature: string, token: string): boolean {
+  if (!signature || !token) return false;
+  try {
+    const computed = crypto.createHmac("sha256", token).update(body, "utf8").digest("base64");
+    const a = Buffer.from(computed),
+      b = Buffer.from(signature);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
-
-const norm = (u: string) =>
-  u
-    .replace(/^https?:\/\//, "")
-    .replace(/\/+$/, "")
-    .toLowerCase();
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const sig = req.headers.get("x-wc-webhook-signature") ?? "";
-  const topic = req.headers.get("x-wc-webhook-topic") ?? "";
-  const source = req.headers.get("x-wc-webhook-source") ?? "";
-  if (
-    !process.env.WOOCOMMERCE_WEBHOOK_SECRET ||
-    !verifyWooCommerceHmac(body, sig, process.env.WOOCOMMERCE_WEBHOOK_SECRET)
-  )
+  const sig = req.headers.get("x-ebay-signature") ?? "";
+  const secret = process.env.EBAY_WEBHOOK_VERIFICATION_TOKEN;
+  if (!secret || !verifyEbaySignature(body, sig, secret))
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let payload: any;
@@ -37,38 +32,34 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+  const topic = payload.metadata?.topic ?? payload.topic ?? "";
   try {
     const { publicDb } = await import("@/lib/db/public-client");
     const { getTenantDb } = await import("@/lib/db/tenant-client");
-    const conn = await resolveWcTenant(publicDb, getTenantDb, source);
-    if (!conn) {
-      const cu = process.env.WOOCOMMERCE_STORE_URL;
-      if (!source || !cu || norm(source) !== norm(cu))
-        return NextResponse.json({ error: "Unknown store" }, { status: 404 });
-    }
-    if (topic === "order.created") await handleCreate(payload, conn, source);
-    else if (topic === "order.updated") await handleUpdated(payload, conn, source);
+    const conn = await resolveEbayTenant(publicDb, getTenantDb);
+    if (topic === "marketplace.order.created") await handleOrderCreated(payload, conn);
+    else if (topic === "marketplace.order.updated") await handleOrderUpdated(payload, conn);
   } catch (e) {
-    console.error(`[WC Webhook] ${topic} error:`, e);
+    console.error(`[eBay Webhook] ${topic} error:`, e);
   }
   return NextResponse.json({ ok: true });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveWcTenant(pub: any, getDb: any, src: string) {
+async function resolveEbayTenant(pub: any, getDb: any) {
   for (const t of await pub.tenant.findMany({ where: { isActive: true } })) {
     const db = getDb(t.dbSchema);
-    const ch = await db.salesChannel.findFirst({ where: { type: "woocommerce", isActive: true } });
+    const ch = await db.salesChannel.findFirst({ where: { type: "ebay", isActive: true } });
     if (!ch) continue;
     const c = (ch.config ?? {}) as Record<string, string>;
-    if (c.storeUrl && norm(c.storeUrl) === norm(src))
-      return {
-        db,
-        clientCode: c.clientCode ?? t.slug,
-        storeUrl: c.storeUrl,
-        consumerKey: c.consumerKey ?? "",
-        consumerSecret: c.consumerSecret ?? "",
-      };
+    return {
+      db,
+      clientCode: c.clientCode ?? t.slug,
+      appId: c.appId ?? "",
+      certId: c.certId ?? "",
+      devId: c.devId ?? "",
+      userToken: c.userToken ?? "",
+    };
   }
   return null;
 }
@@ -82,44 +73,36 @@ async function resolveDb(conn: any) {
   const { getTenantDb } = await import("@/lib/db/tenant-client");
   const rec = await publicDb.tenant.findUnique({ where: { slug } });
   return rec
-    ? {
-        db: getTenantDb(rec.dbSchema),
-        clientCode: process.env.WOOCOMMERCE_WMS_CLIENT_CODE ?? "Armstrong",
-      }
+    ? { db: getTenantDb(rec.dbSchema), clientCode: process.env.EBAY_WMS_CLIENT_CODE ?? "Armstrong" }
     : null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleCreate(order: any, conn: any, source: string) {
-  const st = order.status as string | undefined;
-  if (st && st !== "processing" && st !== "on-hold") return;
+async function handleOrderCreated(payload: any, conn: any) {
+  const order = payload.resource ?? payload;
   const r = await resolveDb(conn);
   if (!r) return;
   const { db: tdb, clientCode } = r;
-  const externalId = String(order.id);
+  const externalId = order.orderId ?? String(order.orderId);
   if (await tdb.order.findFirst({ where: { externalId } })) return;
-  const channel = await tdb.salesChannel.findFirst({
-    where: { type: "woocommerce", isActive: true },
-  });
+  const channel = await tdb.salesChannel.findFirst({ where: { type: "ebay", isActive: true } });
   if (!channel) return;
   const client = await tdb.client.findFirst({
     where: clientCode ? { code: clientCode, isActive: true } : { isActive: true },
     orderBy: { createdAt: "asc" },
   });
   if (!client) return;
-  const { WooCommerceAdapter } = await import("@/lib/integrations/marketplaces/woocommerce");
+
+  const { EbayAdapter } = await import("@/lib/integrations/marketplaces/ebay");
   const cfg = conn
-    ? {
-        storeUrl: conn.storeUrl,
-        consumerKey: conn.consumerKey,
-        consumerSecret: conn.consumerSecret,
-      }
+    ? { appId: conn.appId, certId: conn.certId, devId: conn.devId, userToken: conn.userToken }
     : {
-        storeUrl: process.env.WOOCOMMERCE_STORE_URL!,
-        consumerKey: process.env.WOOCOMMERCE_CONSUMER_KEY!,
-        consumerSecret: process.env.WOOCOMMERCE_CONSUMER_SECRET!,
+        appId: process.env.EBAY_APP_ID!,
+        certId: process.env.EBAY_CERT_ID!,
+        devId: process.env.EBAY_DEV_ID!,
+        userToken: process.env.EBAY_USER_TOKEN ?? "",
       };
-  const mapped = new WooCommerceAdapter(cfg).mapOrder(order);
+  const mapped = new EbayAdapter(cfg).mapOrder(order);
   const skus = mapped.lineItems.map((li) => li.sku).filter(Boolean);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prods = skus.length
@@ -170,19 +153,20 @@ async function handleCreate(order: any, conn: any, source: string) {
     action: "create",
     entityType: "order",
     entityId: created.id,
-    changes: { source: { old: null, new: "woocommerce_webhook" } },
+    changes: { source: { old: null, new: "ebay_webhook" } },
   });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleUpdated(order: any, conn: any, _source: string) {
-  const status = order.status as string | undefined;
+async function handleOrderUpdated(payload: any, conn: any) {
+  const order = payload.resource ?? payload;
+  const status = order.orderFulfillmentStatus as string | undefined;
   if (!status) return;
   const r = await resolveDb(conn);
   if (!r) return;
-  const existing = await r.db.order.findFirst({ where: { externalId: String(order.id) } });
+  const existing = await r.db.order.findFirst({ where: { externalId: String(order.orderId) } });
   if (!existing || existing.status === "shipped" || existing.status === "delivered") return;
-  if (status === "cancelled" || status === "refunded") {
+  if (status === "CANCELLED") {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },
@@ -195,7 +179,7 @@ async function handleUpdated(order: any, conn: any, _source: string) {
       entityId: existing.id,
       changes: { status: { old: existing.status, new: "cancelled" } },
     });
-  } else if (status === "completed") {
+  } else if (status === "SHIPPED" || status === "DELIVERED") {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },

@@ -16,18 +16,27 @@ export default async function ReplenishmentPage() {
             Replenishment Needed ({needs.length})
           </h2>
           <div className="space-y-1">
-            {needs.map((need: { ruleId: string; productSku: string; binBarcode: string; currentQty: number; reorderPoint: number; suggestedQty: number }) => (
-              <div
-                key={need.ruleId}
-                className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400"
-              >
-                <span>
-                  {need.productSku} in {need.binBarcode}: {need.currentQty} on hand (reorder at{" "}
-                  {need.reorderPoint})
-                </span>
-                <span className="font-medium">Need +{need.suggestedQty}</span>
-              </div>
-            ))}
+            {needs.map(
+              (need: {
+                ruleId: string;
+                productSku: string;
+                binBarcode: string;
+                currentQty: number;
+                reorderPoint: number;
+                suggestedQty: number;
+              }) => (
+                <div
+                  key={need.ruleId}
+                  className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400"
+                >
+                  <span>
+                    {need.productSku} in {need.binBarcode}: {need.currentQty} on hand (reorder at{" "}
+                    {need.reorderPoint})
+                  </span>
+                  <span className="font-medium">Need +{need.suggestedQty}</span>
+                </div>
+              )
+            )}
           </div>
         </div>
       )}

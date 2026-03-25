@@ -56,6 +56,10 @@ export const PERMISSION_LEVEL: Record<string, number> = {
   "billing:read": 10,
   "billing:write": 30,
   "billing:approve": 40,
+  // Customs
+  "customs:read": 10,
+  "customs:write": 30,
+  "customs:file": 40,
   // Reports
   "reports:read": 10,
   // Settings (admin-only)

@@ -1847,3 +1847,75 @@ model ReplenishmentRule {
   @@index([binId])
   @@map("replenishment_rules")
 }
+
+// ─── Customs & Freight ─────────────────────────────────
+
+enum CustomsEntryStatus {
+  ce_draft
+  ce_pending
+  ce_filed
+  ce_cleared
+  ce_held
+  ce_rejected
+}
+
+model CustomsEntry {
+  id              String             @id @default(cuid())
+  entryNumber     String?            @unique @map("entry_number")
+  shipmentId      String?            @map("shipment_id")
+  entryType       String             @map("entry_type")
+  status          CustomsEntryStatus @default(ce_draft)
+  portOfEntry     String?            @map("port_of_entry")
+  carrier         String?
+  vesselName      String?            @map("vessel_name")
+  voyageNumber    String?            @map("voyage_number")
+  estimatedArrival DateTime?         @map("estimated_arrival")
+  filedAt         DateTime?          @map("filed_at")
+  clearedAt       DateTime?          @map("cleared_at")
+  brokerName      String?            @map("broker_name")
+  brokerRef       String?            @map("broker_ref")
+  totalDuty       Decimal?           @db.Decimal(10,2) @map("total_duty")
+  notes           String?
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  lines CustomsEntryLine[]
+
+  @@index([status])
+  @@index([shipmentId])
+  @@map("customs_entries")
+}
+
+model CustomsEntryLine {
+  id           String  @id @default(cuid())
+  entryId      String  @map("entry_id")
+  hsCode       String  @map("hs_code")
+  description  String
+  countryOrigin String @map("country_origin")
+  quantity     Int
+  value        Decimal @db.Decimal(10,2)
+  dutyRate     Decimal? @db.Decimal(10,4) @map("duty_rate")
+  dutyAmount   Decimal? @db.Decimal(10,2) @map("duty_amount")
+
+  entry CustomsEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@map("customs_entry_lines")
+}
+
+model BondedInventory {
+  id          String   @id @default(cuid())
+  productId   String   @map("product_id")
+  binId       String?  @map("bin_id")
+  entryId     String?  @map("entry_id")
+  quantity    Int
+  bondNumber  String?  @map("bond_number")
+  bondType    String?  @map("bond_type")
+  entryDate   DateTime @map("entry_date")
+  releaseDate DateTime? @map("release_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@index([entryId])
+  @@map("bonded_inventory")
+}

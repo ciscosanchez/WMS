@@ -125,16 +125,17 @@ _Last updated: 2026-03-24_
 
 ## Codebase Metrics (March 2026)
 
-| Metric                | Count                                            |
-| --------------------- | ------------------------------------------------ |
-| Route pages           | 89                                               |
-| Prisma models         | 67                                               |
-| Server action modules | 25+ files                                        |
-| Tests                 | 382 (26 suites)                                  |
-| SQL migrations        | 13 (0001-0013)                                   |
-| BullMQ workers        | 4 (notifications, integrations, email, slotting) |
-| RBAC permissions      | 30+                                              |
-| i18n languages        | 2 (en/es)                                        |
-| TypeScript errors     | 0                                                |
-| Lint errors           | 0                                                |
-| Lines of code         | ~57K                                             |
+| Metric                | Count                                                     |
+| --------------------- | --------------------------------------------------------- |
+| Route pages           | 100+                                                      |
+| Prisma models         | 73                                                        |
+| Server action modules | 35+ files                                                 |
+| Tests                 | 504 (37 suites)                                           |
+| SQL migrations        | 20 (0001-0020)                                            |
+| BullMQ workers        | 5 (notifications, integrations, email, slotting, reports) |
+| RBAC permissions      | 37                                                        |
+| Marketplace adapters  | 5 (Shopify, Amazon, Walmart, WooCommerce, BigCommerce)    |
+| i18n languages        | 2 (en/es)                                                 |
+| TypeScript errors     | 0                                                         |
+| Lint errors           | 0                                                         |
+| Lines of code         | ~65K                                                      |

@@ -7,11 +7,41 @@ import crypto from "crypto";
 import { NextRequest } from "next/server";
 
 const sampleWcOrder = {
-  id: 727, number: "727", status: "processing", date_created: "2026-03-20T14:30:00",
-  billing: { first_name: "John", last_name: "Doe", address_1: "123 Main St", address_2: "Apt 4", city: "Springfield", state: "IL", postcode: "62704", country: "US", email: "john@example.com", phone: "555-0100" },
-  shipping: { first_name: "John", last_name: "Doe", address_1: "456 Oak Ave", address_2: "", city: "Shelbyville", state: "IL", postcode: "62565", country: "US" },
+  id: 727,
+  number: "727",
+  status: "processing",
+  date_created: "2026-03-20T14:30:00",
+  billing: {
+    first_name: "John",
+    last_name: "Doe",
+    address_1: "123 Main St",
+    address_2: "Apt 4",
+    city: "Springfield",
+    state: "IL",
+    postcode: "62704",
+    country: "US",
+    email: "john@example.com",
+    phone: "555-0100",
+  },
+  shipping: {
+    first_name: "John",
+    last_name: "Doe",
+    address_1: "456 Oak Ave",
+    address_2: "",
+    city: "Shelbyville",
+    state: "IL",
+    postcode: "62565",
+    country: "US",
+  },
   line_items: [
-    { id: 101, name: "Widget A", sku: "WGT-A", quantity: 3, price: "19.99", image: { src: "https://store.example.com/widget-a.jpg" } },
+    {
+      id: 101,
+      name: "Widget A",
+      sku: "WGT-A",
+      quantity: 3,
+      price: "19.99",
+      image: { src: "https://store.example.com/widget-a.jpg" },
+    },
     { id: 102, name: "Gadget B", sku: "GDG-B", quantity: 1, price: "49.50", image: null },
   ],
   shipping_lines: [{ method_title: "Flat Rate" }],
@@ -23,7 +53,11 @@ describe("WooCommerceAdapter.mapOrder", () => {
   let adapter: any;
   beforeAll(async () => {
     const { WooCommerceAdapter } = await import("@/lib/integrations/marketplaces/woocommerce");
-    adapter = new WooCommerceAdapter({ storeUrl: "https://store.example.com", consumerKey: "ck_test", consumerSecret: "cs_test" });
+    adapter = new WooCommerceAdapter({
+      storeUrl: "https://store.example.com",
+      consumerKey: "ck_test",
+      consumerSecret: "cs_test",
+    });
   });
 
   it("maps basic order fields", () => {
@@ -46,7 +80,18 @@ describe("WooCommerceAdapter.mapOrder", () => {
   });
 
   it("falls back to billing address when shipping is empty", () => {
-    const o = { ...sampleWcOrder, shipping: { first_name: "", last_name: "", address_1: "", city: "", state: "", postcode: "", country: "" } };
+    const o = {
+      ...sampleWcOrder,
+      shipping: {
+        first_name: "",
+        last_name: "",
+        address_1: "",
+        city: "",
+        state: "",
+        postcode: "",
+        country: "",
+      },
+    };
     const m = adapter.mapOrder(o);
     expect(m.shipTo.name).toBe("John Doe");
     expect(m.shipTo.address1).toBe("123 Main St");
@@ -63,7 +108,14 @@ describe("WooCommerceAdapter.mapOrder", () => {
   it("maps line items with SKU, quantity, price, and image", () => {
     const m = adapter.mapOrder(sampleWcOrder);
     expect(m.lineItems).toHaveLength(2);
-    expect(m.lineItems[0]).toMatchObject({ externalLineId: "101", sku: "WGT-A", name: "Widget A", quantity: 3, unitPrice: 19.99, imageUrl: "https://store.example.com/widget-a.jpg" });
+    expect(m.lineItems[0]).toMatchObject({
+      externalLineId: "101",
+      sku: "WGT-A",
+      name: "Widget A",
+      quantity: 3,
+      unitPrice: 19.99,
+      imageUrl: "https://store.example.com/widget-a.jpg",
+    });
     expect(m.lineItems[1]).toMatchObject({ sku: "GDG-B", quantity: 1, unitPrice: 49.5 });
     expect(m.lineItems[1].imageUrl).toBeUndefined();
   });
@@ -86,7 +138,9 @@ describe("WooCommerceAdapter.mapOrder", () => {
 describe("WooCommerce status mapping", () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mapWcStatus: any;
-  beforeAll(async () => { mapWcStatus = (await import("@/lib/integrations/marketplaces/woocommerce")).mapWcStatus; });
+  beforeAll(async () => {
+    mapWcStatus = (await import("@/lib/integrations/marketplaces/woocommerce")).mapWcStatus;
+  });
 
   it.each([
     ["processing", "pending"],
@@ -101,18 +155,30 @@ describe("WooCommerce status mapping", () => {
 });
 
 function makeWcRequest(body: string, secret: string | null, topic = "order.created"): NextRequest {
-  const sig = secret ? crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64") : "bad";
+  const sig = secret
+    ? crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64")
+    : "bad";
   return new NextRequest("http://localhost/api/webhooks/woocommerce", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-wc-webhook-signature": sig, "x-wc-webhook-topic": topic, "x-wc-webhook-source": "https://store.example.com" },
+    headers: {
+      "content-type": "application/json",
+      "x-wc-webhook-signature": sig,
+      "x-wc-webhook-topic": topic,
+      "x-wc-webhook-source": "https://store.example.com",
+    },
     body,
   });
 }
 
 describe("WooCommerce webhook — signature verification", () => {
   const originalEnv = process.env;
-  beforeEach(() => { jest.resetModules(); process.env = { ...originalEnv }; });
-  afterAll(() => { process.env = originalEnv; });
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...originalEnv };
+  });
+  afterAll(() => {
+    process.env = originalEnv;
+  });
 
   it("returns 401 when WOOCOMMERCE_WEBHOOK_SECRET is not set", async () => {
     delete process.env.WOOCOMMERCE_WEBHOOK_SECRET;
@@ -124,7 +190,12 @@ describe("WooCommerce webhook — signature verification", () => {
     process.env.WOOCOMMERCE_WEBHOOK_SECRET = "real-secret";
     const req = new NextRequest("http://localhost/api/webhooks/woocommerce", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-wc-webhook-signature": "not-valid", "x-wc-webhook-topic": "order.created", "x-wc-webhook-source": "https://store.example.com" },
+      headers: {
+        "content-type": "application/json",
+        "x-wc-webhook-signature": "not-valid",
+        "x-wc-webhook-topic": "order.created",
+        "x-wc-webhook-source": "https://store.example.com",
+      },
       body: "{}",
     });
     const { POST } = await import("@/app/api/webhooks/woocommerce/route");

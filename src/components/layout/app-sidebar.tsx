@@ -50,6 +50,7 @@ import {
   Receipt,
   Container,
   Zap,
+  FileCheck,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -95,6 +96,7 @@ const navigation: NavGroup[] = [
       { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes },
       { titleKey: "returns", href: "/returns", icon: RotateCcw },
       { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat },
+      { titleKey: "customs", href: "/shipping/customs", icon: FileCheck },
       { titleKey: "compliance", href: "/shipping/compliance", icon: Shield },
       { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine },
     ],
