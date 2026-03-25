@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { hash } from "bcryptjs";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { requirePermission } from "@/lib/auth/session";
@@ -37,7 +37,9 @@ export async function inviteUser(opts: {
 
   try {
     // Generate a secure one-time token for password setup
-    const passwordSetToken = randomBytes(32).toString("hex");
+    // Store a SHA-256 hash in the DB; raw token goes in the invite URL
+    const rawToken = randomBytes(32).toString("hex");
+    const passwordSetToken = createHash("sha256").update(rawToken).digest("hex");
     const passwordSetExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
     let userId: string;
@@ -72,10 +74,10 @@ export async function inviteUser(opts: {
       data: { tenantId: tenant.tenantId, userId, role: opts.role },
     });
 
-    // Send invite email with password-set link (no plaintext password)
+    // Send invite email with password-set link — raw token in URL, hash in DB
     const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
     const setPasswordUrl = isNewUser
-      ? `${baseUrl}/set-password?token=${passwordSetToken}`
+      ? `${baseUrl}/set-password?token=${rawToken}`
       : `${baseUrl}/login`;
 
     const emailResult = await sendPasswordSetLink({
@@ -108,8 +110,11 @@ export async function setPasswordWithToken(
   if (!token || token.length < 32) return { error: "Invalid token" };
   if (!password || password.length < 8) return { error: "Password must be at least 8 characters" };
 
+  // Hash the incoming token to match the stored SHA-256 hash
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+
   const user = await publicDb.user.findUnique({
-    where: { passwordSetToken: token },
+    where: { passwordSetToken: tokenHash },
   });
 
   if (!user) return { error: "Invalid or expired token" };

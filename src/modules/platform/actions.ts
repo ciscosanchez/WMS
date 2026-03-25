@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { hash } from "bcryptjs";
 import { requireAuth } from "@/lib/auth/session";
 import { publicDb } from "@/lib/db/public-client";
@@ -84,7 +84,8 @@ async function createTenantAdmin(
   displayName: string,
   tenantName: string
 ): Promise<{ error: string } | { userId: string }> {
-  const passwordSetToken = randomBytes(32).toString("hex");
+  const rawToken = randomBytes(32).toString("hex");
+  const passwordSetToken = createHash("sha256").update(rawToken).digest("hex");
   const passwordSetExpires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   let userId: string;
@@ -116,10 +117,10 @@ async function createTenantAdmin(
     create: { tenantId, userId, role: "admin" },
   });
 
-  // Send invite email
+  // Send invite email — raw token goes in the URL, hash is stored in DB
   const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
   const setPasswordUrl = isNewUser
-    ? `${baseUrl}/set-password?token=${passwordSetToken}`
+    ? `${baseUrl}/set-password?token=${rawToken}`
     : `${baseUrl}/login`;
 
   await sendPasswordSetLink({

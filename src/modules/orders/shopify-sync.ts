@@ -186,18 +186,22 @@ export async function syncShopifyOrders(
 /**
  * Push tracking/fulfillment info back to Shopify when an order ships.
  * Called from shipping actions after a label is created and confirmed.
+ *
+ * When called from a background worker, pass `tenantDb` explicitly so we
+ * don't depend on request-scoped tenant context.
  */
 export async function pushShopifyFulfillment(
   orderId: string,
   trackingNumber: string,
-  carrier: string
+  carrier: string,
+  tenantDb?: PrismaClient
 ): Promise<{ error?: string }> {
   if (config.useMockData) return {};
 
   try {
-    const { tenant } = await requireTenantContext();
+    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
 
-    const order = await tenant.db.order.findUnique({
+    const order = await db.order.findUnique({
       where: { id: orderId },
       include: { lines: { include: { product: true } } },
     });
@@ -205,7 +209,7 @@ export async function pushShopifyFulfillment(
     if (!order?.externalId) return {}; // Not a Shopify order
 
     // Resolve Shopify credentials for this tenant
-    const resolved = await resolveShopifyAdapter(tenant.db);
+    const resolved = await resolveShopifyAdapter(db);
     if (!resolved) return {}; // Shopify not configured — nothing to push
 
     // Verify the order's channel is actually Shopify
@@ -227,24 +231,28 @@ export async function pushShopifyFulfillment(
 
 /**
  * Sync WMS inventory levels back to Shopify for a given client.
+ *
+ * When called from a cron/worker context, pass `tenantDb` explicitly so we
+ * don't depend on request-scoped tenant context.
  */
 export async function syncInventoryToShopify(
-  clientId: string
+  clientId: string,
+  tenantDb?: PrismaClient
 ): Promise<{ synced: number; error?: string }> {
   if (config.useMockData) return { synced: 0 };
 
   try {
-    const { tenant } = await requireTenantContext();
+    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
 
     // Load all active products for this client so zero-stock SKUs are pushed as 0
-    const products = await tenant.db.product.findMany({
+    const products = await db.product.findMany({
       where: { clientId, isActive: true },
       select: { id: true, sku: true },
     });
     if (products.length === 0) return { synced: 0 };
 
     // Sum available inventory per product (all rows, including zero)
-    const inventoryRows = await tenant.db.inventory.groupBy({
+    const inventoryRows = await db.inventory.groupBy({
       by: ["productId"],
       where: { product: { clientId } },
       _sum: { available: true },
@@ -263,7 +271,7 @@ export async function syncInventoryToShopify(
         availableQuantity: availableById.get(p.id) ?? 0,
       }));
 
-    const resolved = await resolveShopifyAdapter(tenant.db);
+    const resolved = await resolveShopifyAdapter(db);
     if (!resolved) return { synced: 0, error: "Shopify not configured for this tenant" };
     await resolved.adapter.syncInventory(updates);
 
@@ -279,14 +287,18 @@ export async function syncInventoryToShopify(
 /**
  * Sync WMS inventory levels back to Amazon for a given client.
  * Uses the SP-API Feeds API to submit a JSON_LISTINGS_FEED with quantity updates.
+ *
+ * When called from a cron/worker context, pass `tenantDb` explicitly so we
+ * don't depend on request-scoped tenant context.
  */
 export async function syncInventoryToAmazon(
-  clientId: string
+  clientId: string,
+  tenantDb?: PrismaClient
 ): Promise<{ synced: number; error?: string }> {
   if (config.useMockData) return { synced: 0 };
 
   try {
-    const { tenant } = await requireTenantContext();
+    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
 
     // Resolve Amazon adapter: tenant-scoped credentials first, global env fallback
     const { getAmazonAdapter, getAmazonAdapterForTenant } =
@@ -295,7 +307,7 @@ export async function syncInventoryToAmazon(
 
     // Try tenant-scoped SalesChannel config
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const amazonChannel = await (tenant.db as any).salesChannel.findFirst({
+    const amazonChannel = await (db as any).salesChannel.findFirst({
       where: { type: "amazon", isActive: true },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -319,13 +331,13 @@ export async function syncInventoryToAmazon(
     if (!adapter) return { synced: 0, error: "Amazon not configured" };
 
     // Load all active products so zero-stock SKUs are pushed as 0
-    const products = await tenant.db.product.findMany({
+    const products = await db.product.findMany({
       where: { clientId, isActive: true },
       select: { id: true, sku: true },
     });
     if (products.length === 0) return { synced: 0 };
 
-    const inventoryRows = await tenant.db.inventory.groupBy({
+    const inventoryRows = await db.inventory.groupBy({
       by: ["productId"],
       where: { product: { clientId } },
       _sum: { available: true },

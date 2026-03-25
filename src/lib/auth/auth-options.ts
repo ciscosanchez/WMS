@@ -2,6 +2,10 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { publicDb } from "@/lib/db";
+import { RateLimiter } from "@/lib/security/rate-limit";
+
+/** Login rate limiter: 5 attempts per 15 minutes per email */
+const loginLimiter = new RateLimiter(5, 15 * 60_000);
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -13,6 +17,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // Rate limit by email address
+        const email = (credentials.email as string).toLowerCase().trim();
+        const { allowed } = await loginLimiter.check(`login:${email}`);
+        if (!allowed) return null;
 
         const user = await publicDb.user.findUnique({
           where: { email: credentials.email as string },

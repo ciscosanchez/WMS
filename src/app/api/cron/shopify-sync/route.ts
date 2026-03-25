@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
         let inventorySynced = 0;
         try {
           const { syncInventoryToShopify } = await import("@/modules/orders/shopify-sync");
-          const invResult = await syncInventoryToShopify(client.id);
+          const invResult = await syncInventoryToShopify(client.id, db);
           inventorySynced = invResult.synced;
         } catch (invErr) {
           console.error(`[Shopify Cron] ${tenant.slug} inventory sync error:`, invErr);

@@ -49,16 +49,16 @@ export function Topbar() {
   const userEmail = USE_MOCK ? "admin@ramola.io" : (session?.user?.email ?? "");
   const initials = getInitials(userName);
 
-  function handleSignOut() {
-    // Build the callback URL on the current origin so the user stays on
-    // the tenant subdomain (e.g. armstrong.wms.ramola.app/login) instead
-    // of being redirected to the bare wms.ramola.app/login.
-    const callbackUrl = `${window.location.origin}/login`;
+  async function handleSignOut() {
     if (USE_MOCK) {
-      window.location.href = callbackUrl;
-    } else {
-      signOut({ callbackUrl });
+      window.location.href = "/login";
+      return;
     }
+    // Sign out without NextAuth's redirect (it routes through AUTH_URL
+    // which is wms.ramola.app, losing the tenant subdomain).
+    // Instead, clear the session then redirect manually.
+    await signOut({ redirect: false });
+    window.location.href = `${window.location.origin}/login`;
   }
 
   async function handleLocaleChange(newLocale: string) {

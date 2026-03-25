@@ -35,8 +35,18 @@ async function processIntegration(job: Job) {
   const { type, ...data } = job.data;
 
   if (type === "shopify_fulfillment") {
+    const { publicDb } = await import("@/lib/db/public-client");
+    const { getTenantDb } = await import("@/lib/db/tenant-client");
+
+    const tenant = await publicDb.tenant.findUnique({
+      where: { id: data.tenantId },
+      select: { dbSchema: true },
+    });
+    if (!tenant) throw new Error(`Tenant ${data.tenantId} not found`);
+
+    const db = getTenantDb(tenant.dbSchema);
     const { pushShopifyFulfillment } = await import("@/modules/orders/shopify-sync");
-    const result = await pushShopifyFulfillment(data.orderId, data.trackingNumber, data.carrier);
+    const result = await pushShopifyFulfillment(data.orderId, data.trackingNumber, data.carrier, db);
     if (result.error) throw new Error(result.error);
   }
 }
