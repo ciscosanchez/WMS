@@ -118,10 +118,10 @@ export async function updateEntryStatus(
 
     await logAudit(tenant.db, {
       userId: user.id,
-      action: "update_status",
+      action: "update",
       entityType: "customs_entry",
       entityId: id,
-      meta: { from: entry.status, to: parsed },
+      changes: { status: { old: entry.status, new: parsed } },
     });
 
     revalidatePath(REVALIDATE_PATH);
@@ -151,7 +151,7 @@ export async function fileCustomsEntry(id: string): Promise<{ success?: boolean;
 
     await logAudit(tenant.db, {
       userId: user.id,
-      action: "file",
+      action: "update",
       entityType: "customs_entry",
       entityId: id,
     });
@@ -192,7 +192,7 @@ export async function addEntryLine(data: unknown): Promise<{ id?: string; error?
       action: "create",
       entityType: "customs_entry_line",
       entityId: line.id,
-      meta: { entryId: parsed.entryId },
+      changes: { entryId: { old: null, new: parsed.entryId } },
     });
 
     revalidatePath(REVALIDATE_PATH);
@@ -297,7 +297,7 @@ export async function releaseBondedRecord(
 
     await logAudit(tenant.db, {
       userId: user.id,
-      action: "release",
+      action: "update",
       entityType: "bonded_inventory",
       entityId: id,
     });

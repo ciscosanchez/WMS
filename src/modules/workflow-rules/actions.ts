@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
-import { ruleSchema } from "./schemas";
+import { workflowRuleSchemaStatic as ruleSchema } from "./schemas";
 import { evaluateConditions } from "./engine";
 
 const PATH = "/settings/rules";
