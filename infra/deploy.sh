@@ -14,8 +14,8 @@ echo "==> Waiting for postgres to be ready..."
 docker compose -f docker-compose.prod.yml exec postgres pg_isready -U "${POSTGRES_USER:-ramola}" --timeout=30
 
 echo "==> Running WMS Prisma migrations..."
-docker compose -f docker-compose.prod.yml exec wms npx prisma migrate deploy --schema=prisma/schema.prisma
-docker compose -f docker-compose.prod.yml exec wms npx prisma migrate deploy --schema=prisma/tenant-schema.prisma
+docker compose -f docker-compose.prod.yml exec wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
+docker compose -f docker-compose.prod.yml exec wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/tenant-schema.prisma
 
 echo "==> Health check..."
 sleep 5
