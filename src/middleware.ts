@@ -19,7 +19,8 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
       isDev
         ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
         : `script-src 'self' 'nonce-${nonce}'`,
-      isDev ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}'`,
+      // unsafe-inline required for styles — React/Radix/Recharts use inline style attributes
+      `style-src 'self' 'unsafe-inline'`,
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.sentry.io https://*.resend.com",
