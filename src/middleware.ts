@@ -49,6 +49,26 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // --- Base domain redirect ---
+  // wms.ramola.app (no tenant) — redirect authenticated users appropriately
+  const host = request.headers.get("host") || "";
+  const hostParts = host.split(".");
+  const isBaseDomain = hostParts.length < 4; // wms.ramola.app = 3 parts
+  if (isBaseDomain && !pathname.startsWith("/login") && !pathname.startsWith("/set-password") && !pathname.startsWith("/platform") && !pathname.startsWith("/api")) {
+    if (token?.isSuperadmin) {
+      return NextResponse.redirect(new URL("/platform", request.url));
+    }
+    // Non-superadmin on base domain with no tenant — send to login
+    if (token) {
+      // Logged in but not superadmin — redirect to their first tenant
+      const tenants = (token.tenants as Array<{ slug: string }>) ?? [];
+      if (tenants.length > 0) {
+        const tenantUrl = `https://${tenants[0].slug}.wms.ramola.app${pathname}`;
+        return NextResponse.redirect(tenantUrl);
+      }
+    }
+  }
+
   // --- Tenant resolution (existing behaviour) ---
   const response = tenantMiddleware(request);
 

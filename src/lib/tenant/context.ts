@@ -35,9 +35,11 @@ export async function getTenantFromHeaders(): Promise<string | null> {
   }
 
   // Production: extract from subdomain (e.g. armstrong.wms.ramola.app → armstrong)
+  // wms.ramola.app (3 parts) = base domain, no tenant
+  // armstrong.wms.ramola.app (4+ parts) = tenant slug is parts[0]
   const host = headersList.get("host") || "";
   const parts = host.split(".");
-  if (parts.length >= 3) return parts[0];
+  if (parts.length >= 4) return parts[0];
 
   return null;
 }

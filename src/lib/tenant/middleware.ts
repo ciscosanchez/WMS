@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/api/auth", "/set-password"];
+const PLATFORM_PATHS = ["/platform"];
 
 export function tenantMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip tenant resolution for public paths and static assets
+  // Skip tenant resolution for public paths, platform paths, and static assets
   if (
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
+    PLATFORM_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
@@ -31,16 +33,19 @@ export function tenantMiddleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Production: extract subdomain
+  // Production: extract tenant subdomain
+  // wms.ramola.app (3 parts) = base domain, no tenant
+  // armstrong.wms.ramola.app (4 parts) = tenant "armstrong"
   const host = request.headers.get("host") || "";
   const parts = host.split(".");
 
-  if (parts.length >= 3) {
+  if (parts.length >= 4) {
     const slug = parts[0];
     const response = NextResponse.next();
     response.headers.set("x-tenant-slug", slug);
     return response;
   }
 
+  // Base domain (wms.ramola.app) — no tenant slug
   return NextResponse.next();
 }
