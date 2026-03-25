@@ -33,15 +33,17 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const sessionCookieName =
+    process.env.NODE_ENV === "production"
+      ? "__Secure-authjs.session-token"
+      : "authjs.session-token";
 
   // --- Fetch JWT token once for all checks below ---
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    cookieName:
-      process.env.NODE_ENV === "production"
-        ? "__Secure-authjs.session-token"
-        : "authjs.session-token",
+    cookieName: sessionCookieName,
+    salt: sessionCookieName,
   }).catch(() => null);
 
   // --- /platform/* route protection (superadmin only) ---
