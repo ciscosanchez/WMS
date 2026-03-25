@@ -176,6 +176,7 @@ services:
       - "traefik.http.routers.wms.tls.domains[0].main=wms.ramola.app"
       - "traefik.http.routers.wms.tls.domains[1].main=armstrong.wms.ramola.app"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
+      - "traefik.http.services.wms.loadbalancer.passHostHeader=true"
       - "traefik.http.routers.wms.middlewares=security-headers@docker,rate-limit@docker"
     networks:
       - ramola
