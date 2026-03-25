@@ -339,6 +339,34 @@ services:
       retries: 5
       start_period: 10s
 
+  # ── Watchdog ───────────────────────────────────────────────
+  watchdog:
+    build:
+      context: ../../watchdog
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3003
+      WATCHDOG_URL: https://watchdog.ramola.app
+    volumes:
+      - watchdogdata:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=ramola"
+      - "traefik.http.routers.watchdog.rule=Host(`watchdog.ramola.app`)"
+      - "traefik.http.routers.watchdog.entrypoints=websecure"
+      - "traefik.http.routers.watchdog.tls.certresolver=letsencrypt"
+      - "traefik.http.services.watchdog.loadbalancer.server.port=3003"
+    networks:
+      - ramola
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+
   # ── Cron Runner ────────────────────────────────────────────
   # Alpine container running crond to call WMS cron endpoints.
   # Uses wget to avoid needing curl in Alpine base image.
@@ -377,4 +405,5 @@ volumes:
   pgdata:
   redisdata:
   miniodata:
+  watchdogdata:
   letsencrypt:
