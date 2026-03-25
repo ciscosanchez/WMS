@@ -169,12 +169,13 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      # Multi-tenant: accept *.wms.ramola.app (tenant subdomains) AND wms.ramola.app (login/admin)
-      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`) || HostRegexp(`{tenant:[a-z0-9-]+}.wms.ramola.app`)"
+      # Multi-tenant: accept tenant subdomains AND wms.ramola.app (login/admin)
+      # Each hostname gets its own cert via HTTP-01 (wildcard requires DNS challenge)
+      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`) || Host(`armstrong.wms.ramola.app`)"
       - "traefik.http.routers.wms.entrypoints=websecure"
       - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wms.tls.domains[0].main=wms.ramola.app"
-      - "traefik.http.routers.wms.tls.domains[0].sans=*.wms.ramola.app"
+      - "traefik.http.routers.wms.tls.domains[1].main=armstrong.wms.ramola.app"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
       - "traefik.http.routers.wms.middlewares=security-headers@docker,rate-limit@docker"
     networks:
