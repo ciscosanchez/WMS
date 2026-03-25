@@ -24,7 +24,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!allowed) return null;
 
         const user = await publicDb.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
           include: {
             tenantUsers: {
               include: { tenant: true },
