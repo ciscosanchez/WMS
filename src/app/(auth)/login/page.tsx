@@ -44,8 +44,8 @@ export default function LoginPage() {
       if (result?.error) {
         setError(t("invalidCredentials"));
       } else {
-        router.push(result?.url ?? callbackUrl);
-        router.refresh();
+        window.location.assign(result?.url ?? callbackUrl);
+        return;
       }
     } catch {
       setError(t("somethingWrong"));
