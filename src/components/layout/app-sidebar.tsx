@@ -83,7 +83,10 @@ const navigation: NavGroup[] = [
     labelKey: "yardDock",
     items: [
       { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar },
+      { titleKey: "appointments", href: "/yard-dock/appointments", icon: ClipboardCheck },
       { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map },
+      { titleKey: "yardSpots", href: "/yard-dock/yard-spots", icon: MapPin },
+      { titleKey: "dockDoors", href: "/yard-dock/dock-doors", icon: Warehouse },
       { titleKey: "driverCheckIn", href: "/yard-dock/check-in", icon: UserCheck },
     ],
   },
