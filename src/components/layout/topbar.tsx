@@ -63,8 +63,9 @@ export function Topbar() {
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(LOCALE_LABELS[newLocale] ?? newLocale);
-      router.refresh();
+      // Full page reload required — router.refresh() doesn't re-run the
+      // root layout where NextIntlClientProvider loads translations
+      window.location.reload();
     }
   }
 
@@ -73,8 +74,7 @@ export function Topbar() {
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success("Using tenant default");
-      router.refresh();
+      window.location.reload();
     }
   }
 
