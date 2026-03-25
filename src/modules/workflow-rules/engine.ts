@@ -67,7 +67,9 @@ function evaluateSingle(condition: Condition, context: Record<string, unknown>):
       return typeof actual === "number" && typeof expected === "number" && actual <= expected;
 
     case "contains":
-      return typeof actual === "string" && typeof expected === "string" && actual.includes(expected);
+      return (
+        typeof actual === "string" && typeof expected === "string" && actual.includes(expected)
+      );
 
     default:
       // Unknown operator → fail-closed (no match)
@@ -83,7 +85,7 @@ function evaluateSingle(condition: Condition, context: Record<string, unknown>):
  */
 export function evaluateConditions(
   conditions: Condition[],
-  context: Record<string, unknown>,
+  context: Record<string, unknown>
 ): boolean {
   if (conditions.length === 0) return true;
   return conditions.every((c) => evaluateSingle(c, context));

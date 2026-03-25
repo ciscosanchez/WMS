@@ -710,6 +710,20 @@
       "prevDay": "Día Anterior",
       "nextDay": "Día Siguiente"
     },
+    "rules": {
+      "title": "Reglas de Flujo",
+      "subtitle": "Configurar reglas automáticas para eventos del almacén",
+      "noRules": "Sin reglas configuradas",
+      "noRulesDesc": "Cree reglas para automatizar acciones basadas en eventos",
+      "newRule": "Nueva Regla",
+      "ruleName": "Nombre de Regla",
+      "trigger": "Evento Disparador",
+      "conditions": "Condiciones",
+      "actions": "Acciones",
+      "priority": "Prioridad",
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
     "automation": {
       "title": "Automatizacion y Robotica",
       "subtitle": "Registrar y monitorear dispositivos de automatizacion",

@@ -84,6 +84,7 @@
     "automation": "Automation",
     "billing": "Billing",
     "billingDashboard": "Billing",
+    "workflowRules": "Workflow Rules",
     "floorApp": "Floor App",
     "expiring": "Expiring Items",
     "gs1Labels": "GS1 Labels",

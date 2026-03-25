@@ -710,6 +710,20 @@
       "prevDay": "Previous Day",
       "nextDay": "Next Day"
     },
+    "rules": {
+      "title": "Workflow Rules",
+      "subtitle": "Configure automated if/then rules for warehouse events",
+      "noRules": "No workflow rules configured",
+      "noRulesDesc": "Create rules to automate actions based on warehouse events",
+      "newRule": "New Rule",
+      "ruleName": "Rule Name",
+      "trigger": "Trigger Event",
+      "conditions": "Conditions",
+      "actions": "Actions",
+      "priority": "Priority",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "automation": {
       "title": "Automation & Robotics",
       "subtitle": "Register and monitor automation devices",

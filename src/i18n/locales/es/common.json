@@ -84,6 +84,7 @@
     "automation": "Automatizacion",
     "billing": "Facturación",
     "billingDashboard": "Facturación",
+    "workflowRules": "Reglas de Flujo",
     "floorApp": "App de piso",
     "expiring": "Items por Vencer",
     "gs1Labels": "Etiquetas GS1",

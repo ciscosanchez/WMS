@@ -49,6 +49,7 @@ import {
   Bot,
   Receipt,
   Container,
+  Zap,
 } from "lucide-react";
 
 type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
@@ -123,6 +124,7 @@ const navigation: NavGroup[] = [
       { titleKey: "kits", href: "/products/kits", icon: Puzzle },
       { titleKey: "channels", href: "/channels", icon: Store },
       { titleKey: "automation", href: "/warehouse/automation", icon: Bot },
+      { titleKey: "workflowRules", href: "/settings/rules", icon: Zap },
     ],
   },
   {
