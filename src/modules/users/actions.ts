@@ -163,15 +163,22 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
     // (JWT won't refresh until next sign-in)
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
+    const isProd = process.env.NODE_ENV === "production";
     if (locale) {
       cookieStore.set("locale", locale, {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
+        secure: isProd,
         maxAge: 60 * 60 * 24 * 365,
+        ...(isProd && { domain: ".wms.ramola.app" }),
       });
     } else {
-      cookieStore.delete("locale");
+      cookieStore.delete({
+        name: "locale",
+        path: "/",
+        ...(isProd && { domain: ".wms.ramola.app" }),
+      });
     }
     revalidatePath("/");
     return {};
