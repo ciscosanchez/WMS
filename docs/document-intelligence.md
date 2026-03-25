@@ -2,7 +2,7 @@
 
 ## The Problem
 
-Warehousing and logistics still runs on paper. Every day, Armstrong staff manually key data from:
+Warehousing and logistics still runs on paper. Every day, Ramola staff manually key data from:
 
 - **Bills of Lading (BOL)** — carrier, shipper, consignee, pieces, weight, PO numbers, special instructions
 - **Packing Lists** — SKUs, quantities, lot numbers, serial numbers, dimensions
@@ -14,6 +14,7 @@ Warehousing and logistics still runs on paper. Every day, Armstrong staff manual
 - **Weight Tickets / Tally Sheets** — piece counts during unloading
 
 This manual keying is:
+
 - **Slow** — 5-15 minutes per BOL, multiply by dozens per day
 - **Error-prone** — transposition errors, missed fields, wrong PO linkage
 - **Expensive** — dedicated data entry staff or warehouse workers pulled off the floor
@@ -46,7 +47,7 @@ The BOL is the most critical document — it triggers the entire receiving proce
 │  Extracted Fields:                                           │
 │  ├── BOL Number ────────────────→ shipment.bol_number        │
 │  ├── Shipper Name/Address ──────→ linked to client           │
-│  ├── Consignee ─────────────────→ verified as Armstrong loc  │
+│  ├── Consignee ─────────────────→ verified as Ramola loc  │
 │  ├── Carrier Name ──────────────→ shipment.carrier           │
 │  ├── PRO / Tracking Number ────→ shipment.tracking_number    │
 │  ├── PO Number(s) ─────────────→ shipment.po_number          │
@@ -196,16 +197,17 @@ Claude's vision capabilities are ideal for this because:
 const response = await anthropic.messages.create({
   model: "claude-sonnet-4-5-20250514",
   max_tokens: 4096,
-  messages: [{
-    role: "user",
-    content: [
-      {
-        type: "image",
-        source: { type: "base64", media_type: "image/png", data: bolImageBase64 }
-      },
-      {
-        type: "text",
-        text: `Extract all fields from this Bill of Lading. Return JSON:
+  messages: [
+    {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          source: { type: "base64", media_type: "image/png", data: bolImageBase64 },
+        },
+        {
+          type: "text",
+          text: `Extract all fields from this Bill of Lading. Return JSON:
         {
           "bol_number": { "value": string, "confidence": 0-100 },
           "carrier": { "value": string, "confidence": 0-100 },
@@ -226,10 +228,11 @@ const response = await anthropic.messages.create({
             "weight": number,
             "nmfc": string
           }]
-        }`
-      }
-    ]
-  }]
+        }`,
+        },
+      ],
+    },
+  ],
 });
 ```
 
@@ -245,13 +248,13 @@ Priority 3: Manual entry (always available as fallback)
 
 ### Capture Methods
 
-| Method | Use Case | Flow |
-|--------|----------|------|
-| **Phone camera** | Operator at dock photographs BOL from driver | Operator App → camera → upload → extract |
-| **Scanner** | Office staff scans multi-page BOL/packing list | Scan to folder → auto-detect → extract |
-| **Email attachment** | Client emails BOL/PO/packing list | Dedicated inbox → auto-process → queue for review |
-| **Upload in WMS** | Back-office manually uploads document | WMS UI → drag-and-drop → extract |
-| **EDI** | Structured data from enterprise clients | Auto-parse → create ASN directly (no OCR needed) |
+| Method               | Use Case                                       | Flow                                              |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------- |
+| **Phone camera**     | Operator at dock photographs BOL from driver   | Operator App → camera → upload → extract          |
+| **Scanner**          | Office staff scans multi-page BOL/packing list | Scan to folder → auto-detect → extract            |
+| **Email attachment** | Client emails BOL/PO/packing list              | Dedicated inbox → auto-process → queue for review |
+| **Upload in WMS**    | Back-office manually uploads document          | WMS UI → drag-and-drop → extract                  |
+| **EDI**              | Structured data from enterprise clients        | Auto-parse → create ASN directly (no OCR needed)  |
 
 ### Human Review UI — "Smart Receiving"
 
@@ -345,8 +348,9 @@ model DocumentProcessingJob {
 ```typescript
 interface ExtractedField<T> {
   value: T;
-  confidence: number;     // 0-100
-  boundingBox?: {         // location on document for highlighting
+  confidence: number; // 0-100
+  boundingBox?: {
+    // location on document for highlighting
     x: number;
     y: number;
     width: number;
@@ -370,18 +374,21 @@ interface ExtractedBOL {
   freightClass: ExtractedField<string>;
   sealNumber: ExtractedField<string>;
   specialInstructions: ExtractedField<string>;
-  lineItems: ExtractedField<Array<{
-    description: string;
-    quantity: number;
-    weight: number;
-    nmfc?: string;
-  }>>;
+  lineItems: ExtractedField<
+    Array<{
+      description: string;
+      quantity: number;
+      weight: number;
+      nmfc?: string;
+    }>
+  >;
 }
 ```
 
 ## Implementation Phases
 
 ### Phase 1: BOL Capture & Extract (MVP)
+
 - Upload BOL image/PDF from WMS UI or Operator App camera
 - Send to Claude Vision API for extraction
 - Display side-by-side review UI
@@ -389,6 +396,7 @@ interface ExtractedBOL {
 - Store original document + extraction results
 
 ### Phase 2: Smart Matching
+
 - Fuzzy match extracted client names to existing clients
 - Match PO numbers to existing ASNs
 - Match product descriptions to SKU catalog
@@ -396,18 +404,21 @@ interface ExtractedBOL {
 - Learn from corrections over time
 
 ### Phase 3: Multi-Document Processing
+
 - Packing list extraction → auto-populate ASN line items
 - Commercial invoice extraction → HS codes, values
 - Match documents across a single shipment (BOL + PL + CI)
 - Cross-validate quantities between documents
 
 ### Phase 4: Automated Ingest
+
 - Monitored email inbox → auto-classify → auto-extract → queue for review
 - Scanner hot-folder → auto-process new files
 - API endpoint for programmatic document submission
 - EDI 856 (ASN) parser for structured inbound data
 
 ### Phase 5: Learning & Optimization
+
 - Track correction rates per field, per document type
 - Fine-tune prompts based on common corrections
 - Build client-specific templates (recurring shippers have consistent BOL formats)
@@ -415,15 +426,16 @@ interface ExtractedBOL {
 
 ## ROI Projection
 
-| Metric | Manual | With Document Intelligence |
-|--------|--------|---------------------------|
-| Time per BOL | 10-15 min | 1-2 min (review only) |
-| Error rate | 3-5% | <1% (AI + human verify) |
-| BOLs processed/day (1 person) | 30-40 | 200+ |
-| Cost per document | ~$3-5 (labor) | ~$0.10-0.30 (API) |
-| Dock-to-receiving time | 15-25 min | 2-5 min |
+| Metric                        | Manual        | With Document Intelligence |
+| ----------------------------- | ------------- | -------------------------- |
+| Time per BOL                  | 10-15 min     | 1-2 min (review only)      |
+| Error rate                    | 3-5%          | <1% (AI + human verify)    |
+| BOLs processed/day (1 person) | 30-40         | 200+                       |
+| Cost per document             | ~$3-5 (labor) | ~$0.10-0.30 (API)          |
+| Dock-to-receiving time        | 15-25 min     | 2-5 min                    |
 
 For a facility processing 100 BOLs/day:
+
 - **Manual**: 2-3 FTEs dedicated to data entry (~$120K-$180K/year)
 - **AI-assisted**: 0.5 FTE for review (~$30K/year) + ~$10K/year API costs
 - **Savings: ~$80K-$140K/year per facility**

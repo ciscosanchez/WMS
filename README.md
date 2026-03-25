@@ -21,7 +21,7 @@ Ramola gives you both — one inventory, one warehouse, two operational modes.
 | **Storage**     | MinIO (S3-compatible) for documents, labels, photos          |
 | **Cache/Queue** | Redis                                                        |
 | **AI**          | Claude Vision API (DocAI) for BOL/packing list OCR           |
-| **Testing**     | Jest (322 unit tests) · Playwright (E2E)                     |
+| **Testing**     | Jest (560 unit tests) · Playwright (E2E)                     |
 | **Deployment**  | Docker Compose — Traefik + PostgreSQL + Redis + MinIO + App  |
 
 ## Multi-Tenancy
@@ -277,7 +277,7 @@ See `infra/.env.prod.example` for the full list.
 | `npm run build`         | Production build                 |
 | `npm run typecheck`     | TypeScript type checking         |
 | `npm run lint`          | Run ESLint                       |
-| `npm run test`          | Run unit tests (322 tests)       |
+| `npm run test`          | Run unit tests (560 tests)       |
 | `npm run test:coverage` | Run tests with coverage report   |
 | `npm run test:e2e`      | Run Playwright E2E tests         |
 | `npm run validate`      | typecheck + lint + format + test |
@@ -388,7 +388,7 @@ wms/
 - [x] Amazon (SP-API inventory sync + ORDER_CHANGE webhook)
 - [x] NetSuite TBA OAuth client (active once credentials provided)
 - [x] Operator app (mobile PWA), Client portal, Superadmin platform
-- [x] Security hardening (RBAC, fail-closed auth, webhook verification, 322 tests)
+- [x] Security hardening (RBAC, fail-closed auth, webhook verification, 560 tests)
 - [x] Production audit: data boundaries, inventory integrity, pack idempotency, unified RBAC, CSP/HSTS
 - [x] Yard & Dock scheduling (dock doors, appointments, yard map, driver check-in, Gantt calendar)
 - [x] Labor management (shifts, task time logging, productivity dashboard, cost reports, billing)

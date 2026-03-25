@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Armstrong WMS                             │
+│                        Ramola WMS                             │
 │                                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
 │  │  Next.js  │  │  Prisma  │  │ NextAuth │  │   MinIO/S3   │   │
@@ -133,7 +133,7 @@ Both modes share the same inventory, warehouse, and client infrastructure. A sin
 
 ### Document Intelligence (AI-Powered OCR)
 
-Paper BOLs, packing lists, and commercial invoices are the biggest bottleneck in warehouse receiving. Armstrong uses AI vision (Claude API) to eliminate manual keying:
+Paper BOLs, packing lists, and commercial invoices are the biggest bottleneck in warehouse receiving. Ramola uses AI vision (Claude API) to eliminate manual keying:
 
 ```
   Paper BOL / Packing List / Invoice

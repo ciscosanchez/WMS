@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document maps the complete Armstrong service lifecycle from first customer contact through revenue collection. Each phase identifies which system owns the workflow and what data flows between systems.
+This document maps the complete Ramola service lifecycle from first customer contact through revenue collection. Each phase identifies which system owns the workflow and what data flows between systems.
 
 ---
 
@@ -11,7 +11,7 @@ This document maps the complete Armstrong service lifecycle from first customer 
 **Owner: Sales CRM (NetSuite CRM or HubSpot) + goarmstrong.com**
 
 ```
-Prospect finds Armstrong
+Prospect finds Ramola
   │  (website, referral, trade show, RFP)
   ▼
 Lead captured in CRM
@@ -40,18 +40,20 @@ Customer Onboarded
 ```
 
 ### System Actions
+
 - **CRM**: Lead → Opportunity → Quote → Won → Customer record
 - **NetSuite**: Customer record created, rate card/contract terms stored, billing schedule established
 - **WMS**: Client created in tenant, warehouse space allocated, products/SKUs loaded
 
 ### Gap: Self-Service Quoting
-Armstrong currently requires manual consultation for quoting. A future self-service quoting calculator on the website (input volume, services → instant estimate) would accelerate the sales cycle.
+
+Ramola currently requires manual consultation for quoting. A future self-service quoting calculator on the website (input volume, services → instant estimate) would accelerate the sales cycle.
 
 ---
 
 ## Phase 2: Receive & Store
 
-**Owner: Armstrong WMS (Receiving) + DispatchPro + Operator App**
+**Owner: Ramola WMS (Receiving) + DispatchPro + Operator App**
 
 ```
 Customer's freight is inbound
@@ -99,18 +101,19 @@ Customer's freight is inbound
 ```
 
 ### Billable Events Generated
-| Event | Rate Basis | Example |
-|-------|-----------|---------|
-| Pallet unloaded | Per pallet | $8.50/pallet × 24 pallets = $204 |
-| Carton handled | Per carton | $0.45/carton × 120 cartons = $54 |
-| Special handling | Per occurrence | Temp check, photo inspection |
-| Sorting/segregation | Per hour | $35/hr × 2 hrs = $70 |
+
+| Event               | Rate Basis     | Example                          |
+| ------------------- | -------------- | -------------------------------- |
+| Pallet unloaded     | Per pallet     | $8.50/pallet × 24 pallets = $204 |
+| Carton handled      | Per carton     | $0.45/carton × 120 cartons = $54 |
+| Special handling    | Per occurrence | Temp check, photo inspection     |
+| Sorting/segregation | Per hour       | $35/hr × 2 hrs = $70             |
 
 ---
 
 ## Phase 3: Store & Manage
 
-**Owner: Armstrong WMS (Inventory) + Client Portal**
+**Owner: Ramola WMS (Inventory) + Client Portal**
 
 ```
 ┌─ DAILY WAREHOUSE OPERATIONS ─────────────────┐
@@ -150,17 +153,18 @@ Customer's freight is inbound
 ```
 
 ### Billable Events Generated
-| Event | Rate Basis | Example |
-|-------|-----------|---------|
-| Pallet storage | Per pallet/month | $12/pallet × 200 pallets × 30 days |
-| Floor space | Per sq ft/month | $0.85/sq ft × 5,000 sq ft |
-| Climate-controlled | Premium per pallet | $18/pallet (vs $12 ambient) |
+
+| Event              | Rate Basis         | Example                            |
+| ------------------ | ------------------ | ---------------------------------- |
+| Pallet storage     | Per pallet/month   | $12/pallet × 200 pallets × 30 days |
+| Floor space        | Per sq ft/month    | $0.85/sq ft × 5,000 sq ft          |
+| Climate-controlled | Premium per pallet | $18/pallet (vs $12 ambient)        |
 
 ---
 
 ## Phase 4: Fulfill & Ship
 
-**Owner: Armstrong WMS (Fulfillment) + Operator App + Carrier APIs + DispatchPro**
+**Owner: Ramola WMS (Fulfillment) + Operator App + Carrier APIs + DispatchPro**
 
 ```
 Orders arrive from multiple sources simultaneously:
@@ -243,14 +247,15 @@ Orders arrive from multiple sources simultaneously:
 ```
 
 ### Billable Events Generated
-| Event | Rate Basis | Example |
-|-------|-----------|---------|
-| Pick & pack | Per order + per line | $3.50/order + $0.50/line |
-| Per unit picked | Per unit (high volume) | $0.15/unit × 500 units |
-| Kitting/assembly | Per kit | $2.00/kit |
-| Custom labeling | Per label | $0.25/label |
-| Shipping | Carrier cost + markup | Cost + 15% or flat rate |
-| Rush/same-day | Premium multiplier | 1.5× standard handling |
+
+| Event            | Rate Basis             | Example                  |
+| ---------------- | ---------------------- | ------------------------ |
+| Pick & pack      | Per order + per line   | $3.50/order + $0.50/line |
+| Per unit picked  | Per unit (high volume) | $0.15/unit × 500 units   |
+| Kitting/assembly | Per kit                | $2.00/kit                |
+| Custom labeling  | Per label              | $0.25/label              |
+| Shipping         | Carrier cost + markup  | Cost + 15% or flat rate  |
+| Rush/same-day    | Premium multiplier     | 1.5× standard handling   |
 
 ---
 
@@ -350,16 +355,19 @@ Client Portal ◄──────────────── View Inventory
 ## Gaps & Priorities
 
 ### High Priority (Blocks Revenue)
+
 1. **WMS → NetSuite Billing Bridge** — Without this, billable events aren't invoiced
 2. **Client Portal** — Customers need self-service visibility (competitive requirement)
 3. **Operator Mobile App** — Warehouse workers need floor-optimized scanning UI
 
 ### Medium Priority (Enables Growth)
+
 4. **Marketplace Connectors** — Shopify/Amazon unlock e-commerce fulfillment revenue
 5. **Carrier Integrations** — UPS/FedEx/USPS label generation for parcel fulfillment
 6. **Yard Management** — Dock scheduling for high-volume facilities
 
 ### Lower Priority (Optimization)
+
 7. **Self-Service Quoting** — Website calculator to accelerate sales cycle
 8. **Advanced Analytics** — Warehouse productivity, SLA compliance, cost analysis
 9. **EDI 940/945** — Enterprise customer integration standard

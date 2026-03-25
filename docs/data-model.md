@@ -210,6 +210,7 @@ Order status workflow:
 ### Product Packaging (added 2026-03-20)
 
 Products now include:
+
 - `units_per_case` (int, optional) — how many units per carton/case
 - `case_barcode` (string, optional) — barcode for case-level scanning
 
@@ -218,16 +219,18 @@ These fields support the scan-out verification feature (#3a) where operators nee
 ### Integration Credentials
 
 Marketplace credentials are stored in `SalesChannel.config` (JSON field per tenant):
+
 ```json
 {
   "shopDomain": "store.myshopify.com",
   "accessToken": "shpat_...",
   "apiVersion": "2026-01",
-  "clientCode": "Armstrong"
+  "clientCode": "Ramola"
 }
 ```
 
 Carrier and ERP credentials are stored in `Tenant.settings` (JSON field in public schema):
+
 ```json
 {
   "ups": { "accountNumber": "...", "clientId": "...", "clientSecret": "..." },
@@ -236,3 +239,91 @@ Carrier and ERP credentials are stored in `Tenant.settings` (JSON field in publi
 ```
 
 This replaces the single-tenant pattern of global env vars, enabling multi-tenant credential management.
+
+---
+
+## Complete Tenant Schema Model List (76 models)
+
+### Core
+
+Client, Product, UomConversion, Warehouse, Zone, Aisle, Rack, Shelf, Bin
+
+### Receiving
+
+InboundShipment, InboundShipmentLine, ReceivingTransaction, ReceivingDiscrepancy, Document, DocumentProcessingJob, InspectionChecklist, InspectionChecklistItem, InspectionResult
+
+### Inventory
+
+Inventory, InventoryTransaction, InventoryAdjustment, AdjustmentLine, PutawayRule, CycleCountPlan
+
+### Fulfillment
+
+SalesChannel, Order, OrderLine, PickTask, PickTaskLine, Shipment, ShipmentItem, CarrierAccount
+
+### Billing
+
+RateCard, RateCardLine, BillingEvent, Invoice, InvoiceLine, BillingDispute
+
+### Yard & Dock
+
+DockDoor, YardSpot, DockAppointment, YardVisit
+
+### Labor
+
+OperatorShift, TaskTimeLog, LaborRate
+
+### Returns
+
+ReturnAuthorization, ReturnLine, ReturnInspection
+
+### Cartonization
+
+CartonType, PackPlan, PackPlanLine
+
+### Slotting
+
+SlottingConfig, SlottingRun, SlottingRecommendation
+
+### Interleaving
+
+InterleavedRoute, InterleavedStep
+
+### VAS / Kitting
+
+KitDefinition, KitComponent, VasTask
+
+### Cross-Dock
+
+CrossDockRule, CrossDockPlan
+
+### LPN / Container
+
+Lpn, LpnContent
+
+### Compliance
+
+ComplianceCheck, HazmatFlag
+
+### Customs
+
+CustomsEntry, CustomsEntryLine, BondedInventory
+
+### Automation
+
+AutomationDevice, DeviceTask
+
+### Replenishment
+
+ReplenishmentRule
+
+### Transfers
+
+TransferOrder, TransferOrderLine
+
+### Workflow
+
+WorkflowRule
+
+### Infrastructure
+
+AuditLog, Notification, SequenceCounter
