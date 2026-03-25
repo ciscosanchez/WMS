@@ -62,24 +62,15 @@ export function Topbar() {
   }
 
   async function handleLocaleChange(newLocale: string) {
-    console.log("[locale] switching from", locale, "to", newLocale);
-    if (newLocale === locale) {
-      console.log("[locale] same locale, skipping");
-      return;
-    }
+    if (newLocale === locale) return;
     try {
-      console.log("[locale] calling updateUserLocale...");
       const result = await updateUserLocale(newLocale);
-      console.log("[locale] result:", JSON.stringify(result));
       if (result.error) {
-        console.error("[locale] error:", result.error);
         toast.error(result.error);
       } else {
-        console.log("[locale] success, reloading page...");
         window.location.reload();
       }
-    } catch (err) {
-      console.error("[locale] exception:", err);
+    } catch {
       toast.error("Failed to change language");
     }
   }
