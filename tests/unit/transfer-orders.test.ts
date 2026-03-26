@@ -70,14 +70,14 @@ describe("Transfer Order State Machine", () => {
 
 describe("Transfer Order Validation", () => {
   it("rejects same source and destination warehouse", () => {
-    const fromId = "warehouse-1";
-    const toId = "warehouse-1";
+    const fromId: string = "warehouse-1";
+    const toId: string = "warehouse-1";
     expect(fromId === toId).toBe(true);
   });
 
   it("accepts different source and destination", () => {
-    const fromId = "warehouse-1";
-    const toId = "warehouse-2";
+    const fromId: string = "warehouse-1";
+    const toId: string = "warehouse-2";
     expect(fromId === toId).toBe(false);
   });
 });

@@ -16,7 +16,7 @@ The production Traefik config now uses DNS-01 challenge through Cloudflare and r
 
 Set these in the production `.env` before deploying:
 
-- `CF_DNS_API_TOKEN`
+- `CLOUDFLARE_DNS_API_TOKEN`
 
 ## Cloudflare Requirements
 
