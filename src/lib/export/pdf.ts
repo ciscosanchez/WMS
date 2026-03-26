@@ -2,6 +2,8 @@
  * Open a styled HTML table in a new window and invoke the browser
  * print dialog so the user can save as PDF or send to a printer.
  */
+const APP_NAME =
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_APP_NAME) || "Ramola WMS";
 export function exportTableToPdf(title: string, headers: string[], rows: string[][]) {
   const headerCells = headers
     .map(
@@ -26,7 +28,7 @@ export function exportTableToPdf(title: string, headers: string[], rows: string[
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(title)} - Ramola WMS</title>
+  <title>${escapeHtml(title)} - ${APP_NAME}</title>
   <style>
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -41,7 +43,7 @@ export function exportTableToPdf(title: string, headers: string[], rows: string[
 </head>
 <body>
   <div class="header">
-    <div class="brand">Ramola WMS</div>
+    <div class="brand">${APP_NAME}</div>
     <div class="title">${escapeHtml(title)}</div>
     <div class="meta">Generated ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
   </div>

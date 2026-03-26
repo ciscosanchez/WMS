@@ -26,6 +26,7 @@ import { getShopifyAdapterForTenant } from "../integrations/marketplaces/shopify
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const EMAIL_FROM = process.env.EMAIL_FROM || "Ramola WMS <noreply@wms.ramola.app>";
+const APP_NAME = process.env.APP_NAME || "Ramola WMS";
 
 /**
  * Parse REDIS_URL into an ioredis-compatible connection object.
@@ -212,7 +213,7 @@ async function processEmail(job: Job) {
         <li><strong>Tracking number:</strong> ${data.trackingNumber}</li>
       </ul>
       <p>You can track your package using the tracking number above on the carrier's website.</p>
-      <p style="color:#888;font-size:12px;">Shipped by Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">Shipped by ${APP_NAME}</p>
     `;
   } else if (template === "low_stock_alert") {
     // Payload: { tenantId, products: [{ sku, name, available, minStock }] }
@@ -252,7 +253,7 @@ async function processEmail(job: Job) {
         <tr style="background:#f5f5f5"><th>SKU</th><th>Name</th><th>Available</th><th>Min Stock</th></tr>
         ${rows}
       </table>
-      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
     `;
   } else {
     console.warn(`[email] Unknown template: ${template}`);

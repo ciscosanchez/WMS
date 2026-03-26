@@ -5,6 +5,7 @@ import { randomBytes, createHash } from "crypto";
 import { hash } from "bcryptjs";
 import { requireAuth } from "@/lib/auth/session";
 import { publicDb } from "@/lib/db/public-client";
+import type { TenantPlan } from "../../../node_modules/.prisma/public-client";
 import { provisionTenant } from "@/lib/db/provisioner";
 import { runTenantMigrations } from "@/lib/db/tenant-migrations";
 import { sendPasswordSetLink } from "@/lib/email/resend";
@@ -92,7 +93,7 @@ export async function getPlatformUsers(tenantSlug?: string) {
 export async function createTenant(
   name: string,
   slug: string,
-  plan: string,
+  plan: TenantPlan,
   adminEmail?: string,
   adminName?: string
 ): Promise<{ error: string } | { id: string; adminInvited?: boolean }> {
@@ -107,8 +108,7 @@ export async function createTenant(
     // Store the plan
     await publicDb.tenant.update({
       where: { id },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { plan: plan as any },
+      data: { plan },
     });
 
     // Create and link admin user if email provided
@@ -224,7 +224,7 @@ export async function getBillingData() {
 
 export async function updateTenantPlan(
   id: string,
-  plan: string
+  plan: TenantPlan
 ): Promise<{ error: string } | { ok: true }> {
   await requireSuperadmin();
 
@@ -235,8 +235,7 @@ export async function updateTenantPlan(
   try {
     await publicDb.tenant.update({
       where: { id },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { plan: plan as any },
+      data: { plan },
     });
 
     revalidatePath("/platform/tenants");

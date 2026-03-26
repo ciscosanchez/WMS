@@ -47,7 +47,7 @@ function getPresignClient(): Minio.Client {
   return getS3Client();
 }
 
-const BUCKET = process.env.S3_BUCKET || "armstrong-wms";
+const BUCKET = process.env.S3_BUCKET || "ramola-wms";
 
 export async function getPresignedUploadUrl(key: string, expiry = 3600): Promise<string> {
   return getPresignClient().presignedPutObject(BUCKET, key, expiry);

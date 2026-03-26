@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createTenant } from "@/modules/platform/actions";
+import type { TenantPlan } from "../../../../../../node_modules/.prisma/public-client";
 import { useTranslations } from "next-intl";
 
 function slugify(text: string): string {
@@ -23,7 +24,7 @@ export default function NewTenantPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [plan, setPlan] = useState("starter");
+  const [plan, setPlan] = useState<TenantPlan>("starter");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminName, setAdminName] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -111,7 +112,7 @@ export default function NewTenantPage() {
                 <select
                   id="plan"
                   value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
+                  onChange={(e) => setPlan(e.target.value as TenantPlan)}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="starter">{t("starter")}</option>

@@ -121,7 +121,7 @@ export class UPSAdapter implements CarrierAdapter {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         transId: crypto.randomUUID(),
-        transactionSrc: "armstrong-wms",
+        transactionSrc: process.env.UPS_TRANSACTION_SRC || "ramola-wms",
         ...(options.headers ?? {}),
       },
     });

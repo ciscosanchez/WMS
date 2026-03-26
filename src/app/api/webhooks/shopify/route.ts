@@ -113,7 +113,7 @@ async function resolveTenantDb(
 
   return {
     db: getTenantDb(tenantRecord.dbSchema),
-    clientCode: process.env.SHOPIFY_WMS_CLIENT_CODE ?? "Armstrong",
+    clientCode: process.env.SHOPIFY_WMS_CLIENT_CODE ?? "",
   };
 }
 

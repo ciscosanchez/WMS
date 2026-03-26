@@ -85,7 +85,7 @@ async function resolveDb(conn: any) {
   return rec
     ? {
         db: getTenantDb(rec.dbSchema),
-        clientCode: process.env.WOOCOMMERCE_WMS_CLIENT_CODE ?? "Armstrong",
+        clientCode: process.env.WOOCOMMERCE_WMS_CLIENT_CODE ?? "",
       }
     : null;
 }

@@ -33,6 +33,7 @@ import {
   suspendTenant,
   updateTenantPlan,
 } from "@/modules/platform/actions";
+import type { TenantPlan } from "../../../../../node_modules/.prisma/public-client";
 
 type Tenant = {
   id: string;
@@ -40,7 +41,7 @@ type Tenant = {
   slug: string;
   dbSchema: string;
   status: string;
-  plan: string;
+  plan: TenantPlan;
   userCount: number;
   createdAt: string;
 };

@@ -261,7 +261,7 @@ export class NetSuiteClient {
     const data = await this.request<{ id: string }>("POST", "/invoice", {
       entity: { id: clientId },
       trandate: events[0].occurredAt.toISOString().slice(0, 10),
-      custbody_wms_source: "armstrong-wms",
+      custbody_wms_source: process.env.NETSUITE_WMS_SOURCE || "ramola-wms",
       itemList: { item: invoiceLines },
       subtotal,
     });

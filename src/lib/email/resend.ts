@@ -16,6 +16,7 @@ function getClient(): Resend | null {
 }
 
 const FROM = process.env.EMAIL_FROM || "Ramola WMS <noreply@wms.ramola.app>";
+const APP_NAME = process.env.APP_NAME || "Ramola WMS";
 
 export interface SendResult {
   sent: boolean;
@@ -145,7 +146,7 @@ export async function sendShipmentArrived(opts: {
     html: `
       <p>${t("shipmentArrived.body", { shipmentNumber: opts.shipmentNumber, clientName: opts.clientName })}</p>
       <p>${t("shipmentArrived.unitsExpected", { count: opts.expectedUnits })}</p>
-      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
     `,
   });
   return { sent: true };
@@ -173,7 +174,7 @@ export async function sendReceivingCompleted(opts: {
         <li>${t("receivingCompleted.unitsReceived", { count: opts.totalUnits })}</li>
         <li>${t("receivingCompleted.cartonsScanned", { count: opts.totalCartons })}</li>
       </ul>
-      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
     `,
   });
   return { sent: true };
@@ -201,7 +202,7 @@ export async function sendOrderShipped(opts: {
         <li><strong>${t("orderShipped.carrier")}</strong> ${opts.carrier}</li>
         <li><strong>${t("orderShipped.tracking")}</strong> ${opts.trackingNumber}</li>
       </ul>
-      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
     `,
   });
   return { sent: true };
@@ -265,7 +266,7 @@ export async function sendLowStockAlert(opts: {
         <tr style="background:#f5f5f5"><th>${t("lowStock.sku")}</th><th>${t("lowStock.name")}</th><th>${t("lowStock.available")}</th><th>${t("lowStock.minStock")}</th></tr>
         ${rows}
       </table>
-      <p style="color:#888;font-size:12px;">Ramola WMS</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
     `,
   });
   return { sent: true };

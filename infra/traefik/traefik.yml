@@ -1,3 +1,8 @@
+# NOTE: This static config is superseded by the inline `command:` args in
+# infra/docker-compose.prod.yml, which configure wildcard TLS via Cloudflare
+# DNS challenge. This file is kept for reference only — changes here have no
+# effect unless the docker-compose command args are removed.
+
 api:
   dashboard: false
 

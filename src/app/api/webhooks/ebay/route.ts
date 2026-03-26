@@ -74,7 +74,7 @@ async function resolveDb(conn: any) {
   const { getTenantDb } = await import("@/lib/db/tenant-client");
   const rec = await publicDb.tenant.findUnique({ where: { slug } });
   return rec
-    ? { db: getTenantDb(rec.dbSchema), clientCode: process.env.EBAY_WMS_CLIENT_CODE ?? "Armstrong" }
+    ? { db: getTenantDb(rec.dbSchema), clientCode: process.env.EBAY_WMS_CLIENT_CODE ?? "" }
     : null;
 }
 
