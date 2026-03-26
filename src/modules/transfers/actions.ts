@@ -11,7 +11,7 @@ import { assertTransition, TRANSFER_ORDER_TRANSITIONS } from "@/lib/workflow/tra
 const REVALIDATE = "/inventory/transfers";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("inventory:read");
 }
 
 export async function getTransferOrders(status?: string) {

@@ -10,7 +10,7 @@ export async function getLabelDownloadUrl(
   shipmentId: string
 ): Promise<{ url?: string; error?: string }> {
   try {
-    const { tenant } = await requireTenantContext();
+    const { tenant } = await requireTenantContext("shipping:read");
     const { getPresignedDownloadUrl } = await import("@/lib/s3/client");
 
     const shipment = await tenant.db.shipment.findUnique({

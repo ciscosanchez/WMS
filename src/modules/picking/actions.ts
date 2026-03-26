@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("shipping:read");
 }
 
 export async function getPickTasks() {

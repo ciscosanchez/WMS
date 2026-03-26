@@ -11,7 +11,11 @@ import { getS3Client, getPresignedDownloadUrl } from "@/lib/s3/client";
 import { PDFDocument } from "pdf-lib";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("receiving:read");
+}
+
+async function getWriteContext() {
+  return requireTenantContext("receiving:write");
 }
 
 /**
@@ -37,7 +41,7 @@ export async function processDocument(opts: {
   }
 
   try {
-    const { user, tenant } = await getContext();
+    const { user, tenant } = await getWriteContext();
 
     // Create the processing job
     const job = await tenant.db.documentProcessingJob.create({
@@ -174,7 +178,7 @@ export async function getRecentJobs(limit = 20) {
 export async function saveReview(jobId: string, reviewedData: Record<string, unknown>) {
   if (config.useMockData) return { id: jobId, status: "completed" };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await getWriteContext();
 
   const job = await tenant.db.documentProcessingJob.update({
     where: { id: jobId },
@@ -207,7 +211,7 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
     return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001" };
   }
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await getWriteContext();
 
   const job = await tenant.db.documentProcessingJob.findUnique({
     where: { id: jobId },
@@ -370,7 +374,7 @@ export async function finalizeShipmentPdf(
   shipmentId: string
 ): Promise<{ error: string } | { documentId: string; fileKey: string }> {
   try {
-    const { user, tenant } = await getContext();
+    const { user, tenant } = await getWriteContext();
 
     const documents = await tenant.db.document.findMany({
       where: { entityId: shipmentId, entityType: "shipment" },

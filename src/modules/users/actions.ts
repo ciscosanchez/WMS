@@ -5,16 +5,11 @@ import { hash } from "bcryptjs";
 import { randomBytes, createHash } from "crypto";
 import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
-import { requirePermission } from "@/lib/auth/session";
-import { getTenantFromHeaders } from "@/lib/tenant/context";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 
 async function getAdminContext() {
-  const { user, tenant } = await requireTenantContext();
-  const slug = await getTenantFromHeaders();
-  await requirePermission(slug!, "settings:write");
-  return { user, tenant };
+  return requireTenantContext("users:write");
 }
 
 export async function getTenantUsers(tenantId: string) {

@@ -17,7 +17,7 @@ const replenishmentRuleSchema = z.object({
 });
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("inventory:read");
 }
 
 export async function getReplenishmentRules() {

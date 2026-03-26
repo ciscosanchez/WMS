@@ -6,7 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("inventory:read");
 }
 
 // ── Putaway Rules ───────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ import { suggestPutawayLocation } from "./putaway-engine";
 import { mockAdjustments } from "@/lib/mock-data";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("inventory:read");
 }
 
 export async function getCycleCounts() {

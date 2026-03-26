@@ -10,7 +10,7 @@ import { createLpnSchema, addContentSchema, moveLpnSchema, receiveLpnSchema } fr
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("inventory:read");
 }
 
 async function getWriteContext() {

@@ -22,7 +22,7 @@ export async function getLaborDashboard() {
     };
   }
 
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("operator:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
@@ -171,7 +171,7 @@ export async function getShifts(filters?: {
 }) {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("operator:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
@@ -206,7 +206,7 @@ export async function getLaborCostReport(dateFrom: string, dateTo: string, clien
   if (config.useMockData)
     return { totalHours: 0, totalCost: 0, totalUnits: 0, costPerUnit: 0, byClient: [] };
 
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("settings:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
@@ -270,7 +270,7 @@ export async function getLaborCostReport(dateFrom: string, dateTo: string, clien
 export async function getLaborRates() {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("settings:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 

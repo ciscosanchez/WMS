@@ -8,7 +8,7 @@ import { nextSequence } from "@/lib/sequences/index";
 import { captureEvent } from "@/modules/billing/capture";
 
 async function getContext() {
-  return requireTenantContext();
+  return requireTenantContext("operator:write");
 }
 
 const binInclude = {

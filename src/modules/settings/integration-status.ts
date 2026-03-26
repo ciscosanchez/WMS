@@ -37,7 +37,7 @@ function dec(val: string | undefined): string {
  * When credentials are present, performs a lightweight connectivity probe.
  */
 export async function getIntegrationStatuses(): Promise<Record<string, IntegrationStatus>> {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("settings:read");
 
   // Load tenant settings from public DB
   const tenantRow = await publicDb.tenant.findUnique({
