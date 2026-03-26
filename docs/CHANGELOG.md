@@ -41,6 +41,7 @@ All notable changes to Ramola WMS.
 ### Coverage
 
 - Added middleware contract tests for persona-aware routing defaults
+- Added a Playwright mock-auth persona fixture for admin, manager, operator, viewer, portal, and superadmin test contexts
 
 ### Documentation
 

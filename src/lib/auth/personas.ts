@@ -2,6 +2,7 @@ import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 
 export type SessionLikeUser = {
   isSuperadmin?: boolean;
+  locale?: string;
   tenants?: Array<{
     slug: string;
     role: TenantRole;

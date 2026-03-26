@@ -242,6 +242,16 @@ USE_MOCK_AUTH=true
 
 Both default to **off** — mock mode must be explicitly opted into. It is never active in production.
 
+### Playwright Persona Fixture
+
+Playwright E2E now supports mock-auth personas through [tests/e2e/auth.setup.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/e2e/auth.setup.ts) when `USE_MOCK_AUTH=true`.
+
+- default persona: tenant admin
+- supported personas: `superadmin`, `admin`, `manager`, `operator`, `viewer`, `portal`
+- tenant resolution stays cookie/header-based in local test mode
+
+This fixture is intended to cover persona-aware routing and shell behavior without requiring real Auth.js sign-in during browser tests. It still expects a reachable local database for pages that query tenant data.
+
 ## Environment Variables
 
 | Variable                                  | Required | Description                                             |

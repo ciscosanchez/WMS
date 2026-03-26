@@ -39,7 +39,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command:
+      "USE_MOCK_AUTH=true TENANT_RESOLUTION=header DEFAULT_TENANT_SLUG=armstrong npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

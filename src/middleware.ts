@@ -1,6 +1,8 @@
+import { config as appConfig } from "@/lib/config";
 import { tenantMiddleware } from "@/lib/tenant/middleware";
 import { getDefaultTenantPath, isPortalUser } from "@/lib/auth/personas";
 import type { SessionLikeUser } from "@/lib/auth/personas";
+import { MOCK_AUTH_COOKIE, decodeMockAuthCookie } from "@/lib/auth/mock-auth";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -48,9 +50,13 @@ export async function middleware(request: NextRequest) {
     salt: sessionCookieName,
   }).catch(() => null);
 
+  const authUser =
+    (token as SessionLikeUser | null) ??
+    (appConfig.useMockAuth ? decodeMockAuthCookie(request.cookies.get(MOCK_AUTH_COOKIE)?.value) : null);
+
   // --- /platform/* route protection (superadmin only) ---
   if (pathname.startsWith("/platform")) {
-    if (!token?.isSuperadmin) {
+    if (!authUser?.isSuperadmin) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
@@ -62,6 +68,8 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const hostParts = host.split(".");
   const isBaseDomain = hostParts.length < 4; // wms.ramola.app = 3 parts
+  const isLocalTenantMode =
+    process.env.TENANT_RESOLUTION === "header" && process.env.NODE_ENV !== "production";
   if (
     isBaseDomain &&
     !pathname.startsWith("/login") &&
@@ -71,16 +79,34 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/platform") &&
     !pathname.startsWith("/api")
   ) {
-    if (token?.isSuperadmin) {
+    if (authUser?.isSuperadmin) {
       return NextResponse.redirect(new URL("/platform", request.url));
     }
+    // In local header-mode dev/test, stay on localhost and behave like a tenant shell.
+    if (authUser && isLocalTenantMode) {
+      const tenants = authUser.tenants ?? [];
+      if (tenants.length > 0) {
+        const tenantSlug = tenants[0].slug;
+        const tenantPath =
+          pathname === "/" ? getDefaultTenantPath(authUser, tenantSlug) : pathname;
+
+        if (pathname === "/") {
+          return NextResponse.redirect(new URL(tenantPath, request.url));
+        }
+
+        if (tenantPath !== pathname && (pathname === "/dashboard" || isPortalUser(authUser, tenantSlug))) {
+          return NextResponse.redirect(new URL(tenantPath, request.url));
+        }
+      }
+    }
+
     // Non-superadmin on base domain with no tenant — send to login
-    if (token) {
+    if (authUser) {
       // Logged in but not superadmin — redirect to their first tenant
-      const tenants = (token.tenants as Array<{ slug: string; role: string; portalClientId?: string | null }>) ?? [];
+      const tenants = authUser.tenants ?? [];
       if (tenants.length > 0) {
         const tenantPath =
-          pathname === "/" ? getDefaultTenantPath(token as unknown as SessionLikeUser, tenants[0].slug) : pathname;
+          pathname === "/" ? getDefaultTenantPath(authUser, tenants[0].slug) : pathname;
         const tenantUrl = `https://${tenants[0].slug}.wms.ramola.app${tenantPath}`;
         return NextResponse.redirect(tenantUrl);
       }
@@ -88,9 +114,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Tenant persona routing ---
-  if (!isBaseDomain && token && (pathname === "/" || pathname === "/dashboard")) {
+  if (!isBaseDomain && authUser && (pathname === "/" || pathname === "/dashboard")) {
     const tenantSlug = hostParts[0] ?? null;
-    const destination = getDefaultTenantPath(token as unknown as SessionLikeUser, tenantSlug);
+    const destination = getDefaultTenantPath(authUser, tenantSlug);
     if (destination !== pathname) {
       return NextResponse.redirect(new URL(destination, request.url));
     }
@@ -98,8 +124,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     !isBaseDomain &&
-    token &&
-    isPortalUser(token as unknown as SessionLikeUser, hostParts[0] ?? null) &&
+    authUser &&
+    isPortalUser(authUser, hostParts[0] ?? null) &&
     !pathname.startsWith("/portal") &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/api") &&
@@ -116,7 +142,10 @@ export async function middleware(request: NextRequest) {
   // Priority: cookie (instant update) > JWT locale > tenant default > "en"
   const localeCookie = request.cookies.get("locale")?.value;
   const locale =
-    localeCookie ?? (token?.locale as string | undefined) ?? (token?.tenantLocale as string | undefined) ?? "en";
+    localeCookie ??
+    ((token?.locale as string | undefined) ?? authUser?.locale) ??
+    (token?.tenantLocale as string | undefined) ??
+    "en";
   response.headers.set("x-locale", locale);
 
   // --- Security headers ---

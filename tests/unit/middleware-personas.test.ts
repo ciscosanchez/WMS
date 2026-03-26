@@ -27,6 +27,7 @@ describe("middleware persona routing", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.AUTH_SECRET = "test-secret";
+    delete process.env.TENANT_RESOLUTION;
     mockTenantMiddleware.mockReturnValue(NextResponse.next());
   });
 
@@ -84,5 +85,19 @@ describe("middleware persona routing", () => {
     expect(response.headers.get("location")).toBe(
       "https://armstrong.wms.ramola.app/portal/inventory"
     );
+  });
+
+  it("keeps base-domain tenant redirects local in header-mode dev", async () => {
+    process.env.TENANT_RESOLUTION = "header";
+
+    mockGetToken.mockResolvedValue({
+      isSuperadmin: false,
+      tenants: [{ slug: "armstrong", role: "warehouse_worker", portalClientId: null }],
+    });
+
+    const { middleware } = await import("@/middleware");
+    const response = await middleware(makeRequest("http://localhost:3000/", "localhost:3000"));
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/my-tasks");
   });
 });

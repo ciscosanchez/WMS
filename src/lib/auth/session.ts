@@ -1,8 +1,14 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { publicDb } from "@/lib/db/public-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import { config } from "@/lib/config";
 import { ROLE_LEVEL, PERMISSION_LEVEL } from "@/lib/auth/rbac";
+import {
+  DEFAULT_MOCK_AUTH_USER,
+  MOCK_AUTH_COOKIE,
+  decodeMockAuthCookie,
+} from "@/lib/auth/mock-auth";
 
 export interface SessionUser {
   id: string;
@@ -19,14 +25,17 @@ export interface SessionUser {
   }>;
 }
 
-const MOCK_USER: SessionUser = {
-  id: "mock-user-1",
-  email: "admin@ramola.io",
-  name: "Admin User",
-  isSuperadmin: true,
-  authVersion: 0,
-  tenants: [{ tenantId: "mock-tenant-1", slug: "demo", role: "admin" }],
-};
+const MOCK_USER: SessionUser = DEFAULT_MOCK_AUTH_USER;
+
+async function getMockSessionUser(): Promise<SessionUser> {
+  try {
+    const cookieStore = await cookies();
+    const cookieValue = cookieStore.get(MOCK_AUTH_COOKIE)?.value;
+    return (decodeMockAuthCookie(cookieValue) as SessionUser | null) ?? MOCK_USER;
+  } catch {
+    return MOCK_USER;
+  }
+}
 
 async function validateSessionUser(user: SessionUser): Promise<SessionUser | null> {
   const current = await publicDb.user.findUnique({
@@ -43,7 +52,7 @@ async function validateSessionUser(user: SessionUser): Promise<SessionUser | nul
 
 export async function getSession(): Promise<{ user: SessionUser } | null> {
   if (config.useMockAuth) {
-    return { user: MOCK_USER };
+    return { user: await getMockSessionUser() };
   }
 
   const { auth } = await import("@/lib/auth/auth-options");
@@ -58,7 +67,7 @@ export async function getSession(): Promise<{ user: SessionUser } | null> {
 
 export async function requireAuth(): Promise<SessionUser> {
   if (config.useMockAuth) {
-    return MOCK_USER;
+    return getMockSessionUser();
   }
 
   const { auth } = await import("@/lib/auth/auth-options");
@@ -84,7 +93,9 @@ export async function requireAuth(): Promise<SessionUser> {
  */
 export async function requireTenantAccess(tenantSlug: string) {
   if (config.useMockAuth) {
-    return { user: MOCK_USER, role: "admin" as TenantRole };
+    const user = await getMockSessionUser();
+    const membership = user.tenants.find((t) => t.slug === tenantSlug);
+    return { user, role: (membership?.role ?? "admin") as TenantRole };
   }
 
   const user = await requireAuth();
@@ -103,7 +114,9 @@ export async function requireTenantAccess(tenantSlug: string) {
  */
 export async function requirePermission(tenantSlug: string, permission: string) {
   if (config.useMockAuth) {
-    return { user: MOCK_USER, role: "admin" as TenantRole };
+    const user = await getMockSessionUser();
+    const membership = user.tenants.find((t) => t.slug === tenantSlug);
+    return { user, role: (membership?.role ?? "admin") as TenantRole };
   }
 
   const { user, role } = await requireTenantAccess(tenantSlug);
