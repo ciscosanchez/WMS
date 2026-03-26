@@ -18,7 +18,9 @@ export async function getTenantUsers(tenantId: string) {
 
   return publicDb.tenantUser.findMany({
     where: { tenantId },
-    include: { user: { select: { id: true, name: true, email: true, createdAt: true } } },
+    include: {
+      user: { select: { id: true, name: true, email: true, createdAt: true, isSuperadmin: true } },
+    },
     orderBy: { user: { createdAt: "asc" } },
   });
 }

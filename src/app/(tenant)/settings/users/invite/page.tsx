@@ -141,6 +141,24 @@ export default function InviteUserPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Persona Notes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              <span className="font-medium text-foreground">Operator</span> users are invited as
+              <span className="font-medium text-foreground"> Warehouse Worker</span> and land in
+              the floor app experience.
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Portal User</span> access is still a
+              viewer role plus a client binding. Invite the user here, then bind them to a client
+              to activate the portal persona.
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="flex gap-3">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (

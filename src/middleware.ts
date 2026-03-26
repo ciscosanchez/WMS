@@ -1,5 +1,5 @@
 import { tenantMiddleware } from "@/lib/tenant/middleware";
-import { getDefaultTenantPath } from "@/lib/auth/personas";
+import { getDefaultTenantPath, isPortalUser } from "@/lib/auth/personas";
 import type { SessionLikeUser } from "@/lib/auth/personas";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
@@ -94,6 +94,19 @@ export async function middleware(request: NextRequest) {
     if (destination !== pathname) {
       return NextResponse.redirect(new URL(destination, request.url));
     }
+  }
+
+  if (
+    !isBaseDomain &&
+    token &&
+    isPortalUser(token as unknown as SessionLikeUser, hostParts[0] ?? null) &&
+    !pathname.startsWith("/portal") &&
+    !pathname.startsWith("/login") &&
+    !pathname.startsWith("/api") &&
+    !pathname.startsWith("/_next") &&
+    !pathname.startsWith("/favicon")
+  ) {
+    return NextResponse.redirect(new URL("/portal/inventory", request.url));
   }
 
   // --- Tenant resolution (existing behaviour) ---

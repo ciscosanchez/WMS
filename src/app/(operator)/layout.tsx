@@ -10,10 +10,10 @@ export default async function OperatorLayout({ children }: { children: React.Rea
     nav("/login");
     return null;
   }
-  await requirePermission(slug as string, "operator:write");
+  const { user } = await requirePermission(slug as string, "operator:write");
   return (
     <OfflineProvider>
-      <OperatorNav>{children}</OperatorNav>
+      <OperatorNav userName={user.name}>{children}</OperatorNav>
     </OfflineProvider>
   );
 }

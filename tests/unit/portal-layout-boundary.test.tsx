@@ -30,7 +30,18 @@ describe("PortalLayout boundary", () => {
 
   it("renders the portal shell for portal-bound users", async () => {
     mockRequirePortalContext.mockResolvedValue({
+      user: { name: "Portal User" },
       portalClientId: "client-1",
+      tenant: {
+        db: {
+          client: {
+            findUnique: jest.fn().mockResolvedValue({
+              name: "Arteriors Home",
+              code: "ARTERIORS",
+            }),
+          },
+        },
+      },
     });
 
     const Layout = (await import("@/app/(portal)/layout")).default;

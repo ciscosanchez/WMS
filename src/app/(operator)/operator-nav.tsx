@@ -36,7 +36,13 @@ const navKeys = [
   { href: "/shift", key: "shift" as const, icon: Clock },
 ];
 
-export default function OperatorLayout({ children }: { children: React.ReactNode }) {
+export default function OperatorLayout({
+  children,
+  userName,
+}: {
+  children: React.ReactNode;
+  userName: string;
+}) {
   const pathname = usePathname();
   const { isOnline, pendingCount, isSyncing, replayQueue } = useSharedOffline();
   const { highContrast, toggleHighContrast } = useHighContrast();
@@ -99,7 +105,7 @@ export default function OperatorLayout({ children }: { children: React.ReactNode
           >
             <Sun className="h-4 w-4" />
           </button>
-          <span className="text-sm text-muted-foreground">Carlos M.</span>
+          <span className="text-sm text-muted-foreground">{userName}</span>
         </div>
       </header>
 

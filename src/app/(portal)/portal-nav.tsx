@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,8 +33,23 @@ const navLinks = [
   { href: "/portal/reports", label: "Reports", icon: BarChart3 },
 ];
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+export default function PortalLayout({
+  children,
+  accountName,
+  accountCode,
+  userName,
+}: {
+  children: React.ReactNode;
+  accountName: string;
+  accountCode: string | null;
+  userName: string;
+}) {
   const pathname = usePathname();
+
+  async function handleSignOut() {
+    await signOut({ redirect: false });
+    window.location.href = `${window.location.origin}/login`;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -79,18 +95,25 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               render={
                 <Button variant="ghost" size="sm" className="gap-2">
                   <Building2 className="h-4 w-4" />
-                  <span className="text-sm font-medium">Acme Corporation</span>
+                  <span className="text-sm font-medium">{accountName}</span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </Button>
               }
             />
             <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{userName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {accountCode ? `Client ${accountCode}` : "Portal access"}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 Account Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void handleSignOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

@@ -22,6 +22,8 @@ type UserRow = {
   name: string;
   email: string;
   role: TenantRole;
+  personas: string[];
+  portalClientId: string | null;
   joinedAt: string;
 };
 
@@ -33,6 +35,20 @@ const roleColors: Record<string, string> = {
 };
 
 const ROLES: TenantRole[] = ["admin", "manager", "warehouse_worker", "viewer"];
+
+const personaColors: Record<string, string> = {
+  superadmin: "bg-red-100 text-red-700 border-red-200",
+  tenant_admin: "bg-red-100 text-red-700 border-red-200",
+  tenant_manager: "bg-blue-100 text-blue-700 border-blue-200",
+  warehouse_worker: "bg-orange-100 text-orange-700 border-orange-200",
+  operator: "bg-amber-100 text-amber-700 border-amber-200",
+  viewer: "bg-gray-100 text-gray-700 border-gray-200",
+  portal_user: "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+
+function formatPersonaLabel(persona: string) {
+  return persona.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 function UserActions({ user }: { user: UserRow }) {
   const router = useRouter();
@@ -104,6 +120,23 @@ const columns: ColumnDef<UserRow>[] = [
         </Badge>
       );
     },
+  },
+  {
+    id: "personas",
+    header: "Personas",
+    cell: ({ row }) => (
+      <div className="flex flex-wrap gap-1">
+        {row.original.personas.map((persona) => (
+          <Badge
+            key={persona}
+            variant="outline"
+            className={`font-medium ${personaColors[persona] ?? "bg-muted text-foreground"}`}
+          >
+            {formatPersonaLabel(persona)}
+          </Badge>
+        ))}
+      </div>
+    ),
   },
   {
     accessorKey: "joinedAt",

@@ -77,6 +77,6 @@ export function getDefaultTenantPath(
   slug?: string | null
 ): string {
   if (isPortalUser(user, slug)) return "/portal/inventory";
-  if (isOperatorUser(user, slug)) return "/receive";
+  if (isOperatorUser(user, slug)) return "/my-tasks";
   return "/dashboard";
 }

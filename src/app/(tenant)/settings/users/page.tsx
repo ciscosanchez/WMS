@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
+import { getUserPersonas } from "@/lib/auth/personas";
 import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
@@ -15,6 +16,11 @@ export default async function UsersPage() {
     name: m.user.name,
     email: m.user.email,
     role: m.role,
+    personas: getUserPersonas({
+      isSuperadmin: m.user.isSuperadmin,
+      tenants: [{ slug: tenant.slug, role: m.role, portalClientId: m.portalClientId }],
+    }, tenant.slug),
+    portalClientId: m.portalClientId,
     joinedAt: m.user.createdAt.toISOString(),
   }));
 

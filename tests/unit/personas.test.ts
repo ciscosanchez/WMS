@@ -53,7 +53,7 @@ describe("auth personas", () => {
 
   it("chooses the right default tenant path per persona", () => {
     expect(getDefaultTenantPath(tenantAdmin, "armstrong")).toBe("/dashboard");
-    expect(getDefaultTenantPath(warehouseWorker, "armstrong")).toBe("/receive");
+    expect(getDefaultTenantPath(warehouseWorker, "armstrong")).toBe("/my-tasks");
     expect(getDefaultTenantPath(portalViewer, "armstrong")).toBe("/portal/inventory");
   });
 });
