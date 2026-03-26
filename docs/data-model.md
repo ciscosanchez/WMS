@@ -19,8 +19,17 @@
                      │ tenant_id    │
                      │ user_id      │
                      │ role (RBAC)  │
+                     │ portal_client_id │
                      └──────────────┘
 ```
+
+Notes:
+
+- `users.is_superadmin` controls platform-level `/platform` access
+- `tenant_users.role` controls tenant-scoped RBAC
+- `tenant_users.portal_client_id` enables client-scoped portal access without adding a separate persisted portal role
+- product personas like `operator` and `portal_user` are derived from this stored model rather than stored as additional enum roles
+- middleware and layouts use those derived personas for default routing, but sensitive actions still enforce access server-side
 
 ## Tenant Schema (replicated per tenant)
 

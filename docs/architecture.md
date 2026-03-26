@@ -85,8 +85,10 @@ The public client is a singleton. Tenant clients are pooled in an LRU cache keye
 
 - **NextAuth.js v5** with JWT strategy (no server-side sessions)
 - **Credentials provider** — email/password with bcrypt
-- JWT contains: user ID, email, name, superadmin flag, tenant list with roles
+- JWT contains: user ID, email, name, superadmin flag, tenant list with roles and optional portal client bindings
 - Tenant-specific role stored in `tenant_users` join table
+- Portal scoping is stored as `tenant_users.portal_client_id`
+- Product personas are derived at runtime, not persisted as extra enum roles
 
 ### RBAC Model
 
@@ -95,12 +97,35 @@ User ──M:N──→ TenantUser(role) ──M:1──→ Tenant
 
 Roles: admin | manager | warehouse_worker | viewer
 
+Derived product personas:
+  superadmin
+  tenant_admin
+  tenant_manager
+  warehouse_worker
+  operator
+  viewer
+  portal_user
+
 Permission check:
   requirePermission(tenantSlug, "inventory:write")
     → resolve tenant access
     → check role against permission map
     → throw if insufficient
 ```
+
+Notes:
+
+- `portal_user` is derived from tenant membership plus `portal_client_id`
+- `operator` is derived from `warehouse_worker`
+- middleware and layout routing shape the UX, but server-side context checks are the real enforcement boundary
+- portal data access adds client scoping on top of role checks
+- middleware applies persona-aware default routing:
+  - superadmin -> `/platform`
+  - portal user -> `/portal/inventory`
+  - operator -> `/my-tasks`
+  - other tenant users -> `/dashboard`
+
+See [docs/rbac.md](rbac.md) for the current source-of-truth explanation.
 
 ## Data Architecture
 
@@ -170,13 +195,15 @@ The `inventory` table holds current state; the `inventory_transactions` table is
 ```
 1. Request hits Next.js middleware
 2. Middleware resolves tenant slug (subdomain or header)
-3. Server Component or Server Action executes
-4. requireAuth() validates JWT session
-5. resolveTenant() looks up tenant, gets pooled PrismaClient
-6. Business logic executes against tenant schema
-7. Audit log records the action
-8. revalidatePath() busts cache for affected routes
-9. Response returned to client
+3. Middleware applies persona-aware route defaults
+4. Server Component or Server Action executes
+5. requireAuth() validates JWT session
+6. requireTenantContext(permission?) or requirePortalContext() resolves membership and scope
+7. resolveTenant() looks up tenant, gets pooled PrismaClient
+8. Business logic executes against tenant schema
+9. Audit log records the action
+10. revalidatePath() busts cache for affected routes
+11. Response returned to client
 ```
 
 ## Tech Decisions

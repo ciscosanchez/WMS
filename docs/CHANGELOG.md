@@ -2,6 +2,45 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-26 — RBAC Persona Hardening
+
+### Access Model
+
+- Added derived persona helpers for:
+  - `superadmin`
+  - `tenant_admin`
+  - `tenant_manager`
+  - `warehouse_worker`
+  - `operator`
+  - `viewer`
+  - `portal_user`
+- Middleware now applies persona-aware default routing on tenant subdomains
+- Portal users are redirected into `/portal/*`
+- Operator users default to `/my-tasks`
+
+### RBAC Enforcement
+
+- Tightened remaining user-facing `requireTenantContext()` gaps across tenant modules
+- Corrected user admin to require `users:write`
+- Added nav visibility and boundary tests for sidebar and portal shell
+- Added persona tests and seed persona matrix tests
+
+### Portal & Export Security
+
+- Portal shell now resolves and displays the bound client account
+- Portal layout avoids redirect loops on unexpected runtime failures
+- Export routes for inventory, orders, and billing now scope portal-bound users by `portal_client_id`
+
+### Document Intelligence Security
+
+- `updateShipmentFromExtraction()` now requires `receiving:write`
+- `getFileViewUrl()` now requires `receiving:read`
+
+### Documentation
+
+- Expanded [docs/rbac.md](rbac.md) into the RBAC/persona source-of-truth
+- Updated architecture and data-model docs to reflect derived personas and portal bindings
+
 ## 2026-03-25 — Competitive Gap Closure Sprint
 
 ### Gaps Closed (14 of 17 identified)

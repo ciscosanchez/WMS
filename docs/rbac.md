@@ -1,0 +1,272 @@
+# RBAC & Personas
+
+Ramola WMS uses a layered access model:
+
+1. Stored identity and tenant membership in the public schema
+2. Permission checks against a single RBAC map
+3. Derived product personas for routing and UX
+4. Portal client scoping for customer-facing access
+
+This keeps the persisted model small while still supporting distinct product
+experiences for platform admins, tenant admins, operators, and portal users.
+
+## Source Of Truth
+
+Core implementation files:
+
+- [rbac.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/rbac.ts)
+- [personas.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/personas.ts)
+- [session.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/session.ts)
+- [context.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/tenant/context.ts)
+- [middleware.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/middleware.ts)
+
+Use this document as the current product-level reference. The code files above
+remain the implementation authority.
+
+## Stored Access Model
+
+### Public-Schema Fields
+
+- `users.is_superadmin`
+  - platform-level access
+  - controls base-domain `/platform` behavior
+- `tenant_users.role`
+  - tenant-scoped role
+  - one of: `admin`, `manager`, `warehouse_worker`, `viewer`
+- `tenant_users.portal_client_id`
+  - optional client binding for portal-scoped access
+  - used to fail closed into a single client account in portal flows
+
+### What Is Persisted Vs Derived
+
+Persisted:
+
+- platform superadmin flag
+- tenant membership
+- tenant role
+- optional portal client binding
+
+Derived:
+
+- `tenant_admin`
+- `tenant_manager`
+- `operator`
+- `portal_user`
+
+Ramola intentionally does not persist extra enum roles for `operator` or
+`portal_user` yet.
+
+## Role Hierarchy
+
+Current role levels from [rbac.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/rbac.ts):
+
+- `admin` = 40
+- `manager` = 30
+- `warehouse_worker` = 20
+- `viewer` = 10
+
+Permission checks are fail closed:
+
+- unknown permission keys require admin
+- tenant membership is required unless the user is acting as superadmin
+
+## Permission Model
+
+Current permission families:
+
+- `clients:*`
+- `products:*`
+- `receiving:*`
+- `inventory:*`
+- `orders:*`
+- `warehouse:*`
+- `shipping:*`
+- `operator:*`
+- `cross_dock:*`
+- `returns:*`
+- `yard-dock:*`
+- `billing:*`
+- `customs:*`
+- `reports:read`
+- `settings:*`
+- `users:*`
+
+### Effective Access By Stored Role
+
+This table reflects the current role thresholds in `PERMISSION_LEVEL`.
+
+| Permission family | Viewer | Warehouse Worker | Manager | Admin |
+| --- | --- | --- | --- | --- |
+| Read data (`*:read`, reports) | Yes | Yes | Yes | Yes |
+| Operator work | Read only | Read + write | Read + write | Read + write |
+| Receiving write | No | Yes | Yes | Yes |
+| Inventory write / count | No | Yes | Yes | Yes |
+| Shipping write | No | Yes | Yes | Yes |
+| Products / orders / warehouse write | No | No | Yes | Yes |
+| Billing write | No | No | Yes | Yes |
+| Settings read / users read | No | No | Yes | Yes |
+| Settings write / users write / billing approve / customs file | No | No | No | Yes |
+
+Notes:
+
+- `viewer` is intentionally broad on tenant reads, but not writes
+- `warehouse_worker` is the execution role
+- `manager` is the supervisory role
+- `admin` is the tenant-governance role
+
+## Enforcement Layers
+
+### 1. Session And Membership
+
+Primary helpers:
+
+- [requireTenantAccess()](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/session.ts)
+- [requirePermission()](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/session.ts)
+- [requireTenantContext()](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/tenant/context.ts)
+- [requirePortalContext()](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/tenant/context.ts)
+
+Rules:
+
+- server actions and server-side queries should rely on `requireTenantContext(permission?)`
+- portal-only flows should use `requirePortalContext()`
+- middleware is a routing and UX layer, not the final security boundary
+
+### 2. Layout And Shell Boundaries
+
+- `/platform/*` requires `isSuperadmin`
+- portal shell requires `portal_client_id`
+- tenant shell nav is permission-aware
+- portal-bound users are redirected away from tenant-oriented screens
+
+### 3. Data Scoping
+
+Portal access is not just role-based. It is also client-scoped:
+
+- portal actions resolve the bound client from `portal_client_id`
+- portal exports are filtered by `portal_client_id`
+- portal users do not get tenant-wide CSV exports anymore
+
+Sensitive read/write examples now locked down:
+
+- document-intelligence shipment updates require `receiving:write`
+- document file preview URLs require `receiving:read`
+- portal export routes scope inventory, orders, and billing to the bound client
+
+## Product Personas
+
+Defined in [personas.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/personas.ts).
+
+These are product-facing identities derived from the stored model.
+
+### Supported Personas
+
+- `superadmin`
+  - source: `users.is_superadmin`
+  - default base-domain route: `/platform`
+
+- `tenant_admin`
+  - source: tenant role `admin`
+  - default tenant route: `/dashboard`
+
+- `tenant_manager`
+  - source: tenant role `manager`
+  - default tenant route: `/dashboard`
+
+- `warehouse_worker`
+  - source: tenant role `warehouse_worker`
+
+- `operator`
+  - source: derived from `warehouse_worker`
+  - default tenant route: `/my-tasks`
+  - primary shell: operator app
+
+- `viewer`
+  - source: tenant role `viewer`
+  - default tenant route: `/dashboard`
+
+- `portal_user`
+  - source: tenant membership plus `portal_client_id`
+  - today this is usually a `viewer` with client scoping
+  - default tenant route: `/portal/inventory`
+  - primary shell: portal app
+
+Important current decision:
+
+- `portal_user` and `operator` are first-class product personas
+- they are not first-class persisted enum roles yet
+
+## Routing Rules
+
+The middleware and layouts enforce persona-specific entry behavior.
+
+### Base Domain: `wms.ramola.app`
+
+- superadmin -> `/platform`
+- tenant users -> first tenant subdomain
+- tenant root `/` respects the persona default path for that tenant
+
+### Tenant Subdomain
+
+- portal-bound users are redirected into `/portal/*`
+- warehouse-worker/operator users default to `/my-tasks`
+- admin, manager, and viewer users default to `/dashboard`
+
+### Portal Shell
+
+- requires `portal_client_id`
+- redirects only on the intended portal-binding failure
+- unexpected runtime failures should surface normally instead of looping
+
+## Admin UX Implications
+
+The current admin-facing interpretation is:
+
+- role assignment still uses the four stored tenant roles
+- persona badges in user management expose the derived product personas
+- invite UI explains the current mappings:
+  - `operator` = `warehouse_worker` + floor app access
+  - `portal_user` = `viewer` + client binding
+
+This means admins can manage the current model without needing new stored roles.
+
+## Seed Persona Matrix
+
+The Armstrong seed tenant is the reference persona matrix for local/demo use.
+
+Defined in [armstrong-personas.ts](/Users/cisco.sanchez/Sales/armstrong/wms/scripts/seed-data/armstrong-personas.ts).
+
+Seeded personas:
+
+- `superadmin@ramola.io` -> platform superadmin
+- `admin@armstrong.com` -> tenant admin
+- `manager@armstrong.com` -> tenant manager
+- `receiving@armstrong.com` -> warehouse worker
+- `warehouse@armstrong.com` -> warehouse worker
+- `viewer@armstrong.com` -> tenant viewer
+- `portal@arteriors.com` -> portal viewer scoped to `ARTERIORS`
+
+Protected by:
+
+- [seed-persona-matrix.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/seed-persona-matrix.test.ts)
+
+## Test Coverage
+
+Key RBAC and persona coverage:
+
+- [rbac-consistency.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/rbac-consistency.test.ts)
+- [read-permission-contracts.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/read-permission-contracts.test.ts)
+- [remaining-rbac-contracts.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/remaining-rbac-contracts.test.ts)
+- [sidebar-rbac.test.tsx](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/sidebar-rbac.test.tsx)
+- [portal-context.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/portal-context.test.ts)
+- [portal-layout-boundary.test.tsx](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/portal-layout-boundary.test.tsx)
+- [personas.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/personas.test.ts)
+- [export-portal-scope.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/export-portal-scope.test.ts)
+
+## Current Design Decisions
+
+Intentional choices right now:
+
+- prefer derived personas over persisted role explosion
+- keep `portal_user` client-scoped rather than tenant-wide
+- keep middleware persona routing as a UX accelerator, not the only security control
+- require server-side permission checks and portal scoping on sensitive actions and exports
