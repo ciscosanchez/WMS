@@ -87,9 +87,7 @@ describe("middleware persona routing", () => {
     );
   });
 
-  it("keeps base-domain tenant redirects local in header-mode dev", async () => {
-    process.env.TENANT_RESOLUTION = "header";
-
+  it("keeps base-domain tenant redirects local on localhost in dev", async () => {
     mockGetToken.mockResolvedValue({
       isSuperadmin: false,
       tenants: [{ slug: "armstrong", role: "warehouse_worker", portalClientId: null }],

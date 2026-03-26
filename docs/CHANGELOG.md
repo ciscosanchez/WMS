@@ -42,6 +42,7 @@ All notable changes to Ramola WMS.
 
 - Added middleware contract tests for persona-aware routing defaults
 - Added a Playwright mock-auth persona fixture for admin, manager, operator, viewer, portal, and superadmin test contexts
+- Localhost tenant-mode redirects now key off the request host instead of relying only on `TENANT_RESOLUTION`
 
 ### Documentation
 

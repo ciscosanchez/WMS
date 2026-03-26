@@ -69,7 +69,7 @@ export async function middleware(request: NextRequest) {
   const hostParts = host.split(".");
   const isBaseDomain = hostParts.length < 4; // wms.ramola.app = 3 parts
   const isLocalTenantMode =
-    process.env.TENANT_RESOLUTION === "header" && process.env.NODE_ENV !== "production";
+    (host.includes("localhost") || host.startsWith("127.0.0.1")) && process.env.NODE_ENV !== "production";
   if (
     isBaseDomain &&
     !pathname.startsWith("/login") &&
