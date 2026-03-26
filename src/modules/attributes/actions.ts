@@ -8,8 +8,11 @@ import { attributeDefinitionSchema, type AttributeScope } from "./schemas";
 
 const SETTINGS_PATH = "/settings";
 
-export async function getOperationalAttributeDefinitions(scope?: AttributeScope) {
-  const { tenant } = await requireTenantContext("settings:read");
+export async function getOperationalAttributeDefinitions(
+  scope?: AttributeScope,
+  permission = "settings:read"
+) {
+  const { tenant } = await requireTenantContext(permission);
   const db = asTenantDb(tenant.db);
 
   return db.operationalAttributeDefinition.findMany({

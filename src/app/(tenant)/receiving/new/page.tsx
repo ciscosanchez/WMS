@@ -5,7 +5,7 @@ import { NewShipmentClient } from "./new-shipment-client";
 export default async function NewShipmentPage() {
   const [clients, attributeDefinitions] = await Promise.all([
     getClients(),
-    getOperationalAttributeDefinitions("inbound_shipment"),
+    getOperationalAttributeDefinitions("inbound_shipment", "receiving:write"),
   ]);
 
   return (

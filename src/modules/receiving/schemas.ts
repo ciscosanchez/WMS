@@ -29,6 +29,7 @@ export function shipmentLineSchema(t?: T) {
     lotNumber: z.string().optional().nullable(),
     serialNumber: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
+    operationalAttributes: z.array(attributeValueInputSchema).optional().default([]),
   });
 }
 

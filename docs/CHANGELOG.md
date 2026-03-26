@@ -43,6 +43,19 @@ All notable changes to Ramola WMS.
 - This slice stops at shipment-level capture
 - LP propagation, inventory search, allocation, and broader render surfaces still belong to the next phase
 
+## 2026-03-26 — Configurable Operational Attributes Phase 2 (Line + LPN Expansion)
+
+### Receiving
+
+- Added operational attribute capture for inbound shipment lines in the add-line dialog
+- Line-level receiving definitions now flow through the generic value persistence layer
+
+### LPN
+
+- Added a real `/inventory/lpn/new` creation surface
+- LPN create flows now support operational attribute capture
+- Operational attribute definition reads can now be permission-scoped to the runtime surface using them
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

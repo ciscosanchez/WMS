@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addShipmentLine } from "@/modules/receiving/actions";
+import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 interface AddLineDialogProps {
@@ -30,6 +33,24 @@ export function AddLineDialog({
   const [expectedQty, setExpectedQty] = useState(1);
   const [lotNumber, setLotNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attributeDefinitions, setAttributeDefinitions] = useState<any[]>([]);
+  const [attributeValues, setAttributeValues] = useState<Record<string, string | boolean | string[]>>({});
+
+  useEffect(() => {
+    getOperationalAttributeDefinitions("inbound_shipment_line", "receiving:write")
+      .then((definitions) => {
+        setAttributeDefinitions(definitions);
+        setAttributeValues(
+          Object.fromEntries(
+            definitions.map((definition: any) => [
+              definition.id,
+              definition.dataType === "boolean" ? false : "",
+            ])
+          )
+        );
+      })
+      .catch(() => setAttributeDefinitions([]));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +61,10 @@ export function AddLineDialog({
         productId,
         expectedQty,
         lotNumber: lotNumber || null,
+        operationalAttributes: attributeDefinitions.map((definition: any) => ({
+          definitionId: definition.id,
+          value: attributeValues[definition.id] ?? null,
+        })),
       });
       toast.success("Line added");
       onClose();
@@ -87,6 +112,84 @@ export function AddLineDialog({
             <Label>Lot Number</Label>
             <Input value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
           </div>
+
+          {attributeDefinitions.length > 0 && (
+            <div className="space-y-4 rounded-md border p-3">
+              <div className="text-sm font-medium">Operational Attributes</div>
+              {attributeDefinitions.map((definition: any) => (
+                <div key={definition.id} className="space-y-2">
+                  <Label>{definition.label}</Label>
+                  {definition.dataType === "boolean" ? (
+                    <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                      <Checkbox
+                        checked={Boolean(attributeValues[definition.id])}
+                        onCheckedChange={(checked) =>
+                          setAttributeValues((current) => ({
+                            ...current,
+                            [definition.id]: Boolean(checked),
+                          }))
+                        }
+                      />
+                      <span>Enabled</span>
+                    </label>
+                  ) : definition.dataType === "single_select" ? (
+                    <select
+                      value={String(attributeValues[definition.id] ?? "")}
+                      onChange={(e) =>
+                        setAttributeValues((current) => ({
+                          ...current,
+                          [definition.id]: e.target.value,
+                        }))
+                      }
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                    >
+                      <option value="">Select value...</option>
+                      {definition.options?.map((option: any) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : definition.dataType === "multi_select" ? (
+                    <Textarea
+                      value={
+                        Array.isArray(attributeValues[definition.id])
+                          ? (attributeValues[definition.id] as string[]).join(", ")
+                          : String(attributeValues[definition.id] ?? "")
+                      }
+                      onChange={(e) =>
+                        setAttributeValues((current) => ({
+                          ...current,
+                          [definition.id]: e.target.value
+                            .split(",")
+                            .map((value) => value.trim())
+                            .filter(Boolean),
+                        }))
+                      }
+                      rows={2}
+                    />
+                  ) : (
+                    <Input
+                      type={
+                        definition.dataType === "number" || definition.dataType === "currency"
+                          ? "number"
+                          : definition.dataType === "date"
+                            ? "date"
+                            : "text"
+                      }
+                      value={String(attributeValues[definition.id] ?? "")}
+                      onChange={(e) =>
+                        setAttributeValues((current) => ({
+                          ...current,
+                          [definition.id]: e.target.value,
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>

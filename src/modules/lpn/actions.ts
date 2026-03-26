@@ -6,6 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { createLpnSchema, addContentSchema, moveLpnSchema, receiveLpnSchema } from "./schemas";
+import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -117,6 +118,14 @@ export async function createLpn(data: unknown) {
       },
     },
     include: { contents: true },
+  });
+
+  await saveOperationalAttributeValuesForEntity({
+    db: tenant.db,
+    userId: user.id,
+    entityScope: "lpn",
+    entityId: lpn.id,
+    values: parsed.operationalAttributes ?? [],
   });
 
   await logAudit(tenant.db, {
@@ -346,6 +355,14 @@ export async function receiveLpn(data: unknown) {
     }
 
     return lpn;
+  });
+
+  await saveOperationalAttributeValuesForEntity({
+    db: tenant.db,
+    userId: user.id,
+    entityScope: "lpn",
+    entityId: result.id,
+    values: parsed.operationalAttributes ?? [],
   });
 
   await logAudit(tenant.db, {

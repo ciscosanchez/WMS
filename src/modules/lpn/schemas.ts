@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attributeValueInputSchema } from "@/modules/attributes/schemas";
 
 export const lpnContentLineSchema = z.object({
   productId: z.string().min(1),
@@ -13,6 +14,7 @@ export const createLpnSchema = z.object({
   totalWeight: z.coerce.number().optional().nullable(),
   notes: z.string().optional().nullable(),
   contents: z.array(lpnContentLineSchema).optional().default([]),
+  operationalAttributes: z.array(attributeValueInputSchema).optional().default([]),
 });
 
 export const addContentSchema = z.object({
@@ -34,6 +36,7 @@ export const receiveLpnSchema = z.object({
   totalWeight: z.coerce.number().optional().nullable(),
   notes: z.string().optional().nullable(),
   contents: z.array(lpnContentLineSchema).min(1, "At least one item required"),
+  operationalAttributes: z.array(attributeValueInputSchema).optional().default([]),
 });
 
 export type CreateLpnFormData = z.input<typeof createLpnSchema>;

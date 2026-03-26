@@ -105,7 +105,23 @@ export async function addShipmentLine(shipmentId: string, data: unknown) {
   const parsed = shipmentLineSchema.parse(data);
 
   const line = await tenant.db.inboundShipmentLine.create({
-    data: { shipmentId, ...parsed },
+    data: {
+      shipmentId,
+      productId: parsed.productId,
+      expectedQty: parsed.expectedQty,
+      uom: parsed.uom,
+      lotNumber: parsed.lotNumber,
+      serialNumber: parsed.serialNumber,
+      notes: parsed.notes,
+    },
+  });
+
+  await saveOperationalAttributeValuesForEntity({
+    db: tenant.db,
+    userId: user.id,
+    entityScope: "inbound_shipment_line",
+    entityId: line.id,
+    values: parsed.operationalAttributes ?? [],
   });
 
   await logAudit(tenant.db, {
