@@ -363,7 +363,9 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
                               placeholder="https://login.example.com/oidc/start"
                             />
                             <p className="text-xs text-muted-foreground">
-                              Use a relative WMS route or an HTTPS provider URL.
+                              Use a relative WMS route or an HTTPS provider URL. OIDC and SAML are
+                              currently redirect-based provider handoffs, so this should point to
+                              your organization&apos;s existing sign-in entrypoint.
                             </p>
                           </div>
                         )}
