@@ -21,7 +21,10 @@ export default async function PortalLayout({ children }: { children: React.React
         {children}
       </PortalNav>
     );
-  } catch {
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("portal client binding required")) {
+      throw error;
+    }
     redirect("/dashboard");
   }
 }
