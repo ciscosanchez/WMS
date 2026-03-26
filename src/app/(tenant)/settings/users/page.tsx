@@ -10,6 +10,12 @@ import { UserTable } from "./user-table";
 export default async function UsersPage() {
   const { tenant } = await requireTenantContext("users:read");
   const members = await getTenantUsers(tenant.tenantId);
+  const clients = await tenant.db.client.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, code: true },
+  });
+  const clientMap = new Map(clients.map((client) => [client.id, client]));
 
   const users = members.map((m) => ({
     id: m.user.id,
@@ -21,6 +27,8 @@ export default async function UsersPage() {
       tenants: [{ slug: tenant.slug, role: m.role, portalClientId: m.portalClientId }],
     }, tenant.slug),
     portalClientId: m.portalClientId,
+    portalClientName: m.portalClientId ? clientMap.get(m.portalClientId)?.name ?? null : null,
+    portalClientCode: m.portalClientId ? clientMap.get(m.portalClientId)?.code ?? null : null,
     joinedAt: m.user.createdAt.toISOString(),
   }));
 
@@ -35,7 +43,7 @@ export default async function UsersPage() {
         </Button>
       </PageHeader>
 
-      <UserTable users={users} />
+      <UserTable users={users} clients={clients} />
     </div>
   );
 }

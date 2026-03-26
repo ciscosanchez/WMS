@@ -29,10 +29,21 @@ export async function inviteUser(opts: {
   email: string;
   name: string;
   role: TenantRole;
+  portalClientId?: string | null;
 }): Promise<{ error: string } | { userId: string; emailSent: boolean; emailWarning?: string }> {
   const { tenant } = await getAdminContext();
 
   try {
+    if (opts.portalClientId) {
+      const client = await tenant.db.client.findUnique({
+        where: { id: opts.portalClientId },
+        select: { id: true, isActive: true },
+      });
+      if (!client?.isActive) {
+        return { error: "Selected portal client is invalid or inactive" };
+      }
+    }
+
     // Generate a secure one-time token for password setup
     // Store a SHA-256 hash in the DB; raw token goes in the invite URL
     const rawToken = randomBytes(32).toString("hex");
@@ -68,7 +79,12 @@ export async function inviteUser(opts: {
     }
 
     await publicDb.tenantUser.create({
-      data: { tenantId: tenant.tenantId, userId, role: opts.role },
+      data: {
+        tenantId: tenant.tenantId,
+        userId,
+        role: opts.role,
+        portalClientId: opts.portalClientId ?? null,
+      },
     });
 
     // Send invite email with password-set link — raw token in URL, hash in DB
@@ -152,6 +168,35 @@ export async function updateUserRole(
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to update role" };
+  }
+}
+
+export async function updateUserPortalBinding(
+  userId: string,
+  portalClientId: string | null
+): Promise<{ error: string } | { ok: true }> {
+  const { tenant } = await getAdminContext();
+
+  try {
+    if (portalClientId) {
+      const client = await tenant.db.client.findUnique({
+        where: { id: portalClientId },
+        select: { id: true, isActive: true },
+      });
+      if (!client?.isActive) {
+        return { error: "Selected portal client is invalid or inactive" };
+      }
+    }
+
+    await publicDb.tenantUser.update({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+      data: { portalClientId },
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to update portal access" };
   }
 }
 

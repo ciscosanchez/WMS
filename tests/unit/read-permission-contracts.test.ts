@@ -197,4 +197,10 @@ describe("read permission contracts", () => {
     await updateUserRole("user-1", "manager");
     expect(mockRequireTenantContext).toHaveBeenCalledWith("users:write");
   });
+
+  it("requires users:write for portal client binding updates", async () => {
+    const { updateUserPortalBinding } = await import("@/modules/users/actions");
+    await updateUserPortalBinding("user-1", null);
+    expect(mockRequireTenantContext).toHaveBeenCalledWith("users:write");
+  });
 });

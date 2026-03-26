@@ -9,12 +9,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserMinus, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, UserMinus, ShieldCheck, Link2, Link2Off } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { removeUser, updateUserRole } from "@/modules/users/actions";
+import { removeUser, updateUserPortalBinding, updateUserRole } from "@/modules/users/actions";
 import type { TenantRole } from "../../../../../node_modules/.prisma/public-client";
 
 type UserRow = {
@@ -24,7 +27,15 @@ type UserRow = {
   role: TenantRole;
   personas: string[];
   portalClientId: string | null;
+  portalClientName: string | null;
+  portalClientCode: string | null;
   joinedAt: string;
+};
+
+type ClientOption = {
+  id: string;
+  name: string;
+  code: string;
 };
 
 const roleColors: Record<string, string> = {
@@ -50,7 +61,7 @@ function formatPersonaLabel(persona: string) {
   return persona.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function UserActions({ user }: { user: UserRow }) {
+function UserActions({ user, clients }: { user: UserRow; clients: ClientOption[] }) {
   const router = useRouter();
 
   async function handleRemove() {
@@ -72,6 +83,15 @@ function UserActions({ user }: { user: UserRow }) {
     }
   }
 
+  async function handlePortalBinding(portalClientId: string | null) {
+    const result = await updateUserPortalBinding(user.id, portalClientId);
+    if ("error" in result) toast.error(result.error);
+    else {
+      toast.success(portalClientId ? "Portal access updated" : "Portal access removed");
+      router.refresh();
+    }
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted">
@@ -89,6 +109,26 @@ function UserActions({ user }: { user: UserRow }) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Link2 className="mr-2 h-4 w-4" />
+            Portal Access
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem onSelect={() => handlePortalBinding(null)}>
+              <Link2Off className="mr-2 h-4 w-4" />
+              Disable Portal Access
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {clients.map((client) => (
+              <DropdownMenuItem key={client.id} onSelect={() => handlePortalBinding(client.id)}>
+                <Link2 className="mr-2 h-4 w-4" />
+                {client.name} ({client.code})
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={handleRemove}>
           <UserMinus className="mr-2 h-4 w-4" />
           Remove
@@ -98,8 +138,9 @@ function UserActions({ user }: { user: UserRow }) {
   );
 }
 
-const columns: ColumnDef<UserRow>[] = [
-  {
+function getColumns(clients: ClientOption[]): ColumnDef<UserRow>[] {
+  return [
+    {
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Name" />,
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
@@ -139,6 +180,22 @@ const columns: ColumnDef<UserRow>[] = [
     ),
   },
   {
+    id: "portalAccess",
+    header: "Portal Access",
+    cell: ({ row }) => {
+      if (!row.original.portalClientId) {
+        return <span className="text-sm text-muted-foreground">Not enabled</span>;
+      }
+
+      return (
+        <div className="space-y-0.5">
+          <div className="font-medium">{row.original.portalClientName ?? "Bound client"}</div>
+          <div className="text-xs text-muted-foreground">{row.original.portalClientCode}</div>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "joinedAt",
     header: ({ column }) => <SortableHeader column={column} title="Joined" />,
     cell: ({ row }) =>
@@ -151,14 +208,15 @@ const columns: ColumnDef<UserRow>[] = [
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => <UserActions user={row.original} />,
+    cell: ({ row }) => <UserActions user={row.original} clients={clients} />,
   },
-];
+  ];
+}
 
-export function UserTable({ users }: { users: UserRow[] }) {
+export function UserTable({ users, clients }: { users: UserRow[]; clients: ClientOption[] }) {
   return (
     <DataTable
-      columns={columns}
+      columns={getColumns(clients)}
       data={users}
       searchKey="name"
       searchPlaceholder="Search users..."
