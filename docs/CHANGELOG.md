@@ -2,6 +2,28 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-26 — Configurable Operational Attributes Phase 1
+
+### Product Direction
+
+- Added a generic architecture brief for tenant-configurable operational attributes
+- Added a phase-1 foundation doc to separate reusable platform work from Armstrong-specific configuration
+- Positioned Armstrong as the first design partner, not the hardcoded product definition
+
+### Foundation Work
+
+- Added tenant schema and tenant migration support for:
+  - operational attribute definitions
+  - operational attribute options
+  - operational attribute values
+- Added server-side Zod schemas for attribute definition validation
+- Added phase-1 server actions for attribute definition CRUD and archive behavior
+- Added audit logging for definition lifecycle changes
+
+### Coverage
+
+- Added unit coverage for the initial operational attribute definition schema contract
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

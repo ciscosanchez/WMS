@@ -105,6 +105,91 @@ model UomConversion {
   @@map("uom_conversions")
 }
 
+// ─── Configurable Operational Attributes ───────────────
+
+enum OperationalAttributeScope {
+  inbound_shipment
+  inbound_shipment_line
+  lpn
+  inventory_unit
+  inventory_record
+}
+
+enum OperationalAttributeDataType {
+  text
+  number
+  currency
+  date
+  boolean
+  single_select
+  multi_select
+  json
+}
+
+model OperationalAttributeDefinition {
+  id              String                         @id @default(cuid())
+  key             String
+  label           String
+  description     String?
+  entityScope     OperationalAttributeScope     @map("entity_scope")
+  dataType        OperationalAttributeDataType  @map("data_type")
+  isRequired      Boolean                       @default(false) @map("is_required")
+  isActive        Boolean                       @default(true) @map("is_active")
+  allowSuggestions Boolean                      @default(false) @map("allow_suggestions")
+  validationRules Json                          @default("{}") @map("validation_rules")
+  displayRules    Json                          @default("{}") @map("display_rules")
+  behaviorFlags   Json                          @default("{}") @map("behavior_flags")
+  sortOrder       Int                           @default(0) @map("sort_order")
+  createdAt       DateTime                      @default(now()) @map("created_at")
+  updatedAt       DateTime                      @updatedAt @map("updated_at")
+
+  options         OperationalAttributeOption[]
+  values          OperationalAttributeValue[]
+
+  @@unique([entityScope, key])
+  @@index([entityScope, isActive])
+  @@map("operational_attribute_definitions")
+}
+
+model OperationalAttributeOption {
+  id           String                         @id @default(cuid())
+  definitionId String                         @map("definition_id")
+  value        String
+  label        String
+  sortOrder    Int                            @default(0) @map("sort_order")
+  isActive     Boolean                        @default(true) @map("is_active")
+  createdAt    DateTime                       @default(now()) @map("created_at")
+
+  definition   OperationalAttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, value])
+  @@index([definitionId, isActive])
+  @@map("operational_attribute_options")
+}
+
+model OperationalAttributeValue {
+  id           String                         @id @default(cuid())
+  definitionId String                         @map("definition_id")
+  entityScope  OperationalAttributeScope     @map("entity_scope")
+  entityId     String                         @map("entity_id")
+  textValue    String?                        @map("text_value")
+  numberValue  Decimal?                       @db.Decimal(18, 4) @map("number_value")
+  booleanValue Boolean?                       @map("boolean_value")
+  dateValue    DateTime?                      @map("date_value")
+  jsonValue    Json?                          @map("json_value")
+  createdBy    String?                        @map("created_by")
+  updatedBy    String?                        @map("updated_by")
+  createdAt    DateTime                       @default(now()) @map("created_at")
+  updatedAt    DateTime                       @updatedAt @map("updated_at")
+
+  definition   OperationalAttributeDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, entityScope, entityId])
+  @@index([entityScope, entityId])
+  @@index([definitionId])
+  @@map("operational_attribute_values")
+}
+
 // ─── Warehouse Layout ───────────────────────────────────
 
 model Warehouse {

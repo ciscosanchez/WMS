@@ -87,6 +87,9 @@ export interface TenantDb {
   sequenceCounter: ModelProxy;
   putawayRule: ModelProxy;
   document: ModelProxy;
+  operationalAttributeDefinition: ModelProxy;
+  operationalAttributeOption: ModelProxy;
+  operationalAttributeValue: ModelProxy;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
