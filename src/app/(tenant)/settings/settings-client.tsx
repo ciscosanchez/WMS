@@ -10,7 +10,18 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Building2, DollarSign, KeyRound, Plus, Save, Shield, Trash2, Users, Plug } from "lucide-react";
+import {
+  Building2,
+  DollarSign,
+  KeyRound,
+  ListFilter,
+  Plus,
+  Save,
+  Shield,
+  Trash2,
+  Users,
+  Plug,
+} from "lucide-react";
 import { saveTenantSettings } from "@/modules/settings/actions";
 
 interface Settings {
@@ -119,6 +130,12 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
           <Link href="/settings/users">
             <Users className="mr-2 h-4 w-4" />
             Manage Users
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/settings/attributes">
+            <ListFilter className="mr-2 h-4 w-4" />
+            Attributes
           </Link>
         </Button>
       </PageHeader>

@@ -24,6 +24,25 @@ All notable changes to Ramola WMS.
 
 - Added unit coverage for the initial operational attribute definition schema contract
 
+## 2026-03-26 — Configurable Operational Attributes Phase 2 (Initial Slice)
+
+### Usable Product Surface
+
+- Added a tenant settings page for operational attribute definition management
+- Added create, edit, and archive flows for attribute definitions
+- Added a settings shortcut from the main tenant settings screen
+
+### First Runtime Integration
+
+- Refactored inbound shipment creation to load operational attribute definitions server-side
+- Added first-pass shipment-level attribute capture on `/receiving/new`
+- Added generic value persistence for scope-aware operational attribute values
+
+### Intentional Boundary
+
+- This slice stops at shipment-level capture
+- LP propagation, inventory search, allocation, and broader render surfaces still belong to the next phase
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

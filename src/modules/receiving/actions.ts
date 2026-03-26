@@ -15,6 +15,7 @@ import { mockShipments } from "@/lib/mock-data";
 import { captureEvent } from "@/modules/billing/capture";
 import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 import { notificationQueue } from "@/lib/jobs/queue";
+import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
 
 async function getReadContext() {
   return requireTenantContext("receiving:read");
@@ -65,10 +66,24 @@ export async function createShipment(data: unknown) {
 
   const shipment = await tenant.db.inboundShipment.create({
     data: {
-      ...parsed,
+      clientId: parsed.clientId,
+      carrier: parsed.carrier,
+      trackingNumber: parsed.trackingNumber,
+      bolNumber: parsed.bolNumber,
+      poNumber: parsed.poNumber,
+      expectedDate: parsed.expectedDate,
+      notes: parsed.notes,
       shipmentNumber,
       status: "draft",
     },
+  });
+
+  await saveOperationalAttributeValuesForEntity({
+    db: tenant.db,
+    userId: user.id,
+    entityScope: "inbound_shipment",
+    entityId: shipment.id,
+    values: parsed.operationalAttributes ?? [],
   });
 
   await logAudit(tenant.db, {

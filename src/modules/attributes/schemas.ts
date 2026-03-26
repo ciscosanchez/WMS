@@ -48,6 +48,12 @@ export const attributeDefinitionSchema = z.object({
   options: z.array(attributeOptionSchema).default([]),
 });
 
+export const attributeValueInputSchema = z.object({
+  definitionId: z.string().min(1),
+  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]).optional().nullable(),
+});
+
 export type AttributeScope = z.infer<typeof attributeScopeSchema>;
 export type AttributeDataType = z.infer<typeof attributeDataTypeSchema>;
 export type AttributeDefinitionInput = z.infer<typeof attributeDefinitionSchema>;
+export type AttributeValueInput = z.infer<typeof attributeValueInputSchema>;

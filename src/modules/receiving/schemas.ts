@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attributeValueInputSchema } from "@/modules/attributes/schemas";
 
 type T = (key: string) => string;
 
@@ -15,6 +16,7 @@ export function inboundShipmentSchema(t?: T) {
       z.coerce.date().optional().nullable()
     ),
     notes: z.string().optional().nullable(),
+    operationalAttributes: z.array(attributeValueInputSchema).optional().default([]),
   });
 }
 
