@@ -61,7 +61,7 @@ export async function syncShopifyOrders(
   if (config.useMockData) return { imported: 0, skipped: 0 };
 
   try {
-    const { user, tenant } = await requireTenantContext();
+    const { user, tenant } = await requireTenantContext("orders:write");
 
     // Resolve Shopify credentials (DB first, env var fallback)
     const resolved = await resolveShopifyAdapter(tenant.db);
@@ -199,7 +199,7 @@ export async function pushShopifyFulfillment(
   if (config.useMockData) return {};
 
   try {
-    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
+    const db = tenantDb ?? (await requireTenantContext("shipping:write")).tenant.db;
 
     const order = await db.order.findUnique({
       where: { id: orderId },
@@ -242,7 +242,7 @@ export async function syncInventoryToShopify(
   if (config.useMockData) return { synced: 0 };
 
   try {
-    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
+    const db = tenantDb ?? (await requireTenantContext("orders:write")).tenant.db;
 
     // Load all active products for this client so zero-stock SKUs are pushed as 0
     const products = await db.product.findMany({
@@ -298,7 +298,7 @@ export async function syncInventoryToAmazon(
   if (config.useMockData) return { synced: 0 };
 
   try {
-    const db = tenantDb ?? (await requireTenantContext()).tenant.db;
+    const db = tenantDb ?? (await requireTenantContext("orders:write")).tenant.db;
 
     // Resolve Amazon adapter: tenant-scoped credentials first, global env fallback
     const { getAmazonAdapter, getAmazonAdapterForTenant } =

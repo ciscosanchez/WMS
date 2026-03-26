@@ -186,7 +186,7 @@ export async function suggestPutawayLocation(
   }
 
   // ── Real DB mode ────────────────────────────────────
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("inventory:read");
 
   const suggestions: BinSuggestion[] = [];
 

@@ -4,7 +4,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { format, subDays, startOfDay } from "date-fns";
 
 export async function getDashboardChartData() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("reports:read");
   const db = tenant.db;
 
   const now = new Date();

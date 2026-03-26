@@ -124,7 +124,7 @@ export async function evaluateRules(
 ): Promise<{ type: string; params: Record<string, unknown> }[]> {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("settings:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 

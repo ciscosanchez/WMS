@@ -160,7 +160,7 @@ export async function updateUserRole(
 export async function updateUserLocale(locale: string | null): Promise<{ error?: string }> {
   try {
 
-    const { user } = await requireTenantContext();
+    const { user } = await requireTenantContext("reports:read");
 
     await publicDb.user.update({
       where: { id: user.id },

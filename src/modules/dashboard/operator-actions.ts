@@ -18,7 +18,7 @@ export async function getMyTasksSummary() {
     };
   }
 
-  const { user, tenant } = await requireTenantContext();
+  const { user, tenant } = await requireTenantContext("operator:write");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
   const today = startOfDay(new Date());
