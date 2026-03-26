@@ -17,10 +17,60 @@ import {
   cursorPaginateQuery,
   buildCursorResult,
 } from "@/lib/pagination";
-import { asTenantDb } from "@/lib/tenant/db-types";
+import { asTenantDb, type TenantDb } from "@/lib/tenant/db-types";
 
 async function getReadContext() {
   return requireTenantContext("inventory:read");
+}
+
+type RawInventoryAttributeValue = {
+  entityId: string;
+  textValue?: string | null;
+  numberValue?: number | null;
+  booleanValue?: boolean | null;
+  dateValue?: Date | null;
+  jsonValue?: unknown;
+};
+
+function toSearchableAttributeText(value: RawInventoryAttributeValue) {
+  if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+  if (value.booleanValue !== null && value.booleanValue !== undefined) {
+    return value.booleanValue ? "true yes" : "false no";
+  }
+  if (value.dateValue) return value.dateValue.toISOString().slice(0, 10);
+  if (value.jsonValue !== null && value.jsonValue !== undefined) {
+    if (Array.isArray(value.jsonValue)) return value.jsonValue.map(String).join(", ");
+    return JSON.stringify(value.jsonValue);
+  }
+  return value.textValue ?? "";
+}
+
+async function getInventoryIdsMatchingAttributeFilter(
+  tenantDb: TenantDb,
+  attributeDefinitionId: string,
+  attributeValue: string
+) {
+  const normalizedQuery = attributeValue.trim().toLowerCase();
+  if (!normalizedQuery) return null;
+
+  const values = (await tenantDb.operationalAttributeValue.findMany({
+    where: {
+      entityScope: "inventory_record",
+      definitionId: attributeDefinitionId,
+    },
+    select: {
+      entityId: true,
+      textValue: true,
+      numberValue: true,
+      booleanValue: true,
+      dateValue: true,
+      jsonValue: true,
+    },
+  })) as RawInventoryAttributeValue[];
+
+  return values
+    .filter((value) => toSearchableAttributeText(value).toLowerCase().includes(normalizedQuery))
+    .map((value) => value.entityId);
 }
 
 export async function getInventory(filters?: {
@@ -37,16 +87,11 @@ export async function getInventory(filters?: {
   const tenantDb = asTenantDb(tenant.db);
   const inventoryIds =
     filters?.attributeDefinitionId && filters.attributeValue
-      ? (
-          await tenantDb.operationalAttributeValue.findMany({
-            where: {
-              entityScope: "inventory_record",
-              definitionId: filters.attributeDefinitionId,
-              textValue: { contains: filters.attributeValue, mode: "insensitive" as const },
-            },
-            select: { entityId: true },
-          })
-        ).map((row: { entityId: string }) => row.entityId)
+      ? await getInventoryIdsMatchingAttributeFilter(
+          tenantDb,
+          filters.attributeDefinitionId,
+          filters.attributeValue
+        )
       : null;
 
   return tenant.db.inventory.findMany({
@@ -121,16 +166,11 @@ export async function getInventoryPaginated(opts: {
   const tenantDb = asTenantDb(tenant.db);
   const inventoryIds =
     opts.attributeDefinitionId && opts.attributeValue
-      ? (
-          await tenantDb.operationalAttributeValue.findMany({
-            where: {
-              entityScope: "inventory_record",
-              definitionId: opts.attributeDefinitionId,
-              textValue: { contains: opts.attributeValue, mode: "insensitive" as const },
-            },
-            select: { entityId: true },
-          })
-        ).map((row: { entityId: string }) => row.entityId)
+      ? await getInventoryIdsMatchingAttributeFilter(
+          tenantDb,
+          opts.attributeDefinitionId,
+          opts.attributeValue
+        )
       : null;
 
   const where = {

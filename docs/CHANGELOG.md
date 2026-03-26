@@ -109,6 +109,13 @@ All notable changes to Ramola WMS.
 - Order detail now renders line-level operational attribute badges
 - Order reads now enrich order lines with persisted `order_line` attribute values so captured criteria remain visible after entry
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.2 (Typed Inventory Attribute Search)
+
+### Inventory Search
+
+- Inventory attribute filtering now works across text, number, currency, date, boolean, and array-backed operational attribute values
+- Search behavior now uses a generic normalization layer instead of only matching `text_value`
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model
