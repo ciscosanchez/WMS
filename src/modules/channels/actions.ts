@@ -3,14 +3,14 @@
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("orders:read");
 }
 
 export async function getChannels() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   const channels = await tenant.db.salesChannel.findMany({
     include: {

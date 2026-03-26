@@ -6,15 +6,15 @@ import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { SERVICE_LABELS } from "./capture";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("billing:read");
 }
 
 // ─── Rate Cards ──────────────────────────────────────────────────────────────
 
 /** Returns the effective rate card lines for a client (client-specific or default). */
 export async function getRateCard(clientId: string | null) {
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   if (clientId) {
@@ -38,7 +38,7 @@ export async function getRateCard(clientId: string | null) {
  *   - all clients with their custom rate cards
  */
 export async function getBillingConfig() {
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const [defaultCard, clients, clientCards] = await Promise.all([
@@ -177,7 +177,7 @@ export async function saveClientRateCard(
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
 export async function getInvoices(clientId?: string) {
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   return db.invoice.findMany({
@@ -192,7 +192,7 @@ export async function getInvoices(clientId?: string) {
 }
 
 export async function getInvoice(id: string) {
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   return db.invoice.findUnique({
@@ -306,7 +306,7 @@ export async function generateInvoice(clientId: string, fromDate: Date, toDate: 
  * Used by reports page and portal billing KPIs.
  */
 export async function getBillingSummaryMTD(clientId?: string) {
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const now = new Date();
@@ -335,7 +335,7 @@ export async function getBillingSummaryMTD(clientId?: string) {
  * or null if no match.
  */
 export async function getPortalBillingData() {
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await getReadContext();
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // Resolve client via explicit portal-client binding, then email fallback

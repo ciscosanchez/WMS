@@ -12,14 +12,14 @@ import {
 } from "./schemas";
 import { mockWarehouses } from "@/lib/mock-data";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("warehouse:read");
 }
 
 export async function getWarehouses() {
   if (config.useMockData) return mockWarehouses;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.warehouse.findMany({
     include: {
       zones: {
@@ -45,7 +45,7 @@ export async function getWarehouses() {
 export async function getWarehouse(id: string) {
   if (config.useMockData) return mockWarehouses.find((w) => w.id === id) ?? null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.warehouse.findUnique({
     where: { id },
     include: {
@@ -188,7 +188,7 @@ export async function generateBulkLocations(data: unknown) {
 export async function getBins(_warehouseId?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.bin.findMany({
     include: {
       shelf: {

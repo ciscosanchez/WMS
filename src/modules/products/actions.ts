@@ -7,15 +7,15 @@ import { logAudit, diffChanges } from "@/lib/audit";
 import { productSchemaStatic as productSchema } from "./schemas";
 import { mockProducts } from "@/lib/mock-data";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("products:read");
 }
 
 export async function getProducts(clientId?: string) {
   if (config.useMockData)
     return clientId ? mockProducts.filter((p) => p.clientId === clientId) : mockProducts;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.product.findMany({
     where: clientId ? { clientId } : undefined,
     include: { client: true },
@@ -26,7 +26,7 @@ export async function getProducts(clientId?: string) {
 export async function getProduct(id: string) {
   if (config.useMockData) return mockProducts.find((p) => p.id === id) ?? null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.product.findUnique({
     where: { id },
     include: { client: true, uomConversions: true },

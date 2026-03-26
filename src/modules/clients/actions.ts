@@ -7,21 +7,21 @@ import { logAudit, diffChanges } from "@/lib/audit";
 import { clientSchemaStatic as clientSchema } from "./schemas";
 import { mockClients } from "@/lib/mock-data";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("clients:read");
 }
 
 export async function getClients() {
   if (config.useMockData) return mockClients;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.client.findMany({ orderBy: { name: "asc" } });
 }
 
 export async function getClient(id: string) {
   if (config.useMockData) return mockClients.find((c) => c.id === id) ?? null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.client.findUnique({ where: { id } });
 }
 

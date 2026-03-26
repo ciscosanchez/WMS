@@ -16,15 +16,15 @@ import { captureEvent } from "@/modules/billing/capture";
 import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 import { notificationQueue } from "@/lib/jobs/queue";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("receiving:read");
 }
 
 export async function getShipments(status?: string) {
   if (config.useMockData)
     return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.inboundShipment.findMany({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: status ? { status: status as any } : undefined,
@@ -40,7 +40,7 @@ export async function getShipments(status?: string) {
 export async function getShipment(id: string) {
   if (config.useMockData) return mockShipments.find((s) => s.id === id) ?? null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.inboundShipment.findUnique({
     where: { id },
     include: {
@@ -353,7 +353,7 @@ async function captureBillingOnReceive(tenant: TenantContext, shipmentId: string
 export async function getDiscrepancies() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.receivingDiscrepancy.findMany({
     include: {
       shipment: { select: { shipmentNumber: true } },

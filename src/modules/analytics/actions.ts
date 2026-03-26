@@ -3,12 +3,16 @@
 import { requireTenantContext } from "@/lib/tenant/context";
 import { format, subDays, startOfDay, differenceInHours } from "date-fns";
 
+async function getReadContext() {
+  return requireTenantContext("reports:read");
+}
+
 // ─── Throughput Trend ─────────────────────────────────────────────────────────
 // Daily units received and shipped over the last N days.
 // Returns data shaped for a dual-line chart.
 
 export async function getThroughputTrend(days: number = 30) {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
   const now = new Date();
   const since = subDays(startOfDay(now), days - 1);
@@ -59,7 +63,7 @@ export async function getThroughputTrend(days: number = 30) {
 // Percentage of orders shipped on time (shippedDate <= shipByDate).
 
 export async function getSlaCompliance() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
 
   const orders = await db.order.findMany({
@@ -90,7 +94,7 @@ export async function getSlaCompliance() {
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export async function getExceptionHeatmap() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
 
   const [discrepancies, adjustments, shortPicks] = await Promise.all([
@@ -144,7 +148,7 @@ export async function getExceptionHeatmap() {
 // Most frequently picked products.
 
 export async function getTopProducts(limit: number = 10) {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
 
   const pickLines = await db.pickTaskLine.findMany({
@@ -177,7 +181,7 @@ export async function getTopProducts(limit: number = 10) {
 // Bins occupied vs total, grouped by zone type.
 
 export async function getWarehouseUtilization() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
 
   const [allBins, occupiedInventory] = await Promise.all([
@@ -230,7 +234,7 @@ export async function getWarehouseUtilization() {
 // Average time from order creation to shipment, grouped by week.
 
 export async function getOrderVelocity() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await getReadContext();
   const db = tenant.db;
 
   const orders = await db.order.findMany({

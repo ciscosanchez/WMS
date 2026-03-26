@@ -9,15 +9,15 @@ import { publicDb } from "@/lib/db/public-client";
 import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
 import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("shipping:read");
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getShipments(): Promise<any[]> {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.shipment.findMany({
     include: {
       order: { include: { client: true } },
@@ -31,7 +31,7 @@ export async function getShipments(): Promise<any[]> {
 export async function getShipment(id: string): Promise<any | null> {
   if (config.useMockData) return null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.shipment.findUnique({
     where: { id },
     include: {
@@ -51,7 +51,7 @@ export async function getRatesForShipment(
   if (config.useMockData) return { rates: [] };
 
   try {
-    const { tenant } = await requireTenantContext();
+    const { tenant } = await getReadContext();
 
     const shipment = await tenant.db.shipment.findUnique({
       where: { id: shipmentId },

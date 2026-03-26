@@ -18,8 +18,8 @@ import {
   buildCursorResult,
 } from "@/lib/pagination";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("inventory:read");
 }
 
 export async function getInventory(filters?: {
@@ -30,7 +30,7 @@ export async function getInventory(filters?: {
 }) {
   if (config.useMockData) return mockInventory;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   return tenant.db.inventory.findMany({
     where: {
@@ -97,7 +97,7 @@ export async function getInventoryPaginated(opts: {
     return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
   }
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
@@ -155,7 +155,7 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
       ? mockTransactions.filter((t) => t.type === filters.type)
       : mockTransactions;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   return tenant.db.inventoryTransaction.findMany({
     where: {
@@ -203,7 +203,7 @@ export async function getInventoryTransactionsPaginated(opts: {
     return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
   }
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
@@ -257,7 +257,7 @@ export async function getInventoryCursor(opts: {
     );
   }
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
@@ -322,7 +322,7 @@ export async function getTransactionsCursor(opts: {
     );
   }
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
@@ -356,7 +356,7 @@ export async function getTransactionsCursor(opts: {
 export async function getExpiringInventory(daysAhead: number = 30) {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + daysAhead);
 

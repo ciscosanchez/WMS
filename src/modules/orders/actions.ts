@@ -13,15 +13,15 @@ import { mockOrders } from "@/lib/mock-data";
 import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
 
-async function getContext() {
-  return requireTenantContext();
+async function getReadContext() {
+  return requireTenantContext("orders:read");
 }
 
 export async function getOrders(status?: string) {
   if (config.useMockData)
     return status ? mockOrders.filter((o) => o.status === status) : mockOrders;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.order.findMany({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: status ? { status: status as any } : undefined,
@@ -37,7 +37,7 @@ export async function getOrders(status?: string) {
 export async function getOrder(id: string) {
   if (config.useMockData) return mockOrders.find((o) => o.id === id) ?? null;
 
-  const { tenant } = await getContext();
+  const { tenant } = await getReadContext();
   return tenant.db.order.findUnique({
     where: { id },
     include: {
