@@ -1,12 +1,19 @@
 /**
+ * DEV / LOCAL USE ONLY — never run against production.
+ *
  * Seed Armstrong tenant with demo users and warehouse data.
  * Usage: npx tsx scripts/seed-armstrong.ts
  *
- * Users created:
+ * Users created (weak passwords — dev only):
  *   admin@armstrong.com     / admin123      → Admin (full access)
  *   receiving@armstrong.com / receiving123  → Warehouse Worker (receiving focus)
  *   warehouse@armstrong.com / warehouse123  → Warehouse Worker (inventory focus)
  */
+
+if (process.env.NODE_ENV === "production") {
+  console.error("ERROR: seed-armstrong.ts must not be run in a production environment.");
+  process.exit(1);
+}
 
 import { PrismaClient } from "../node_modules/.prisma/public-client";
 import { PrismaClient as TenantPrismaClient } from "../node_modules/.prisma/tenant-client";

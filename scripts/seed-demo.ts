@@ -1,7 +1,14 @@
 /**
- * Seed demo data: creates a superadmin user, a demo tenant, and sample data
+ * DEV / LOCAL USE ONLY — never run against production.
+ *
+ * Seed demo data: creates a superadmin user, a demo tenant, and sample data.
  * Usage: npx tsx scripts/seed-demo.ts
  */
+
+if (process.env.NODE_ENV === "production") {
+  console.error("ERROR: seed-demo.ts must not be run in a production environment.");
+  process.exit(1);
+}
 
 import { PrismaClient } from "../../node_modules/.prisma/public-client";
 import { PrismaClient as TenantPrismaClient } from "../../node_modules/.prisma/tenant-client";

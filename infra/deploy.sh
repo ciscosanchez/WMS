@@ -19,15 +19,19 @@ has_public_prisma_history=$(
     -Atqc "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;"
 )
 
-if [ "$has_public_prisma_history" = "t" ]; then
-  echo "==> Running WMS Prisma migrations..."
-  docker compose -f docker-compose.prod.yml exec -T wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
-  docker compose -f docker-compose.prod.yml exec -T wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/tenant-schema.prisma
-else
-  echo "==> Skipping Prisma migrations"
-  echo "    public._prisma_migrations is missing, so this environment has not been baselined for prisma migrate."
-  echo "    App containers were updated, but schema changes must be applied manually until prod migration history is reconciled."
+if [ "$has_public_prisma_history" != "t" ]; then
+  echo "==> _prisma_migrations not found — running one-time reconciliation..."
+  docker compose -f docker-compose.prod.yml exec -T postgres \
+    psql -U "${POSTGRES_USER:-ramola}" -d "${POSTGRES_DB:-ramola}" \
+    < "$SCRIPT_DIR/../scripts/reconcile-prod-db.sql"
+  echo "==> Reconciliation complete."
 fi
+
+echo "==> Running WMS Prisma migrations..."
+docker compose -f docker-compose.prod.yml exec -T wms \
+  node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
+docker compose -f docker-compose.prod.yml exec -T wms \
+  node node_modules/prisma/build/index.js migrate deploy --schema=prisma/tenant-schema.prisma
 
 echo "==> Health check..."
 sleep 5

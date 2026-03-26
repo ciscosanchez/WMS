@@ -1,6 +1,8 @@
 #!/usr/bin/env npx tsx
 /**
- * One-command production setup for Ramola WMS.
+ * DEV / LOCAL USE ONLY — for a clean local dev environment.
+ * Do NOT run this against production — it uses demo seed data with weak passwords.
+ * For production schema changes use: prisma migrate deploy (handled by deploy.sh).
  *
  * Usage:
  *   npx tsx scripts/setup-production.ts
@@ -8,13 +10,19 @@
  * What it does (in order):
  *   1. Checks DATABASE_URL is set and can connect
  *   2. Generates Prisma clients (public + tenant)
- *   3. Pushes public schema (users, tenants, sessions)
- *   4. Creates Armstrong tenant (schema + migrations + data)
+ *   3. Runs public schema migrations (prisma migrate deploy)
+ *   4. Creates Armstrong tenant (schema + migrations + demo data)
  *   5. Creates colleague tenant (optional — for testing)
  *   6. Verifies everything works
  *
  * Safe to run multiple times — all operations are upserts.
  */
+
+if (process.env.NODE_ENV === "production") {
+  console.error("ERROR: setup-production.ts must not be run in a production environment.");
+  console.error("       For production deploys, use infra/deploy.sh.");
+  process.exit(1);
+}
 
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -113,13 +121,13 @@ async function main() {
     process.exit(1);
   }
 
-  // ── Step 3: Push public schema ─────────────────────────────────────────
+  // ── Step 3: Apply public schema migrations ─────────────────────────────
   const ok3 = await run(
-    `npx prisma db push --schema="${publicSchema}" --skip-generate --accept-data-loss`,
-    "Pushing public schema (users, tenants, sessions)"
+    `npx prisma migrate deploy --schema="${publicSchema}"`,
+    "Applying public schema migrations (users, tenants, sessions)"
   );
   if (!ok3) {
-    fail("Public schema push failed.");
+    fail("Public schema migration failed.");
     process.exit(1);
   }
 
@@ -174,15 +182,9 @@ async function main() {
   console.log("║            Setup Complete!                ║");
   console.log("╚══════════════════════════════════════════╝");
   console.log("");
-  console.log("  Login Accounts:");
-  console.log("  ┌─────────────────────────────┬──────────────┬────────────────┐");
-  console.log("  │ Email                       │ Password     │ Role           │");
-  console.log("  ├─────────────────────────────┼──────────────┼────────────────┤");
-  console.log("  │ admin@armstrong.com          │ admin123     │ Superadmin     │");
-  console.log("  │ receiving@armstrong.com      │ receiving123 │ Warehouse      │");
-  console.log("  │ warehouse@armstrong.com      │ warehouse123 │ Warehouse      │");
-  console.log("  │ colleague@ramola.io          │ colleague123 │ Tenant Admin   │");
-  console.log("  └─────────────────────────────┴──────────────┴────────────────┘");
+  console.log("  Dev accounts (see seed scripts for credentials):");
+  console.log("    admin@armstrong.com, receiving@armstrong.com, warehouse@armstrong.com");
+  console.log("    colleague@ramola.io");
   console.log("");
   console.log("  URLs:");
   console.log("    WMS Login:     https://wms.ramola.app/login");

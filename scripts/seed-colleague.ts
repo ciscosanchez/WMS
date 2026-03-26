@@ -1,8 +1,10 @@
 /**
+ * DEV / LOCAL USE ONLY — never run against production.
+ *
  * Seed a new tenant for colleague testing.
  * Usage: npx tsx scripts/seed-colleague.ts
  *
- * Creates:
+ * Creates (weak passwords — dev only):
  *   - Tenant: "Colleague Sandbox" (slug: colleague)
  *   - Admin user: colleague@ramola.io / colleague123
  *   - Warehouse with zones + bins
@@ -10,6 +12,11 @@
  *
  * This is a completely isolated tenant — separate DB schema, separate data.
  */
+
+if (process.env.NODE_ENV === "production") {
+  console.error("ERROR: seed-colleague.ts must not be run in a production environment.");
+  process.exit(1);
+}
 
 import { PrismaClient } from "../node_modules/.prisma/public-client";
 import { PrismaClient as TenantPrismaClient } from "../node_modules/.prisma/tenant-client";
