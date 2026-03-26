@@ -56,6 +56,25 @@ All notable changes to Ramola WMS.
 - LPN create flows now support operational attribute capture
 - Operational attribute definition reads can now be permission-scoped to the runtime surface using them
 
+## 2026-03-26 — Configurable Operational Attributes Phase 3 (Propagation + Inventory Filter)
+
+### Propagation
+
+- LPN attribute values now copy into `inventory_record` scoped values during LPN receive and consume flows
+
+### Inventory Visibility
+
+- Added a stock-browser filter for `inventory_record` operational attributes
+- Inventory search can now narrow by selected attribute definition and text value
+
+### Product Shape
+
+- This is the first end-to-end loop for the feature:
+  - capture
+  - persist
+  - propagate
+  - search
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

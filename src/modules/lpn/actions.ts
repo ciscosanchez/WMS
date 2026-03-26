@@ -6,7 +6,10 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { createLpnSchema, addContentSchema, moveLpnSchema, receiveLpnSchema } from "./schemas";
-import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
+import {
+  copyOperationalAttributeValuesBetweenScopes,
+  saveOperationalAttributeValuesForEntity,
+} from "@/modules/attributes/value-service";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -232,8 +235,16 @@ export async function consumeLpn(lpnId: string) {
             available: { increment: line.quantity },
           },
         });
+        await copyOperationalAttributeValuesBetweenScopes({
+          db: prisma,
+          userId: user.id,
+          sourceScope: "lpn",
+          sourceEntityId: lpn.id,
+          targetScope: "inventory_record",
+          targetEntityId: existing.id,
+        });
       } else {
-        await prisma.inventory.create({
+        const inventory = await prisma.inventory.create({
           data: {
             productId: line.productId,
             binId: lpn.binId!,
@@ -243,6 +254,14 @@ export async function consumeLpn(lpnId: string) {
             allocated: 0,
             available: line.quantity,
           },
+        });
+        await copyOperationalAttributeValuesBetweenScopes({
+          db: prisma,
+          userId: user.id,
+          sourceScope: "lpn",
+          sourceEntityId: lpn.id,
+          targetScope: "inventory_record",
+          targetEntityId: inventory.id,
         });
       }
 
@@ -326,8 +345,16 @@ export async function receiveLpn(data: unknown) {
             available: { increment: line.quantity },
           },
         });
+        await copyOperationalAttributeValuesBetweenScopes({
+          db: prisma,
+          userId: user.id,
+          sourceScope: "lpn",
+          sourceEntityId: lpn.id,
+          targetScope: "inventory_record",
+          targetEntityId: existing.id,
+        });
       } else {
-        await prisma.inventory.create({
+        const inventory = await prisma.inventory.create({
           data: {
             productId: line.productId,
             binId: parsed.binId,
@@ -337,6 +364,14 @@ export async function receiveLpn(data: unknown) {
             allocated: 0,
             available: line.quantity,
           },
+        });
+        await copyOperationalAttributeValuesBetweenScopes({
+          db: prisma,
+          userId: user.id,
+          sourceScope: "lpn",
+          sourceEntityId: lpn.id,
+          targetScope: "inventory_record",
+          targetEntityId: inventory.id,
         });
       }
 

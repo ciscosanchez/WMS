@@ -17,6 +17,7 @@ import {
   cursorPaginateQuery,
   buildCursorResult,
 } from "@/lib/pagination";
+import { asTenantDb } from "@/lib/tenant/db-types";
 
 async function getReadContext() {
   return requireTenantContext("inventory:read");
@@ -27,15 +28,32 @@ export async function getInventory(filters?: {
   binId?: string;
   clientId?: string;
   search?: string;
+  attributeDefinitionId?: string;
+  attributeValue?: string;
 }) {
   if (config.useMockData) return mockInventory;
 
   const { tenant } = await getReadContext();
+  const tenantDb = asTenantDb(tenant.db);
+  const inventoryIds =
+    filters?.attributeDefinitionId && filters.attributeValue
+      ? (
+          await tenantDb.operationalAttributeValue.findMany({
+            where: {
+              entityScope: "inventory_record",
+              definitionId: filters.attributeDefinitionId,
+              textValue: { contains: filters.attributeValue, mode: "insensitive" as const },
+            },
+            select: { entityId: true },
+          })
+        ).map((row: { entityId: string }) => row.entityId)
+      : null;
 
   return tenant.db.inventory.findMany({
     where: {
       ...(filters?.productId ? { productId: filters.productId } : {}),
       ...(filters?.binId ? { binId: filters.binId } : {}),
+      ...(inventoryIds ? { id: { in: inventoryIds } } : {}),
       ...(filters?.search
         ? {
             product: {
@@ -77,6 +95,8 @@ export async function getInventoryPaginated(opts: {
   search?: string;
   productId?: string;
   binId?: string;
+  attributeDefinitionId?: string;
+  attributeValue?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }): Promise<PaginatedResult<any>> {
   const page = opts.page ?? 1;
@@ -98,10 +118,25 @@ export async function getInventoryPaginated(opts: {
   }
 
   const { tenant } = await getReadContext();
+  const tenantDb = asTenantDb(tenant.db);
+  const inventoryIds =
+    opts.attributeDefinitionId && opts.attributeValue
+      ? (
+          await tenantDb.operationalAttributeValue.findMany({
+            where: {
+              entityScope: "inventory_record",
+              definitionId: opts.attributeDefinitionId,
+              textValue: { contains: opts.attributeValue, mode: "insensitive" as const },
+            },
+            select: { entityId: true },
+          })
+        ).map((row: { entityId: string }) => row.entityId)
+      : null;
 
   const where = {
     ...(opts.productId ? { productId: opts.productId } : {}),
     ...(opts.binId ? { binId: opts.binId } : {}),
+    ...(inventoryIds ? { id: { in: inventoryIds } } : {}),
     ...(opts.search
       ? {
           product: {
