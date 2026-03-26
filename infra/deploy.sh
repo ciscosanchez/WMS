@@ -20,11 +20,12 @@ has_public_prisma_history=$(
 )
 
 if [ "$has_public_prisma_history" != "t" ]; then
-  echo "==> _prisma_migrations not found — running one-time reconciliation..."
-  docker compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "${POSTGRES_USER:-ramola}" -d "${WMS_DB:-ramola_wms}" \
-    < "$SCRIPT_DIR/../scripts/reconcile-prod-db.sql"
-  echo "==> Reconciliation complete."
+  echo "==> ERROR: public._prisma_migrations not found."
+  echo "==> Run the one-time reconciliation explicitly first:"
+  echo "    ./scripts/check-prisma-baseline.sh"
+  echo "    docker compose -f infra/docker-compose.prod.yml exec -T postgres \\"
+  echo "      psql -U ${POSTGRES_USER:-ramola} -d ${WMS_DB:-ramola_wms} < scripts/reconcile-prod-db.sql"
+  exit 1
 fi
 
 echo "==> Running WMS Prisma migrations..."
