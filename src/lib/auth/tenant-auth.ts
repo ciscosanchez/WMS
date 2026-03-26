@@ -132,20 +132,21 @@ export function normalizeTenantAuthConfig(settings: unknown): TenantAuthConfig {
         const provider = isRecord(value) ? value : {};
         const label = typeof provider.label === "string" ? provider.label.trim() : "";
         const startUrl = typeof provider.startUrl === "string" ? provider.startUrl.trim() : "";
+        const enabled = provider.enabled !== false;
 
         return {
           id: toProviderId(
             typeof provider.id === "string" && provider.id.trim() ? provider.id : label,
             index
           ),
-          label: label || `Sign in with SSO ${index + 1}`,
+          label: label || (enabled ? `Sign in with SSO ${index + 1}` : ""),
           type: normalizeProviderType(provider.type),
           startUrl,
-          enabled: provider.enabled !== false,
+          enabled,
           domains: normalizeDomains(provider.domains),
         };
       })
-      .filter((provider) => provider.enabled || provider.label || provider.startUrl),
+      .filter((provider) => provider.enabled || provider.label.trim() || provider.startUrl),
   };
 }
 
