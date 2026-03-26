@@ -1,9 +1,9 @@
 "use server";
 
-import { requireTenantContext } from "@/lib/tenant/context";
+import { requirePortalContext } from "@/lib/tenant/context";
 
 async function getContext() {
-  return requireTenantContext();
+  return requirePortalContext();
 }
 
 /**

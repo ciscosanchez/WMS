@@ -1,4 +1,4 @@
-import { resolveTenant } from "@/lib/tenant/context";
+import { requireTenantContext } from "@/lib/tenant/context";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/components/shared/dashboard-charts";
 import { getDashboardChartData } from "@/modules/dashboard/actions";
@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTranslations } from "next-intl/server";
 
 async function getDashboardData() {
-  const tenant = await resolveTenant();
-  if (!tenant) return null;
+  const { tenant } = await requireTenantContext("reports:read");
   const db = tenant.db;
 
   const [pendingReceipts, receivedToday, totalSkus, availableBins, lowStockAlerts, transactions] =
@@ -95,7 +94,6 @@ export default async function DashboardPage() {
     getDashboardData(),
     getDashboardChartData().catch(() => fallbackCharts),
   ]);
-  if (!data) return <div>{t("tenantNotFound")}</div>;
 
   return (
     <div className="space-y-6">

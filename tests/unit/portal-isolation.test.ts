@@ -57,6 +57,30 @@ jest.mock("@/lib/tenant/context", () => ({
       portalClientId: "client-1",
     })
   ),
+  requirePortalContext: jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      user: {
+        id: "user-1",
+        email: "portal@client.com",
+        name: "Portal User",
+        isSuperadmin: false,
+        tenants: [
+          { tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId: "client-1" },
+        ],
+      },
+      role: "viewer",
+      tenant: {
+        tenantId: "tenant-1",
+        slug: "test",
+        dbSchema: "test_schema",
+        get db() {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          return require("@/lib/db/tenant-client").getTenantDb();
+        },
+      },
+      portalClientId: "client-1",
+    })
+  ),
 }));
 
 jest.mock("@/lib/db/tenant-client", () => ({
@@ -78,7 +102,7 @@ jest.mock("next/cache", () => ({
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { getPortalInventory, getPortalOrders, createPortalOrder } from "@/modules/portal/actions";
-import { requireTenantContext } from "@/lib/tenant/context";
+import { requireTenantContext, requirePortalContext } from "@/lib/tenant/context";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,6 +115,20 @@ const CLIENT = {
 
 function setPortalClientId(portalClientId: string | null) {
   (requireTenantContext as jest.Mock).mockImplementation(() =>
+    Promise.resolve({
+      user: {
+        id: "user-1",
+        email: "portal@client.com",
+        name: "Portal User",
+        isSuperadmin: false,
+        tenants: [{ tenantId: "tenant-1", slug: "test", role: "viewer", portalClientId }],
+      },
+      role: "viewer",
+      tenant: { tenantId: "tenant-1", slug: "test", dbSchema: "test_schema", db: mockDb },
+      portalClientId,
+    })
+  );
+  (requirePortalContext as jest.Mock).mockImplementation(() =>
     Promise.resolve({
       user: {
         id: "user-1",

@@ -123,3 +123,11 @@ export async function requireTenantContext(permission?: string): Promise<{
     portalClientId,
   };
 }
+
+export async function requirePortalContext() {
+  const context = await requireTenantContext();
+  if (!context.portalClientId) {
+    throw new Error("Forbidden: portal client binding required");
+  }
+  return context;
+}

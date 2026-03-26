@@ -7,7 +7,7 @@ import { getTenantUsers } from "@/modules/users/actions";
 import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("users:read");
   const members = await getTenantUsers(tenant.tenantId);
 
   const users = members.map((m) => ({

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { TenantRole } from "../../../node_modules/.prisma/public-client";
+import { checkPermissionLevel } from "@/lib/auth/rbac";
 import {
   Sidebar,
   SidebarContent,
@@ -53,102 +56,200 @@ import {
   FileCheck,
 } from "lucide-react";
 
-type NavItem = { titleKey: string; href: string; icon: typeof LayoutDashboard };
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+
+type NavItem = {
+  titleKey: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  permission?: string;
+};
 type NavGroup = { labelKey: string; items: NavItem[] };
 
 const navigation: NavGroup[] = [
   {
     labelKey: "overview",
     items: [
-      { titleKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { titleKey: "operations", href: "/operations", icon: Users },
+      { titleKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "reports:read" },
+      { titleKey: "operations", href: "/operations", icon: Users, permission: "reports:read" },
     ],
   },
   {
     labelKey: "inbound",
     items: [
-      { titleKey: "inboundShipments", href: "/receiving", icon: PackageOpen },
-      { titleKey: "discrepancies", href: "/receiving/discrepancies", icon: AlertTriangle },
+      { titleKey: "inboundShipments", href: "/receiving", icon: PackageOpen, permission: "receiving:read" },
+      {
+        titleKey: "discrepancies",
+        href: "/receiving/discrepancies",
+        icon: AlertTriangle,
+        permission: "receiving:read",
+      },
     ],
   },
   {
     labelKey: "labor",
     items: [
-      { titleKey: "laborDashboard", href: "/labor", icon: HardHat },
-      { titleKey: "shifts", href: "/labor/shifts", icon: Clock },
-      { titleKey: "laborCosts", href: "/labor/costs", icon: DollarSign },
+      { titleKey: "laborDashboard", href: "/labor", icon: HardHat, permission: "operator:read" },
+      { titleKey: "shifts", href: "/labor/shifts", icon: Clock, permission: "operator:read" },
+      { titleKey: "laborCosts", href: "/labor/costs", icon: DollarSign, permission: "settings:read" },
     ],
   },
   {
     labelKey: "yardDock",
     items: [
-      { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar },
-      { titleKey: "appointments", href: "/yard-dock/appointments", icon: ClipboardCheck },
-      { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map },
-      { titleKey: "yardSpots", href: "/yard-dock/yard-spots", icon: MapPin },
-      { titleKey: "dockDoors", href: "/yard-dock/dock-doors", icon: Warehouse },
-      { titleKey: "driverCheckIn", href: "/yard-dock/check-in", icon: UserCheck },
+      { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar, permission: "yard-dock:read" },
+      {
+        titleKey: "appointments",
+        href: "/yard-dock/appointments",
+        icon: ClipboardCheck,
+        permission: "yard-dock:read",
+      },
+      { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map, permission: "yard-dock:read" },
+      {
+        titleKey: "yardSpots",
+        href: "/yard-dock/yard-spots",
+        icon: MapPin,
+        permission: "yard-dock:read",
+      },
+      {
+        titleKey: "dockDoors",
+        href: "/yard-dock/dock-doors",
+        icon: Warehouse,
+        permission: "yard-dock:read",
+      },
+      {
+        titleKey: "driverCheckIn",
+        href: "/yard-dock/check-in",
+        icon: UserCheck,
+        permission: "yard-dock:write",
+      },
     ],
   },
   {
     labelKey: "fulfillment",
     items: [
-      { titleKey: "orders", href: "/orders", icon: ShoppingCart },
-      { titleKey: "picking", href: "/picking", icon: ScanLine },
-      { titleKey: "shipping", href: "/shipping", icon: Truck },
-      { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes },
-      { titleKey: "returns", href: "/returns", icon: RotateCcw },
-      { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat },
-      { titleKey: "customs", href: "/shipping/customs", icon: FileCheck },
-      { titleKey: "compliance", href: "/shipping/compliance", icon: Shield },
-      { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine },
+      { titleKey: "orders", href: "/orders", icon: ShoppingCart, permission: "orders:read" },
+      { titleKey: "picking", href: "/picking", icon: ScanLine, permission: "shipping:read" },
+      { titleKey: "shipping", href: "/shipping", icon: Truck, permission: "shipping:read" },
+      {
+        titleKey: "cartonTypes",
+        href: "/shipping/carton-types",
+        icon: Boxes,
+        permission: "shipping:read",
+      },
+      { titleKey: "returns", href: "/returns", icon: RotateCcw, permission: "returns:read" },
+      {
+        titleKey: "crossDock",
+        href: "/shipping/cross-dock",
+        icon: Repeat,
+        permission: "cross_dock:read",
+      },
+      { titleKey: "customs", href: "/shipping/customs", icon: FileCheck, permission: "customs:read" },
+      { titleKey: "compliance", href: "/shipping/compliance", icon: Shield, permission: "shipping:read" },
+      { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine, permission: "shipping:read" },
     ],
   },
   {
     labelKey: "inventory",
     items: [
-      { titleKey: "stockBrowser", href: "/inventory", icon: Boxes },
-      { titleKey: "lpn", href: "/inventory/lpn", icon: Package },
-      { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine },
-      { titleKey: "movements", href: "/inventory/movements", icon: ArrowLeftRight },
-      { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck },
-      { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks },
-      { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3 },
-      { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle },
-      { titleKey: "lpn", href: "/inventory/lpn", icon: Container },
-      { titleKey: "transfers", href: "/inventory/transfers", icon: Truck },
-      { titleKey: "replenishment", href: "/inventory/replenishment", icon: ArrowDownToLine },
+      { titleKey: "stockBrowser", href: "/inventory", icon: Boxes, permission: "inventory:read" },
+      { titleKey: "lpn", href: "/inventory/lpn", icon: Package, permission: "inventory:read" },
+      { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine, permission: "inventory:read" },
+      {
+        titleKey: "movements",
+        href: "/inventory/movements",
+        icon: ArrowLeftRight,
+        permission: "inventory:read",
+      },
+      {
+        titleKey: "adjustments",
+        href: "/inventory/adjustments",
+        icon: ClipboardCheck,
+        permission: "inventory:read",
+      },
+      {
+        titleKey: "cycleCounts",
+        href: "/inventory/cycle-counts",
+        icon: ListChecks,
+        permission: "inventory:read",
+      },
+      { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3, permission: "inventory:read" },
+      { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle, permission: "inventory:read" },
+      { titleKey: "lpn", href: "/inventory/lpn", icon: Container, permission: "inventory:read" },
+      { titleKey: "transfers", href: "/inventory/transfers", icon: Truck, permission: "inventory:read" },
+      {
+        titleKey: "replenishment",
+        href: "/inventory/replenishment",
+        icon: ArrowDownToLine,
+        permission: "inventory:read",
+      },
     ],
   },
   {
     labelKey: "setup",
     items: [
-      { titleKey: "locations", href: "/warehouse", icon: MapPin },
-      { titleKey: "clients", href: "/clients", icon: Users },
-      { titleKey: "products", href: "/products", icon: Package },
-      { titleKey: "kits", href: "/products/kits", icon: Puzzle },
-      { titleKey: "channels", href: "/channels", icon: Store },
-      { titleKey: "automation", href: "/warehouse/automation", icon: Bot },
-      { titleKey: "workflowRules", href: "/settings/rules", icon: Zap },
+      { titleKey: "locations", href: "/warehouse", icon: MapPin, permission: "warehouse:read" },
+      { titleKey: "clients", href: "/clients", icon: Users, permission: "clients:read" },
+      { titleKey: "products", href: "/products", icon: Package, permission: "products:read" },
+      { titleKey: "kits", href: "/products/kits", icon: Puzzle, permission: "products:read" },
+      { titleKey: "channels", href: "/channels", icon: Store, permission: "orders:read" },
+      { titleKey: "automation", href: "/warehouse/automation", icon: Bot, permission: "warehouse:read" },
+      { titleKey: "workflowRules", href: "/settings/rules", icon: Zap, permission: "settings:read" },
     ],
   },
   {
     labelKey: "billing",
-    items: [{ titleKey: "billingDashboard", href: "/billing", icon: Receipt }],
+    items: [{ titleKey: "billingDashboard", href: "/billing", icon: Receipt, permission: "billing:read" }],
   },
   {
     labelKey: "system",
     items: [
-      { titleKey: "analytics", href: "/analytics", icon: TrendingUp },
-      { titleKey: "reports", href: "/reports", icon: BarChart3 },
-      { titleKey: "settings", href: "/settings", icon: Settings },
+      { titleKey: "analytics", href: "/analytics", icon: TrendingUp, permission: "reports:read" },
+      { titleKey: "reports", href: "/reports", icon: BarChart3, permission: "reports:read" },
+      { titleKey: "settings", href: "/settings", icon: Settings, permission: "settings:read" },
     ],
   },
 ];
 
+type SidebarSession = {
+  isSuperadmin?: boolean;
+  tenants?: Array<{ slug: string; role: TenantRole }>;
+};
+
+function getTenantSlugFromHost(): string | null {
+  if (typeof window === "undefined") return null;
+  const parts = window.location.hostname.split(".");
+  return parts.length >= 4 ? parts[0] : null;
+}
+
+function getCurrentTenantRole(sessionUser: SidebarSession | undefined): TenantRole | null {
+  if (USE_MOCK || sessionUser?.isSuperadmin) return "admin";
+
+  const tenants = sessionUser?.tenants ?? [];
+  if (tenants.length === 0) return null;
+
+  const tenantSlug = getTenantSlugFromHost();
+  const matchedTenant = tenantSlug ? tenants.find((tenant) => tenant.slug === tenantSlug) : null;
+  return matchedTenant?.role ?? tenants[0]?.role ?? null;
+}
+
+function canAccessNavItem(item: NavItem, role: TenantRole | null): boolean {
+  if (!item.permission) return true;
+  if (!role) return false;
+  return checkPermissionLevel(role, item.permission);
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
+  const { data: session, status } = useSession();
+  const currentRole = getCurrentTenantRole(session?.user as SidebarSession | undefined);
+  const visibleGroups = navigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => canAccessNavItem(item, currentRole)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <Sidebar collapsible="icon">
@@ -161,7 +262,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {navigation.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.labelKey}>
             <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -183,14 +284,16 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t p-3">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton render={<Link href="/receive" />}>
-              <Smartphone className="h-4 w-4" />
-              <span>{t("floorApp")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {status !== "loading" && canAccessNavItem({ titleKey: "floorApp", href: "/receive", icon: Smartphone, permission: "operator:write" }, currentRole) ? (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/receive" />}>
+                <Smartphone className="h-4 w-4" />
+                <span>{t("floorApp")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        ) : null}
       </SidebarFooter>
     </Sidebar>
   );

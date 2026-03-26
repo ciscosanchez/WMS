@@ -12,7 +12,7 @@ export default async function SlottingSettingsPage() {
   const t = await getTranslations("tenant.slotting");
   // Use the first active warehouse — slotting config is per-warehouse
   const { requireTenantContext } = await import("@/lib/tenant/context");
-  const { tenant } = await requireTenantContext();
+  const { tenant } = await requireTenantContext("inventory:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const warehouse = await (tenant.db as any).warehouse.findFirst({
     where: { isActive: true },

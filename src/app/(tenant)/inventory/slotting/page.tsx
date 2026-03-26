@@ -37,7 +37,7 @@ export default async function SlottingDashboardPage() {
           action={async () => {
             "use server";
             const { requireTenantContext } = await import("@/lib/tenant/context");
-            const { tenant } = await requireTenantContext();
+            const { tenant } = await requireTenantContext("inventory:write");
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const wh = await (tenant.db as any).warehouse.findFirst({
               where: { isActive: true },

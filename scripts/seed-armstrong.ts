@@ -5,9 +5,13 @@
  * Usage: npx tsx scripts/seed-armstrong.ts
  *
  * Users created (weak passwords — dev only):
- *   admin@armstrong.com     / admin123      → Admin (full access)
- *   receiving@armstrong.com / receiving123  → Warehouse Worker (receiving focus)
- *   warehouse@armstrong.com / warehouse123  → Warehouse Worker (inventory focus)
+ *   superadmin@ramola.io        / admin123       → Platform Superadmin
+ *   admin@armstrong.com         / admin123       → Tenant Admin
+ *   manager@armstrong.com       / manager123     → Tenant Manager
+ *   receiving@armstrong.com     / receiving123   → Warehouse Worker (receiving focus)
+ *   warehouse@armstrong.com     / warehouse123   → Warehouse Worker (inventory focus)
+ *   viewer@armstrong.com        / viewer123      → Tenant Viewer
+ *   portal@arteriors.com        / portal123      → Portal Viewer (scoped to Arteriors)
  */
 
 if (process.env.NODE_ENV === "production") {
@@ -31,11 +35,25 @@ async function main() {
   // 1. Create users
   const users = [
     {
-      email: "admin@armstrong.com",
-      name: "Cisco Sanchez",
+      email: "superadmin@ramola.io",
+      name: "Platform Superadmin",
       password: "admin123",
       isSuperadmin: true,
       role: "admin" as const,
+    },
+    {
+      email: "admin@armstrong.com",
+      name: "Cisco Sanchez",
+      password: "admin123",
+      isSuperadmin: false,
+      role: "admin" as const,
+    },
+    {
+      email: "manager@armstrong.com",
+      name: "Morgan Reyes",
+      password: "manager123",
+      isSuperadmin: false,
+      role: "manager" as const,
     },
     {
       email: "receiving@armstrong.com",
@@ -51,14 +69,35 @@ async function main() {
       isSuperadmin: false,
       role: "warehouse_worker" as const,
     },
+    {
+      email: "viewer@armstrong.com",
+      name: "Taylor Brooks",
+      password: "viewer123",
+      isSuperadmin: false,
+      role: "viewer" as const,
+    },
+    {
+      email: "portal@arteriors.com",
+      name: "Lisa Chen",
+      password: "portal123",
+      isSuperadmin: false,
+      role: "viewer" as const,
+      portalClientCode: "ARTERIORS",
+    },
   ];
 
-  const createdUsers = [];
+  const createdUsers: Array<
+    Awaited<ReturnType<typeof prisma.user.upsert>> & {
+      role: (typeof users)[number]["role"];
+      portalClientCode?: string;
+      password: string;
+    }
+  > = [];
   for (const u of users) {
     const passwordHash = await hash(u.password, 12);
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { name: u.name, passwordHash },
+      update: { name: u.name, passwordHash, isSuperadmin: u.isSuperadmin },
       create: {
         email: u.email,
         name: u.name,
@@ -66,7 +105,12 @@ async function main() {
         isSuperadmin: u.isSuperadmin,
       },
     });
-    createdUsers.push({ ...user, role: u.role });
+    createdUsers.push({
+      ...user,
+      role: u.role,
+      portalClientCode: u.portalClientCode,
+      password: u.password,
+    });
     console.log(`  User: ${u.email} / ${u.password} (${u.role})`);
   }
 
@@ -114,8 +158,8 @@ async function main() {
   for (const u of createdUsers) {
     await prisma.tenantUser.upsert({
       where: { tenantId_userId: { tenantId: tenant.id, userId: u.id } },
-      update: { role: u.role },
-      create: { tenantId: tenant.id, userId: u.id, role: u.role },
+      update: { role: u.role, portalClientId: null },
+      create: { tenantId: tenant.id, userId: u.id, role: u.role, portalClientId: null },
     });
   }
   console.log(`  Linked ${createdUsers.length} users to Armstrong tenant`);
@@ -259,6 +303,24 @@ async function main() {
   }
   console.log(`  Clients: ${clients.length} (Arteriors, Honeywell, Light Annex, Audit)`);
 
+  // Bind portal-scoped users after the client records exist.
+  for (const u of createdUsers.filter((user) => user.portalClientCode)) {
+    const client = await tenantDb.client.findUnique({
+      where: { code: u.portalClientCode! },
+      select: { id: true, name: true },
+    });
+    if (!client) {
+      throw new Error(`Portal client not found for ${u.email}: ${u.portalClientCode}`);
+    }
+
+    await prisma.tenantUser.update({
+      where: { tenantId_userId: { tenantId: tenant.id, userId: u.id } },
+      data: { portalClientId: client.id },
+    });
+
+    console.log(`  Portal binding: ${u.email} → ${client.name}`);
+  }
+
   // Products
   const products = [
     { clientCode: "ARTERIORS", sku: "ART-LAMP-001", name: "Caviar Adjustable Pendant", weight: 8.5 },
@@ -296,7 +358,9 @@ async function main() {
   console.log("  WMS login: https://wms.ramola.app/login");
   console.log("  Accounts:");
   for (const u of users) {
-    console.log(`    ${u.email} / ${u.password} (${u.role})`);
+    const portalSuffix = u.portalClientCode ? `, portal:${u.portalClientCode}` : "";
+    const superadminSuffix = u.isSuperadmin ? ", superadmin" : "";
+    console.log(`    ${u.email} / ${u.password} (${u.role}${superadminSuffix}${portalSuffix})`);
   }
 }
 
