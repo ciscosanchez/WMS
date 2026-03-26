@@ -13,9 +13,21 @@ docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 echo "==> Waiting for postgres to be ready..."
 docker compose -f docker-compose.prod.yml exec postgres pg_isready -U "${POSTGRES_USER:-ramola}" --timeout=30
 
-echo "==> Running WMS Prisma migrations..."
-docker compose -f docker-compose.prod.yml exec wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
-docker compose -f docker-compose.prod.yml exec wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/tenant-schema.prisma
+has_public_prisma_history=$(
+  docker compose -f docker-compose.prod.yml exec -T postgres \
+    psql -U "${POSTGRES_USER:-ramola}" -d "${POSTGRES_DB:-ramola}" \
+    -Atqc "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;"
+)
+
+if [ "$has_public_prisma_history" = "t" ]; then
+  echo "==> Running WMS Prisma migrations..."
+  docker compose -f docker-compose.prod.yml exec -T wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma
+  docker compose -f docker-compose.prod.yml exec -T wms node node_modules/prisma/build/index.js migrate deploy --schema=prisma/tenant-schema.prisma
+else
+  echo "==> Skipping Prisma migrations"
+  echo "    public._prisma_migrations is missing, so this environment has not been baselined for prisma migrate."
+  echo "    App containers were updated, but schema changes must be applied manually until prod migration history is reconciled."
+fi
 
 echo "==> Health check..."
 sleep 5
