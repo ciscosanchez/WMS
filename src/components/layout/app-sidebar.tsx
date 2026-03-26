@@ -175,7 +175,6 @@ const navigation: NavGroup[] = [
       },
       { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3, permission: "inventory:read" },
       { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle, permission: "inventory:read" },
-      { titleKey: "lpn", href: "/inventory/lpn", icon: Container, permission: "inventory:read" },
       { titleKey: "transfers", href: "/inventory/transfers", icon: Truck, permission: "inventory:read" },
       {
         titleKey: "replenishment",
