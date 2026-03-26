@@ -1,6 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { headers } from "next/headers";
 import { defaultLocale, type Locale, locales } from "./config";
+import { loadLocaleMessages } from "./load-messages";
 
 export default getRequestConfig(async () => {
   const hdrs = await headers();
@@ -10,14 +11,14 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages: {
-      ...(await import(`./locales/${locale}/common.json`)).default,
-      ...(await import(`./locales/${locale}/operator.json`)).default,
-      ...(await import(`./locales/${locale}/auth.json`)).default,
-      ...(await import(`./locales/${locale}/tenant.json`)).default,
-      ...(await import(`./locales/${locale}/portal.json`)).default,
-      ...(await import(`./locales/${locale}/platform.json`)).default,
-      ...(await import(`./locales/${locale}/email.json`)).default,
-      ...(await import(`./locales/${locale}/validation.json`)).default,
+      ...(await loadLocaleMessages(locale, "common")),
+      ...(await loadLocaleMessages(locale, "operator")),
+      ...(await loadLocaleMessages(locale, "auth")),
+      ...(await loadLocaleMessages(locale, "tenant")),
+      ...(await loadLocaleMessages(locale, "portal")),
+      ...(await loadLocaleMessages(locale, "platform")),
+      ...(await loadLocaleMessages(locale, "email")),
+      ...(await loadLocaleMessages(locale, "validation")),
     },
   };
 });

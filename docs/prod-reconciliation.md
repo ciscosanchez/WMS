@@ -6,7 +6,7 @@ Date checked: `2026-03-25`
 
 These facts were verified directly against the production VPS and Postgres instance:
 
-- `public.users` does not contain `auth_version`
+- `public.users` now contains `auth_version`
 - the public database does not contain `_prisma_migrations`
 - active schemas present in the production database:
   - `public`
@@ -19,7 +19,8 @@ These facts were verified directly against the production VPS and Postgres insta
   - `tenant_armstrong`: `76`
   - `tenant_diego_family`: `78`
 
-This means production is not currently aligned with the Prisma history expected by the repo.
+This means production is closer to the repo schema than the first audit suggested, but it is
+still not aligned with Prisma migration history because `_prisma_migrations` is missing.
 
 ## What The Dirty Prod Worktree Told Us
 
@@ -34,11 +35,11 @@ Likely valid hotfixes:
 - `infra/docker-compose.prod.yml`
   - adds the `watchdog` service and volume
 
-Evidence of schema drift:
+Historical evidence of schema drift:
 
-- `prisma/schema.prisma`
-  - closer to the live production DB than `main`
-  - notably does not include `authVersion` on `User`
+- `prisma/schema.prisma.prod-dirty-20260325.bak`
+  - captured an earlier prod-side snapshot from before `auth_version` was present
+  - useful as historical evidence, but no longer matches the live `public.users` table
 
 Junk / cleanup items:
 
@@ -53,36 +54,36 @@ The WMS app image can build and the container starts healthy, but the deploy scr
 
 Observed failure modes:
 
-1. Production DB/schema mismatch
-   - repo Prisma expects schema state that prod does not currently have
-   - `auth_version` is one concrete example
+1. Production migration-history mismatch
+   - repo Prisma expects `_prisma_migrations`
+   - production still has none, so `prisma migrate deploy` cannot be treated as authoritative
 
-2. Runtime Prisma CLI dependency mismatch
-   - the runtime image currently copies a partial Prisma CLI tree
-   - `node node_modules/prisma/build/index.js migrate deploy ...` fails because transitive Prisma dependencies are missing at runtime
+2. Baseline migration ambiguity
+   - the repo now contains a public baseline migration at `prisma/migrations/20260409120000_baseline/`
+   - production has not been stamped with that history yet
 
-Operationally, this means the app can be up while `infra/deploy.sh` still exits non-zero.
+Operationally, the app can now deploy and stay healthy because `infra/deploy.sh` skips Prisma
+migrations when `_prisma_migrations` is missing, but the migration history gap still exists.
 
 ## Recommended Sequence
 
 1. Treat the live prod DB as the current source of truth.
-2. Capture a committed baseline of the prod public schema before adding more schema changes.
+2. Treat `prisma/migrations/20260409120000_baseline/` as a candidate baseline, not an applied fact.
 3. Decide how to handle legacy tenant schemas:
    - `armstrong`
    - `tenant_armstrong`
-4. Upstream valid prod hotfixes before more deploy work.
-5. Fix the runtime image / deploy path so Prisma CLI has its full dependency tree if it must run in the app container.
-6. Reintroduce proper Prisma migration history only after the baseline is settled.
+4. Stamp production with migration history only after the team agrees the baseline SQL matches live reality.
+5. Decide whether the legacy `armstrong` schema should be retained, migrated, or removed.
 
 ## Immediate Safe Actions
 
-- commit the valid app hotfixes from prod into the repo
 - keep the watchdog compose change
 - remove junk files from the server worktree
 - avoid assuming `prisma migrate deploy` is authoritative on prod until the schema is baselined
+- use direct schema inspection, not the old prod backup file, as the source of truth
 
 ## Not Yet Resolved
 
-- whether `authVersion` should be applied to prod now or deferred until after baseline
+- whether `prisma/migrations/20260409120000_baseline/` exactly matches live prod and can be stamped safely
 - whether `armstrong` is legacy and can be removed, or is still in active use
 - whether tenant schema evolution should continue via raw SQL migrations, Prisma tenant schema management, or a hybrid approach

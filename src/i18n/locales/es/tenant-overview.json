@@ -1,0 +1,58 @@
+{
+  "tenant": {
+    "dashboard": {
+      "title": "Panel",
+      "subtitle": "Resumen de las operaciones de tu almacén",
+      "pendingReceipts": "Recepciones pendientes",
+      "pendingReceiptsDesc": "Envíos esperando procesamiento",
+      "receivedToday": "Recibidos hoy",
+      "receivedTodayDesc": "Artículos recibidos hoy",
+      "totalSkus": "Total de SKUs",
+      "totalSkusDesc": "Productos activos",
+      "availableBins": "Bins disponibles",
+      "availableBinsDesc": "Ubicaciones de almacenamiento disponibles",
+      "lowStockAlerts": "Alertas de stock bajo",
+      "lowStockAlertsDesc": "Productos por debajo del mínimo",
+      "recentActivity": "Actividad reciente",
+      "noActivity": "Sin actividad reciente",
+      "tenantNotFound": "Inquilino no encontrado"
+    },
+    "analytics": {
+      "title": "Analítica Avanzada",
+      "subtitle": "Paneles de analítica operativa e indicadores de rendimiento",
+      "throughput": "Tendencia de Rendimiento",
+      "received": "Recibido",
+      "shipped": "Enviado",
+      "slaCompliance": "Cumplimiento de SLA",
+      "onTime": "A Tiempo",
+      "late": "Tardío",
+      "noSla": "Sin SLA",
+      "exceptions": "Mapa de Excepciones",
+      "topProducts": "Productos Principales",
+      "utilization": "Utilización del Almacén",
+      "orderVelocity": "Velocidad de Órdenes (Hrs Promedio)",
+      "noData": "Sin datos disponibles"
+    },
+    "operations": {
+      "title": "Panel de operaciones",
+      "subtitle": "Operaciones del almacén en tiempo real y carga de trabajo de operadores",
+      "completedToday": "Completados hoy",
+      "avgMinutes": "Min. promedio/tarea",
+      "pendingUnassigned": "Pendientes (sin asignar)",
+      "activeReceiving": "Recepción activa",
+      "unassignedTasks": "Tareas sin asignar",
+      "allAssigned": "Todas las tareas están asignadas.",
+      "rush": "Urgente",
+      "expedited": "Prioritario",
+      "operatorWorkload": "Carga de trabajo de operadores",
+      "noOperatorActivity": "Sin actividad de operadores hoy.",
+      "active": "activo",
+      "done": "listo",
+      "short": "faltante"
+    },
+    "reports": {
+      "title": "Reportes",
+      "subtitle": "Analíticas e información del almacén"
+    }
+  }
+}

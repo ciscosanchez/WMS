@@ -1,0 +1,58 @@
+{
+  "tenant": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Overview of your warehouse operations",
+      "pendingReceipts": "Pending Receipts",
+      "pendingReceiptsDesc": "Shipments awaiting processing",
+      "receivedToday": "Received Today",
+      "receivedTodayDesc": "Items received today",
+      "totalSkus": "Total SKUs",
+      "totalSkusDesc": "Active products",
+      "availableBins": "Available Bins",
+      "availableBinsDesc": "Storage locations available",
+      "lowStockAlerts": "Low Stock Alerts",
+      "lowStockAlertsDesc": "Products below minimum",
+      "recentActivity": "Recent Activity",
+      "noActivity": "No recent activity",
+      "tenantNotFound": "Tenant not found"
+    },
+    "analytics": {
+      "title": "Advanced Analytics",
+      "subtitle": "Operational analytics dashboards and performance insights",
+      "throughput": "Throughput Trend",
+      "received": "Received",
+      "shipped": "Shipped",
+      "slaCompliance": "SLA Compliance",
+      "onTime": "On Time",
+      "late": "Late",
+      "noSla": "No SLA",
+      "exceptions": "Exception Heatmap",
+      "topProducts": "Top Products",
+      "utilization": "Warehouse Utilization",
+      "orderVelocity": "Order Velocity (Avg Hours)",
+      "noData": "No data available"
+    },
+    "operations": {
+      "title": "Operations Board",
+      "subtitle": "Real-time warehouse operations and operator workload",
+      "completedToday": "Completed Today",
+      "avgMinutes": "Avg Minutes/Task",
+      "pendingUnassigned": "Pending (Unassigned)",
+      "activeReceiving": "Active Receiving",
+      "unassignedTasks": "Unassigned Tasks",
+      "allAssigned": "All tasks are assigned.",
+      "rush": "Rush",
+      "expedited": "Expedited",
+      "operatorWorkload": "Operator Workload",
+      "noOperatorActivity": "No operator activity today.",
+      "active": "active",
+      "done": "done",
+      "short": "short"
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Warehouse analytics and insights"
+    }
+  }
+}

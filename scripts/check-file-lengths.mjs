@@ -8,9 +8,6 @@ const ALLOWED_OVERSIZED = new Map([
   ["prisma/tenant-schema.prisma", "Single Prisma schema file"],
   ["prisma/tenant-migrations/0001_init.sql", "Baseline tenant SQL migration"],
   ["prisma/migrations/20260317145051_init_tenant_schema/migration.sql", "Baseline public SQL migration"],
-  ["src/i18n/locales/en/tenant.json", "Tenant translation bundle"],
-  ["src/i18n/locales/es/tenant.json", "Tenant translation bundle"],
-  ["src/components/ui/sidebar.tsx", "Vendored UI primitive pending deeper extraction"],
 ]);
 
 const trackedFiles = execFileSync("git", ["ls-files"], { encoding: "utf8" })

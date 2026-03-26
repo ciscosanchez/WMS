@@ -3,6 +3,7 @@
  * Imports JSON directly — no request context needed.
  */
 import { defaultLocale, type Locale, locales } from "./config";
+import { loadLocaleMessages } from "./load-messages";
 
 function flattenMessages(obj: Record<string, unknown>, prefix = ""): Record<string, string> {
   const result: Record<string, string> = {};
@@ -28,9 +29,9 @@ export async function getServerTranslations(locale: string, namespace: string) {
 
   let raw: Record<string, unknown>;
   try {
-    raw = (await import(`./locales/${safeLocale}/${namespace}.json`)).default;
+    raw = await loadLocaleMessages(safeLocale, namespace);
   } catch {
-    raw = (await import(`./locales/en/${namespace}.json`)).default;
+    raw = await loadLocaleMessages("en", namespace);
   }
 
   // If the JSON has a single top-level key matching the namespace, unwrap it
