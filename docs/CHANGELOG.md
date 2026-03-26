@@ -30,11 +30,17 @@ All notable changes to Ramola WMS.
 - Portal shell now resolves and displays the bound client account
 - Portal layout avoids redirect loops on unexpected runtime failures
 - Export routes for inventory, orders, and billing now scope portal-bound users by `portal_client_id`
+- Users admin can now bind and unbind portal access directly
+- Invite flow now supports explicit standard, operator, and portal access experiences
 
 ### Document Intelligence Security
 
 - `updateShipmentFromExtraction()` now requires `receiving:write`
 - `getFileViewUrl()` now requires `receiving:read`
+
+### Coverage
+
+- Added middleware contract tests for persona-aware routing defaults
 
 ### Documentation
 

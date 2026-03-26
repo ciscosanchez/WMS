@@ -223,6 +223,11 @@ The current admin-facing interpretation is:
 
 - role assignment still uses the four stored tenant roles
 - persona badges in user management expose the derived product personas
+- invite UI now supports three explicit access experiences:
+  - standard team member
+  - operator
+  - portal user
+- portal users can now be bound or unbound directly from the users table
 - invite UI explains the current mappings:
   - `operator` = `warehouse_worker` + floor app access
   - `portal_user` = `viewer` + client binding
@@ -261,6 +266,7 @@ Key RBAC and persona coverage:
 - [portal-layout-boundary.test.tsx](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/portal-layout-boundary.test.tsx)
 - [personas.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/personas.test.ts)
 - [export-portal-scope.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/export-portal-scope.test.ts)
+- [middleware-personas.test.ts](/Users/cisco.sanchez/Sales/armstrong/wms/tests/unit/middleware-personas.test.ts)
 
 ## Current Design Decisions
 
