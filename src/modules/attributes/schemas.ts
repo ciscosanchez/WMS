@@ -3,6 +3,7 @@ import { z } from "zod";
 export const attributeScopeSchema = z.enum([
   "inbound_shipment",
   "inbound_shipment_line",
+  "order_line",
   "lpn",
   "inventory_unit",
   "inventory_record",

@@ -110,6 +110,7 @@ model UomConversion {
 enum OperationalAttributeScope {
   inbound_shipment
   inbound_shipment_line
+  order_line
   lpn
   inventory_unit
   inventory_record

@@ -83,6 +83,25 @@ All notable changes to Ramola WMS.
 - Stock browser rows now render propagated `inventory_record` attributes as badges
 - Filtered inventory results now show the values that caused the match instead of hiding them in the data layer
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4 (Order Criteria + Allocation Matching)
+
+### Order Capture
+
+- Added `order_line` as a first-class operational attribute scope
+- Order creation now supports line-level operational attribute capture
+- Order-line criteria persist through the same generic definition/value system as receiving and LPN flows
+
+### Allocation
+
+- Pick-task generation now checks for `order_line` criteria before allocating stock
+- When criteria exist, allocation prefers `inventory_record` values with matching operational-attribute keys and values
+- Matching remains generic and tenant-configurable rather than Armstrong-specific
+
+### Coverage
+
+- Added schema coverage for the new `order_line` scope
+- Added allocation coverage proving attribute-aware inventory selection
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

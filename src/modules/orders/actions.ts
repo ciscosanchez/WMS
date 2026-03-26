@@ -12,6 +12,8 @@ import {
 import { mockOrders } from "@/lib/mock-data";
 import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
+import { asTenantDb } from "@/lib/tenant/db-types";
+import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
 
 async function getReadContext() {
   return requireTenantContext("orders:read");
@@ -55,24 +57,52 @@ export async function createOrder(data: unknown, lines: unknown[]) {
     return { id: "mock-new", orderNumber: "ORD-MOCK-0001", ...(data as any) };
 
   const { user, tenant } = await requireTenantContext("orders:write");
+  const db = asTenantDb(tenant.db);
   const parsed = orderSchema.parse(data);
   const parsedLines = lines.map((l) => orderLineSchema.parse(l));
 
   const orderNumber = await nextSequence(tenant.db, "ORD");
 
-  const order = await tenant.db.order.create({
-    data: {
-      ...parsed,
-      orderNumber,
-      status: "pending",
-      lines: {
-        create: parsedLines,
+  const order = (await db.$transaction(async (tx) => {
+    const prisma = asTenantDb(tx);
+    const createdOrder = await prisma.order.create({
+      data: {
+        ...parsed,
+        orderNumber,
+        status: "pending",
       },
-    },
-    include: {
-      lines: true,
-    },
-  });
+    });
+
+    const createdLines = [];
+    for (const parsedLine of parsedLines) {
+      const { operationalAttributes = [], ...lineData } = parsedLine;
+      const createdLine = await prisma.orderLine.create({
+        data: {
+          orderId: createdOrder.id,
+          ...lineData,
+        },
+      });
+
+      await saveOperationalAttributeValuesForEntity({
+        db: prisma,
+        userId: user.id,
+        entityScope: "order_line",
+        entityId: createdLine.id,
+        values: operationalAttributes,
+      });
+
+      createdLines.push(createdLine);
+    }
+
+    return {
+      ...createdOrder,
+      lines: createdLines,
+    };
+  })) as {
+    id: string;
+    orderNumber: string;
+    lines: Array<{ id: string; productId: string; quantity: number }>;
+  };
 
   await logAudit(tenant.db, {
     userId: user.id,
@@ -168,11 +198,7 @@ async function generatePickTasksForOrder(
       const lineData = [];
 
       for (const line of order.lines) {
-        // Find the best bin with enough available stock
-        const inv = await prisma.inventory.findFirst({
-          where: { productId: line.productId, available: { gte: line.quantity } },
-          orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
-        });
+        const inv = await findInventoryForOrderLine(prisma, line);
 
         if (inv) {
           // Allocate: increment allocated, decrement available
@@ -247,6 +273,98 @@ async function generatePickTasksForOrder(
     entityId: task.id,
     changes: { source: { old: null, new: "auto_generated" } },
   });
+}
+
+type RawOperationalAttributeValue = {
+  definition: { key: string };
+  textValue?: string | null;
+  numberValue?: number | null;
+  booleanValue?: boolean | null;
+  dateValue?: Date | null;
+  jsonValue?: unknown;
+};
+
+function attributeValueToComparable(value: RawOperationalAttributeValue) {
+  if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+  if (value.booleanValue !== null && value.booleanValue !== undefined)
+    return value.booleanValue ? "true" : "false";
+  if (value.dateValue) return value.dateValue.toISOString();
+  if (value.jsonValue !== null && value.jsonValue !== undefined) {
+    if (Array.isArray(value.jsonValue)) {
+      return JSON.stringify([...value.jsonValue].map(String).sort());
+    }
+    return JSON.stringify(value.jsonValue);
+  }
+  return value.textValue ?? "";
+}
+
+async function findInventoryForOrderLine(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prisma: any,
+  line: { id: string; productId: string; quantity: number }
+) {
+  const criteria = ((await prisma.operationalAttributeValue.findMany({
+    where: {
+      entityScope: "order_line",
+      entityId: line.id,
+    },
+    include: {
+      definition: { select: { key: true } },
+    },
+  })) ?? []) as RawOperationalAttributeValue[];
+
+  if (criteria.length === 0) {
+    return prisma.inventory.findFirst({
+      where: { productId: line.productId, available: { gte: line.quantity } },
+      orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
+    });
+  }
+
+  const targetDefinitions = ((await prisma.operationalAttributeDefinition.findMany({
+    where: {
+      entityScope: "inventory_record",
+      isActive: true,
+      key: { in: criteria.map((item) => item.definition.key) },
+    },
+    select: { id: true, key: true },
+  })) ?? []) as Array<{ id: string; key: string }>;
+
+  if (targetDefinitions.length === 0) return null;
+
+  const targetByKey = new Map(targetDefinitions.map((definition) => [definition.key, definition.id]));
+  const candidateInventory = ((await prisma.inventory.findMany({
+    where: { productId: line.productId, available: { gte: line.quantity } },
+    orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
+  })) ?? []) as Array<{ id: string }>;
+
+  for (const inventoryRecord of candidateInventory) {
+    const inventoryValues = ((await prisma.operationalAttributeValue.findMany({
+      where: {
+        entityScope: "inventory_record",
+        entityId: inventoryRecord.id,
+        definitionId: { in: targetDefinitions.map((definition) => definition.id) },
+      },
+      include: {
+        definition: { select: { key: true } },
+      },
+    })) ?? []) as RawOperationalAttributeValue[];
+
+    const inventoryByKey = new Map(
+      inventoryValues.map((value) => [value.definition.key, attributeValueToComparable(value)])
+    );
+
+    const matchesAllCriteria = criteria.every((criterion) => {
+      const targetDefinitionId = targetByKey.get(criterion.definition.key);
+      if (!targetDefinitionId) return false;
+      return inventoryByKey.get(criterion.definition.key) === attributeValueToComparable(criterion);
+    });
+
+    if (matchesAllCriteria) {
+      return inventoryRecord;
+    }
+  }
+
+  return null;
 }
 
 export async function deleteOrder(id: string) {

@@ -160,5 +160,67 @@ describe("Transactional inventory integrity", () => {
 
       expect(mockTxPrisma.inventory.update).not.toHaveBeenCalled();
     });
+
+    it("prefers inventory records whose propagated attributes match order-line criteria", async () => {
+      mockDb.order.findUniqueOrThrow.mockResolvedValue({
+        ...existingOrder,
+        lines: [existingOrder.lines[0]],
+      });
+      mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
+
+      mockTxPrisma.operationalAttributeValue.findMany
+        .mockResolvedValueOnce([
+          {
+            definition: { key: "room_reference" },
+            textValue: "living_room",
+            numberValue: null,
+            booleanValue: null,
+            dateValue: null,
+            jsonValue: null,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            definition: { key: "room_reference" },
+            textValue: "primary_bedroom",
+            numberValue: null,
+            booleanValue: null,
+            dateValue: null,
+            jsonValue: null,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            definition: { key: "room_reference" },
+            textValue: "living_room",
+            numberValue: null,
+            booleanValue: null,
+            dateValue: null,
+            jsonValue: null,
+          },
+        ]);
+
+      mockTxPrisma.operationalAttributeDefinition.findMany.mockResolvedValue([
+        { id: "inv-room-reference", key: "room_reference" },
+      ]);
+
+      mockTxPrisma.inventory.findMany.mockResolvedValue([{ id: "inv-2", binId: "bin-B" }, { id: "inv-1", binId: "bin-A" }]);
+      mockTxPrisma.inventory.update.mockResolvedValue({});
+      mockTxPrisma.inventoryTransaction.create.mockResolvedValue({});
+      mockTxPrisma.pickTask.create.mockResolvedValue({ id: "pick-1" });
+
+      await updateOrderStatus(orderId, "picking");
+
+      expect(mockTxPrisma.inventory.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "inv-1" },
+        })
+      );
+      expect(mockTxPrisma.inventory.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "inv-2" },
+        })
+      );
+    });
   });
 });

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { getClients } from "@/modules/clients/actions";
 import { getProducts } from "@/modules/products/actions";
 import { createOrder } from "@/modules/orders/actions";
+import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
 import { useTranslations } from "next-intl";
 
 interface OrderLine {
@@ -30,6 +31,14 @@ interface OrderLine {
   sku: string;
   name: string;
   quantity: number;
+  operationalAttributes: Array<{ definitionId: string; label: string; value: string }>;
+}
+
+interface AttributeDefinition {
+  id: string;
+  label: string;
+  dataType: string;
+  options?: Array<{ value: string; label: string }>;
 }
 
 export default function NewOrderPage() {
@@ -39,6 +48,7 @@ export default function NewOrderPage() {
   const [clients, setClients] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>([]);
+  const [attributeDefinitions, setAttributeDefinitions] = useState<AttributeDefinition[]>([]);
   const [clientId, setClientId] = useState("");
   const [priority, setPriority] = useState("standard");
   const [shipToName, setShipToName] = useState("");
@@ -53,11 +63,13 @@ export default function NewOrderPage() {
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [addProductId, setAddProductId] = useState("");
   const [addQty, setAddQty] = useState(1);
+  const [draftAttributeValues, setDraftAttributeValues] = useState<Record<string, string | boolean>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getClients().then(setClients);
     getProducts().then(setProducts);
+    getOperationalAttributeDefinitions("order_line", "orders:write").then(setAttributeDefinitions);
   }, []);
 
   const availableProducts = products.filter(
@@ -67,6 +79,26 @@ export default function NewOrderPage() {
   function addLine() {
     const product = products.find((p) => p.id === addProductId);
     if (!product) return;
+    const operationalAttributes = attributeDefinitions
+      .map((definition) => {
+        const rawValue = draftAttributeValues[definition.id];
+        if (
+          rawValue === undefined ||
+          rawValue === null ||
+          rawValue === "" ||
+          (Array.isArray(rawValue) && rawValue.length === 0)
+        ) {
+          return null;
+        }
+        const displayValue = typeof rawValue === "boolean" ? (rawValue ? "Yes" : "No") : String(rawValue);
+        return {
+          definitionId: definition.id,
+          label: definition.label,
+          value: displayValue,
+        };
+      })
+      .filter(Boolean) as Array<{ definitionId: string; label: string; value: string }>;
+
     setLines([
       ...lines,
       {
@@ -75,10 +107,12 @@ export default function NewOrderPage() {
         sku: product.sku,
         name: product.name,
         quantity: addQty,
+        operationalAttributes,
       },
     ]);
     setAddProductId("");
     setAddQty(1);
+    setDraftAttributeValues({});
   }
 
   function removeLine(lineId: string) {
@@ -106,6 +140,10 @@ export default function NewOrderPage() {
       const orderLines = lines.map((l) => ({
         productId: l.productId,
         quantity: l.quantity,
+        operationalAttributes: l.operationalAttributes.map((attribute) => ({
+          definitionId: attribute.definitionId,
+          value: attribute.value,
+        })),
       }));
       const order = await createOrder(orderData, orderLines);
       toast.success(`Order ${order.orderNumber} created`);
@@ -252,29 +290,93 @@ export default function NewOrderPage() {
             {!clientId && <p className="text-sm text-muted-foreground">{t("selectClientFirst")}</p>}
 
             {clientId && (
-              <div className="flex gap-2">
-                <select
-                  value={addProductId}
-                  onChange={(e) => setAddProductId(e.target.value)}
-                  className="flex h-9 flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-                >
-                  <option value="">{t("selectProduct")}</option>
-                  {availableProducts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.sku} - {p.name}
-                    </option>
-                  ))}
-                </select>
-                <Input
-                  type="number"
-                  min={1}
-                  value={addQty}
-                  onChange={(e) => setAddQty(parseInt(e.target.value) || 1)}
-                  className="w-20"
-                />
-                <Button type="button" variant="outline" onClick={addLine} disabled={!addProductId}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="flex gap-2">
+                  <select
+                    value={addProductId}
+                    onChange={(e) => setAddProductId(e.target.value)}
+                    className="flex h-9 flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                  >
+                    <option value="">{t("selectProduct")}</option>
+                    {availableProducts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.sku} - {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={addQty}
+                    onChange={(e) => setAddQty(parseInt(e.target.value) || 1)}
+                    className="w-20"
+                  />
+                  <Button type="button" variant="outline" onClick={addLine} disabled={!addProductId}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {attributeDefinitions.length > 0 && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {attributeDefinitions.map((definition) => (
+                      <div key={definition.id} className="space-y-2">
+                        <Label>{definition.label}</Label>
+                        {definition.dataType === "boolean" ? (
+                          <select
+                            value={String(draftAttributeValues[definition.id] ?? "")}
+                            onChange={(e) =>
+                              setDraftAttributeValues((current) => ({
+                                ...current,
+                                [definition.id]:
+                                  e.target.value === "" ? "" : e.target.value === "true",
+                              }))
+                            }
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                          >
+                            <option value="">Select...</option>
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        ) : definition.dataType === "single_select" ? (
+                          <select
+                            value={String(draftAttributeValues[definition.id] ?? "")}
+                            onChange={(e) =>
+                              setDraftAttributeValues((current) => ({
+                                ...current,
+                                [definition.id]: e.target.value,
+                              }))
+                            }
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                          >
+                            <option value="">Select...</option>
+                            {(definition.options ?? []).map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <Input
+                            type={
+                              definition.dataType === "number" || definition.dataType === "currency"
+                                ? "number"
+                                : definition.dataType === "date"
+                                  ? "date"
+                                  : "text"
+                            }
+                            value={String(draftAttributeValues[definition.id] ?? "")}
+                            onChange={(e) =>
+                              setDraftAttributeValues((current) => ({
+                                ...current,
+                                [definition.id]: e.target.value,
+                              }))
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -292,7 +394,20 @@ export default function NewOrderPage() {
                   {lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell className="font-mono">{line.sku}</TableCell>
-                      <TableCell>{line.name}</TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <div>{line.name}</div>
+                          {line.operationalAttributes.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {line.operationalAttributes.map((attribute) => (
+                                <Badge key={`${line.id}-${attribute.definitionId}`} variant="outline">
+                                  {attribute.label}: {attribute.value}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right font-medium">{line.quantity}</TableCell>
                       <TableCell>
                         <Button

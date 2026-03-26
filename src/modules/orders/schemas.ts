@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attributeValueInputSchema } from "@/modules/attributes/schemas";
 
 type T = (key: string) => string;
 
@@ -36,6 +37,7 @@ export function orderLineSchema(t?: T) {
     lotNumber: z.string().optional().nullable(),
     serialNumber: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
+    operationalAttributes: z.array(attributeValueInputSchema).optional().default([]),
   });
 }
 

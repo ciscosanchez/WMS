@@ -20,6 +20,19 @@ describe("operational attribute definition schema", () => {
     expect(parsed.behaviorFlags).toEqual({ searchable: true, allocatable: true });
   });
 
+  it("accepts order-line scoped definitions for downstream allocation use", () => {
+    const parsed = attributeDefinitionSchema.parse({
+      key: "room_reference",
+      label: "Room Reference",
+      entityScope: "order_line",
+      dataType: "text",
+      behaviorFlags: { allocatable: true },
+    });
+
+    expect(parsed.entityScope).toBe("order_line");
+    expect(parsed.behaviorFlags).toEqual({ allocatable: true });
+  });
+
   it("rejects non-normalized keys", () => {
     expect(() =>
       attributeDefinitionSchema.parse({

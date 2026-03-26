@@ -7,9 +7,12 @@
 const mockTxPrisma = {
   inventory: {
     findFirst: jest.fn(),
+    findMany: jest.fn(),
     update: jest.fn(),
     create: jest.fn(),
   },
+  operationalAttributeDefinition: { findMany: jest.fn() },
+  operationalAttributeValue: { findMany: jest.fn() },
   inventoryTransaction: { create: jest.fn() },
   inventoryAdjustment: {
     findUnique: jest.fn(),
