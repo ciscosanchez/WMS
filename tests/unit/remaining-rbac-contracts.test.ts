@@ -29,7 +29,19 @@ const mockTenantDb = {
   shipment: { findMany: jest.fn().mockResolvedValue([]) },
   product: { findMany: jest.fn().mockResolvedValue([]) },
   salesChannel: { findFirst: jest.fn().mockResolvedValue(null) },
-  inboundShipment: { findMany: jest.fn().mockResolvedValue([]) },
+  inboundShipment: {
+    findMany: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({ id: "shipment-1" }),
+  },
+  auditLog: { create: jest.fn().mockResolvedValue({}) },
+  documentProcessingJob: {
+    findUnique: jest.fn().mockResolvedValue({
+      reviewedData: { carrier: { value: "UPS" } },
+      extractedData: null,
+      status: "review",
+    }),
+    update: jest.fn().mockResolvedValue({}),
+  },
 };
 
 jest.mock("@/lib/tenant/context", () => ({
@@ -55,6 +67,10 @@ jest.mock("next/headers", () => ({
     set: (...args: unknown[]) => mockCookieSet(...args),
     delete: (...args: unknown[]) => mockCookieDelete(...args),
   }),
+}));
+
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
 }));
 
 describe("remaining RBAC contracts", () => {
@@ -122,5 +138,17 @@ describe("remaining RBAC contracts", () => {
     const { syncInventoryToAmazon } = await import("@/modules/orders/shopify-sync");
     await syncInventoryToAmazon("client-1");
     expect(mockRequireTenantContext).toHaveBeenCalledWith("orders:write");
+  });
+
+  it("requires receiving:write for shipment updates from extraction", async () => {
+    const { updateShipmentFromExtraction } = await import("@/modules/receiving/docai-actions");
+    await updateShipmentFromExtraction("shipment-1", "job-1");
+    expect(mockRequireTenantContext).toHaveBeenCalledWith("receiving:write");
+  });
+
+  it("requires receiving:read for file view URLs", async () => {
+    const { getFileViewUrl } = await import("@/modules/receiving/docai-actions");
+    await getFileViewUrl("shipment/file.pdf");
+    expect(mockRequireTenantContext).toHaveBeenCalledWith("receiving:read");
   });
 });

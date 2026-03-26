@@ -317,7 +317,7 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
 export async function updateShipmentFromExtraction(shipmentId: string, jobId: string) {
   if (config.useMockData) return { id: shipmentId };
 
-  const { user, tenant } = await getContext();
+  const { user, tenant } = await getWriteContext();
 
   const job = await tenant.db.documentProcessingJob.findUnique({ where: { id: jobId } });
   if (!job) throw new Error("Processing job not found");
@@ -359,6 +359,7 @@ export async function updateShipmentFromExtraction(shipmentId: string, jobId: st
  */
 export async function getFileViewUrl(fileKey: string): Promise<string | null> {
   try {
+    await getContext();
     return await getPresignedDownloadUrl(fileKey);
   } catch {
     return null;

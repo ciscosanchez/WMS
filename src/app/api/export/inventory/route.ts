@@ -14,8 +14,9 @@ const COLUMNS: ExportColumn[] = [
 
 export async function GET(request: NextRequest) {
   let tenant;
+  let portalClientId: string | null | undefined;
   try {
-    ({ tenant } = await requireTenantContext("inventory:read"));
+    ({ tenant, portalClientId } = await requireTenantContext("inventory:read"));
   } catch {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -24,7 +25,10 @@ export async function GET(request: NextRequest) {
   const db = tenant.db as any;
 
   const inventory = await db.inventory.findMany({
-    where: { onHand: { gt: 0 } },
+    where: {
+      onHand: { gt: 0 },
+      ...(portalClientId ? { product: { clientId: portalClientId } } : {}),
+    },
     include: {
       product: { select: { sku: true, name: true } },
       bin: { select: { barcode: true } },

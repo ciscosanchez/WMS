@@ -25,8 +25,9 @@ const COLUMNS: ExportColumn[] = [
 
 export async function GET(request: NextRequest) {
   let tenant;
+  let portalClientId: string | null | undefined;
   try {
-    ({ tenant } = await requireTenantContext("orders:read"));
+    ({ tenant, portalClientId } = await requireTenantContext("orders:read"));
   } catch {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -39,7 +40,10 @@ export async function GET(request: NextRequest) {
 
   const orders = await db.order.findMany({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where: status ? { status: status as any } : undefined,
+    where: {
+      ...(status ? { status: status as any } : {}),
+      ...(portalClientId ? { clientId: portalClientId } : {}),
+    },
     include: { client: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
     take: 5000,
