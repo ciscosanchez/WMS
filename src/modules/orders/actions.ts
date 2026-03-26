@@ -40,7 +40,8 @@ export async function getOrder(id: string) {
   if (config.useMockData) return mockOrders.find((o) => o.id === id) ?? null;
 
   const { tenant } = await getReadContext();
-  return tenant.db.order.findUnique({
+  const db = asTenantDb(tenant.db);
+  const order = await db.order.findUnique({
     where: { id },
     include: {
       client: true,
@@ -49,6 +50,40 @@ export async function getOrder(id: string) {
       picks: true,
     },
   });
+
+  if (!order || !order.lines?.length) return order;
+
+  const lineIds = order.lines.map((line: { id: string }) => line.id);
+  const attributeValues = (await db.operationalAttributeValue.findMany({
+    where: {
+      entityScope: "order_line",
+      entityId: { in: lineIds },
+    },
+    include: {
+      definition: { select: { key: true, label: true } },
+    },
+    orderBy: [{ definition: { sortOrder: "asc" } }, { createdAt: "asc" }],
+  })) as RawOperationalAttributeValueWithEntityId[];
+
+  const attributesByLineId = attributeValues.reduce<
+    Record<string, Array<{ key: string; label: string; value: string }>>
+  >((acc, value) => {
+    if (!acc[value.entityId]) acc[value.entityId] = [];
+    acc[value.entityId].push({
+      key: value.definition.key,
+      label: value.definition.label,
+      value: attributeValueToDisplay(value),
+    });
+    return acc;
+  }, {});
+
+  return {
+    ...order,
+    lines: order.lines.map((line: { id: string }) => ({
+      ...line,
+      operationalAttributes: attributesByLineId[line.id] ?? [],
+    })),
+  };
 }
 
 export async function createOrder(data: unknown, lines: unknown[]) {
@@ -284,8 +319,24 @@ type RawOperationalAttributeValue = {
   jsonValue?: unknown;
 };
 
-function attributeValueToComparable(value: RawOperationalAttributeValue) {
+type RawOperationalAttributeValueWithEntityId = RawOperationalAttributeValue & {
+  entityId: string;
+  definition: { key: string; label: string };
+};
+
+function attributeValueToDisplay(value: RawOperationalAttributeValue) {
   if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+  if (value.booleanValue !== null && value.booleanValue !== undefined)
+    return value.booleanValue ? "Yes" : "No";
+  if (value.dateValue) return value.dateValue.toISOString().slice(0, 10);
+  if (value.jsonValue !== null && value.jsonValue !== undefined) {
+    if (Array.isArray(value.jsonValue)) return value.jsonValue.map(String).join(", ");
+    return JSON.stringify(value.jsonValue);
+  }
+  return value.textValue ?? "";
+}
+
+function attributeValueToComparable(value: RawOperationalAttributeValue) {
   if (value.booleanValue !== null && value.booleanValue !== undefined)
     return value.booleanValue ? "true" : "false";
   if (value.dateValue) return value.dateValue.toISOString();
@@ -295,7 +346,7 @@ function attributeValueToComparable(value: RawOperationalAttributeValue) {
     }
     return JSON.stringify(value.jsonValue);
   }
-  return value.textValue ?? "";
+  return attributeValueToDisplay(value);
 }
 
 async function findInventoryForOrderLine(

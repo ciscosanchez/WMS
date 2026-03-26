@@ -240,7 +240,22 @@ export default function OrderDetailPage() {
                     <TableCell className="font-mono">
                       {line.product?.sku ?? line.sku ?? "-"}
                     </TableCell>
-                    <TableCell>{line.product?.name ?? line.name ?? "-"}</TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <div>{line.product?.name ?? line.name ?? "-"}</div>
+                        {line.operationalAttributes?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {line.operationalAttributes.map(
+                              (attribute: { key: string; label: string; value: string }) => (
+                                <Badge key={`${line.id}-${attribute.key}`} variant="outline">
+                                  {attribute.label}: {attribute.value}
+                                </Badge>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{line.quantity}</TableCell>
                     <TableCell className="text-right">{line.pickedQty ?? 0}</TableCell>
                     <TableCell className="text-right">{line.packedQty ?? 0}</TableCell>

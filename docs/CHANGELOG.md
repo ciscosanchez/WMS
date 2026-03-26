@@ -102,6 +102,13 @@ All notable changes to Ramola WMS.
 - Added schema coverage for the new `order_line` scope
 - Added allocation coverage proving attribute-aware inventory selection
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.1 (Order Visibility)
+
+### Order Detail
+
+- Order detail now renders line-level operational attribute badges
+- Order reads now enrich order lines with persisted `order_line` attribute values so captured criteria remain visible after entry
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model
