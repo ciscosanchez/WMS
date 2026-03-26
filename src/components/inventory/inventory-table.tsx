@@ -31,6 +31,7 @@ interface InventoryRow {
       };
     };
   };
+  operationalAttributes?: Array<{ key: string; label: string; value: string }>;
 }
 
 const columns: ColumnDef<InventoryRow>[] = [
@@ -53,6 +54,29 @@ const columns: ColumnDef<InventoryRow>[] = [
     id: "location",
     header: "Location",
     cell: ({ row }) => row.original.bin.barcode,
+  },
+  {
+    id: "operationalAttributes",
+    header: "Attributes",
+    cell: ({ row }) => {
+      const attributes = row.original.operationalAttributes ?? [];
+      if (attributes.length === 0) return <span className="text-muted-foreground">-</span>;
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {attributes.slice(0, 3).map((attribute) => (
+            <Badge key={attribute.key} variant="outline" className="text-xs">
+              {attribute.label}: {attribute.value}
+            </Badge>
+          ))}
+          {attributes.length > 3 && (
+            <Badge variant="secondary" className="text-xs">
+              +{attributes.length - 3}
+            </Badge>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "lotNumber",

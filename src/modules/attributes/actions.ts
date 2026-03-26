@@ -169,3 +169,59 @@ export async function archiveOperationalAttributeDefinition(id: string) {
   revalidatePath(SETTINGS_PATH);
   return definition;
 }
+
+export async function getOperationalAttributeValuesForEntities(
+  scope: AttributeScope,
+  entityIds: string[],
+  permission = "inventory:read"
+) {
+  if (entityIds.length === 0) return {};
+
+  const { tenant } = await requireTenantContext(permission);
+  const db = asTenantDb(tenant.db);
+
+  const values = (await db.operationalAttributeValue.findMany({
+    where: {
+      entityScope: scope,
+      entityId: { in: entityIds },
+    },
+    include: {
+      definition: {
+        select: { id: true, key: true, label: true, dataType: true },
+      },
+    },
+    orderBy: [{ definition: { sortOrder: "asc" } }, { createdAt: "asc" }],
+  })) as Array<{
+    entityId: string;
+    textValue?: string | null;
+    numberValue?: number | null;
+    booleanValue?: boolean | null;
+    dateValue?: Date | null;
+    jsonValue?: unknown;
+    definition: { id: string; key: string; label: string; dataType: string };
+  }>;
+
+  return values.reduce<Record<string, Array<{ key: string; label: string; value: string }>>>(
+    (acc, value) => {
+      let displayValue = value.textValue ?? "";
+      if (value.numberValue !== null && value.numberValue !== undefined) displayValue = String(value.numberValue);
+      if (value.booleanValue !== null && value.booleanValue !== undefined)
+        displayValue = value.booleanValue ? "Yes" : "No";
+      if (value.dateValue) displayValue = value.dateValue.toISOString().slice(0, 10);
+      if (value.jsonValue !== null && value.jsonValue !== undefined) {
+        displayValue = Array.isArray(value.jsonValue)
+          ? value.jsonValue.join(", ")
+          : JSON.stringify(value.jsonValue);
+      }
+
+      if (!acc[value.entityId]) acc[value.entityId] = [];
+      acc[value.entityId].push({
+        key: value.definition.key,
+        label: value.definition.label,
+        value: displayValue,
+      });
+      return acc;
+    },
+    {}
+  );
+}

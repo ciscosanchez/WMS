@@ -75,6 +75,14 @@ All notable changes to Ramola WMS.
   - propagate
   - search
 
+## 2026-03-26 — Configurable Operational Attributes Phase 3.1 (Inventory Visibility)
+
+### Inventory Browser
+
+- Added a reusable entity-value lookup helper for operational attributes
+- Stock browser rows now render propagated `inventory_record` attributes as badges
+- Filtered inventory results now show the values that caused the match instead of hiding them in the data layer
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

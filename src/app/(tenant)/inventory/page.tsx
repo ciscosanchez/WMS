@@ -1,5 +1,6 @@
 import { getInventoryPaginated } from "@/modules/inventory/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
+import { getOperationalAttributeValuesForEntities } from "@/modules/attributes/actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { Boxes } from "lucide-react";
 import { InventoryTable } from "@/components/inventory/inventory-table";
@@ -35,6 +36,17 @@ export default async function InventoryPage({ searchParams }: Props) {
     getOperationalAttributeDefinitions("inventory_record", "inventory:read"),
   ]);
 
+  const attributeValueMap = await getOperationalAttributeValuesForEntities(
+    "inventory_record",
+    result.data.map((row: { id: string }) => row.id),
+    "inventory:read"
+  );
+
+  const dataWithAttributes = result.data.map((row) => ({
+    ...row,
+    operationalAttributes: attributeValueMap[row.id] ?? [],
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -57,7 +69,7 @@ export default async function InventoryPage({ searchParams }: Props) {
         <EmptyState icon={Boxes} title={t("noInventory")} description={t("noInventoryDesc")} />
       ) : (
         <InventoryTable
-          data={result.data}
+          data={dataWithAttributes}
           totalCount={result.total}
           currentPage={result.page}
           pageSize={result.pageSize}
