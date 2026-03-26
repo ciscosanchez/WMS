@@ -23,6 +23,8 @@ services:
   traefik:
     image: traefik:v2.11@sha256:2a2460731a47e9406dfdee0c52734b9b86509fe7e82e96ce06e91a49b83b1c71
     restart: unless-stopped
+    environment:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
     command:
       - "--log.level=WARN"
       - "--providers.docker=true"
@@ -35,7 +37,8 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.email=cisco@ramola.app"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
       - "--ping=true"
     ports:
       - "80:80"
@@ -174,12 +177,12 @@ services:
     labels:
       - "traefik.enable=true"
       # Multi-tenant: accept tenant subdomains AND wms.ramola.app (login/admin)
-      # Each hostname gets its own cert via HTTP-01 (wildcard requires DNS challenge)
-      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`) || Host(`armstrong.wms.ramola.app`)"
+      - "traefik.http.routers.wms.rule=Host(`wms.ramola.app`) || HostRegexp(`{tenant:[a-z0-9-]+}.wms.ramola.app`)"
       - "traefik.http.routers.wms.entrypoints=websecure"
       - "traefik.http.routers.wms.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wms.tls.domains[0].main=wms.ramola.app"
-      - "traefik.http.routers.wms.tls.domains[1].main=armstrong.wms.ramola.app"
+      - "traefik.http.routers.wms.tls.domains[0].sans=*.wms.ramola.app"
+      - "traefik.http.routers.wms.priority=10"
       - "traefik.http.services.wms.loadbalancer.server.port=3000"
       - "traefik.http.services.wms.loadbalancer.passHostHeader=true"
       - "traefik.http.routers.wms.middlewares=security-headers@docker,rate-limit@docker"
@@ -254,6 +257,7 @@ services:
       - "traefik.http.routers.minio.rule=Host(`storage.wms.ramola.app`)"
       - "traefik.http.routers.minio.entrypoints=websecure"
       - "traefik.http.routers.minio.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio.priority=100"
       - "traefik.http.services.minio.loadbalancer.server.port=9000"
     healthcheck:
       test: ["CMD-SHELL", "mc ready local || exit 1"]

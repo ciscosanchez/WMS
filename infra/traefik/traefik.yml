@@ -20,8 +20,9 @@ certificatesResolvers:
     acme:
       email: cisco@ramola.app
       storage: /letsencrypt/acme.json
-      httpChallenge:
-        entryPoint: web
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 30
 
 providers:
   docker:
