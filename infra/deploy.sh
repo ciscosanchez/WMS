@@ -15,14 +15,14 @@ docker compose -f docker-compose.prod.yml exec postgres pg_isready -U "${POSTGRE
 
 has_public_prisma_history=$(
   docker compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "${POSTGRES_USER:-ramola}" -d "${POSTGRES_DB:-ramola}" \
+    psql -U "${POSTGRES_USER:-ramola}" -d "${WMS_DB:-ramola_wms}" \
     -Atqc "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;"
 )
 
 if [ "$has_public_prisma_history" != "t" ]; then
   echo "==> _prisma_migrations not found — running one-time reconciliation..."
   docker compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U "${POSTGRES_USER:-ramola}" -d "${POSTGRES_DB:-ramola}" \
+    psql -U "${POSTGRES_USER:-ramola}" -d "${WMS_DB:-ramola_wms}" \
     < "$SCRIPT_DIR/../scripts/reconcile-prod-db.sql"
   echo "==> Reconciliation complete."
 fi
@@ -36,8 +36,8 @@ docker compose -f docker-compose.prod.yml exec -T wms \
 echo "==> Health check..."
 sleep 5
 for svc in wms docai dispatch; do
-  status=$(docker compose -f docker-compose.prod.yml ps --format json "$svc" | grep -o '"Status":"[^"]*"' | head -1)
-  echo "  $svc: $status"
+  status=$(docker compose -f docker-compose.prod.yml ps --format json "$svc" | grep -o '"Status":"[^"]*"' | head -1 || true)
+  echo "  $svc: ${status:-(no status)}"
 done
 
 echo ""
