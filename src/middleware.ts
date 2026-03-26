@@ -1,4 +1,6 @@
 import { tenantMiddleware } from "@/lib/tenant/middleware";
+import { getDefaultTenantPath } from "@/lib/auth/personas";
+import type { SessionLikeUser } from "@/lib/auth/personas";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -75,11 +77,22 @@ export async function middleware(request: NextRequest) {
     // Non-superadmin on base domain with no tenant — send to login
     if (token) {
       // Logged in but not superadmin — redirect to their first tenant
-      const tenants = (token.tenants as Array<{ slug: string }>) ?? [];
+      const tenants = (token.tenants as Array<{ slug: string; role: string; portalClientId?: string | null }>) ?? [];
       if (tenants.length > 0) {
-        const tenantUrl = `https://${tenants[0].slug}.wms.ramola.app${pathname}`;
+        const tenantPath =
+          pathname === "/" ? getDefaultTenantPath(token as unknown as SessionLikeUser, tenants[0].slug) : pathname;
+        const tenantUrl = `https://${tenants[0].slug}.wms.ramola.app${tenantPath}`;
         return NextResponse.redirect(tenantUrl);
       }
+    }
+  }
+
+  // --- Tenant persona routing ---
+  if (!isBaseDomain && token && (pathname === "/" || pathname === "/dashboard")) {
+    const tenantSlug = hostParts[0] ?? null;
+    const destination = getDefaultTenantPath(token as unknown as SessionLikeUser, tenantSlug);
+    if (destination !== pathname) {
+      return NextResponse.redirect(new URL(destination, request.url));
     }
   }
 
