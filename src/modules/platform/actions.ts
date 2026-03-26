@@ -137,14 +137,20 @@ async function createTenantAdmin(
   const passwordSetExpires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   let userId: string;
-  let isNewUser = false;
 
   const existingUser = await publicDb.user.findUnique({ where: { email } });
 
   if (existingUser) {
+    await publicDb.user.update({
+      where: { id: existingUser.id },
+      data: {
+        name: existingUser.name || displayName,
+        passwordSetToken,
+        passwordSetExpires,
+      },
+    });
     userId = existingUser.id;
   } else {
-    isNewUser = true;
     const placeholderHash = await hash(randomBytes(32).toString("hex"), 12);
     const newUser = await publicDb.user.create({
       data: {
@@ -165,11 +171,10 @@ async function createTenantAdmin(
     create: { tenantId, userId, role: "admin" },
   });
 
-  // Send invite email — raw token goes in the URL, hash is stored in DB
+  // Always send a fresh setup link so tenant onboarding works for existing
+  // users that were partially created earlier or do not know their password.
   const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
-  const setPasswordUrl = isNewUser
-    ? `${baseUrl}/set-password?token=${rawToken}`
-    : `${baseUrl}/login`;
+  const setPasswordUrl = `${baseUrl}/set-password?token=${rawToken}`;
 
   await sendPasswordSetLink({
     to: email,
