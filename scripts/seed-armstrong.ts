@@ -25,6 +25,7 @@ import { hash } from "bcryptjs";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
+import { armstrongSeedUsers } from "./seed-data/armstrong-personas";
 
 const execAsync = promisify(exec);
 const prisma = new PrismaClient();
@@ -33,58 +34,7 @@ async function main() {
   console.log("Seeding Armstrong data...\n");
 
   // 1. Create users
-  const users = [
-    {
-      email: "superadmin@ramola.io",
-      name: "Platform Superadmin",
-      password: "admin123",
-      isSuperadmin: true,
-      role: "admin" as const,
-    },
-    {
-      email: "admin@armstrong.com",
-      name: "Cisco Sanchez",
-      password: "admin123",
-      isSuperadmin: false,
-      role: "admin" as const,
-    },
-    {
-      email: "manager@armstrong.com",
-      name: "Morgan Reyes",
-      password: "manager123",
-      isSuperadmin: false,
-      role: "manager" as const,
-    },
-    {
-      email: "receiving@armstrong.com",
-      name: "Alex Morgan",
-      password: "receiving123",
-      isSuperadmin: false,
-      role: "warehouse_worker" as const,
-    },
-    {
-      email: "warehouse@armstrong.com",
-      name: "Jamie Lee",
-      password: "warehouse123",
-      isSuperadmin: false,
-      role: "warehouse_worker" as const,
-    },
-    {
-      email: "viewer@armstrong.com",
-      name: "Taylor Brooks",
-      password: "viewer123",
-      isSuperadmin: false,
-      role: "viewer" as const,
-    },
-    {
-      email: "portal@arteriors.com",
-      name: "Lisa Chen",
-      password: "portal123",
-      isSuperadmin: false,
-      role: "viewer" as const,
-      portalClientCode: "ARTERIORS",
-    },
-  ];
+  const users = armstrongSeedUsers;
 
   const createdUsers: Array<
     Awaited<ReturnType<typeof prisma.user.upsert>> & {
