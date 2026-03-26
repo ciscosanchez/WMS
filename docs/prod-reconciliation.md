@@ -72,8 +72,9 @@ migrations when `_prisma_migrations` is missing, but the migration history gap s
 3. Decide how to handle legacy tenant schemas:
    - `armstrong`
    - `tenant_armstrong`
-4. Stamp production with migration history only after the team agrees the baseline SQL matches live reality.
-5. Decide whether the legacy `armstrong` schema should be retained, migrated, or removed.
+4. Keep the follow-up public-schema delta in `prisma/migrations/20260326000000_add_missing_user_fields/`.
+5. Use `scripts/reconcile-prod-db.sql` only as a one-time reconciliation tool after the team agrees the migration list matches live reality.
+6. Decide whether the legacy `armstrong` schema should be retained, migrated, or removed.
 
 ## Immediate Safe Actions
 
@@ -81,9 +82,11 @@ migrations when `_prisma_migrations` is missing, but the migration history gap s
 - remove junk files from the server worktree
 - avoid assuming `prisma migrate deploy` is authoritative on prod until the schema is baselined
 - use direct schema inspection, not the old prod backup file, as the source of truth
+- keep any prod reconciliation SQL idempotent and one-time, not part of the normal deploy path
 
 ## Not Yet Resolved
 
 - whether `prisma/migrations/20260409120000_baseline/` exactly matches live prod and can be stamped safely
+- whether `scripts/reconcile-prod-db.sql` should be kept as an emergency/manual recovery tool after prod is fully baselined
 - whether `armstrong` is legacy and can be removed, or is still in active use
 - whether tenant schema evolution should continue via raw SQL migrations, Prisma tenant schema management, or a hybrid approach
