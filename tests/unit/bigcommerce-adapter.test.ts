@@ -3,11 +3,10 @@
  */
 
 import { BigCommerceAdapter } from "@/lib/integrations/marketplaces/bigcommerce";
+import type { MarketplaceOrder } from "@/lib/integrations/marketplaces/types";
 
-type BigCommerceAdapterWithMapOrder = BigCommerceAdapter & {
-  mapOrder: (order: unknown) => ReturnType<BigCommerceAdapter["fetchOrders"]> extends Promise<infer T>
-    ? T[number]
-    : never;
+type BigCommerceAdapterWithMapOrder = {
+  mapOrder: (order: unknown) => MarketplaceOrder;
 };
 
 function createTestAdapter() {
@@ -25,7 +24,7 @@ describe("BigCommerceAdapter", () => {
 
   it("maps BigCommerce order to MarketplaceOrder format", () => {
     const adapter = createTestAdapter();
-    const mapOrder = (adapter as BigCommerceAdapterWithMapOrder).mapOrder.bind(adapter);
+    const mapOrder = (adapter as unknown as BigCommerceAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const bcOrder = {
       id: 12345,
@@ -80,7 +79,7 @@ describe("BigCommerceAdapter", () => {
 
   it("handles missing address fields", () => {
     const adapter = createTestAdapter();
-    const mapOrder = (adapter as BigCommerceAdapterWithMapOrder).mapOrder.bind(adapter);
+    const mapOrder = (adapter as unknown as BigCommerceAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const minimalOrder = {
       id: 99,

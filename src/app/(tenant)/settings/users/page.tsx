@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
@@ -43,12 +43,20 @@ export default async function UsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Users" description="Manage team members and their access levels">
-        <Button asChild>
-          <Link href="/settings/users/invite">
-            <Plus className="mr-2 h-4 w-4" />
-            Invite User
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/api/export/access-review">
+              <Download className="mr-2 h-4 w-4" />
+              Export Access Review
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/settings/users/invite">
+              <Plus className="mr-2 h-4 w-4" />
+              Invite User
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       <AccessReview users={users} />

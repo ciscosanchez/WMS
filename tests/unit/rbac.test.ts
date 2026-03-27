@@ -4,6 +4,7 @@ import {
   getPermissionPreset,
   getPermissions,
   hasPermission,
+  validatePermissionPolicy,
 } from "@/lib/auth/rbac";
 
 describe("RBAC", () => {
@@ -136,6 +137,27 @@ describe("RBAC", () => {
       });
 
       expect(risks.some((risk) => risk.code === "viewer-users-write")).toBe(true);
+    });
+  });
+
+  describe("phase 4 policy validation", () => {
+    it("blocks portal-bound users from sensitive tenant admin grants", () => {
+      const violations = validatePermissionPolicy({
+        role: "viewer",
+        portalClientId: "client-1",
+        overrides: { grants: ["users:write"], denies: [] },
+      });
+
+      expect(violations[0]?.code).toBe("portal-blocked-grants");
+    });
+
+    it("blocks viewer settings write escalation", () => {
+      const violations = validatePermissionPolicy({
+        role: "viewer",
+        overrides: { grants: ["settings:write"], denies: [] },
+      });
+
+      expect(violations[0]?.code).toBe("viewer-settings-write-blocked");
     });
   });
 });

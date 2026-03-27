@@ -7,8 +7,16 @@ import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
-import { normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
+import {
+  getAccessRisks,
+  getPermissionDiffSummary,
+  normalizePermissionOverrides,
+  validatePermissionPolicy,
+  type PermissionOverrides,
+} from "@/lib/auth/rbac";
+import { getUserPersonas } from "@/lib/auth/personas";
 import { logAudit } from "@/lib/audit";
+import { generateCsv, csvResponse, type ExportColumn } from "@/lib/export/server-csv";
 
 async function getAdminContext() {
   return requireTenantContext("users:write");
@@ -45,6 +53,16 @@ export async function inviteUser(opts: {
       if (!client?.isActive) {
         return { error: "Selected portal client is invalid or inactive" };
       }
+    }
+
+    const normalizedOverrides = normalizePermissionOverrides(opts.permissionOverrides);
+    const violations = validatePermissionPolicy({
+      role: opts.role,
+      portalClientId: opts.portalClientId ?? null,
+      overrides: normalizedOverrides,
+    });
+    if (violations.length > 0) {
+      return { error: violations[0].message };
     }
 
     // Generate a secure one-time token for password setup
@@ -87,7 +105,7 @@ export async function inviteUser(opts: {
         userId,
         role: opts.role,
         portalClientId: opts.portalClientId ?? null,
-        permissionOverrides: normalizePermissionOverrides(opts.permissionOverrides),
+        permissionOverrides: normalizedOverrides,
       },
     });
 
@@ -212,6 +230,18 @@ export async function updateUserPortalBinding(
     const existing = await publicDb.tenantUser.findUnique({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
     });
+    if (!existing) {
+      return { error: "User not found in this tenant" };
+    }
+
+    const violations = validatePermissionPolicy({
+      role: existing.role,
+      portalClientId,
+      overrides: existing.permissionOverrides,
+    });
+    if (violations.length > 0) {
+      return { error: violations[0].message };
+    }
 
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
@@ -248,6 +278,18 @@ export async function updateUserPermissionOverrides(
     const existing = await publicDb.tenantUser.findUnique({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
     });
+    if (!existing) {
+      return { error: "User not found in this tenant" };
+    }
+
+    const violations = validatePermissionPolicy({
+      role: existing.role,
+      portalClientId: existing.portalClientId,
+      overrides: normalized,
+    });
+    if (violations.length > 0) {
+      return { error: violations[0].message };
+    }
 
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
@@ -287,14 +329,86 @@ export async function exportTenantAccessReview() {
     orderBy: { user: { createdAt: "asc" } },
   });
 
-  return members.map((member) => ({
-    userId: member.user.id,
-    name: member.user.name,
-    email: member.user.email,
-    role: member.role,
-    portalClientId: member.portalClientId,
-    permissionOverrides: normalizePermissionOverrides(member.permissionOverrides),
-  }));
+  const clients = await tenant.db.client.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, code: true },
+  });
+  const clientMap = new Map(clients.map((client: { id: string; name: string; code: string }) => [client.id, client]));
+
+  return members.map((member) => {
+    const permissionOverrides = normalizePermissionOverrides(member.permissionOverrides);
+    const personas = getUserPersonas(
+      {
+        isSuperadmin: member.user.isSuperadmin,
+        tenants: [{ slug: tenant.slug, role: member.role, portalClientId: member.portalClientId }],
+      },
+      tenant.slug
+    );
+    const diff = getPermissionDiffSummary(member.role, permissionOverrides);
+    const risks = getAccessRisks({
+      role: member.role,
+      portalClientId: member.portalClientId,
+      overrides: permissionOverrides,
+    });
+    const portalClient = member.portalClientId ? clientMap.get(member.portalClientId) ?? null : null;
+
+    return {
+      userId: member.user.id,
+      name: member.user.name,
+      email: member.user.email,
+      role: member.role,
+      personas,
+      portalClientId: member.portalClientId,
+      portalClientName: portalClient?.name ?? "",
+      portalClientCode: portalClient?.code ?? "",
+      grants: permissionOverrides.grants,
+      denies: permissionOverrides.denies,
+      effectivePermissionCount: diff.effectiveCount,
+      inheritedPermissionCount: diff.inheritedCount,
+      addedPermissions: diff.added,
+      removedPermissions: diff.removed,
+      riskFlags: risks.map((risk) => risk.message),
+    };
+  });
+}
+
+const ACCESS_REVIEW_COLUMNS: ExportColumn[] = [
+  { key: "name", header: "Name" },
+  { key: "email", header: "Email" },
+  { key: "role", header: "Role" },
+  { key: "personas", header: "Personas" },
+  { key: "portalClient", header: "Portal Client" },
+  { key: "grants", header: "Grants" },
+  { key: "denies", header: "Denies" },
+  { key: "effectivePermissionCount", header: "Effective Permissions" },
+  { key: "addedPermissions", header: "Added Permissions" },
+  { key: "removedPermissions", header: "Removed Permissions" },
+  { key: "riskFlags", header: "Risk Flags" },
+];
+
+export async function exportTenantAccessReviewCsv(): Promise<Response> {
+  const rows = await exportTenantAccessReview();
+  const csv = generateCsv(
+    rows.map((row) => ({
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      personas: row.personas.join("; "),
+      portalClient: row.portalClientName
+        ? `${row.portalClientName}${row.portalClientCode ? ` (${row.portalClientCode})` : ""}`
+        : "",
+      grants: row.grants.join("; "),
+      denies: row.denies.join("; "),
+      effectivePermissionCount: row.effectivePermissionCount,
+      addedPermissions: row.addedPermissions.join("; "),
+      removedPermissions: row.removedPermissions.join("; "),
+      riskFlags: row.riskFlags.join("; "),
+    })),
+    ACCESS_REVIEW_COLUMNS
+  );
+
+  const date = new Date().toISOString().slice(0, 10);
+  return csvResponse(csv, `tenant-access-review-${date}.csv`);
 }
 
 /**

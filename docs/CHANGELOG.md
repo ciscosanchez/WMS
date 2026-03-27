@@ -376,3 +376,4 @@ All notable changes to Ramola WMS.
 - 124 unit tests, 8 integration adapters
 - Multi-tenancy, RBAC, Shopify connection
 - Added RBAC Phase 3 visibility tooling: tenant access review cards, per-user risk flags, and reusable permission presets in the custom-permissions editor.
+- Added RBAC Phase 4 governance controls: exportable tenant access review CSVs and policy validation that blocks unsafe override combinations for portal-bound users and viewers.

@@ -372,3 +372,20 @@ These are still built on the same underlying model:
 - explicit permission denies
 
 No new persisted tenant roles were introduced for Phase 3.
+
+## Phase 4 Controls
+
+Phase 4 adds two stronger governance controls:
+
+- Tenant admins can export an `Access Review` CSV from `Settings -> Users`
+- The system now blocks unsafe override combinations instead of only flagging them
+
+Current hard policy constraints:
+
+- Portal-bound users cannot be granted:
+  - `Users: Write`
+  - `Settings: Write`
+  - `Billing: Approve`
+- `viewer` cannot be elevated to `Settings: Write`
+
+These are intentionally narrow. The goal is to block only the combinations that are clearly unsafe without turning the RBAC system into a heavyweight policy engine.

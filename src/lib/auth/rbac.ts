@@ -93,6 +93,11 @@ export type AccessRisk = {
   message: string;
 };
 
+export type PolicyViolation = {
+  code: string;
+  message: string;
+};
+
 const EMPTY_PERMISSION_OVERRIDES: PermissionOverrides = {
   grants: [],
   denies: [],
@@ -372,4 +377,33 @@ export function getAccessRisks(opts: {
   }
 
   return risks;
+}
+
+export function validatePermissionPolicy(opts: {
+  role: TenantRole;
+  portalClientId?: string | null;
+  overrides?: unknown;
+}): PolicyViolation[] {
+  const effective = new Set(getEffectivePermissions(opts.role, opts.overrides));
+  const violations: PolicyViolation[] = [];
+
+  if (opts.portalClientId) {
+    const blockedPortalPermissions: Permission[] = ["users:write", "settings:write", "billing:approve"];
+    const found = blockedPortalPermissions.filter((permission) => effective.has(permission));
+    if (found.length > 0) {
+      violations.push({
+        code: "portal-blocked-grants",
+        message: `Portal-bound users cannot hold ${found.map(getPermissionLabel).join(", ")}.`,
+      });
+    }
+  }
+
+  if (opts.role === "viewer" && effective.has("settings:write")) {
+    violations.push({
+      code: "viewer-settings-write-blocked",
+      message: "Viewer role cannot be elevated to tenant settings write access.",
+    });
+  }
+
+  return violations;
 }
