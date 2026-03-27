@@ -55,6 +55,27 @@ export async function createTransferOrder(data: unknown, lines: unknown[]) {
   if (parsed.fromWarehouseId === parsed.toWarehouseId) {
     throw new Error("Source and destination warehouses must be different");
   }
+  if (parsedLines.length === 0) {
+    throw new Error("At least one transfer line is required");
+  }
+
+  const warehouseIds = [parsed.fromWarehouseId, parsed.toWarehouseId];
+  const warehouses = await tenant.db.warehouse.findMany({
+    where: { id: { in: warehouseIds } },
+    select: { id: true },
+  });
+  if (warehouses.length !== 2) {
+    throw new Error("Both source and destination warehouses must exist");
+  }
+
+  const productIds = [...new Set(parsedLines.map((line) => line.productId))];
+  const products = await tenant.db.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true },
+  });
+  if (products.length !== productIds.length) {
+    throw new Error("One or more transfer products could not be found");
+  }
 
   const transferNumber = await nextSequence(tenant.db, "TRF");
 
