@@ -124,6 +124,19 @@ All notable changes to Ramola WMS.
 - Order exports now append aggregated `order_line` operational attributes as dynamic CSV columns
 - Export shaping remains generic and definition-driven rather than customer-specific
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.4 (Reporting Coverage)
+
+### Reports
+
+- Added an operational-attribute coverage dataset to the reports module
+- Reports now expose:
+  - active definition count
+  - searchable definition count
+  - allocatable definition count
+  - coverage by scope
+  - most-used definitions by populated value count
+- Added a dedicated Attributes tab in tenant reports with CSV export support
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

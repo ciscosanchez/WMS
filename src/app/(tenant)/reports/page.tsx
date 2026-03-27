@@ -3,6 +3,7 @@ import {
   getInventoryStats,
   getFulfillmentStats,
   getMovementAnalytics,
+  getOperationalAttributeCoverage,
 } from "@/modules/reports/actions";
 import { getBillingSummaryMTD } from "@/modules/billing/actions";
 import { ReportsClient } from "./_client";
@@ -27,16 +28,35 @@ const billingFallback = [
 ];
 
 export default async function ReportsPage() {
-  const [receiving, inventory, fulfillment, billing, movement] = await Promise.allSettled([
+  const [attributeCoverage, receiving, inventory, fulfillment, billing, movement] =
+    await Promise.allSettled([
+    getOperationalAttributeCoverage(),
     getReceivingStats(),
     getInventoryStats(),
     getFulfillmentStats(),
     getBillingSummaryMTD(),
     getMovementAnalytics(),
-  ]);
+    ]);
 
   return (
     <ReportsClient
+      attributeCoverage={
+        attributeCoverage.status === "fulfilled"
+          ? {
+              totalDefinitions: attributeCoverage.value.totalDefinitions,
+              searchableDefinitions: attributeCoverage.value.searchableDefinitions,
+              allocatableDefinitions: attributeCoverage.value.allocatableDefinitions,
+              topDefinitions: attributeCoverage.value.topDefinitions,
+              byScope: attributeCoverage.value.byScope,
+            }
+          : {
+              totalDefinitions: 0,
+              searchableDefinitions: 0,
+              allocatableDefinitions: 0,
+              topDefinitions: [],
+              byScope: [],
+            }
+      }
       receiving={
         receiving.status === "fulfilled"
           ? receiving.value

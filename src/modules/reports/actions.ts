@@ -139,6 +139,64 @@ export async function getInventoryStats() {
   };
 }
 
+export async function getOperationalAttributeCoverage() {
+  const { tenant } = await getContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+
+  const definitions = (await db.operationalAttributeDefinition.findMany({
+    where: { isActive: true },
+    include: {
+      _count: { select: { values: true } },
+    },
+    orderBy: [{ entityScope: "asc" }, { sortOrder: "asc" }, { label: "asc" }],
+  })) as Array<{
+    id: string;
+    label: string;
+    entityScope: string;
+    dataType: string;
+    behaviorFlags?: Record<string, unknown> | null;
+    _count: { values: number };
+  }>;
+
+  const byScope = definitions.reduce<Record<string, { activeDefinitions: number; populatedValues: number }>>(
+    (acc, definition) => {
+      if (!acc[definition.entityScope]) {
+        acc[definition.entityScope] = { activeDefinitions: 0, populatedValues: 0 };
+      }
+      acc[definition.entityScope].activeDefinitions += 1;
+      acc[definition.entityScope].populatedValues += definition._count.values ?? 0;
+      return acc;
+    },
+    {}
+  );
+
+  return {
+    totalDefinitions: definitions.length,
+    searchableDefinitions: definitions.filter(
+      (definition) => Boolean((definition.behaviorFlags ?? {}).searchable)
+    ).length,
+    allocatableDefinitions: definitions.filter(
+      (definition) => Boolean((definition.behaviorFlags ?? {}).allocatable)
+    ).length,
+    topDefinitions: definitions
+      .slice()
+      .sort((a, b) => (b._count.values ?? 0) - (a._count.values ?? 0))
+      .slice(0, 5)
+      .map((definition) => ({
+        label: definition.label,
+        scope: definition.entityScope,
+        dataType: definition.dataType,
+        populatedValues: definition._count.values ?? 0,
+      })),
+    byScope: Object.entries(byScope).map(([scope, counts]) => ({
+      scope,
+      activeDefinitions: counts.activeDefinitions,
+      populatedValues: counts.populatedValues,
+    })),
+  };
+}
+
 export async function getFulfillmentStats() {
   const { tenant } = await getContext();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -10,6 +10,13 @@ import { ExportButtons } from "@/components/shared/export-buttons";
 import { exportToCsv } from "@/lib/export/csv";
 
 interface ReportsClientProps {
+  attributeCoverage: {
+    totalDefinitions: number;
+    searchableDefinitions: number;
+    allocatableDefinitions: number;
+    topDefinitions: { label: string; scope: string; dataType: string; populatedValues: number }[];
+    byScope: { scope: string; activeDefinitions: number; populatedValues: number }[];
+  };
   receiving: {
     totalShipmentsMTD: number;
     totalItemsReceived: number;
@@ -43,6 +50,7 @@ interface ReportsClientProps {
 }
 
 export function ReportsClient({
+  attributeCoverage,
   receiving,
   inventory,
   fulfillment,
@@ -75,6 +83,7 @@ export function ReportsClient({
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="attributes">Attributes</TabsTrigger>
           <TabsTrigger value="receiving">Receiving</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="fulfillment">Fulfillment</TabsTrigger>
@@ -103,6 +112,92 @@ export function ReportsClient({
               data={fulfillment.ordersPerDay}
               color="hsl(220, 70%, 55%)"
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="attributes" className="space-y-4 pt-4">
+          <div className="flex justify-end">
+            <ExportButtons
+              title="Operational Attribute Coverage"
+              headers={["Scope", "Definition", "Type", "Populated Values"]}
+              rows={attributeCoverage.topDefinitions.map((definition) => [
+                definition.scope,
+                definition.label,
+                definition.dataType,
+                String(definition.populatedValues),
+              ])}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Active Definitions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{attributeCoverage.totalDefinitions}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Searchable Definitions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{attributeCoverage.searchableDefinitions}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Allocatable Definitions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{attributeCoverage.allocatableDefinitions}</p>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Coverage by Scope</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {attributeCoverage.byScope.length === 0 ? (
+                  <p className="text-muted-foreground">No operational attributes configured.</p>
+                ) : (
+                  attributeCoverage.byScope.map((scope) => (
+                    <div key={scope.scope} className="flex justify-between">
+                      <span className="capitalize text-muted-foreground">
+                        {scope.scope.replaceAll("_", " ")}
+                      </span>
+                      <span className="font-medium">
+                        {scope.activeDefinitions} defs · {scope.populatedValues} values
+                      </span>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Most Used Definitions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {attributeCoverage.topDefinitions.length === 0 ? (
+                  <p className="text-muted-foreground">No operational attribute values captured yet.</p>
+                ) : (
+                  attributeCoverage.topDefinitions.map((definition) => (
+                    <div key={`${definition.scope}-${definition.label}`} className="flex justify-between gap-4">
+                      <div>
+                        <div>{definition.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {definition.scope.replaceAll("_", " ")} · {definition.dataType}
+                        </div>
+                      </div>
+                      <span className="font-medium">{definition.populatedValues}</span>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
