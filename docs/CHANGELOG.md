@@ -52,6 +52,7 @@ All notable changes to Ramola WMS.
 - Added supported country and region reference data for client setup
 - Tightened client schema validation so unsupported country and region combinations are rejected consistently
 - Reframed billing service configuration from loose UOM labels to explicit rate-basis codes and labels in the settings UI
+- Added server-side validation so billing rate cards only accept the configured basis code for each service type
 - Normalized order ship-to entry for:
   - supported country selection
   - state / province validation

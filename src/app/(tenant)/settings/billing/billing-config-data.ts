@@ -35,7 +35,7 @@ export interface BillingConfigProps {
   invoices: InvoiceRow[];
 }
 
-const SERVICE_CONFIG: Array<{
+export const SERVICE_CONFIG: Array<{
   serviceType: string;
   label: string;
   basisCode: string;
@@ -122,4 +122,13 @@ export function buildRateLines(
       basisLabel: cfg.basisLabel,
     };
   });
+}
+
+export function getBillingServiceConfig(serviceType: string) {
+  return SERVICE_CONFIG.find((config) => config.serviceType === serviceType) ?? null;
+}
+
+export function validateBillingRateBasis(serviceType: string, basisCode: string) {
+  const config = getBillingServiceConfig(serviceType);
+  return config !== null && config.basisCode === basisCode;
 }

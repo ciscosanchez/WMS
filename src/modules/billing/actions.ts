@@ -5,6 +5,26 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { SERVICE_LABELS } from "./capture";
+import { validateBillingRateBasis } from "@/app/(tenant)/settings/billing/billing-config-data";
+
+type RateCardLineInput = {
+  serviceType: string;
+  unitRate: number;
+  uom: string;
+};
+
+function normalizeRateCardLines(lines: RateCardLineInput[]) {
+  return lines.map((line) => {
+    if (!validateBillingRateBasis(line.serviceType, line.uom)) {
+      throw new Error(`Invalid rate basis for ${line.serviceType}`);
+    }
+    return {
+      serviceType: line.serviceType,
+      unitRate: line.unitRate,
+      uom: line.uom,
+    };
+  });
+}
 
 async function getReadContext() {
   return requireTenantContext("billing:read");
@@ -72,11 +92,12 @@ export async function getBillingConfig() {
 
 /** Create or replace the global default rate card. */
 export async function saveDefaultRateCard(
-  lines: Array<{ serviceType: string; unitRate: number; uom: string }>,
+  lines: RateCardLineInput[],
   monthlyMinimum: number
 ) {
   const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const normalizedLines = normalizeRateCardLines(lines);
 
   const existing = await db.rateCard.findFirst({ where: { clientId: null } });
 
@@ -87,7 +108,7 @@ export async function saveDefaultRateCard(
       data: {
         monthlyMinimum,
         lines: {
-          create: lines.map((l) => ({
+          create: normalizedLines.map((l) => ({
             serviceType: l.serviceType,
             unitRate: l.unitRate,
             uom: l.uom,
@@ -101,7 +122,7 @@ export async function saveDefaultRateCard(
         clientId: null,
         monthlyMinimum,
         lines: {
-          create: lines.map((l) => ({
+          create: normalizedLines.map((l) => ({
             serviceType: l.serviceType,
             unitRate: l.unitRate,
             uom: l.uom,
@@ -124,11 +145,12 @@ export async function saveDefaultRateCard(
 /** Create or replace a client-specific rate card. */
 export async function saveClientRateCard(
   clientId: string,
-  lines: Array<{ serviceType: string; unitRate: number; uom: string }>,
+  lines: RateCardLineInput[],
   monthlyMinimum: number
 ) {
   const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const normalizedLines = normalizeRateCardLines(lines);
 
   const existing = await db.rateCard.findFirst({ where: { clientId } });
 
@@ -139,7 +161,7 @@ export async function saveClientRateCard(
       data: {
         monthlyMinimum,
         lines: {
-          create: lines.map((l) => ({
+          create: normalizedLines.map((l) => ({
             serviceType: l.serviceType,
             unitRate: l.unitRate,
             uom: l.uom,
@@ -153,7 +175,7 @@ export async function saveClientRateCard(
         clientId,
         monthlyMinimum,
         lines: {
-          create: lines.map((l) => ({
+          create: normalizedLines.map((l) => ({
             serviceType: l.serviceType,
             unitRate: l.unitRate,
             uom: l.uom,
