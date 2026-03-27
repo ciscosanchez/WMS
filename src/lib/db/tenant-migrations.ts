@@ -19,23 +19,6 @@ function getPool(): pg.Pool {
   return new pg.Pool({ connectionString: process.env.DATABASE_URL });
 }
 
-/**
- * Split a SQL file into individual statements, stripping blank lines and
- * single-line comments. Handles the common case of Prisma-generated migration
- * files that separate statements with `;\n\n`.
- */
-function splitStatements(sql: string): string[] {
-  const withoutLineComments = sql
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("--"))
-    .join("\n");
-
-  return withoutLineComments
-    .split(/;\s*(?:\n|$)/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
-
 export async function runTenantMigrations(dbSchema: string): Promise<void> {
   const pool = getPool();
   const client = await pool.connect();
@@ -70,15 +53,11 @@ export async function runTenantMigrations(dbSchema: string): Promise<void> {
       if (applied.has(file)) continue;
 
       const sql = readFileSync(path.join(MIGRATIONS_DIR, file), "utf-8");
-      const statements = splitStatements(sql);
-
-      if (statements.length === 0) {
+      if (!sql.trim()) {
         throw new Error(`Tenant migration "${file}" contains no executable SQL statements`);
       }
 
-      for (const stmt of statements) {
-        await client.query(stmt);
-      }
+      await client.query(sql);
 
       await client.query("INSERT INTO _migrations (name) VALUES ($1)", [file]);
     }
