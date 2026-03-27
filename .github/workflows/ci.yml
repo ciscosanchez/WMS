@@ -53,12 +53,12 @@ jobs:
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: root
+          username: deploy
+          port: 49502
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           timeout: 60s
           command_timeout: 20m
           script: |
-            cd /root/apps/wms
-            git pull origin main
-            cd /root/apps/wms/infra
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans wms
+            sudo mkdir -p /root/apps/wms
+            sudo git -C /root/apps/wms pull origin main
+            sudo docker compose -f /root/apps/wms/infra/docker-compose.prod.yml up -d --build --remove-orphans wms
