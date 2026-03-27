@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { convertQuantityToBaseUom, getProductUomChoices } from "@/modules/products/uom";
+import { useTranslations } from "next-intl";
 
 type AttributeDefinition = Awaited<ReturnType<typeof getOperationalAttributeDefinitions>>[number];
 type AttributeValue = string | boolean | string[];
@@ -31,7 +32,9 @@ export function AddLineDialog({
   open,
   onClose,
 }: AddLineDialogProps) {
+  const t = useTranslations("tenant.receiving");
   const [products, setProducts] = useState<ProductOption[]>([]);
+  const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [expectedQty, setExpectedQty] = useState(1);
   const [uom, setUom] = useState("EA");
@@ -60,6 +63,15 @@ export function AddLineDialog({
   }, [clientId]);
 
   const selectedProduct = products.find((product) => product.id === productId) ?? null;
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter(
+      (product) =>
+        product.sku.toLowerCase().includes(query) ||
+        product.name.toLowerCase().includes(query)
+    );
+  }, [productSearch, products]);
   const uomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
   const conversionPreview =
     selectedProduct && expectedQty > 0
@@ -89,14 +101,15 @@ export function AddLineDialog({
           value: attributeValues[definition.id] ?? null,
         })),
       });
-      toast.success("Line added");
+      toast.success(t("lineAdded"));
+      setProductSearch("");
       setProductId("");
       setExpectedQty(1);
       setUom("EA");
       setLotNumber("");
       onClose();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to add line");
+      toast.error(e instanceof Error ? e.message : t("failedAddLine"));
     } finally {
       setLoading(false);
     }
@@ -106,27 +119,43 @@ export function AddLineDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Line Item</DialogTitle>
+          <DialogTitle>{t("addLineItem")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Product *</Label>
+            <Label>{t("product")} *</Label>
+            <Input
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder={t("searchProducts")}
+            />
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
             >
-              <option value="">Select product...</option>
-              {products.map((p) => (
+              <option value="">{t("selectProduct")}</option>
+              {filteredProducts.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.sku} - {p.name}
                 </option>
               ))}
             </select>
+            {filteredProducts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("noProductsMatch")}</p>
+            ) : null}
+            {selectedProduct ? (
+              <p className="text-xs text-muted-foreground">
+                {t("selectedProductSummary", {
+                  sku: selectedProduct.sku,
+                  baseUom: selectedProduct.baseUom,
+                })}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
-            <Label>Expected Quantity *</Label>
+            <Label>{t("expectedQuantity")} *</Label>
             <Input
               type="number"
               min={1}
@@ -136,14 +165,14 @@ export function AddLineDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Requested UOM *</Label>
+            <Label>{t("requestedUom")} *</Label>
             <select
               value={uom}
               onChange={(e) => setUom(e.target.value)}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               disabled={!selectedProduct}
             >
-              {!selectedProduct ? <option value="">Select product first...</option> : null}
+              {!selectedProduct ? <option value="">{t("selectProductFirst")}</option> : null}
               {uomChoices.map((choice) => (
                 <option key={choice.code} value={choice.code}>
                   {choice.code}
@@ -152,19 +181,22 @@ export function AddLineDialog({
             </select>
             {conversionPreview ? (
               <p className="text-xs text-muted-foreground">
-                Will store as {conversionPreview.baseQuantity} {conversionPreview.baseUom}
+                {t("baseQuantityPreview", {
+                  quantity: conversionPreview.baseQuantity,
+                  uom: conversionPreview.baseUom,
+                })}
               </p>
             ) : null}
           </div>
 
           <div className="space-y-2">
-            <Label>Lot Number</Label>
+            <Label>{t("lotNumber")}</Label>
             <Input value={lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
           </div>
 
           {attributeDefinitions.length > 0 && (
             <div className="space-y-4 rounded-md border p-3">
-              <div className="text-sm font-medium">Operational Attributes</div>
+              <div className="text-sm font-medium">{t("operationalAttributes")}</div>
               {attributeDefinitions.map((definition) => (
                 <div key={definition.id} className="space-y-2">
                   <Label>{definition.label}</Label>
@@ -179,7 +211,7 @@ export function AddLineDialog({
                           }))
                         }
                       />
-                      <span>Enabled</span>
+                      <span>{t("enabled")}</span>
                     </label>
                   ) : definition.dataType === "single_select" ? (
                     <select
@@ -192,7 +224,7 @@ export function AddLineDialog({
                       }
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                     >
-                      <option value="">Select value...</option>
+                      <option value="">{t("selectValue")}</option>
                       {definition.options?.map((option: AttributeOption) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
@@ -242,10 +274,10 @@ export function AddLineDialog({
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={loading || !productId}>
-              {loading ? "Adding..." : "Add Line"}
+              {loading ? t("adding") : t("addLine")}
             </Button>
           </div>
         </form>
