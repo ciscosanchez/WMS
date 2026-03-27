@@ -3,6 +3,24 @@ export type UomOption = {
   label: string;
 };
 
+type NumericLike = number | string | { toString(): string };
+
+export type ProductUomSource = {
+  baseUom: string;
+  unitsPerCase?: number | null;
+  uomConversions?: Array<{
+    fromUom: string;
+    toUom: string;
+    factor: NumericLike;
+  }>;
+};
+
+export type ProductUomChoice = {
+  code: string;
+  factor: number;
+  source: "base" | "case_pack" | "conversion";
+};
+
 export const BASE_UOM_OPTIONS: UomOption[] = [
   { code: "EA", label: "Each" },
   { code: "CS", label: "Case" },
@@ -55,4 +73,63 @@ export function ensureUomOption(
   if (!normalized) return options;
   if (options.some((option) => option.code === normalized)) return options;
   return [...options, { code: normalized, label: `${fallbackLabel} (${normalized})` }];
+}
+
+function numericFactor(value: NumericLike) {
+  const next = typeof value === "number" ? value : Number(value.toString());
+  return Number.isFinite(next) ? next : 0;
+}
+
+export function getProductUomChoices(product: ProductUomSource): ProductUomChoice[] {
+  const baseUom = normalizeUomCode(product.baseUom);
+  const choices = new Map<string, ProductUomChoice>([
+    [baseUom, { code: baseUom, factor: 1, source: "base" }],
+  ]);
+
+  if (product.unitsPerCase && product.unitsPerCase > 0 && baseUom !== "CS") {
+    choices.set("CS", {
+      code: "CS",
+      factor: product.unitsPerCase,
+      source: "case_pack",
+    });
+  }
+
+  for (const conversion of product.uomConversions ?? []) {
+    const fromUom = normalizeUomCode(conversion.fromUom, "");
+    const toUom = normalizeUomCode(conversion.toUom, baseUom);
+    if (!fromUom || toUom !== baseUom) continue;
+    const factor = numericFactor(conversion.factor);
+    if (factor <= 0) continue;
+    choices.set(fromUom, {
+      code: fromUom,
+      factor,
+      source: "conversion",
+    });
+  }
+
+  return Array.from(choices.values());
+}
+
+export function convertQuantityToBaseUom(
+  product: ProductUomSource,
+  quantity: number,
+  requestedUom: string | null | undefined
+) {
+  const normalizedUom = normalizeUomCode(requestedUom, product.baseUom);
+  const choice = getProductUomChoices(product).find((item) => item.code === normalizedUom);
+  if (!choice) {
+    throw new Error(`Unsupported UOM ${normalizedUom} for product`);
+  }
+
+  const baseQuantity = quantity * choice.factor;
+  if (!Number.isInteger(baseQuantity)) {
+    throw new Error(`UOM ${normalizedUom} must resolve to whole base units`);
+  }
+
+  return {
+    requestedUom: normalizedUom,
+    baseUom: normalizeUomCode(product.baseUom),
+    baseQuantity,
+    factor: choice.factor,
+  };
 }

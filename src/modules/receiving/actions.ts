@@ -16,6 +16,7 @@ import { captureEvent } from "@/modules/billing/capture";
 import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 import { notificationQueue } from "@/lib/jobs/queue";
 import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
+import { convertQuantityToBaseUom } from "@/modules/products/uom";
 
 async function getReadContext() {
   return requireTenantContext("receiving:read");
@@ -103,13 +104,29 @@ export async function addShipmentLine(shipmentId: string, data: unknown) {
 
   const { user, tenant } = await requireTenantContext("receiving:write");
   const parsed = shipmentLineSchema.parse(data);
+  const product = await tenant.db.product.findUniqueOrThrow({
+    where: { id: parsed.productId },
+    select: {
+      id: true,
+      baseUom: true,
+      unitsPerCase: true,
+      uomConversions: {
+        select: {
+          fromUom: true,
+          toUom: true,
+          factor: true,
+        },
+      },
+    },
+  });
+  const resolvedQuantity = convertQuantityToBaseUom(product, parsed.expectedQty, parsed.uom);
 
   const line = await tenant.db.inboundShipmentLine.create({
     data: {
       shipmentId,
       productId: parsed.productId,
-      expectedQty: parsed.expectedQty,
-      uom: parsed.uom,
+      expectedQty: resolvedQuantity.baseQuantity,
+      uom: resolvedQuantity.baseUom,
       lotNumber: parsed.lotNumber,
       serialNumber: parsed.serialNumber,
       notes: parsed.notes,

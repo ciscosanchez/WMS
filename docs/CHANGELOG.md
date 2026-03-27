@@ -27,6 +27,15 @@ All notable changes to Ramola WMS.
   - duplicate conversion prevention
   - ensuring conversions resolve back to the selected base UOM
 
+### Operational UOM Usage
+
+- Receiving line entry now uses product packaging conversions to resolve requested UOM quantities into base stocking units
+- Order entry now lets users pick a requested UOM and previews the normalized base-unit allocation quantity
+- Added shared product-UOM helpers with test coverage for:
+  - derived UOM choices
+  - case-pack fallback
+  - requested-UOM to base-unit conversion
+
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 
 ### RBAC Phase 5

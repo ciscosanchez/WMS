@@ -14,6 +14,7 @@ import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
 import { asTenantDb } from "@/lib/tenant/db-types";
 import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
+import { convertQuantityToBaseUom } from "@/modules/products/uom";
 
 async function getReadContext() {
   return requireTenantContext("orders:read");
@@ -111,10 +112,28 @@ export async function createOrder(data: unknown, lines: unknown[]) {
     const createdLines = [];
     for (const parsedLine of parsedLines) {
       const { operationalAttributes = [], ...lineData } = parsedLine;
+      const product = await prisma.product.findUniqueOrThrow({
+        where: { id: parsedLine.productId },
+        select: {
+          id: true,
+          baseUom: true,
+          unitsPerCase: true,
+          uomConversions: {
+            select: {
+              fromUom: true,
+              toUom: true,
+              factor: true,
+            },
+          },
+        },
+      });
+      const resolvedQuantity = convertQuantityToBaseUom(product, parsedLine.quantity, parsedLine.uom);
       const createdLine = await prisma.orderLine.create({
         data: {
           orderId: createdOrder.id,
           ...lineData,
+          quantity: resolvedQuantity.baseQuantity,
+          uom: resolvedQuantity.baseUom,
         },
       });
 

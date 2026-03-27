@@ -24,13 +24,17 @@ import { getProducts } from "@/modules/products/actions";
 import { createOrder } from "@/modules/orders/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
 import { useTranslations } from "next-intl";
+import { convertQuantityToBaseUom, getProductUomChoices } from "@/modules/products/uom";
 
 interface OrderLine {
   id: string;
   productId: string;
   sku: string;
   name: string;
-  quantity: number;
+  requestedQuantity: number;
+  requestedUom: string;
+  baseQuantity: number;
+  baseUom: string;
   operationalAttributes: Array<{ definitionId: string; label: string; value: string }>;
 }
 
@@ -63,6 +67,7 @@ export default function NewOrderPage() {
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [addProductId, setAddProductId] = useState("");
   const [addQty, setAddQty] = useState(1);
+  const [addUom, setAddUom] = useState("EA");
   const [draftAttributeValues, setDraftAttributeValues] = useState<
     Record<string, string | boolean>
   >({});
@@ -77,10 +82,23 @@ export default function NewOrderPage() {
   const availableProducts = products.filter(
     (p) => p.clientId === clientId && !lines.find((l) => l.productId === p.id)
   );
+  const selectedProduct = products.find((p) => p.id === addProductId);
+  const selectedUomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
+  const orderQuantityPreview =
+    selectedProduct && addQty > 0 ? convertQuantityToBaseUom(selectedProduct, addQty, addUom) : null;
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setAddUom(selectedProduct.baseUom);
+    } else {
+      setAddUom("EA");
+    }
+  }, [selectedProduct]);
 
   function addLine() {
     const product = products.find((p) => p.id === addProductId);
     if (!product) return;
+    const quantityResolution = convertQuantityToBaseUom(product, addQty, addUom);
     const operationalAttributes = attributeDefinitions
       .map((definition) => {
         const rawValue = draftAttributeValues[definition.id];
@@ -109,12 +127,16 @@ export default function NewOrderPage() {
         productId: product.id,
         sku: product.sku,
         name: product.name,
-        quantity: addQty,
+        requestedQuantity: addQty,
+        requestedUom: quantityResolution.requestedUom,
+        baseQuantity: quantityResolution.baseQuantity,
+        baseUom: quantityResolution.baseUom,
         operationalAttributes,
       },
     ]);
     setAddProductId("");
     setAddQty(1);
+    setAddUom("EA");
     setDraftAttributeValues({});
   }
 
@@ -142,7 +164,8 @@ export default function NewOrderPage() {
       };
       const orderLines = lines.map((l) => ({
         productId: l.productId,
-        quantity: l.quantity,
+        quantity: l.requestedQuantity,
+        uom: l.requestedUom,
         operationalAttributes: l.operationalAttributes.map((attribute) => ({
           definitionId: attribute.definitionId,
           value: attribute.value,
@@ -314,6 +337,19 @@ export default function NewOrderPage() {
                     onChange={(e) => setAddQty(parseInt(e.target.value) || 1)}
                     className="w-20"
                   />
+                  <select
+                    value={addUom}
+                    onChange={(e) => setAddUom(e.target.value)}
+                    className="flex h-9 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                    disabled={!selectedProduct}
+                  >
+                    {!selectedProduct ? <option value="">UOM</option> : null}
+                    {selectedUomChoices.map((choice) => (
+                      <option key={choice.code} value={choice.code}>
+                        {choice.code}
+                      </option>
+                    ))}
+                  </select>
                   <Button
                     type="button"
                     variant="outline"
@@ -323,6 +359,11 @@ export default function NewOrderPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                {orderQuantityPreview ? (
+                  <p className="text-xs text-muted-foreground">
+                    Will allocate as {orderQuantityPreview.baseQuantity} {orderQuantityPreview.baseUom}
+                  </p>
+                ) : null}
 
                 {attributeDefinitions.length > 0 && (
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -395,6 +436,7 @@ export default function NewOrderPage() {
                     <TableHead>{t("sku")}</TableHead>
                     <TableHead>{t("product")}</TableHead>
                     <TableHead className="text-right">{t("qty")}</TableHead>
+                    <TableHead className="text-right">Base Qty</TableHead>
                     <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
@@ -419,7 +461,12 @@ export default function NewOrderPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium">{line.quantity}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {line.requestedQuantity} {line.requestedUom}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {line.baseQuantity} {line.baseUom}
+                      </TableCell>
                       <TableCell>
                         <Button
                           type="button"

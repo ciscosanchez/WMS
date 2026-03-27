@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addShipmentLine } from "@/modules/receiving/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
+import { getProducts } from "@/modules/products/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { convertQuantityToBaseUom, getProductUomChoices } from "@/modules/products/uom";
 
 type AttributeDefinition = Awaited<ReturnType<typeof getOperationalAttributeDefinitions>>[number];
 type AttributeValue = string | boolean | string[];
 type AttributeOption = AttributeDefinition["options"][number];
+type ProductOption = Awaited<ReturnType<typeof getProducts>>[number];
 
 interface AddLineDialogProps {
   shipmentId: string;
@@ -24,23 +27,23 @@ interface AddLineDialogProps {
 
 export function AddLineDialog({
   shipmentId,
-  clientId: _clientId,
+  clientId,
   open,
   onClose,
 }: AddLineDialogProps) {
-  const [products] = useState([
-    { id: "4", sku: "BOLT-M8X40", name: "M8x40 Hex Bolt" },
-    { id: "5", sku: "PIPE-SCH40", name: "Schedule 40 Steel Pipe 2in" },
-    { id: "6", sku: "VALVE-BV2", name: "2in Ball Valve" },
-  ]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [productId, setProductId] = useState("");
   const [expectedQty, setExpectedQty] = useState(1);
+  const [uom, setUom] = useState("EA");
   const [lotNumber, setLotNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [attributeDefinitions, setAttributeDefinitions] = useState<AttributeDefinition[]>([]);
   const [attributeValues, setAttributeValues] = useState<Record<string, AttributeValue>>({});
 
   useEffect(() => {
+    getProducts(clientId)
+      .then((items) => setProducts(items))
+      .catch(() => setProducts([]));
     getOperationalAttributeDefinitions("inbound_shipment_line", "receiving:write")
       .then((definitions: AttributeDefinition[]) => {
         setAttributeDefinitions(definitions);
@@ -54,7 +57,22 @@ export function AddLineDialog({
         );
       })
       .catch(() => setAttributeDefinitions([]));
-  }, []);
+  }, [clientId]);
+
+  const selectedProduct = products.find((product) => product.id === productId) ?? null;
+  const uomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
+  const conversionPreview =
+    selectedProduct && expectedQty > 0
+      ? convertQuantityToBaseUom(selectedProduct, expectedQty, uom)
+      : null;
+
+  useEffect(() => {
+    if (!selectedProduct) {
+      setUom("EA");
+      return;
+    }
+    setUom(selectedProduct.baseUom);
+  }, [selectedProduct]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,6 +82,7 @@ export function AddLineDialog({
       await addShipmentLine(shipmentId, {
         productId,
         expectedQty,
+        uom,
         lotNumber: lotNumber || null,
         operationalAttributes: attributeDefinitions.map((definition) => ({
           definitionId: definition.id,
@@ -71,6 +90,10 @@ export function AddLineDialog({
         })),
       });
       toast.success("Line added");
+      setProductId("");
+      setExpectedQty(1);
+      setUom("EA");
+      setLotNumber("");
       onClose();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to add line");
@@ -110,6 +133,28 @@ export function AddLineDialog({
               value={expectedQty}
               onChange={(e) => setExpectedQty(parseInt(e.target.value))}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Requested UOM *</Label>
+            <select
+              value={uom}
+              onChange={(e) => setUom(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              disabled={!selectedProduct}
+            >
+              {!selectedProduct ? <option value="">Select product first...</option> : null}
+              {uomChoices.map((choice) => (
+                <option key={choice.code} value={choice.code}>
+                  {choice.code}
+                </option>
+              ))}
+            </select>
+            {conversionPreview ? (
+              <p className="text-xs text-muted-foreground">
+                Will store as {conversionPreview.baseQuantity} {conversionPreview.baseUom}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
