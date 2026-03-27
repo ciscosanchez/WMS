@@ -10,7 +10,6 @@ import {
   dockDoorSchemaStatic as dockDoorSchema,
   yardSpotSchemaStatic as yardSpotSchema,
   appointmentSchemaStatic as appointmentSchema,
-  driverCheckInSchemaStatic as driverCheckInSchema,
 } from "./schemas";
 
 // ─── Dock Door CRUD ─────────────────────────────────────────────────────────

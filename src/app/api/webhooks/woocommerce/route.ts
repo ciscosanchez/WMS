@@ -91,7 +91,7 @@ async function resolveDb(conn: any) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleCreate(order: any, conn: any, source: string) {
+async function handleCreate(order: any, conn: any, _source: string) {
   const st = order.status as string | undefined;
   if (st && st !== "processing" && st !== "on-hold") return;
   const r = await resolveDb(conn);
@@ -122,16 +122,13 @@ async function handleCreate(order: any, conn: any, source: string) {
       };
   const mapped = new WooCommerceAdapter(cfg).mapOrder(order);
   const skus = mapped.lineItems.map((li) => li.sku).filter(Boolean);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prods = skus.length
     ? await tdb.product.findMany({
         where: { clientId: client.id, sku: { in: skus } },
         select: { id: true, sku: true },
       })
     : [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bySku = new Map(prods.map((p: any) => [p.sku, p]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lines = mapped.lineItems
     .map((li) => ({
       productId: (bySku.get(li.sku) as any)?.id,
@@ -184,10 +181,9 @@ async function handleUpdated(order: any, conn: any, _source: string) {
   const existing = await r.db.order.findFirst({ where: { externalId: String(order.id) } });
   if (!existing || existing.status === "shipped" || existing.status === "delivered") return;
   if (status === "cancelled" || status === "refunded") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },
-      data: { status: "cancelled" as any, cancelledDate: new Date() },
+      data: { status: "cancelled", cancelledDate: new Date() },
     });
     await logAudit(r.db, {
       userId: "webhook",
@@ -197,10 +193,9 @@ async function handleUpdated(order: any, conn: any, _source: string) {
       changes: { status: { old: existing.status, new: "cancelled" } },
     });
   } else if (status === "completed") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },
-      data: { status: "shipped" as any, shippedDate: new Date() },
+      data: { status: "shipped", shippedDate: new Date() },
     });
   }
 }

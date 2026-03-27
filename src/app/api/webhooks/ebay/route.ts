@@ -105,16 +105,13 @@ async function handleOrderCreated(payload: any, conn: any) {
       };
   const mapped = new EbayAdapter(cfg).mapOrder(order);
   const skus = mapped.lineItems.map((li) => li.sku).filter(Boolean);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prods = skus.length
     ? await tdb.product.findMany({
         where: { clientId: client.id, sku: { in: skus } },
         select: { id: true, sku: true },
       })
     : [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bySku = new Map(prods.map((p: any) => [p.sku, p]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lines = mapped.lineItems
     .map((li) => ({
       productId: (bySku.get(li.sku) as any)?.id,
@@ -168,10 +165,9 @@ async function handleOrderUpdated(payload: any, conn: any) {
   const existing = await r.db.order.findFirst({ where: { externalId: String(order.orderId) } });
   if (!existing || existing.status === "shipped" || existing.status === "delivered") return;
   if (status === "CANCELLED") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },
-      data: { status: "cancelled" as any, cancelledDate: new Date() },
+      data: { status: "cancelled", cancelledDate: new Date() },
     });
     await logAudit(r.db, {
       userId: "webhook",
@@ -181,10 +177,9 @@ async function handleOrderUpdated(payload: any, conn: any) {
       changes: { status: { old: existing.status, new: "cancelled" } },
     });
   } else if (status === "SHIPPED" || status === "DELIVERED") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await r.db.order.update({
       where: { id: existing.id },
-      data: { status: "shipped" as any, shippedDate: new Date() },
+      data: { status: "shipped", shippedDate: new Date() },
     });
   }
 }

@@ -6,7 +6,6 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { moveInventorySchema, adjustmentSchema, adjustmentLineSchema } from "./schemas";
-import { suggestPutawayLocation } from "./putaway-engine";
 import { notificationQueue, emailQueue } from "@/lib/jobs/queue";
 
 export async function moveInventory(data: unknown) {

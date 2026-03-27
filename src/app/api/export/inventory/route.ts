@@ -16,7 +16,7 @@ const COLUMNS: ExportColumn[] = [
   { key: "available", header: "Available" },
 ];
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   let tenant;
   let portalClientId: string | null | undefined;
   try {

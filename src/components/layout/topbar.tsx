@@ -2,7 +2,6 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -43,7 +42,6 @@ function getInitials(name: string | undefined | null): string {
 export function Topbar() {
   const { data: session } = useSession();
   const locale = useLocale();
-  const router = useRouter();
 
   const userName = USE_MOCK ? "Admin User" : (session?.user?.name ?? "User");
   const userEmail = USE_MOCK ? "admin@ramola.io" : (session?.user?.email ?? "");

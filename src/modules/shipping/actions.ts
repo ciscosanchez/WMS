@@ -7,7 +7,6 @@ import { logAudit } from "@/lib/audit";
 import type { RateQuote, LabelRequest } from "@/lib/integrations/carriers/types";
 import { publicDb } from "@/lib/db/public-client";
 import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
-import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
 
 async function getReadContext() {
   return requireTenantContext("shipping:read");

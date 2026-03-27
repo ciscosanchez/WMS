@@ -36,16 +36,14 @@ export async function GET(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
 
   const orders = await db.order.findMany({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     where: {
-      ...(status ? { status: status as any } : {}),
+      ...(status ? { status } : {}),
       ...(portalClientId ? { clientId: portalClientId } : {}),
     },
     include: {

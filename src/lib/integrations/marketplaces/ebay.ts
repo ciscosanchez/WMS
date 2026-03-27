@@ -148,8 +148,6 @@ export class EbayAdapter implements MarketplaceAdapter {
       imageUrl: li.image?.imageUrl ?? undefined,
     }));
 
-    const orderStatus = mapEbayStatus(o.orderFulfillmentStatus ?? o.orderPaymentStatus ?? "");
-
     return {
       externalId: o.orderId ?? o.legacyOrderId ?? String(o.orderId),
       orderNumber: o.legacyOrderId ?? o.orderId ?? "",
