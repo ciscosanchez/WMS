@@ -31,7 +31,9 @@ export default function NewTransferPage() {
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
   const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<TransferLine[]>([{ productId: "", quantity: 1, lotNumber: "" }]);
+  const [lines, setLines] = useState<TransferLine[]>([
+    { productId: "", quantity: 1, lotNumber: "" },
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -45,8 +47,7 @@ export default function NewTransferPage() {
     if (!query) return products;
     return products.filter(
       (product) =>
-        product.sku.toLowerCase().includes(query) ||
-        product.name.toLowerCase().includes(query)
+        product.sku.toLowerCase().includes(query) || product.name.toLowerCase().includes(query)
     );
   }, [productSearch, products]);
 
@@ -169,7 +170,10 @@ export default function NewTransferPage() {
             </div>
 
             {lines.map((line, index) => (
-              <div key={`${index}-${line.productId}`} className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[2fr_120px_1fr_auto]">
+              <div
+                key={`${index}-${line.productId}`}
+                className="grid gap-3 rounded-lg border p-4 sm:grid-cols-[2fr_120px_1fr_auto]"
+              >
                 <div className="space-y-2">
                   <Label>{t("product")}</Label>
                   <select
@@ -191,7 +195,9 @@ export default function NewTransferPage() {
                     type="number"
                     min={1}
                     value={line.quantity}
-                    onChange={(e) => updateLine(index, { quantity: parseInt(e.target.value, 10) || 0 })}
+                    onChange={(e) =>
+                      updateLine(index, { quantity: parseInt(e.target.value, 10) || 0 })
+                    }
                   />
                 </div>
                 <div className="space-y-2">

@@ -59,7 +59,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
 
   if (loading) {
     return (
-        <Card>
+      <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground animate-pulse">
           {t("shoppingRates")}
         </CardContent>
@@ -84,7 +84,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
   const fastest = [...rates].sort((a, b) => a.estimatedDays - b.estimatedDays)[0];
 
   return (
-      <Card>
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">{t("rateShopping")}</CardTitle>
       </CardHeader>
@@ -106,20 +106,20 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
                     <div className="flex items-center gap-2 text-sm font-medium">
                       {rate.carrier} — {rate.service}
                       {isCheapest && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Zap className="mr-1 h-3 w-3" />
+                        <Badge variant="secondary" className="text-xs">
+                          <Zap className="mr-1 h-3 w-3" />
                           {t("bestPrice")}
                         </Badge>
                       )}
                       {isFastest && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Clock className="mr-1 h-3 w-3" />
+                        <Badge variant="secondary" className="text-xs">
+                          <Clock className="mr-1 h-3 w-3" />
                           {t("fastest")}
                         </Badge>
                       )}
                       {rate.guaranteed && (
-                          <Badge variant="outline" className="text-xs text-green-700">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                        <Badge variant="outline" className="text-xs text-green-700">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
                           {t("guaranteed")}
                         </Badge>
                       )}
@@ -146,9 +146,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t("ratesEstimateNote")}
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{t("ratesEstimateNote")}</p>
       </CardContent>
     </Card>
   );

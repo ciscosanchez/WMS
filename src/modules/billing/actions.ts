@@ -91,10 +91,7 @@ export async function getBillingConfig() {
 }
 
 /** Create or replace the global default rate card. */
-export async function saveDefaultRateCard(
-  lines: RateCardLineInput[],
-  monthlyMinimum: number
-) {
+export async function saveDefaultRateCard(lines: RateCardLineInput[], monthlyMinimum: number) {
   const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const normalizedLines = normalizeRateCardLines(lines);

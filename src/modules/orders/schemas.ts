@@ -11,13 +11,10 @@ import {
 type T = (key: string) => string;
 
 const nullableTrimmedString = () =>
-  z.preprocess(
-    (value) => {
-      if (value === "" || value === undefined || value === null) return null;
-      return typeof value === "string" ? value.trim() : value;
-    },
-    z.string().nullable().optional()
-  );
+  z.preprocess((value) => {
+    if (value === "" || value === undefined || value === null) return null;
+    return typeof value === "string" ? value.trim() : value;
+  }, z.string().nullable().optional());
 
 export function orderSchema(t?: T) {
   const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
@@ -26,7 +23,10 @@ export function orderSchema(t?: T) {
       clientId: z.string().min(1, msg("clientRequired", "Client is required")),
       priority: z.enum(["standard", "expedited", "rush", "same_day"]).default("standard"),
       shipToName: z.string().trim().min(1, msg("shipToNameRequired", "Ship-to name is required")),
-      shipToAddress1: z.string().trim().min(1, msg("shipToAddressRequired", "Ship-to address is required")),
+      shipToAddress1: z
+        .string()
+        .trim()
+        .min(1, msg("shipToAddressRequired", "Ship-to address is required")),
       shipToAddress2: nullableTrimmedString(),
       shipToCity: z.string().trim().min(1, msg("shipToCityRequired", "Ship-to city is required")),
       shipToState: z.preprocess(
@@ -42,13 +42,10 @@ export function orderSchema(t?: T) {
         (value) => normalizePhoneNumber(value as string | null | undefined),
         z.string().max(20).nullable().optional()
       ),
-      shipToEmail: z.preprocess(
-        (value) => {
-          if (value === "" || value === undefined || value === null) return null;
-          return typeof value === "string" ? value.trim().toLowerCase() : value;
-        },
-        z.string().email().nullable().optional()
-      ),
+      shipToEmail: z.preprocess((value) => {
+        if (value === "" || value === undefined || value === null) return null;
+        return typeof value === "string" ? value.trim().toLowerCase() : value;
+      }, z.string().email().nullable().optional()),
       requestedCarrier: nullableTrimmedString(),
       requestedService: nullableTrimmedString(),
       shipByDate: z.preprocess(

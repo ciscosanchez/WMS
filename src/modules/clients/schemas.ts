@@ -10,13 +10,10 @@ import {
 type T = (key: string) => string;
 
 const nullableTrimmedString = (max: number) =>
-  z.preprocess(
-    (value) => {
-      if (value === "" || value === undefined || value === null) return null;
-      return typeof value === "string" ? value.trim() : value;
-    },
-    z.string().max(max).nullable().optional()
-  );
+  z.preprocess((value) => {
+    if (value === "" || value === undefined || value === null) return null;
+    return typeof value === "string" ? value.trim() : value;
+  }, z.string().max(max).nullable().optional());
 
 export function clientSchema(t?: T) {
   const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
@@ -25,22 +22,24 @@ export function clientSchema(t?: T) {
       code: z.string().trim().min(1, msg("codeRequired", "Code is required")).max(20),
       name: z.string().trim().min(1, msg("nameRequired", "Name is required")).max(200),
       contactName: nullableTrimmedString(200),
-      contactEmail: z
-        .preprocess(
-          (value) => {
-            if (value === "" || value === undefined || value === null) return null;
-            return typeof value === "string" ? value.trim().toLowerCase() : value;
-          },
-          z.string().email().nullable().optional()
-        ),
-      contactPhone: z
-        .preprocess((value) => normalizePhoneNumber(value as string | null | undefined), z.string().max(20).nullable().optional()),
+      contactEmail: z.preprocess((value) => {
+        if (value === "" || value === undefined || value === null) return null;
+        return typeof value === "string" ? value.trim().toLowerCase() : value;
+      }, z.string().email().nullable().optional()),
+      contactPhone: z.preprocess(
+        (value) => normalizePhoneNumber(value as string | null | undefined),
+        z.string().max(20).nullable().optional()
+      ),
       address: nullableTrimmedString(500),
       city: nullableTrimmedString(100),
-      state: z
-        .preprocess((value) => normalizeRegionCode(value as string | null | undefined), z.string().max(100).nullable().optional()),
-      country: z
-        .preprocess((value) => normalizeCountryCode(value as string | null | undefined), z.string().max(2).nullable().optional()),
+      state: z.preprocess(
+        (value) => normalizeRegionCode(value as string | null | undefined),
+        z.string().max(100).nullable().optional()
+      ),
+      country: z.preprocess(
+        (value) => normalizeCountryCode(value as string | null | undefined),
+        z.string().max(2).nullable().optional()
+      ),
       zipCode: nullableTrimmedString(20),
       taxId: nullableTrimmedString(50),
       notes: nullableTrimmedString(2000),

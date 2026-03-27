@@ -24,7 +24,11 @@ import { getProducts } from "@/modules/products/actions";
 import { createOrder } from "@/modules/orders/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
 import { useTranslations } from "next-intl";
-import { convertQuantityToBaseUom, getProductUomChoices, type ProductUomSource } from "@/modules/products/uom";
+import {
+  convertQuantityToBaseUom,
+  getProductUomChoices,
+  type ProductUomSource,
+} from "@/modules/products/uom";
 import { COUNTRY_OPTIONS, getRegionOptions } from "@/modules/clients/reference-data";
 
 interface OrderLine {
@@ -98,7 +102,9 @@ export default function NewOrderPage() {
   const selectedProduct = products.find((p) => p.id === addProductId);
   const selectedUomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
   const orderQuantityPreview =
-    selectedProduct && addQty > 0 ? convertQuantityToBaseUom(selectedProduct, addQty, addUom) : null;
+    selectedProduct && addQty > 0
+      ? convertQuantityToBaseUom(selectedProduct, addQty, addUom)
+      : null;
   const regionOptions = useMemo(() => getRegionOptions(shipToCountry), [shipToCountry]);
 
   useEffect(() => {
@@ -342,7 +348,11 @@ export default function NewOrderPage() {
             </div>
             <div className="space-y-2">
               <Label>{t("phone")}</Label>
-              <Input inputMode="tel" value={shipToPhone} onChange={(e) => setShipToPhone(e.target.value)} />
+              <Input
+                inputMode="tel"
+                value={shipToPhone}
+                onChange={(e) => setShipToPhone(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("email")}</Label>
@@ -412,7 +422,8 @@ export default function NewOrderPage() {
                 </div>
                 {orderQuantityPreview ? (
                   <p className="text-xs text-muted-foreground">
-                    Will allocate as {orderQuantityPreview.baseQuantity} {orderQuantityPreview.baseUom}
+                    Will allocate as {orderQuantityPreview.baseQuantity}{" "}
+                    {orderQuantityPreview.baseUom}
                   </p>
                 ) : null}
 

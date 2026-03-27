@@ -11,7 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createCartonType, getCartonType, updateCartonType } from "@/modules/cartonization/actions";
 import {
   cartonTypeSchema,
@@ -127,12 +133,16 @@ export function CartonTypeForm({ mode }: CartonTypeFormProps) {
             <div className="space-y-2">
               <Label htmlFor="code">{t("code")}</Label>
               <Input id="code" {...register("code")} placeholder="SMALL_BOX" />
-              {errors.code ? <p className="text-xs text-destructive">{errors.code.message}</p> : null}
+              {errors.code ? (
+                <p className="text-xs text-destructive">{errors.code.message}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">{t("name")}</Label>
               <Input id="name" {...register("name")} placeholder="Small Box" />
-              {errors.name ? <p className="text-xs text-destructive">{errors.name.message}</p> : null}
+              {errors.name ? (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -177,7 +187,11 @@ export function CartonTypeForm({ mode }: CartonTypeFormProps) {
                 </SelectContent>
               </Select>
             </div>
-            {errors.length ? <p className="text-xs text-destructive sm:col-span-2 lg:col-span-4">{errors.length.message}</p> : null}
+            {errors.length ? (
+              <p className="text-xs text-destructive sm:col-span-2 lg:col-span-4">
+                {errors.length.message}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -192,7 +206,13 @@ export function CartonTypeForm({ mode }: CartonTypeFormProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="tareWeight">{t("tareWeight")}</Label>
-              <Input id="tareWeight" type="number" step="0.01" min="0" {...register("tareWeight")} />
+              <Input
+                id="tareWeight"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register("tareWeight")}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("weightUnit")}</Label>

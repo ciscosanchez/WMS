@@ -127,7 +127,11 @@ export async function createOrder(data: unknown, lines: unknown[]) {
           },
         },
       });
-      const resolvedQuantity = convertQuantityToBaseUom(product, parsedLine.quantity, parsedLine.uom);
+      const resolvedQuantity = convertQuantityToBaseUom(
+        product,
+        parsedLine.quantity,
+        parsedLine.uom
+      );
       const createdLine = await prisma.orderLine.create({
         data: {
           orderId: createdOrder.id,

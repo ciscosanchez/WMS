@@ -292,7 +292,9 @@ export async function generateShipmentLabel(
       isResidential: true,
     };
 
-    const packages: LabelRequest["packages"] = [resolveShipmentPackage(shipment, defaultCarton as never)];
+    const packages: LabelRequest["packages"] = [
+      resolveShipmentPackage(shipment, defaultCarton as never),
+    ];
 
     const labelRequest: LabelRequest = {
       from,

@@ -26,12 +26,7 @@ interface AddLineDialogProps {
   onClose: () => void;
 }
 
-export function AddLineDialog({
-  shipmentId,
-  clientId,
-  open,
-  onClose,
-}: AddLineDialogProps) {
+export function AddLineDialog({ shipmentId, clientId, open, onClose }: AddLineDialogProps) {
   const t = useTranslations("tenant.receiving");
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -68,8 +63,7 @@ export function AddLineDialog({
     if (!query) return products;
     return products.filter(
       (product) =>
-        product.sku.toLowerCase().includes(query) ||
-        product.name.toLowerCase().includes(query)
+        product.sku.toLowerCase().includes(query) || product.name.toLowerCase().includes(query)
     );
   }, [productSearch, products]);
   const uomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
