@@ -22,7 +22,13 @@ cd infra
 docker compose -f docker-compose.prod.yml up -d --build --remove-orphans wms
 ```
 
-CI/CD: GitHub Actions runs validate (typecheck + lint + prettier + test + build), then auto-deploys to Hetzner via SSH on push to `main`.
+CI/CD: GitHub Actions runs validate (typecheck + lint + prettier + test + build), then auto-deploys to Hetzner on push to `main`.
+
+Current production deploy path:
+
+- SSH user: `deploy`
+- SSH port: `49502`
+- remote compose path: `/root/apps/wms/infra/docker-compose.prod.yml`
 
 ### Tenant Database Migrations
 
@@ -30,14 +36,15 @@ After adding new schema models, run migrations on each tenant:
 
 ```bash
 # Connect to prod server
-ssh -p 49502 root@<server-ip>
+ssh -p 49502 deploy@<server-ip>
 
-# Apply migrations
+# Preferred rollout path
 cd /root/apps/wms
-for schema in $(psql $DATABASE_URL -t -c "SELECT db_schema FROM tenants WHERE status='active'"); do
-  psql $WMS_DATABASE_URL -c "SET search_path TO $schema" -f prisma/tenant-migrations/XXXX_name.sql
-done
+npm run db:reconcile:tenants   # one-time on legacy environments
+npm run db:migrate:tenants
 ```
+
+This replaces the earlier manual loop for most normal rollout cases.
 
 ### Environment
 

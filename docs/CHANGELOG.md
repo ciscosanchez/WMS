@@ -2,6 +2,41 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
+
+### RBAC Phase 5
+
+- Added tenant-saved permission presets on top of global presets
+- Added bulk preset application from `Settings -> Users`
+- Added access-review cadence tracking and review-complete workflow support
+- Kept the core model stable:
+  - base role
+  - portal binding
+  - grants
+  - denies
+
+### CI/CD Hardening
+
+- Burned down app and unit-test lint debt to zero for the checked scopes used in CI
+- Fixed stale unit tests introduced by the RBAC and operational-attributes work
+- Updated GitHub Actions to current `actions/checkout` and `actions/setup-node` versions
+- Fixed the deploy workflow to use the actual production SSH target:
+  - user: `deploy`
+  - port: `49502`
+- GitHub Actions now validates and deploys cleanly from `main`
+
+### Documentation
+
+- Refreshed the competitive analysis to reflect current shipped capability instead of older gaps
+- Refreshed the market-position / magic-quadrant assessment to account for:
+  - LPN tracking
+  - GS1/SSCC
+  - report exports
+  - workflow rules
+  - marketplace expansion
+  - RBAC governance maturity
+- Kept the Armstrong comparison docs, but reframed the product direction around generic configurable operational attributes instead of customer-specific custom fields
+
 ## 2026-03-27 — RBAC Custom Permission Overrides
 
 ### Access Model
@@ -375,6 +410,3 @@ All notable changes to Ramola WMS.
 - 56 routes across 4 apps (WMS, Operator, Portal, Platform)
 - 124 unit tests, 8 integration adapters
 - Multi-tenancy, RBAC, Shopify connection
-- Added RBAC Phase 3 visibility tooling: tenant access review cards, per-user risk flags, and reusable permission presets in the custom-permissions editor.
-- Added RBAC Phase 4 governance controls: exportable tenant access review CSVs and policy validation that blocks unsafe override combinations for portal-bound users and viewers.
-- Added RBAC Phase 5 tenant governance workflows: tenant-saved permission presets, bulk preset application, and configurable access-review cadence tracking from `Settings -> Users`.

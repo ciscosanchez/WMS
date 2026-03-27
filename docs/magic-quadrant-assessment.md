@@ -1,6 +1,6 @@
 # Ramola WMS — Competitive Position Assessment
 
-_Last updated: 2026-03-24_
+_Last updated: 2026-03-27_
 
 ## Magic Quadrant: WMS Market Positioning
 
@@ -29,113 +29,112 @@ _Last updated: 2026-03-24_
 
 ## Where Ramola Sits
 
-**Strongest differentiator**: unified freight + fulfillment in one platform with modern stack and real tenant isolation. No other mid-market WMS covers both.
+**Strongest differentiator**: unified freight + fulfillment in one platform with modern tenant isolation, configurable operational attributes, and stronger governance than most mid-market peers.
 
-**Competitive neighborhood**: between Deposco (similar breadth, better optimization) and Extensiv (better billing ops, weaker tech). Ahead of Magaya on tech, behind on customs depth. Ahead of Logiwa on freight, behind on ecosystem breadth.
+**Competitive neighborhood**: between Deposco and Extensiv on mid-market breadth, with a clearer path upward into enterprise-style governance and workflow depth than most 3PL-native tools. Still behind Manhattan, SAP, Oracle, and Blue Yonder on optimization science and automation execution.
 
 ---
 
 ## Validated Strengths (confirmed in codebase)
 
-| Capability                            | Evidence                                                          | Competitor Comparison                 |
-| ------------------------------------- | ----------------------------------------------------------------- | ------------------------------------- |
-| **Dual-mode (freight + fulfillment)** | BOL receiving + DTC pick/pack/ship in same schema                 | No mid-market competitor does both    |
-| **Multi-tenant isolation**            | Schema-per-tenant, AES-256-GCM secrets, 30+ RBAC permissions      | Ahead of Extensiv, Logiwa, Magaya     |
-| **Modern stack**                      | Next.js 15, Prisma, BullMQ, TypeScript, 382 tests                 | Most competitors are legacy .NET/Java |
-| **Operator PWA**                      | Offline-first, barcode scanning, high-contrast, clock-in/out      | Most charge extra for mobile          |
-| **Yard & Dock**                       | Appointments, Gantt calendar, yard map, driver check-in           | Matches Manhattan-tier feature        |
-| **Labor Management**                  | Shift tracking, task time logging, UPH, cost-per-unit billing     | Matches Extensiv-tier                 |
-| **Returns/RMA**                       | Full lifecycle with inspection + disposition + inventory re-entry | Table stakes, well-implemented        |
-| **Cartonization**                     | FFD bin-packing algorithm with carton catalog                     | Matches Oracle/Infor-tier             |
-| **Slotting**                          | ABC velocity + multi-factor scoring + BullMQ async jobs           | Good foundation                       |
-| **Task Interleaving**                 | Combined pick/putaway routes by bin proximity                     | Manhattan/SAP-tier concept            |
-| **89 routes, 67 schema models**       | Real implementation, not stubs                                    | Substantial codebase                  |
+| Capability                                | Evidence                                                                           | Competitor Comparison                     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------- |
+| **Dual-mode (freight + fulfillment)**     | BOL receiving + DTC pick/pack/ship in same tenant model                            | Rare at mid-market                        |
+| **Multi-tenant isolation + governance**   | Schema-per-tenant, portal scoping, 37 permissions, user overrides, review tooling  | Ahead of most 3PL-midmarket peers         |
+| **Modern stack**                          | Next.js 15, Prisma, BullMQ, TypeScript, CI/CD to Hetzner                           | Most competitors are legacy .NET/Java     |
+| **Operator + portal personas**            | Distinct shells, routing defaults, permission-aware nav                            | Better UX separation than typical peers   |
+| **Operational attributes platform**       | Definition engine + receiving/LPN/order capture + propagation + reporting/export   | Strong configurability story for midmarket |
+| **Yard & Dock**                           | Appointments, Gantt calendar, yard map, driver check-in                            | Matches higher-tier concepts              |
+| **Labor Management**                      | Shift tracking, task time logging, UPH, cost-per-unit billing                      | Competitive with 3PL-focused tools        |
+| **Returns/RMA**                           | Full lifecycle with inspection + disposition + inventory re-entry                  | Table stakes, well-implemented            |
+| **Cartonization + GS1/SSCC**              | FFD bin-packing, carton catalog, GS1-128 / SSCC workflows                          | More complete than many mid-market peers  |
+| **LPN/container tracking**                | Pallet-level receive, move, consume, inventory propagation                         | Closed a prior enterprise gap             |
+| **Workflow rules + replenishment**        | Configurable if/then workflow engine, threshold replenishment                      | Strong operational maturity signal        |
+| **128 routes, 85 Prisma models**          | Real implementation breadth, not just marketing claims                             | Substantial codebase                      |
 
 ---
 
-## Actual Gaps (validated by external audit + competitive research)
+## Actual Gaps (validated against the current codebase)
 
-### Tier 1: Revenue Blockers
+### Tier 1: Highest-Leverage Remaining Gaps
 
-| #   | Gap                                                                                                                                        | Behind Who                             | Impact                                                       | Effort    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------ | --------- |
-| 1   | **Billing operations workbench** — charge adjustments, billing review/approval, dispute handling, exportable invoice PDFs, client delivery | Extensiv                               | Disqualifier for 3PL sales                                   | 3-4 weeks |
-| 2   | **Lot/expiration/FEFO** — no expiration date field, no FEFO/FIFO enforcement in picking, no recall workflow                                | Manhattan, SAP, Oracle, Infor, Deposco | Disqualifier for food/pharma/cosmetics 3PLs (40%+ of market) | 2-3 weeks |
-| 3   | **Multi-warehouse / multi-site** — no transfer orders, no cross-facility visibility, no order routing                                      | Oracle, Manhattan, ShipHero, Logiwa    | Disqualifier for growth-stage 3PLs                           | 6-8 weeks |
+| #   | Gap                                                                                                           | Behind Who                             | Impact                                           | Effort     |
+| --- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------ | ---------- |
+| 1   | **Optimization engine maturity** — wave planning, labor standards, balancing, predictive prioritization      | Manhattan, Blue Yonder, Oracle         | Biggest enterprise-capability gap                | 4-8 weeks  |
+| 2   | **Automation execution** — PLC/WCS command loop, mission dispatch, telemetry, heartbeat supervision          | SAP EWM, Manhattan, Korber             | Blocks automation-led warehouses                 | 8-12 weeks |
+| 3   | **Marketplace/ecosystem breadth** — 6 major adapters shipped, still far from platform ecosystems            | Logiwa, Extensiv, ShipHero             | Limits long-tail onboarding flexibility          | Ongoing    |
+| 4   | **Distributed order orchestration** — transfers exist, but no true multi-site order routing / DOM strategy | Oracle, Manhattan, Blue Yonder         | Matters for multi-node growth customers          | 6-8 weeks  |
 
-### Tier 2: Competitive Differentiators
+### Tier 2: Competitive Differentiators Still To Build Out
 
-| #   | Gap                                                                                                      | Behind Who                        | Impact                             | Effort            |
-| --- | -------------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------------- | ----------------- |
-| 4   | **Customs/freight depth** — no ISF, ACE, broker workflows, customs filing, bonded inventory              | Magaya                            | Blocks freight-forward positioning | 6-8 weeks         |
-| 5   | **Marketplace breadth** — only Shopify + Amazon; missing Walmart, WooCommerce, BigCommerce, eBay, TikTok | Logiwa (240+), Extensiv, ShipHero | Limits 3PL client onboarding       | 1-2 weeks/channel |
-| 6   | **LPN/container tracking** — no pallet-level receive/move/pick                                           | SAP, Manhattan, Oracle, Infor     | Blocks B2B/wholesale warehouse ops | 3-4 weeks         |
-| 7   | **GS1/SSCC compliance labels** — no GS1-128 generation, no retailer label templates                      | SAP, Manhattan, Oracle            | Blocks retail compliance 3PLs      | 2-3 weeks         |
+| #   | Gap                                                                                             | Behind Who                        | Impact                                      | Effort            |
+| --- | ----------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------- | ----------------- |
+| 5   | **Customs/freight operational depth** — stronger base exists, but still behind Magaya depth    | Magaya                            | Important for freight-forwarding positioning | 4-8 weeks         |
+| 6   | **ERP / finance ecosystem** — limited packaged ERP/accounting connectors                         | SAP, Oracle, Infor                | Slows enterprise IT adoption                 | 2-4 weeks/adapter |
+| 7   | **Voice-directed and device-specialized execution**                                              | Manhattan, Korber                 | Matters in grocery/cold-chain/high-volume    | 3-6 weeks         |
+| 8   | **Customer-facing analytic packaging** — reports are present, but packaged dashboards can grow | Extensiv, Deposco, Oracle         | Helps 3PL differentiation and sales          | 2-4 weeks         |
 
-### Tier 3: Enterprise Maturity
+### Tier 3: Maturity And Packaging Gaps
 
-| #   | Gap                                                                                                                                         | Behind Who                     | Impact                               | Effort     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------ | ---------- |
-| 8   | **Optimization engine** — no wave engine, labor standards, workload balancing, rules-driven orchestration; productivity trend data is empty | Manhattan, Blue Yonder, Oracle | Limits throughput optimization value | 4-8 weeks  |
-| 9   | **Automation execution** — device registry exists but no command/telemetry loop, PLC/WCS protocol, mission dispatch, heartbeat supervision  | SAP EWM, Manhattan, Korber     | Blocks automation-forward warehouses | 8-12 weeks |
-| 10  | **Report export & scheduling** — no PDF/CSV/Excel export, no scheduled reports, no custom dashboards                                        | All competitors                | Expected table-stakes feature        | 2-3 weeks  |
+| #   | Gap                                                                                      | Behind Who                     | Impact                               | Effort    |
+| --- | ---------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------ | --------- |
+| 9   | **Workflow optimization and simulation** — rules exist, but not full simulation tooling | Manhattan, Blue Yonder, Oracle | Limits consultative optimization     | 4-6 weeks |
+| 10  | **Enterprise packaging and certifications** — buyer confidence artifacts, audit packs   | Larger enterprise vendors      | Slows larger-procurement acceptance  | Ongoing   |
 
 ### Tier 4: Nice-to-Have
 
 | #   | Gap                                         | Notes                                                  |
 | --- | ------------------------------------------- | ------------------------------------------------------ |
-| 11  | **Voice-directed picking**                  | Vocollect/Honeywell integration for cold chain/grocery |
-| 12  | **Configurable workflow/rules engine**      | User-defined if/then rules without code                |
-| 13  | **Distributed order management**            | Intelligent order routing across warehouses            |
-| 14  | **Demand forecasting / auto-replenishment** | Safety stock, reorder points, pick-face replenishment  |
-| 15  | **ERP integrations**                        | SAP, QuickBooks, Sage, Dynamics beyond NetSuite        |
+| 11  | **Digital twin / 3D visualization**         | Useful for enterprise demos and optimization           |
+| 12  | **Native SCIM / deeper IdP governance**     | Enterprise identity automation                         |
+| 13  | **Demand forecasting**                      | Safety stock and predictive replenishment              |
+| 14  | **Broader last-mile carrier orchestration** | More TMS-like planning depth                           |
+| 15  | **Domain-specific vertical packs**          | Food/pharma/furniture/art prebuilt configs             |
 
 ---
 
 ## Updated Scorecard
 
-| Dimension                  | Score  | Change   | Notes                                                               |
-| -------------------------- | ------ | -------- | ------------------------------------------------------------------- |
-| **Vision completeness**    | 9/10   | —        | Architecture covers enterprise-grade WMS                            |
-| **Execution completeness** | 7.5/10 | ↑ from 7 | 11 advanced modules built, 382 tests, CI green                      |
-| **Freight depth**          | 5/10   | ↓ honest | Schema + compliance checks exist, but no operational customs module |
-| **Fulfillment breadth**    | 8/10   | —        | Full order-pick-pack-ship + cartonization + returns                 |
-| **3PL billing maturity**   | 5/10   | new      | Rate cards + event ledger + invoices exist, but no ops workbench    |
-| **Multi-tenant maturity**  | 8/10   | ↑ from 7 | Schema isolation, portal scoping, RBAC hardened, 30+ permissions    |
-| **Integration readiness**  | 6/10   | —        | Adapters built, need more channels + live credentials               |
-| **Optimization/AI**        | 4/10   | new      | Good heuristics (slotting, interleaving), no ML/predictive layer    |
-| **Production hardness**    | 8.5/10 | ↑ from 8 | All audit findings fixed, CI/CD pipeline green, 382 tests           |
+| Dimension                    | Score  | Change       | Notes                                                                  |
+| --------------------------- | ------ | ------------ | ---------------------------------------------------------------------- |
+| **Vision completeness**     | 9/10   | —            | Platform direction is coherent and extensible                          |
+| **Execution completeness**  | 8.5/10 | ↑ materially | More gaps have moved from roadmap to shipped capability                |
+| **Freight depth**           | 6.5/10 | ↑            | Customs/compliance base exists, still behind freight-specialists       |
+| **Fulfillment breadth**     | 8.5/10 | ↑            | Order, pick, pack, LPN, returns, GS1, exports, reporting              |
+| **3PL billing maturity**    | 7/10   | ↑            | Workbench and governance story improved, still room for polish         |
+| **Multi-tenant maturity**   | 9/10   | ↑            | Isolation, personas, overrides, access review, governance presets      |
+| **Integration readiness**   | 7/10   | ↑            | Six major channel adapters, still not broad ecosystem depth            |
+| **Configurability**         | 8.5/10 | new          | Operational attributes + workflow rules are now meaningful strengths   |
+| **Optimization/AI**         | 5/10   | ↑            | Good heuristics and reporting, still no predictive/ML layer            |
+| **Production hardness**     | 9/10   | ↑            | GitHub Actions green, auto-deploy working, test/lint/format/build pass |
 
 ---
 
 ## Recommended Build Order (highest leverage first)
 
-1. **Billing ops workbench** — charge adjustments, review/approval, PDF export, client delivery (3-4 weeks)
-2. **Lot/expiration/FEFO** — `expirationDate` field, FEFO pick enforcement, expiration alerts (2-3 weeks)
-3. **Report export engine** — CSV/Excel/PDF export + scheduled reports via BullMQ (2-3 weeks)
-4. **LPN/container tracking** — pallet-level receiving and movement (3-4 weeks)
-5. **Marketplace connectors** — Walmart, WooCommerce, BigCommerce (1-2 weeks each)
-6. **GS1/SSCC compliance** — barcode generation + retailer label templates (2-3 weeks)
-7. **Multi-warehouse** — transfer orders, cross-facility visibility (6-8 weeks)
-8. **Customs/freight module** — ISF, broker workflows, bonded inventory (6-8 weeks)
-9. **Optimization engine** — wave planning, labor standards, productivity trends (4-8 weeks)
-10. **Automation WCS** — command/telemetry, PLC integration, mission dispatch (8-12 weeks)
+1. **Optimization engine** — wave planning, labor standards, workload balancing, orchestrated release logic
+2. **Automation / WCS execution** — command loop, telemetry, mission dispatch, heartbeat supervision
+3. **Distributed multi-site orchestration** — cross-facility order routing and visibility, not just transfers
+4. **Marketplace / ERP breadth** — keep extending adapters where onboarding friction is highest
+5. **Freight-depth packaging** — broker workflows, customs filing, bonded workflows
+6. **Voice / specialized device workflows** — if targeting grocery, cold chain, or very high-volume operations
+7. **Enterprise packaging** — audit, security, procurement, and ROI artifacts for larger deals
 
 ---
 
 ## Codebase Metrics (March 2026)
 
-| Metric                | Count                                                     |
-| --------------------- | --------------------------------------------------------- |
-| Route pages           | 100+                                                      |
-| Prisma models         | 73                                                        |
-| Server action modules | 35+ files                                                 |
-| Tests                 | 504 (37 suites)                                           |
-| SQL migrations        | 20 (0001-0020)                                            |
-| BullMQ workers        | 5 (notifications, integrations, email, slotting, reports) |
-| RBAC permissions      | 37                                                        |
-| Marketplace adapters  | 5 (Shopify, Amazon, Walmart, WooCommerce, BigCommerce)    |
-| i18n languages        | 2 (en/es)                                                 |
-| TypeScript errors     | 0                                                         |
-| Lint errors           | 0                                                         |
-| Lines of code         | ~65K                                                      |
+| Metric                | Count / Status                                                      |
+| --------------------- | ------------------------------------------------------------------- |
+| Route handlers/pages  | 128                                                                 |
+| Prisma models         | 85                                                                  |
+| Module files          | 78 under `src/modules`                                              |
+| Test files            | 73                                                                  |
+| Tenant SQL migrations | 23 (`0001`-`0023`)                                                  |
+| BullMQ workers        | 5 (notifications, integrations, email, slotting, reports)          |
+| RBAC permissions      | 37                                                                  |
+| Marketplace adapters  | 6 (Shopify, Amazon, Walmart, WooCommerce, BigCommerce, eBay)       |
+| i18n languages        | 2 (en/es)                                                           |
+| TypeScript            | 0 errors                                                            |
+| ESLint / Prettier     | green                                                               |
+| CI/CD                 | GitHub Actions validate + deploy to Hetzner fully green on `main`  |
