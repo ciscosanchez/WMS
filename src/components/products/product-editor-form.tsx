@@ -9,7 +9,12 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { getClients } from "@/modules/clients/actions";
-import { createProduct, deleteProduct, getProduct, updateProduct } from "@/modules/products/actions";
+import {
+  createProduct,
+  deleteProduct,
+  getProduct,
+  updateProduct,
+} from "@/modules/products/actions";
 import { productSchema, type ProductFormData } from "@/modules/products/schemas";
 import {
   BASE_UOM_OPTIONS,
@@ -20,14 +25,37 @@ import {
   normalizeUomCode,
 } from "@/modules/products/uom";
 import { PageHeader } from "@/components/shared/page-header";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 type ClientOption = {
@@ -113,7 +141,9 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
       try {
         const [clientList, rawProduct] = await Promise.all([
           getClients() as Promise<ClientOption[]>,
-          mode === "edit" && productId ? getProduct(productId) : Promise.resolve(null as ProductLookup),
+          mode === "edit" && productId
+            ? getProduct(productId)
+            : Promise.resolve(null as ProductLookup),
         ]);
         setClients(clientList);
         if (mode === "edit") {
@@ -188,10 +218,7 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
     setValue("uomConversions", nextConversions, { shouldDirty: true, shouldValidate: true });
   }
 
-  function updateConversionRow(
-    index: number,
-    patch: Partial<{ fromUom: string; factor: number }>
-  ) {
+  function updateConversionRow(index: number, patch: Partial<{ fromUom: string; factor: number }>) {
     const next = [...conversions];
     next[index] = {
       ...next[index],
@@ -204,11 +231,10 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
 
   function addConversionRow() {
     const fallback = packagingUnitOptions[0]?.code ?? "CS";
-    setValue(
-      "uomConversions",
-      [...conversions, { fromUom: fallback, toUom: baseUom, factor: 1 }],
-      { shouldDirty: true, shouldValidate: true }
-    );
+    setValue("uomConversions", [...conversions, { fromUom: fallback, toUom: baseUom, factor: 1 }], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
   function removeConversionRow(index: number) {
@@ -404,7 +430,10 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
                 <Select
                   value={watch("weightUnit") ?? "lb"}
                   onValueChange={(value) =>
-                    setValue("weightUnit", value ?? "lb", { shouldDirty: true, shouldValidate: true })
+                    setValue("weightUnit", value ?? "lb", {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
                   }
                 >
                   <SelectTrigger className="h-9 w-24">
@@ -423,9 +452,27 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
             <div className="space-y-2">
               <Label htmlFor="length">{t("dimensions")}</Label>
               <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-                <Input id="length" type="number" step="0.01" placeholder={t("length")} {...register("length")} />
-                <Input id="width" type="number" step="0.01" placeholder={t("width")} {...register("width")} />
-                <Input id="height" type="number" step="0.01" placeholder={t("height")} {...register("height")} />
+                <Input
+                  id="length"
+                  type="number"
+                  step="0.01"
+                  placeholder={t("length")}
+                  {...register("length")}
+                />
+                <Input
+                  id="width"
+                  type="number"
+                  step="0.01"
+                  placeholder={t("width")}
+                  {...register("width")}
+                />
+                <Input
+                  id="height"
+                  type="number"
+                  step="0.01"
+                  placeholder={t("height")}
+                  {...register("height")}
+                />
                 <Select
                   value={watch("dimUnit") ?? "in"}
                   onValueChange={(value) =>
@@ -465,7 +512,10 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
                   id="trackLot"
                   checked={watch("trackLot")}
                   onCheckedChange={(value) =>
-                    setValue("trackLot", Boolean(value), { shouldDirty: true, shouldValidate: true })
+                    setValue("trackLot", Boolean(value), {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
                   }
                 />
                 <Label htmlFor="trackLot">{t("trackByLot")}</Label>
@@ -575,7 +625,9 @@ export function ProductEditorForm({ mode, productId }: ProductEditorFormProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-medium">{t("conversionTitle")}</div>
-                  <div className="text-xs text-muted-foreground">{t("conversionHelp", { baseUom })}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("conversionHelp", { baseUom })}
+                  </div>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={addConversionRow}>
                   <Plus className="mr-2 h-4 w-4" />
