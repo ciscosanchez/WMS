@@ -5,6 +5,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { asTenantDb } from "@/lib/tenant/db-types";
 import { logAudit } from "@/lib/audit";
 import { attributeDefinitionSchema, type AttributeScope } from "./schemas";
+import { filterDocumentVisibleAttributes, type DocumentSurface } from "./document-surfaces";
 
 const SETTINGS_PATH = "/settings";
 
@@ -224,4 +225,37 @@ export async function getOperationalAttributeValuesForEntities(
     },
     {}
   );
+}
+
+export async function getOperationalAttributesForDocumentSurface(
+  surface: DocumentSurface,
+  permission = "shipping:read"
+) {
+  const { tenant } = await requireTenantContext(permission);
+  const db = asTenantDb(tenant.db);
+
+  const definitions = (await db.operationalAttributeDefinition.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      key: true,
+      label: true,
+      entityScope: true,
+      dataType: true,
+      behaviorFlags: true,
+      displayRules: true,
+      sortOrder: true,
+    },
+    orderBy: [{ entityScope: "asc" }, { sortOrder: "asc" }, { label: "asc" }],
+  })) as Array<{
+    id: string;
+    key: string;
+    label: string;
+    entityScope: string;
+    dataType: string;
+    behaviorFlags?: Record<string, unknown> | null;
+    displayRules?: Record<string, unknown> | null;
+  }>;
+
+  return filterDocumentVisibleAttributes(definitions, surface);
 }

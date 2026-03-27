@@ -137,6 +137,17 @@ All notable changes to Ramola WMS.
   - most-used definitions by populated value count
 - Added a dedicated Attributes tab in tenant reports with CSV export support
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.5 (Document Surface Mapping)
+
+### Labels & Documents
+
+- Added a generic document-surface mapping layer for operational attributes
+- Shipping labels page now shows which attributes are configured for:
+  - labels
+  - manifests
+  - packing lists
+- Mapping is driven by `behaviorFlags` and `displayRules` rather than tenant-specific templates
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

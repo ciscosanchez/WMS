@@ -1,7 +1,19 @@
 import { getAllTemplates } from "@/modules/gs1";
+import { getOperationalAttributesForDocumentSurface } from "@/modules/attributes/actions";
 
-export default function LabelsPage() {
+export default async function LabelsPage() {
   const templates = getAllTemplates();
+  const [labelAttributes, manifestAttributes, packingListAttributes] = await Promise.all([
+    getOperationalAttributesForDocumentSurface("label"),
+    getOperationalAttributesForDocumentSurface("manifest"),
+    getOperationalAttributesForDocumentSurface("packing_list"),
+  ]);
+
+  const documentGroups = [
+    { title: "Label Surface", attributes: labelAttributes },
+    { title: "Manifest Surface", attributes: manifestAttributes },
+    { title: "Packing List Surface", attributes: packingListAttributes },
+  ];
 
   return (
     <div className="space-y-6 p-6">
@@ -10,6 +22,36 @@ export default function LabelsPage() {
         <p className="text-muted-foreground">
           Generate GS1-128 / SSCC-18 compliant shipping labels for retailer requirements
         </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {documentGroups.map((group) => (
+          <div key={group.title} className="rounded-lg border bg-card p-4 space-y-3">
+            <div>
+              <h3 className="font-semibold">{group.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                Configured operational attributes available to this document surface
+              </p>
+            </div>
+            {group.attributes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No attributes mapped yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {group.attributes.map((attribute) => (
+                  <span
+                    key={`${group.title}-${attribute.id}`}
+                    className="inline-flex items-center rounded bg-secondary px-2 py-1 text-xs"
+                  >
+                    {attribute.label}
+                    <span className="ml-2 text-[10px] text-muted-foreground">
+                      {attribute.entityScope.replaceAll("_", " ")}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
