@@ -5,15 +5,20 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
-    FROM pg_type
-    WHERE typname = 'operational_attribute_scope'
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'operational_attribute_scope'
+      AND n.nspname = current_schema()
   ) THEN
-    CREATE TYPE operational_attribute_scope AS ENUM (
-      'inbound_shipment',
-      'inbound_shipment_line',
-      'lpn',
-      'inventory_unit',
-      'inventory_record'
+    EXECUTE format(
+      'CREATE TYPE %I.operational_attribute_scope AS ENUM (
+        ''inbound_shipment'',
+        ''inbound_shipment_line'',
+        ''lpn'',
+        ''inventory_unit'',
+        ''inventory_record''
+      )',
+      current_schema()
     );
   END IF;
 END $$;
@@ -22,18 +27,23 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
-    FROM pg_type
-    WHERE typname = 'operational_attribute_data_type'
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'operational_attribute_data_type'
+      AND n.nspname = current_schema()
   ) THEN
-    CREATE TYPE operational_attribute_data_type AS ENUM (
-      'text',
-      'number',
-      'currency',
-      'date',
-      'boolean',
-      'single_select',
-      'multi_select',
-      'json'
+    EXECUTE format(
+      'CREATE TYPE %I.operational_attribute_data_type AS ENUM (
+        ''text'',
+        ''number'',
+        ''currency'',
+        ''date'',
+        ''boolean'',
+        ''single_select'',
+        ''multi_select'',
+        ''json''
+      )',
+      current_schema()
     );
   END IF;
 END $$;
