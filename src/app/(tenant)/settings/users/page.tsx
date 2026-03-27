@@ -4,6 +4,7 @@ import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
+import { getTenantRbacGovernance } from "@/modules/users/actions";
 import { getUserPersonas } from "@/lib/auth/personas";
 import { getAccessRisks, normalizePermissionOverrides } from "@/lib/auth/rbac";
 import { AccessReview } from "./access-review";
@@ -12,6 +13,7 @@ import { UserTable } from "./user-table";
 export default async function UsersPage() {
   const { tenant } = await requireTenantContext("users:read");
   const members = await getTenantUsers(tenant.tenantId);
+  const governance = await getTenantRbacGovernance();
   const clients = await tenant.db.client.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
@@ -59,9 +61,18 @@ export default async function UsersPage() {
         </div>
       </PageHeader>
 
-      <AccessReview users={users} />
+      <AccessReview
+        users={users}
+      />
 
-      <UserTable users={users} clients={clients} />
+      <UserTable
+        users={users}
+        clients={clients}
+        savedPresets={governance.savedPresets}
+        reviewCadenceDays={governance.reviewCadenceDays}
+        lastReviewCompletedAt={governance.lastReviewCompletedAt ?? null}
+        nextReviewDueAt={governance.nextReviewDueAt ?? null}
+      />
     </div>
   );
 }

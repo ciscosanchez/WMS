@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { SortableHeader } from "@/components/data-table/sortable-header";
 import {
@@ -24,10 +25,12 @@ import {
   getAccessRisks,
   getEffectivePermissions,
   normalizePermissionOverrides,
+  type PermissionPreset,
   type AccessRisk,
   type PermissionOverrides,
 } from "@/lib/auth/rbac";
 import { PermissionOverridesDialog } from "./permission-overrides-dialog";
+import { BulkApplyPresetDialog } from "./bulk-apply-preset-dialog";
 
 type UserRow = {
   id: string;
@@ -76,10 +79,12 @@ function UserActions({
   user,
   clients,
   users,
+  savedPresets,
 }: {
   user: UserRow;
   clients: ClientOption[];
   users: UserRow[];
+  savedPresets: PermissionPreset[];
 }) {
   const router = useRouter();
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -167,13 +172,18 @@ function UserActions({
         onOpenChange={setPermissionsOpen}
         user={user}
         users={users}
+        savedPresets={savedPresets}
         onSaved={() => router.refresh()}
       />
     </>
   );
 }
 
-function getColumns(clients: ClientOption[], users: UserRow[]): ColumnDef<UserRow>[] {
+function getColumns(
+  clients: ClientOption[],
+  users: UserRow[],
+  savedPresets: PermissionPreset[]
+): ColumnDef<UserRow>[] {
   return [
     {
     accessorKey: "name",
@@ -297,18 +307,64 @@ function getColumns(clients: ClientOption[], users: UserRow[]): ColumnDef<UserRo
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => <UserActions user={row.original} clients={clients} users={users} />,
+    cell: ({ row }) => (
+      <UserActions
+        user={row.original}
+        clients={clients}
+        users={users}
+        savedPresets={savedPresets}
+      />
+    ),
   },
   ];
 }
 
-export function UserTable({ users, clients }: { users: UserRow[]; clients: ClientOption[] }) {
+export function UserTable({
+  users,
+  clients,
+  savedPresets,
+  reviewCadenceDays,
+  lastReviewCompletedAt,
+  nextReviewDueAt,
+}: {
+  users: UserRow[];
+  clients: ClientOption[];
+  savedPresets: PermissionPreset[];
+  reviewCadenceDays: number;
+  lastReviewCompletedAt: string | null;
+  nextReviewDueAt: string | null;
+}) {
+  const [governanceOpen, setGovernanceOpen] = useState(false);
+  const router = useRouter();
+
   return (
-    <DataTable
-      columns={getColumns(clients, users)}
-      data={users}
-      searchKey="name"
-      searchPlaceholder="Search users..."
-    />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => setGovernanceOpen(true)}>
+          RBAC Governance
+        </Button>
+      </div>
+      <DataTable
+        columns={getColumns(clients, users, savedPresets)}
+        data={users}
+        searchKey="name"
+        searchPlaceholder="Search users..."
+      />
+      <BulkApplyPresetDialog
+        open={governanceOpen}
+        onOpenChange={setGovernanceOpen}
+        users={users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }))}
+        savedPresets={savedPresets}
+        reviewCadenceDays={reviewCadenceDays}
+        lastReviewCompletedAt={lastReviewCompletedAt}
+        nextReviewDueAt={nextReviewDueAt}
+        onSaved={() => router.refresh()}
+      />
+    </div>
   );
 }

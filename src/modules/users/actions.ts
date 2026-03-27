@@ -17,6 +17,52 @@ import {
 import { getUserPersonas } from "@/lib/auth/personas";
 import { logAudit } from "@/lib/audit";
 import { generateCsv, csvResponse, type ExportColumn } from "@/lib/export/server-csv";
+import type { PermissionPreset, Permission } from "@/lib/auth/rbac";
+
+type TenantRbacSettings = {
+  savedPresets?: PermissionPreset[];
+  reviewCadenceDays?: number;
+  lastReviewCompletedAt?: string | null;
+  nextReviewDueAt?: string | null;
+};
+
+function normalizeTenantRbacSettings(raw: unknown): TenantRbacSettings {
+  if (!raw || typeof raw !== "object") return {};
+  const candidate = raw as TenantRbacSettings;
+  return {
+    savedPresets: Array.isArray(candidate.savedPresets)
+      ? candidate.savedPresets.filter(
+          (preset): preset is PermissionPreset =>
+            typeof preset?.key === "string" &&
+            typeof preset?.label === "string" &&
+            typeof preset?.description === "string" &&
+            Array.isArray(preset?.grants) &&
+            Array.isArray(preset?.denies)
+        )
+      : [],
+    reviewCadenceDays:
+      typeof candidate.reviewCadenceDays === "number" ? candidate.reviewCadenceDays : 90,
+    lastReviewCompletedAt:
+      typeof candidate.lastReviewCompletedAt === "string" ? candidate.lastReviewCompletedAt : null,
+    nextReviewDueAt: typeof candidate.nextReviewDueAt === "string" ? candidate.nextReviewDueAt : null,
+  };
+}
+
+async function getTenantSettingsRecord(tenantId: string) {
+  return publicDb.tenant.findUnique({
+    where: { id: tenantId },
+    select: { settings: true },
+  });
+}
+
+function buildTenantSettingsUpdate(
+  existingSettings: unknown,
+  nextRbac: TenantRbacSettings
+): Record<string, unknown> {
+  const settings = { ...((existingSettings ?? {}) as Record<string, unknown>) };
+  settings.rbac = nextRbac;
+  return settings;
+}
 
 async function getAdminContext() {
   return requireTenantContext("users:write");
@@ -409,6 +455,260 @@ export async function exportTenantAccessReviewCsv(): Promise<Response> {
 
   const date = new Date().toISOString().slice(0, 10);
   return csvResponse(csv, `tenant-access-review-${date}.csv`);
+}
+
+export async function getTenantRbacGovernance() {
+  const { tenant } = await requireTenantContext("users:read");
+  const row = await getTenantSettingsRecord(tenant.tenantId);
+  const settings = normalizeTenantRbacSettings(
+    ((row?.settings ?? {}) as Record<string, unknown>).rbac
+  );
+
+  return {
+    savedPresets: settings.savedPresets ?? [],
+    reviewCadenceDays: settings.reviewCadenceDays ?? 90,
+    lastReviewCompletedAt: settings.lastReviewCompletedAt,
+    nextReviewDueAt: settings.nextReviewDueAt,
+  };
+}
+
+export async function saveTenantPermissionPreset(input: {
+  key?: string;
+  label: string;
+  description: string;
+  grants: Permission[];
+  denies: Permission[];
+}): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const row = await getTenantSettingsRecord(tenant.tenantId);
+    const settings = normalizeTenantRbacSettings(
+      ((row?.settings ?? {}) as Record<string, unknown>).rbac
+    );
+    const presetKey =
+      input.key && input.key.trim().length > 0
+        ? input.key
+        : `tenant-${input.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    const preset: PermissionPreset = {
+      key: presetKey,
+      label: input.label,
+      description: input.description,
+      grants: normalizePermissionOverrides({ grants: input.grants, denies: [] }).grants,
+      denies: normalizePermissionOverrides({ grants: [], denies: input.denies }).denies,
+    };
+    const nextPresets = (settings.savedPresets ?? []).filter((item) => item.key !== preset.key);
+    nextPresets.push(preset);
+
+    const merged = buildTenantSettingsUpdate(row?.settings, {
+      ...settings,
+      savedPresets: nextPresets,
+    });
+
+    await publicDb.tenant.update({
+      where: { id: tenant.tenantId },
+      data: { settings: merged as never },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "tenant_rbac_preset",
+      entityId: preset.key,
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save RBAC preset" };
+  }
+}
+
+export async function deleteTenantPermissionPreset(
+  presetKey: string
+): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const row = await getTenantSettingsRecord(tenant.tenantId);
+    const settings = normalizeTenantRbacSettings(
+      ((row?.settings ?? {}) as Record<string, unknown>).rbac
+    );
+    const nextPresets = (settings.savedPresets ?? []).filter((item) => item.key !== presetKey);
+
+    const merged = buildTenantSettingsUpdate(row?.settings, {
+      ...settings,
+      savedPresets: nextPresets,
+    });
+
+    await publicDb.tenant.update({
+      where: { id: tenant.tenantId },
+      data: { settings: merged as never },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "delete",
+      entityType: "tenant_rbac_preset",
+      entityId: presetKey,
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to delete RBAC preset" };
+  }
+}
+
+export async function saveTenantAccessReviewCadence(
+  reviewCadenceDays: number
+): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const row = await getTenantSettingsRecord(tenant.tenantId);
+    const settings = normalizeTenantRbacSettings(
+      ((row?.settings ?? {}) as Record<string, unknown>).rbac
+    );
+    const cadence = Math.max(30, reviewCadenceDays);
+    const baseDate = settings.lastReviewCompletedAt
+      ? new Date(settings.lastReviewCompletedAt)
+      : new Date();
+    const nextReviewDueAt = new Date(baseDate);
+    nextReviewDueAt.setDate(nextReviewDueAt.getDate() + cadence);
+
+    const merged = buildTenantSettingsUpdate(row?.settings, {
+      ...settings,
+      reviewCadenceDays: cadence,
+      nextReviewDueAt: nextReviewDueAt.toISOString(),
+    });
+
+    await publicDb.tenant.update({
+      where: { id: tenant.tenantId },
+      data: { settings: merged as never },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "tenant_rbac_review_cadence",
+      entityId: tenant.tenantId,
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to save review cadence" };
+  }
+}
+
+export async function markTenantAccessReviewComplete(): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const row = await getTenantSettingsRecord(tenant.tenantId);
+    const settings = normalizeTenantRbacSettings(
+      ((row?.settings ?? {}) as Record<string, unknown>).rbac
+    );
+    const cadence = settings.reviewCadenceDays ?? 90;
+    const completedAt = new Date();
+    const nextReviewDueAt = new Date(completedAt);
+    nextReviewDueAt.setDate(nextReviewDueAt.getDate() + cadence);
+
+    const merged = buildTenantSettingsUpdate(row?.settings, {
+      ...settings,
+      lastReviewCompletedAt: completedAt.toISOString(),
+      nextReviewDueAt: nextReviewDueAt.toISOString(),
+    });
+
+    await publicDb.tenant.update({
+      where: { id: tenant.tenantId },
+      data: { settings: merged as never },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "tenant_rbac_review",
+      entityId: tenant.tenantId,
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to mark review complete" };
+  }
+}
+
+export async function bulkApplyPermissionPreset(input: {
+  userIds: string[];
+  grants: Permission[];
+  denies: Permission[];
+}): Promise<{ error: string } | { ok: true; updated: number }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    if (input.userIds.length === 0) return { error: "Select at least one user" };
+
+    const memberships = await publicDb.tenantUser.findMany({
+      where: {
+        tenantId: tenant.tenantId,
+        userId: { in: input.userIds },
+      },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+        portalClientId: true,
+      },
+    });
+
+    const normalized = normalizePermissionOverrides({
+      grants: input.grants,
+      denies: input.denies,
+    });
+
+    for (const membership of memberships) {
+      const violations = validatePermissionPolicy({
+        role: membership.role,
+        portalClientId: membership.portalClientId,
+        overrides: normalized,
+      });
+      if (violations.length > 0) {
+        return { error: `${membership.userId}: ${violations[0].message}` };
+      }
+    }
+
+    await Promise.all(
+      memberships.map((membership) =>
+        publicDb.tenantUser.update({
+          where: {
+            tenantId_userId: {
+              tenantId: tenant.tenantId,
+              userId: membership.userId,
+            },
+          },
+          data: { permissionOverrides: normalized },
+        })
+      )
+    );
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "tenant_user_access_bulk",
+      entityId: tenant.tenantId,
+      changes: {
+        targetUsers: { old: null, new: input.userIds },
+        permissionOverrides: { old: null, new: normalized },
+      },
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true, updated: memberships.length };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to bulk apply preset" };
+  }
 }
 
 /**

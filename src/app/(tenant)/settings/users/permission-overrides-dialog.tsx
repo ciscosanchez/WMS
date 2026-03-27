@@ -13,6 +13,7 @@ import {
   PERMISSION_GROUPS,
   PERMISSION_PRESETS,
   type Permission,
+  type PermissionPreset,
   type PermissionOverrides,
 } from "@/lib/auth/rbac";
 import type { TenantRole } from "../../../../../node_modules/.prisma/public-client";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { updateUserPermissionOverrides } from "@/modules/users/actions";
+import { saveTenantPermissionPreset, updateUserPermissionOverrides } from "@/modules/users/actions";
 
 type PermissionOverridesDialogProps = {
   open: boolean;
@@ -44,6 +45,7 @@ type PermissionOverridesDialogProps = {
     role: TenantRole;
     permissionOverrides: PermissionOverrides;
   }>;
+  savedPresets: PermissionPreset[];
   onSaved: () => void;
 };
 
@@ -52,6 +54,7 @@ export function PermissionOverridesDialog({
   onOpenChange,
   user,
   users,
+  savedPresets,
   onSaved,
 }: PermissionOverridesDialogProps) {
   const normalized = useMemo(
@@ -63,6 +66,8 @@ export function PermissionOverridesDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
   const [presetKey, setPresetKey] = useState("");
+  const [presetLabel, setPresetLabel] = useState("");
+  const [presetDescription, setPresetDescription] = useState("");
 
   const basePermissions = useMemo(() => new Set(getPermissions(user.role)), [user.role]);
   const effectivePermissions = useMemo(
@@ -129,10 +134,33 @@ export function PermissionOverridesDialog({
 
   function handleApplyPreset(nextPresetKey: string) {
     setPresetKey(nextPresetKey);
-    const preset = getPermissionPreset(nextPresetKey);
+    const preset = savedPresets.find((item) => item.key === nextPresetKey) ?? getPermissionPreset(nextPresetKey);
     if (!preset) return;
     setGrants(preset.grants);
     setDenies(preset.denies);
+  }
+
+  async function handleSaveTenantPreset() {
+    if (!presetLabel.trim()) {
+      toast.error("Enter a preset label");
+      return;
+    }
+
+    const result = await saveTenantPermissionPreset({
+      label: presetLabel.trim(),
+      description: presetDescription.trim() || "Saved from custom permissions editor",
+      grants,
+      denies,
+    });
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success("Tenant preset saved");
+    setPresetLabel("");
+    setPresetDescription("");
+    onSaved();
   }
 
   const customOnlyCount = grants.length + denies.length;
@@ -216,7 +244,7 @@ export function PermissionOverridesDialog({
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
                 <option value="">Select a preset</option>
-                {PERMISSION_PRESETS.map((preset) => (
+                {[...savedPresets, ...PERMISSION_PRESETS.filter((preset) => !savedPresets.some((saved) => saved.key === preset.key))].map((preset) => (
                   <option key={preset.key} value={preset.key}>
                     {preset.label}
                   </option>
@@ -243,6 +271,27 @@ export function PermissionOverridesDialog({
                 ))
               )}
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border p-4">
+          <div className="text-sm font-medium">Save As Tenant Preset</div>
+          <div className="mt-2 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <input
+              value={presetLabel}
+              onChange={(event) => setPresetLabel(event.target.value)}
+              placeholder="Preset name"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+            />
+            <input
+              value={presetDescription}
+              onChange={(event) => setPresetDescription(event.target.value)}
+              placeholder="Preset description"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+            />
+            <Button variant="outline" onClick={handleSaveTenantPreset}>
+              Save Preset
+            </Button>
           </div>
         </div>
 

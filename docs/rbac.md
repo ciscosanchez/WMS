@@ -389,3 +389,20 @@ Current hard policy constraints:
 - `viewer` cannot be elevated to `Settings: Write`
 
 These are intentionally narrow. The goal is to block only the combinations that are clearly unsafe without turning the RBAC system into a heavyweight policy engine.
+
+## Phase 5 Tenant Governance
+
+Phase 5 adds tenant-level RBAC reuse and review workflow support:
+
+- tenant admins can save custom permission bundles as tenant-specific presets
+- presets can be bulk-applied to multiple users from the users admin screen
+- each tenant can track an access-review cadence
+- admins can mark a review cycle complete and the next due date is calculated automatically
+
+Implementation notes:
+
+- tenant-specific preset and review metadata are stored in `Tenant.settings.rbac`
+- global presets still exist in code as shared defaults
+- tenant-saved presets are additive to those shared defaults in the UI
+
+This keeps the role model stable while making RBAC practical for recurring review and repeat admin operations.
