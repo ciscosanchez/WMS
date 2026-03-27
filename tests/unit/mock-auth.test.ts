@@ -26,12 +26,17 @@ describe("mock auth cookie helpers", () => {
     expect(decodeMockAuthCookie(cookie)).toEqual({
       ...DEFAULT_MOCK_AUTH_USER,
       email: "portal@arteriors.com",
+      locale: undefined,
       tenants: [
         {
           tenantId: "tenant-1",
           slug: "armstrong",
           role: "viewer",
           portalClientId: "client-1",
+          permissionOverrides: {
+            grants: [],
+            denies: [],
+          },
         },
       ],
     });

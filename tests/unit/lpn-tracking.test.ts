@@ -24,6 +24,11 @@ const mockDb = {
   lpnContent: { create: jest.fn() },
   inventory: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn() },
   inventoryTransaction: { create: jest.fn() },
+  operationalAttributeValue: {
+    findMany: jest.fn().mockResolvedValue([]),
+    upsert: jest.fn(),
+  },
+  operationalAttributeDefinition: { findMany: jest.fn().mockResolvedValue([]) },
   $transaction: jest
     .fn()
     .mockImplementation(async (cb: (p: typeof mockDb) => unknown) => cb(mockDb)),
