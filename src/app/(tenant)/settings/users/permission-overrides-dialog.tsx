@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   getEffectivePermissions,
@@ -33,6 +33,12 @@ type PermissionOverridesDialogProps = {
     role: TenantRole;
     permissionOverrides: PermissionOverrides;
   };
+  users: Array<{
+    id: string;
+    name: string;
+    role: TenantRole;
+    permissionOverrides: PermissionOverrides;
+  }>;
   onSaved: () => void;
 };
 
@@ -40,6 +46,7 @@ export function PermissionOverridesDialog({
   open,
   onOpenChange,
   user,
+  users,
   onSaved,
 }: PermissionOverridesDialogProps) {
   const normalized = useMemo(
@@ -49,11 +56,7 @@ export function PermissionOverridesDialog({
   const [grants, setGrants] = useState<Permission[]>(normalized.grants);
   const [denies, setDenies] = useState<Permission[]>(normalized.denies);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    setGrants(normalized.grants);
-    setDenies(normalized.denies);
-  }, [normalized]);
+  const [copySourceId, setCopySourceId] = useState("");
 
   const basePermissions = useMemo(() => new Set(getPermissions(user.role)), [user.role]);
   const effectivePermissions = useMemo(
@@ -64,6 +67,7 @@ export function PermissionOverridesDialog({
   function resetToRoleDefaults() {
     setGrants([]);
     setDenies([]);
+    setCopySourceId("");
   }
 
   function toggleGrant(permission: Permission, checked: boolean) {
@@ -99,6 +103,20 @@ export function PermissionOverridesDialog({
     onSaved();
   }
 
+  function handleCopyFromUser(sourceUserId: string) {
+    setCopySourceId(sourceUserId);
+    const source = users.find((candidate) => candidate.id === sourceUserId);
+    if (!source) return;
+
+    const sourceOverrides = normalizePermissionOverrides(source.permissionOverrides);
+    setGrants(sourceOverrides.grants);
+    setDenies(sourceOverrides.denies);
+  }
+
+  const customOnlyCount = grants.length + denies.length;
+  const inheritedCount = getPermissions(user.role).length;
+  const copyCandidates = users.filter((candidate) => candidate.id !== user.id);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
@@ -125,6 +143,37 @@ export function PermissionOverridesDialog({
             <div className="text-sm font-medium">Effective Access</div>
             <div className="mt-1 text-sm text-muted-foreground">
               {effectivePermissions.size} total permissions
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border p-4">
+            <div className="text-sm font-medium">Permission Diff</div>
+            <div className="mt-2 text-sm text-muted-foreground">
+              {customOnlyCount === 0
+                ? "This user currently matches the base role exactly."
+                : `${grants.length} additive grants and ${denies.length} explicit denials are applied on top of ${inheritedCount} inherited role permissions.`}
+            </div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-sm font-medium">Copy Custom Access</div>
+            <div className="mt-2 space-y-2">
+              <select
+                value={copySourceId}
+                onChange={(event) => handleCopyFromUser(event.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              >
+                <option value="">Select another user</option>
+                {copyCandidates.map((candidate) => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.name} ({candidate.role.replace(/_/g, " ")})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Copies grants and denies only. The base role does not change.
+              </p>
             </div>
           </div>
         </div>

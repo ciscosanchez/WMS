@@ -294,6 +294,16 @@ The custom-permissions dialog shows:
 - additive grants
 - explicit denials
 - effective permission count
+- permission diff summary
+- copy-from-user support for custom grants/denies
+
+### Audit Logging
+
+Role, portal-binding, and custom-permission changes now write tenant audit-log records with before/after values for:
+
+- `role`
+- `portalClientId`
+- `permissionOverrides`
 
 This keeps the four base roles intact while still handling real-world exceptions.
 

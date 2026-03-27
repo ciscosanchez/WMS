@@ -19,11 +19,17 @@ All notable changes to Ramola WMS.
 - Added a per-user custom-permissions editor in `Settings -> Users`
 - Users table now shows when a user has custom access beyond their base role
 - Custom permissions are managed without creating role sprawl or tenant-specific enum roles
+- Added a diff summary inside the custom-permissions dialog
+- Added copy-from-user support for grants and denies without changing the base role
 
 ### Enforcement
 
 - Session and tenant-context permission checks now use effective permissions instead of raw role level only
 - Sidebar visibility now respects effective permissions too
+
+### Auditability
+
+- Role changes, portal-client binding changes, and permission-override changes now create tenant audit-log entries with before/after values
 
 ### Tooling
 

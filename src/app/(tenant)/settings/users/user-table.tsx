@@ -65,7 +65,15 @@ function formatPersonaLabel(persona: string) {
   return persona.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function UserActions({ user, clients }: { user: UserRow; clients: ClientOption[] }) {
+function UserActions({
+  user,
+  clients,
+  users,
+}: {
+  user: UserRow;
+  clients: ClientOption[];
+  users: UserRow[];
+}) {
   const router = useRouter();
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
@@ -147,16 +155,18 @@ function UserActions({ user, clients }: { user: UserRow; clients: ClientOption[]
         </DropdownMenuContent>
       </DropdownMenu>
       <PermissionOverridesDialog
+        key={`${user.id}-${permissionsOpen ? "open" : "closed"}-${user.permissionOverrides.grants.join(",")}-${user.permissionOverrides.denies.join(",")}`}
         open={permissionsOpen}
         onOpenChange={setPermissionsOpen}
         user={user}
+        users={users}
         onSaved={() => router.refresh()}
       />
     </>
   );
 }
 
-function getColumns(clients: ClientOption[]): ColumnDef<UserRow>[] {
+function getColumns(clients: ClientOption[], users: UserRow[]): ColumnDef<UserRow>[] {
   return [
     {
     accessorKey: "name",
@@ -248,7 +258,7 @@ function getColumns(clients: ClientOption[]): ColumnDef<UserRow>[] {
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => <UserActions user={row.original} clients={clients} />,
+    cell: ({ row }) => <UserActions user={row.original} clients={clients} users={users} />,
   },
   ];
 }
@@ -256,7 +266,7 @@ function getColumns(clients: ClientOption[]): ColumnDef<UserRow>[] {
 export function UserTable({ users, clients }: { users: UserRow[]; clients: ClientOption[] }) {
   return (
     <DataTable
-      columns={getColumns(clients)}
+      columns={getColumns(clients, users)}
       data={users}
       searchKey="name"
       searchPlaceholder="Search users..."

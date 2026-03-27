@@ -8,6 +8,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import { normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
+import { logAudit } from "@/lib/audit";
 
 async function getAdminContext() {
   return requireTenantContext("users:write");
@@ -161,12 +162,29 @@ export async function updateUserRole(
   userId: string,
   role: TenantRole
 ): Promise<{ error: string } | { ok: true }> {
-  const { tenant } = await getAdminContext();
+  const { user, tenant } = await getAdminContext();
   try {
+    const existing = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
       data: { role },
     });
+
+    if (existing) {
+      await logAudit(tenant.db, {
+        userId: user.id,
+        action: "update",
+        entityType: "tenant_user_access",
+        entityId: existing.id,
+        changes: {
+          role: { old: existing.role, new: role },
+        },
+      });
+    }
+
     revalidatePath("/settings/users");
     return { ok: true };
   } catch (err) {
@@ -178,7 +196,7 @@ export async function updateUserPortalBinding(
   userId: string,
   portalClientId: string | null
 ): Promise<{ error: string } | { ok: true }> {
-  const { tenant } = await getAdminContext();
+  const { user, tenant } = await getAdminContext();
 
   try {
     if (portalClientId) {
@@ -191,10 +209,26 @@ export async function updateUserPortalBinding(
       }
     }
 
+    const existing = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
       data: { portalClientId },
     });
+
+    if (existing) {
+      await logAudit(tenant.db, {
+        userId: user.id,
+        action: "update",
+        entityType: "tenant_user_access",
+        entityId: existing.id,
+        changes: {
+          portalClientId: { old: existing.portalClientId, new: portalClientId },
+        },
+      });
+    }
 
     revalidatePath("/settings/users");
     return { ok: true };
@@ -207,15 +241,33 @@ export async function updateUserPermissionOverrides(
   userId: string,
   permissionOverrides: PermissionOverrides
 ): Promise<{ error: string } | { ok: true }> {
-  const { tenant } = await getAdminContext();
+  const { user, tenant } = await getAdminContext();
 
   try {
+    const normalized = normalizePermissionOverrides(permissionOverrides);
+    const existing = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
       data: {
-        permissionOverrides: normalizePermissionOverrides(permissionOverrides),
+        permissionOverrides: normalized,
       },
     });
+
+    if (existing) {
+      const previous = normalizePermissionOverrides(existing.permissionOverrides);
+      await logAudit(tenant.db, {
+        userId: user.id,
+        action: "update",
+        entityType: "tenant_user_access",
+        entityId: existing.id,
+        changes: {
+          permissionOverrides: { old: previous, new: normalized },
+        },
+      });
+    }
 
     revalidatePath("/settings/users");
     return { ok: true };
