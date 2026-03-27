@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { generateCsv, csvResponse, type ExportColumn } from "@/lib/export/server-csv";
 import { format } from "date-fns";
+import {
+  attachAggregatedOperationalAttributesToRows,
+  buildOperationalAttributeExportColumns,
+} from "@/modules/attributes/export";
 
 const COLUMNS: ExportColumn[] = [
   { key: "orderNumber", header: "Order #" },
@@ -44,13 +48,63 @@ export async function GET(request: NextRequest) {
       ...(status ? { status: status as any } : {}),
       ...(portalClientId ? { clientId: portalClientId } : {}),
     },
-    include: { client: { select: { name: true } } },
+    include: {
+      client: { select: { name: true } },
+      lines: { select: { id: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 5000,
   });
 
-  const rows = orders.map(
+  const attributeDefinitions = (await db.operationalAttributeDefinition.findMany({
+    where: {
+      entityScope: "order_line",
+      isActive: true,
+    },
+    select: { id: true, key: true, label: true, sortOrder: true },
+    orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
+  })) as Array<{ id: string; key: string; label: string; sortOrder: number }>;
+
+  const lineIds = orders.flatMap((o: { lines: Array<{ id: string }> }) => o.lines.map((line) => line.id));
+  const entityToRowId = orders.reduce(
+    (acc: Record<string, string>, order: { id: string; lines: Array<{ id: string }> }) => {
+      for (const line of order.lines) acc[line.id] = order.id;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  const attributeValues =
+    lineIds.length > 0
+      ? ((await db.operationalAttributeValue.findMany({
+          where: {
+            entityScope: "order_line",
+            entityId: { in: lineIds },
+            definitionId: { in: attributeDefinitions.map((definition) => definition.id) },
+          },
+          select: {
+            entityId: true,
+            definitionId: true,
+            textValue: true,
+            numberValue: true,
+            booleanValue: true,
+            dateValue: true,
+            jsonValue: true,
+          },
+        })) as Array<{
+          entityId: string;
+          definitionId: string;
+          textValue?: string | null;
+          numberValue?: number | null;
+          booleanValue?: boolean | null;
+          dateValue?: Date | null;
+          jsonValue?: unknown;
+        }>)
+      : [];
+
+  const baseRows = orders.map(
     (o: {
+      id: string;
       orderNumber: string;
       client: { name: string };
       status: string;
@@ -60,7 +114,9 @@ export async function GET(request: NextRequest) {
       totalItems: number;
       orderDate: Date;
       shippedDate: Date | null;
+      lines: Array<{ id: string }>;
     }) => ({
+      id: o.id,
       orderNumber: o.orderNumber,
       client: o.client.name,
       status: o.status,
@@ -73,7 +129,14 @@ export async function GET(request: NextRequest) {
     })
   );
 
-  const csv = generateCsv(rows, COLUMNS);
+  const rows = attachAggregatedOperationalAttributesToRows({
+    rows: baseRows,
+    definitions: attributeDefinitions,
+    values: attributeValues,
+    entityToRowId,
+  }).map(({ id: _id, ...row }) => row);
+
+  const csv = generateCsv(rows, [...COLUMNS, ...buildOperationalAttributeExportColumns(attributeDefinitions)]);
   const date = new Date().toISOString().slice(0, 10);
   return csvResponse(csv, `orders-export-${date}.csv`);
 }

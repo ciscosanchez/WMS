@@ -116,6 +116,14 @@ All notable changes to Ramola WMS.
 - Inventory attribute filtering now works across text, number, currency, date, boolean, and array-backed operational attribute values
 - Search behavior now uses a generic normalization layer instead of only matching `text_value`
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.3 (Export Surfaces)
+
+### CSV Export
+
+- Inventory exports now append active `inventory_record` operational attributes as dynamic CSV columns
+- Order exports now append aggregated `order_line` operational attributes as dynamic CSV columns
+- Export shaping remains generic and definition-driven rather than customer-specific
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model
