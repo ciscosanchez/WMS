@@ -51,7 +51,6 @@ import {
   Shield,
   Bot,
   Receipt,
-  Container,
   Zap,
   FileCheck,
 } from "lucide-react";
@@ -212,7 +211,14 @@ const navigation: NavGroup[] = [
 
 type SidebarSession = {
   isSuperadmin?: boolean;
-  tenants?: Array<{ slug: string; role: TenantRole }>;
+  tenants?: Array<{
+    slug: string;
+    role: TenantRole;
+    permissionOverrides?: {
+      grants: string[];
+      denies: string[];
+    } | null;
+  }>;
 };
 
 function getTenantSlugFromHost(): string | null {
@@ -221,32 +227,42 @@ function getTenantSlugFromHost(): string | null {
   return parts.length >= 4 ? parts[0] : null;
 }
 
-function getCurrentTenantRole(sessionUser: SidebarSession | undefined): TenantRole | null {
-  if (USE_MOCK || sessionUser?.isSuperadmin) return "admin";
+function getCurrentMembership(sessionUser: SidebarSession | undefined) {
+  if (USE_MOCK || sessionUser?.isSuperadmin) {
+    return { role: "admin" as TenantRole, permissionOverrides: null };
+  }
 
   const tenants = sessionUser?.tenants ?? [];
   if (tenants.length === 0) return null;
 
   const tenantSlug = getTenantSlugFromHost();
   const matchedTenant = tenantSlug ? tenants.find((tenant) => tenant.slug === tenantSlug) : null;
-  return matchedTenant?.role ?? tenants[0]?.role ?? null;
+  return matchedTenant ?? tenants[0] ?? null;
 }
 
-function canAccessNavItem(item: NavItem, role: TenantRole | null): boolean {
+function canAccessNavItem(
+  item: NavItem,
+  membership:
+    | {
+        role: TenantRole;
+        permissionOverrides?: { grants: string[]; denies: string[] } | null;
+      }
+    | null
+): boolean {
   if (!item.permission) return true;
-  if (!role) return false;
-  return checkPermissionLevel(role, item.permission);
+  if (!membership) return false;
+  return checkPermissionLevel(membership.role, item.permission, membership.permissionOverrides);
 }
 
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
   const { data: session, status } = useSession();
-  const currentRole = getCurrentTenantRole(session?.user as SidebarSession | undefined);
+  const currentMembership = getCurrentMembership(session?.user as SidebarSession | undefined);
   const visibleGroups = navigation
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => canAccessNavItem(item, currentRole)),
+      items: group.items.filter((item) => canAccessNavItem(item, currentMembership)),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -283,7 +299,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t p-3">
-        {status !== "loading" && canAccessNavItem({ titleKey: "floorApp", href: "/receive", icon: Smartphone, permission: "operator:write" }, currentRole) ? (
+        {status !== "loading" && canAccessNavItem({ titleKey: "floorApp", href: "/receive", icon: Smartphone, permission: "operator:write" }, currentMembership) ? (
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link href="/receive" />}>

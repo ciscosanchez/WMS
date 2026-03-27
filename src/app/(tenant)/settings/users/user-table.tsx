@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
@@ -14,11 +15,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserMinus, ShieldCheck, Link2, Link2Off } from "lucide-react";
+import { MoreHorizontal, UserMinus, ShieldCheck, Link2, Link2Off, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { removeUser, updateUserPortalBinding, updateUserRole } from "@/modules/users/actions";
 import type { TenantRole } from "../../../../../node_modules/.prisma/public-client";
+import { getEffectivePermissions, normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
+import { PermissionOverridesDialog } from "./permission-overrides-dialog";
 
 type UserRow = {
   id: string;
@@ -29,6 +32,7 @@ type UserRow = {
   portalClientId: string | null;
   portalClientName: string | null;
   portalClientCode: string | null;
+  permissionOverrides: PermissionOverrides;
   joinedAt: string;
 };
 
@@ -63,6 +67,7 @@ function formatPersonaLabel(persona: string) {
 
 function UserActions({ user, clients }: { user: UserRow; clients: ClientOption[] }) {
   const router = useRouter();
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   async function handleRemove() {
     if (!confirm(`Remove ${user.name} from this tenant?`)) return;
@@ -93,48 +98,61 @@ function UserActions({ user, clients }: { user: UserRow; clients: ClientOption[]
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted">
-        <MoreHorizontal className="h-4 w-4" />
-        <span className="sr-only">Open menu</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-          Change role
-        </DropdownMenuItem>
-        {ROLES.filter((r) => r !== user.role).map((role) => (
-          <DropdownMenuItem key={role} onSelect={() => handleRoleChange(role)}>
-            <ShieldCheck className="mr-2 h-4 w-4" />
-            {role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Open menu</span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+            Change role
           </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Link2 className="mr-2 h-4 w-4" />
-            Portal Access
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuItem onSelect={() => handlePortalBinding(null)}>
-              <Link2Off className="mr-2 h-4 w-4" />
-              Disable Portal Access
+          {ROLES.filter((r) => r !== user.role).map((role) => (
+            <DropdownMenuItem key={role} onSelect={() => handleRoleChange(role)}>
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              {role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {clients.map((client) => (
-              <DropdownMenuItem key={client.id} onSelect={() => handlePortalBinding(client.id)}>
-                <Link2 className="mr-2 h-4 w-4" />
-                {client.name} ({client.code})
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setPermissionsOpen(true)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Custom Permissions
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Link2 className="mr-2 h-4 w-4" />
+              Portal Access
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onSelect={() => handlePortalBinding(null)}>
+                <Link2Off className="mr-2 h-4 w-4" />
+                Disable Portal Access
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onSelect={handleRemove}>
-          <UserMinus className="mr-2 h-4 w-4" />
-          Remove
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <DropdownMenuSeparator />
+              {clients.map((client) => (
+                <DropdownMenuItem key={client.id} onSelect={() => handlePortalBinding(client.id)}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  {client.name} ({client.code})
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={handleRemove}>
+            <UserMinus className="mr-2 h-4 w-4" />
+            Remove
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <PermissionOverridesDialog
+        open={permissionsOpen}
+        onOpenChange={setPermissionsOpen}
+        user={user}
+        onSaved={() => router.refresh()}
+      />
+    </>
   );
 }
 
@@ -178,6 +196,28 @@ function getColumns(clients: ClientOption[]): ColumnDef<UserRow>[] {
         ))}
       </div>
     ),
+  },
+  {
+    id: "customAccess",
+    header: "Custom Access",
+    cell: ({ row }) => {
+      const overrides = normalizePermissionOverrides(row.original.permissionOverrides);
+      if (overrides.grants.length === 0 && overrides.denies.length === 0) {
+        return <span className="text-sm text-muted-foreground">Role default</span>;
+      }
+
+      const effectiveCount = getEffectivePermissions(row.original.role, overrides).length;
+      return (
+        <div className="space-y-0.5">
+          <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200">
+            Custom Access
+          </Badge>
+          <div className="text-xs text-muted-foreground">
+            {overrides.grants.length} grants, {overrides.denies.length} denies, {effectiveCount} effective
+          </div>
+        </div>
+      );
+    },
   },
   {
     id: "portalAccess",

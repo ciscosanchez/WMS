@@ -14,6 +14,8 @@ const disputeVariant: Record<string, "default" | "secondary" | "destructive" | "
   dispute_dismissed: "outline",
 };
 
+type DisputeRow = Awaited<ReturnType<typeof getDisputes>>[number];
+
 export default async function DisputesPage() {
   const t = await getTranslations("tenant.billing");
   const disputes = await getDisputes().catch(() => []);
@@ -56,7 +58,7 @@ export default async function DisputesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {disputes.map((dispute: any) => (
+                  {disputes.map((dispute: DisputeRow) => (
                     <tr key={dispute.id} className="border-b last:border-0">
                       <td className="py-2 font-mono text-xs">
                         {dispute.invoice?.invoiceNumber ?? "-"}

@@ -1,4 +1,4 @@
-import { hasPermission, getPermissions } from "@/lib/auth/rbac";
+import { checkPermissionLevel, getPermissions, hasPermission } from "@/lib/auth/rbac";
 
 describe("RBAC", () => {
   describe("hasPermission", () => {
@@ -75,6 +75,35 @@ describe("RBAC", () => {
       viewerPerms.forEach((p) => {
         expect(adminPerms).toContain(p);
       });
+    });
+  });
+
+  describe("permission overrides", () => {
+    it("allows additive grants above the base role", () => {
+      expect(
+        hasPermission("viewer", "billing:read", {
+          grants: ["billing:read"],
+          denies: [],
+        })
+      ).toBe(true);
+    });
+
+    it("allows denying inherited role permissions", () => {
+      expect(
+        hasPermission("manager", "orders:read", {
+          grants: [],
+          denies: ["orders:read"],
+        })
+      ).toBe(false);
+    });
+
+    it("deny wins over grant", () => {
+      expect(
+        checkPermissionLevel("manager", "inventory:read", {
+          grants: ["inventory:read"],
+          denies: ["inventory:read"],
+        })
+      ).toBe(false);
     });
   });
 });

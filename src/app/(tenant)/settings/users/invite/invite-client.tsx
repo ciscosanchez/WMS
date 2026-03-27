@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +46,8 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<InviteFormData>({
     defaultValues: {
@@ -59,9 +59,9 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
     },
   });
 
-  const accessExperience = watch("accessExperience");
-  const selectedRole = watch("role");
-  const selectedPortalClientId = watch("portalClientId");
+  const accessExperience = useWatch({ control, name: "accessExperience" });
+  const selectedRole = useWatch({ control, name: "role" });
+  const selectedPortalClientId = useWatch({ control, name: "portalClientId" });
   const effectiveRole = deriveRole(accessExperience, selectedRole);
   const selectedClientLabel = useMemo(
     () => clients.find((client) => client.id === selectedPortalClientId),

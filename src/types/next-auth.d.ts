@@ -13,6 +13,11 @@ declare module "next-auth" {
         tenantId: string;
         slug: string;
         role: string;
+        portalClientId?: string | null;
+        permissionOverrides?: {
+          grants: string[];
+          denies: string[];
+        } | null;
       }>;
     };
   }
@@ -28,6 +33,10 @@ declare module "next-auth/jwt" {
       slug: string;
       role: string;
       portalClientId?: string | null;
+      permissionOverrides?: {
+        grants: string[];
+        denies: string[];
+      } | null;
     }>;
     locale?: string;
     tenantLocale?: string;

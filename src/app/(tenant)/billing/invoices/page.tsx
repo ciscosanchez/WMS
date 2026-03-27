@@ -27,6 +27,9 @@ const reviewVariant: Record<string, "default" | "secondary" | "destructive" | "o
   review_rejected: "destructive",
 };
 
+type InvoiceRow = Awaited<ReturnType<typeof getInvoices>>[number];
+type BillingTranslator = Awaited<ReturnType<typeof getTranslations>>;
+
 export default async function InvoicesPage() {
   const t = await getTranslations("tenant.billing");
   const invoices = await getInvoices().catch(() => []);
@@ -79,7 +82,7 @@ export default async function InvoicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((inv: any) => (
+                  {invoices.map((inv: InvoiceRow) => (
                     <tr key={inv.id} className="border-b last:border-0">
                       <td className="py-2 font-mono text-xs">{inv.invoiceNumber}</td>
                       <td className="py-2">{inv.client?.name ?? "-"}</td>
@@ -137,8 +140,8 @@ function InvoiceActions({
   onSend,
   onPaid,
 }: {
-  invoice: any;
-  t: any;
+  invoice: InvoiceRow;
+  t: BillingTranslator;
   onApprove: (fd: FormData) => Promise<void>;
   onReject: (fd: FormData) => Promise<void>;
   onSend: (fd: FormData) => Promise<void>;

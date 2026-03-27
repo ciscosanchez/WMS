@@ -74,6 +74,7 @@ model TenantUser {
   userId         String     @map("user_id")
   role           TenantRole @default(viewer)
   portalClientId String?    @map("portal_client_id") // If set, user is a portal user scoped to this client
+  permissionOverrides Json  @default("{\"grants\":[],\"denies\":[]}") @map("permission_overrides")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

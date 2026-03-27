@@ -15,6 +15,8 @@ const fallbackDashboard = {
   overdueAmount: 0,
 };
 
+type UnbilledEvent = Awaited<ReturnType<typeof getUnbilledEvents>>[number];
+
 export default async function BillingDashboardPage() {
   const t = await getTranslations("tenant.billing");
 
@@ -85,7 +87,7 @@ export default async function BillingDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recent.map((event: any) => (
+                  {recent.map((event: UnbilledEvent) => (
                     <tr key={event.id} className="border-b last:border-0">
                       <td className="py-2">{event.client?.name ?? event.clientId?.slice(0, 8)}</td>
                       <td className="py-2">{event.serviceType}</td>

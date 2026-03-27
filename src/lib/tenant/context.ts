@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import type { SessionUser } from "@/lib/auth/session";
-import { ROLE_LEVEL, PERMISSION_LEVEL } from "@/lib/auth/rbac";
+import { checkPermissionLevel, type PermissionOverrides } from "@/lib/auth/rbac";
 
 export interface TenantContext {
   tenantId: string;
@@ -80,19 +80,18 @@ export async function requireTenantContext(permission?: string): Promise<{
   role: TenantRole;
   tenant: TenantContext;
   portalClientId?: string | null;
+  permissionOverrides?: PermissionOverrides | null;
 }> {
   const slug = await getTenantFromHeaders();
   if (!slug) throw new Error("No tenant context");
 
   // requireTenantAccess does auth + membership check together
   const { requireTenantAccess } = await import("@/lib/auth/session");
-  const { user, role } = await requireTenantAccess(slug);
+  const { user, role, permissionOverrides } = await requireTenantAccess(slug);
 
   // Optional permission check — uses the already-resolved role (no extra DB call)
   if (permission && !user.isSuperadmin) {
-    const userLevel = ROLE_LEVEL[role] ?? 0;
-    const requiredLevel = PERMISSION_LEVEL[permission] ?? 40; // Unknown permissions require admin (fail-closed)
-    if (userLevel < requiredLevel) {
+    if (!checkPermissionLevel(role, permission, permissionOverrides)) {
       throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
     }
   }
@@ -121,6 +120,7 @@ export async function requireTenantContext(permission?: string): Promise<{
       db,
     },
     portalClientId,
+    permissionOverrides,
   };
 }
 

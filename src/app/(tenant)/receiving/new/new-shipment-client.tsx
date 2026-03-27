@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { inboundShipmentSchema, type InboundShipmentFormData } from "@/modules/receiving/schemas";
 import { createShipment } from "@/modules/receiving/actions";
@@ -42,7 +42,7 @@ export function NewShipmentClient({
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-    watch,
+    control,
   } = useForm<InboundShipmentFormData>({
     resolver: zodResolver(inboundShipmentSchema(tv)),
     defaultValues: {
@@ -53,7 +53,10 @@ export function NewShipmentClient({
     },
   });
 
-  const watchedAttributes = watch("operationalAttributes") ?? [];
+  const watchedAttributes = useWatch({
+    control,
+    name: "operationalAttributes",
+  }) ?? [];
 
   async function onSubmit(data: InboundShipmentFormData) {
     try {

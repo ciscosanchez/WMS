@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
 import { getUserPersonas } from "@/lib/auth/personas";
+import { normalizePermissionOverrides } from "@/lib/auth/rbac";
 import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
@@ -29,6 +30,7 @@ export default async function UsersPage() {
     portalClientId: m.portalClientId,
     portalClientName: m.portalClientId ? clientMap.get(m.portalClientId)?.name ?? null : null,
     portalClientCode: m.portalClientId ? clientMap.get(m.portalClientId)?.code ?? null : null,
+    permissionOverrides: normalizePermissionOverrides(m.permissionOverrides),
     joinedAt: m.user.createdAt.toISOString(),
   }));
 

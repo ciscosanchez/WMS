@@ -1,4 +1,5 @@
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
+import { normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
 
 export const MOCK_AUTH_COOKIE = "wms-mock-auth";
 
@@ -7,6 +8,7 @@ export type MockTenantMembership = {
   slug: string;
   role: TenantRole;
   portalClientId: string | null;
+  permissionOverrides?: PermissionOverrides | null;
 };
 
 export type MockAuthUser = {
@@ -25,7 +27,15 @@ export const DEFAULT_MOCK_AUTH_USER: MockAuthUser = {
   name: "Admin User",
   isSuperadmin: true,
   authVersion: 0,
-  tenants: [{ tenantId: "mock-tenant-1", slug: "demo", role: "admin", portalClientId: null }],
+  tenants: [
+    {
+      tenantId: "mock-tenant-1",
+      slug: "demo",
+      role: "admin",
+      portalClientId: null,
+      permissionOverrides: { grants: [], denies: [] },
+    },
+  ],
 };
 
 function isTenantRole(value: unknown): value is TenantRole {
@@ -86,6 +96,7 @@ export function decodeMockAuthCookie(value: string | null | undefined): MockAuth
             typeof membership.portalClientId === "string" || membership.portalClientId === null
               ? membership.portalClientId
               : null,
+          permissionOverrides: normalizePermissionOverrides(membership.permissionOverrides),
         };
       })
       .filter((tenant): tenant is Exclude<typeof tenant, null> => tenant !== null);

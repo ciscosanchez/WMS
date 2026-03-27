@@ -15,6 +15,7 @@ import {
   isPasswordLoginAllowed,
   isSsoEmailAllowed,
 } from "@/lib/auth/tenant-auth";
+import { normalizePermissionOverrides } from "@/lib/auth/rbac";
 
 /** Login rate limiter: 5 attempts per 15 minutes per email */
 const loginLimiter = new RateLimiter(5, 15 * 60_000);
@@ -47,6 +48,7 @@ function toAuthUser(user: NonNullable<Awaited<ReturnType<typeof getUserWithTenan
       slug: tu.tenant.slug,
       role: tu.role,
       portalClientId: tu.portalClientId ?? null,
+      permissionOverrides: normalizePermissionOverrides(tu.permissionOverrides),
     })),
   };
 }

@@ -45,6 +45,7 @@ Persisted:
 - tenant membership
 - tenant role
 - optional portal client binding
+- optional per-membership permission overrides (`grants` + `denies`)
 
 Derived:
 
@@ -233,6 +234,68 @@ The current admin-facing interpretation is:
   - `portal_user` = `viewer` + client binding
 
 This means admins can manage the current model without needing new stored roles.
+
+## Custom Permission Overrides
+
+Ramola now supports user-specific exceptions on top of the base tenant role.
+
+Stored on `tenant_users.permission_overrides`:
+
+- `grants`
+  - additive permissions not normally present in the base role
+- `denies`
+  - explicit removals from the base role
+
+Rules:
+
+- base role still provides the default bundle
+- explicit deny wins over inherited role access
+- explicit grant can elevate access beyond the base role
+- unknown permission keys are ignored during normalization and still fail closed in enforcement
+
+Example:
+
+- a `viewer` can be granted `billing:read`
+- a `manager` can be denied `orders:write`
+- a `warehouse_worker` can be granted `reports:read` without becoming a full `manager`
+
+### Effective Permission Resolution
+
+The effective access model is:
+
+1. start with permissions inherited from `tenant_users.role`
+2. add `permission_overrides.grants`
+3. subtract `permission_overrides.denies`
+
+Implementation authority:
+
+- [rbac.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/rbac.ts)
+- [session.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/session.ts)
+- [context.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/tenant/context.ts)
+
+### Admin UX
+
+Tenant admins can now open `Settings -> Users` and manage:
+
+- base role
+- portal client binding
+- custom grants
+- custom denies
+
+The users table now shows:
+
+- personas
+- portal access
+- `Custom Access` status when overrides exist
+
+The custom-permissions dialog shows:
+
+- inherited role access
+- additive grants
+- explicit denials
+- effective permission count
+
+This keeps the four base roles intact while still handling real-world exceptions.
 
 ## Seed Persona Matrix
 

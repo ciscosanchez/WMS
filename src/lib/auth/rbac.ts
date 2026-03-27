@@ -74,6 +74,75 @@ export const PERMISSION_LEVEL: Record<string, number> = {
 
 export type Permission = keyof typeof PERMISSION_LEVEL;
 
+export type PermissionOverrides = {
+  grants: Permission[];
+  denies: Permission[];
+};
+
+const EMPTY_PERMISSION_OVERRIDES: PermissionOverrides = {
+  grants: [],
+  denies: [],
+};
+
+export const ALL_PERMISSIONS = Object.keys(PERMISSION_LEVEL) as Permission[];
+
+export const PERMISSION_GROUPS: Array<{
+  key: string;
+  label: string;
+  permissions: Permission[];
+}> = [
+  { key: "clients", label: "Clients", permissions: ["clients:read", "clients:write"] },
+  { key: "products", label: "Products", permissions: ["products:read", "products:write"] },
+  {
+    key: "receiving",
+    label: "Receiving",
+    permissions: ["receiving:read", "receiving:write", "receiving:complete"],
+  },
+  {
+    key: "inventory",
+    label: "Inventory",
+    permissions: [
+      "inventory:read",
+      "inventory:write",
+      "inventory:adjust",
+      "inventory:approve",
+      "inventory:count",
+    ],
+  },
+  { key: "orders", label: "Orders", permissions: ["orders:read", "orders:write"] },
+  { key: "warehouse", label: "Warehouse", permissions: ["warehouse:read", "warehouse:write"] },
+  { key: "shipping", label: "Shipping", permissions: ["shipping:read", "shipping:write"] },
+  { key: "operator", label: "Operator", permissions: ["operator:read", "operator:write"] },
+  {
+    key: "crossDock",
+    label: "Cross-Dock",
+    permissions: ["cross_dock:read", "cross_dock:write"],
+  },
+  {
+    key: "returns",
+    label: "Returns",
+    permissions: ["returns:read", "returns:write", "returns:approve", "returns:dispose"],
+  },
+  {
+    key: "yardDock",
+    label: "Yard & Dock",
+    permissions: ["yard-dock:read", "yard-dock:write", "yard-dock:manage"],
+  },
+  {
+    key: "billing",
+    label: "Billing",
+    permissions: ["billing:read", "billing:write", "billing:approve"],
+  },
+  {
+    key: "customs",
+    label: "Customs",
+    permissions: ["customs:read", "customs:write", "customs:file"],
+  },
+  { key: "reports", label: "Reports", permissions: ["reports:read"] },
+  { key: "settings", label: "Settings", permissions: ["settings:read", "settings:write"] },
+  { key: "users", label: "Users", permissions: ["users:read", "users:write"] },
+];
+
 // ─── Derived role → permissions map ──────────────────────────────────────────
 
 const rolePermissions: Record<TenantRole, string[]> = {
@@ -85,20 +154,86 @@ const rolePermissions: Record<TenantRole, string[]> = {
   viewer: Object.keys(PERMISSION_LEVEL).filter((p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.viewer),
 };
 
-export function hasPermission(role: TenantRole, permission: string): boolean {
-  return rolePermissions[role]?.includes(permission) ?? false;
+export function normalizePermissionOverrides(
+  raw: unknown
+): PermissionOverrides {
+  if (!raw || typeof raw !== "object") return EMPTY_PERMISSION_OVERRIDES;
+
+  const candidate = raw as { grants?: unknown; denies?: unknown };
+  const grants = Array.isArray(candidate.grants)
+    ? candidate.grants.filter((permission): permission is Permission =>
+        typeof permission === "string" && permission in PERMISSION_LEVEL
+      )
+    : [];
+  const denies = Array.isArray(candidate.denies)
+    ? candidate.denies.filter((permission): permission is Permission =>
+        typeof permission === "string" && permission in PERMISSION_LEVEL
+      )
+    : [];
+
+  return {
+    grants: [...new Set(grants)],
+    denies: [...new Set(denies)],
+  };
 }
 
-export function getPermissions(role: TenantRole): string[] {
-  return rolePermissions[role] ?? [];
+export function getPermissions(role: TenantRole): Permission[] {
+  return (rolePermissions[role] ?? []) as Permission[];
+}
+
+export function getEffectivePermissions(
+  role: TenantRole,
+  overrides?: unknown
+): Permission[] {
+  const normalized = normalizePermissionOverrides(overrides);
+  const effective = new Set<Permission>(getPermissions(role));
+
+  for (const permission of normalized.grants) {
+    effective.add(permission);
+  }
+
+  for (const permission of normalized.denies) {
+    effective.delete(permission);
+  }
+
+  return [...effective];
+}
+
+export function hasPermission(
+  role: TenantRole,
+  permission: string,
+  overrides?: unknown
+): boolean {
+  if (!(permission in PERMISSION_LEVEL)) return false;
+  return getEffectivePermissions(role, overrides).includes(permission as Permission);
 }
 
 /**
  * Check if a role meets the minimum level for a permission.
  * Unknown permissions require admin (fail-closed).
  */
-export function checkPermissionLevel(role: TenantRole, permission: string): boolean {
+export function checkPermissionLevel(
+  role: TenantRole,
+  permission: string,
+  overrides?: unknown
+): boolean {
+  const normalized = normalizePermissionOverrides(overrides);
+
+  if (permission in PERMISSION_LEVEL) {
+    if (normalized.denies.includes(permission as Permission)) return false;
+    if (normalized.grants.includes(permission as Permission)) return true;
+  }
+
   const userLevel = ROLE_LEVEL[role] ?? 0;
   const requiredLevel = PERMISSION_LEVEL[permission] ?? 40;
   return userLevel >= requiredLevel;
+}
+
+export function getPermissionLabel(permission: Permission): string {
+  const [resource, action] = permission.split(":");
+  const resourceLabel = resource
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+  const actionLabel = action.replace(/\b\w/g, (char) => char.toUpperCase());
+  return `${resourceLabel}: ${actionLabel}`;
 }

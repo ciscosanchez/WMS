@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import type { PrismaClient as TenantClient } from "../../../../../node_modules/.prisma/tenant-client";
 
 export async function GET(req: NextRequest) {
   // Verify the cron secret
@@ -42,9 +43,10 @@ export async function GET(req: NextRequest) {
       const { tenant, db, clientCode } = connector;
 
       try {
+        const tenantDb = db as TenantClient;
+
         // Find the client for this connector
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const client = await (db as any).client.findFirst({
+        const client = await tenantDb.client.findFirst({
           where: { code: clientCode, isActive: true },
         });
         if (!client) {
@@ -53,13 +55,11 @@ export async function GET(req: NextRequest) {
         }
 
         // Find or create Shopify sales channel
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let channel = await (db as any).salesChannel.findFirst({
+        let channel = await tenantDb.salesChannel.findFirst({
           where: { type: "shopify", isActive: true },
         });
         if (!channel) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          channel = await (db as any).salesChannel.create({
+          channel = await tenantDb.salesChannel.create({
             data: {
               name: "Shopify",
               type: "shopify",
@@ -107,8 +107,7 @@ export async function GET(req: NextRequest) {
                 select: { id: true, sku: true, imageUrl: true, weight: true },
               })
             : [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const productBySku = new Map(products.map((p: any) => [p.sku, p]));
+        const productBySku = new Map(products.map((product) => [product.sku, product]));
 
         let imported = 0;
         let skipped = 0;
@@ -120,14 +119,16 @@ export async function GET(req: NextRequest) {
           }
 
           const resolvedLines = so.lineItems
-
             .map((li) => ({
-              productId: (productBySku.get(li.sku) as any)?.id,
+              productId: productBySku.get(li.sku)?.id,
               quantity: li.quantity,
               uom: "EA",
               unitPrice: li.unitPrice,
             }))
-            .filter((li) => li.productId != null);
+            .filter(
+              (line): line is { productId: string; quantity: number; uom: string; unitPrice: number } =>
+                line.productId != null
+            );
 
           if (resolvedLines.length === 0) {
             skipped++;
@@ -136,11 +137,9 @@ export async function GET(req: NextRequest) {
 
           // Enrich products
           for (const li of so.lineItems) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const product = productBySku.get(li.sku) as any;
+            const product = productBySku.get(li.sku);
             if (!product) continue;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const updates: Record<string, any> = {};
+            const updates: Record<string, string | number> = {};
             if (li.imageUrl && !product.imageUrl) updates.imageUrl = li.imageUrl;
             if (li.weightGrams && li.weightGrams > 0 && !product.weight) {
               updates.weight = parseFloat((li.weightGrams / 453.592).toFixed(4));

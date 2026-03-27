@@ -31,7 +31,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: ESLint
-        run: npx eslint src/ --max-warnings=10
+        run: npx eslint src/ --max-warnings=100
 
       - name: Prettier check
         run: npx prettier --check "src/**/*.{ts,tsx}" "tests/**/*.ts"

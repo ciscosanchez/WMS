@@ -7,6 +7,7 @@ import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { sendPasswordSetLink } from "@/lib/email/resend";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
+import { normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
 
 async function getAdminContext() {
   return requireTenantContext("users:write");
@@ -30,6 +31,7 @@ export async function inviteUser(opts: {
   name: string;
   role: TenantRole;
   portalClientId?: string | null;
+  permissionOverrides?: PermissionOverrides | null;
 }): Promise<{ error: string } | { userId: string; emailSent: boolean; emailWarning?: string }> {
   const { tenant } = await getAdminContext();
 
@@ -84,6 +86,7 @@ export async function inviteUser(opts: {
         userId,
         role: opts.role,
         portalClientId: opts.portalClientId ?? null,
+        permissionOverrides: normalizePermissionOverrides(opts.permissionOverrides),
       },
     });
 
@@ -197,6 +200,27 @@ export async function updateUserPortalBinding(
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to update portal access" };
+  }
+}
+
+export async function updateUserPermissionOverrides(
+  userId: string,
+  permissionOverrides: PermissionOverrides
+): Promise<{ error: string } | { ok: true }> {
+  const { tenant } = await getAdminContext();
+
+  try {
+    await publicDb.tenantUser.update({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+      data: {
+        permissionOverrides: normalizePermissionOverrides(permissionOverrides),
+      },
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to update permissions" };
   }
 }
 

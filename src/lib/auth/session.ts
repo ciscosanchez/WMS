@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { publicDb } from "@/lib/db/public-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import { config } from "@/lib/config";
-import { ROLE_LEVEL, PERMISSION_LEVEL } from "@/lib/auth/rbac";
+import { checkPermissionLevel, type PermissionOverrides } from "@/lib/auth/rbac";
 import {
   DEFAULT_MOCK_AUTH_USER,
   MOCK_AUTH_COOKIE,
@@ -22,6 +22,7 @@ export interface SessionUser {
     slug: string;
     role: TenantRole;
     portalClientId?: string | null;
+    permissionOverrides?: PermissionOverrides | null;
   }>;
 }
 
@@ -95,7 +96,11 @@ export async function requireTenantAccess(tenantSlug: string) {
   if (config.useMockAuth) {
     const user = await getMockSessionUser();
     const membership = user.tenants.find((t) => t.slug === tenantSlug);
-    return { user, role: (membership?.role ?? "admin") as TenantRole };
+    return {
+      user,
+      role: (membership?.role ?? "admin") as TenantRole,
+      permissionOverrides: membership?.permissionOverrides ?? null,
+    };
   }
 
   const user = await requireAuth();
@@ -105,7 +110,11 @@ export async function requireTenantAccess(tenantSlug: string) {
     redirect("/login");
   }
 
-  return { user, role: (membership?.role ?? "admin") as TenantRole };
+  return {
+    user,
+    role: (membership?.role ?? "admin") as TenantRole,
+    permissionOverrides: membership?.permissionOverrides ?? null,
+  };
 }
 
 /**
@@ -116,20 +125,21 @@ export async function requirePermission(tenantSlug: string, permission: string) 
   if (config.useMockAuth) {
     const user = await getMockSessionUser();
     const membership = user.tenants.find((t) => t.slug === tenantSlug);
-    return { user, role: (membership?.role ?? "admin") as TenantRole };
+    return {
+      user,
+      role: (membership?.role ?? "admin") as TenantRole,
+      permissionOverrides: membership?.permissionOverrides ?? null,
+    };
   }
 
-  const { user, role } = await requireTenantAccess(tenantSlug);
+  const { user, role, permissionOverrides } = await requireTenantAccess(tenantSlug);
 
   // Superadmins have all permissions
-  if (user.isSuperadmin) return { user, role };
+  if (user.isSuperadmin) return { user, role, permissionOverrides };
 
-  const userLevel = ROLE_LEVEL[role] ?? 0;
-  const requiredLevel = PERMISSION_LEVEL[permission] ?? 40; // Unknown permissions require admin (fail-closed)
-
-  if (userLevel < requiredLevel) {
+  if (!checkPermissionLevel(role, permission, permissionOverrides)) {
     throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
   }
 
-  return { user, role };
+  return { user, role, permissionOverrides };
 }
