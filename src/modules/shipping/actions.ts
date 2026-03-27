@@ -7,9 +7,27 @@ import { logAudit } from "@/lib/audit";
 import type { RateQuote, LabelRequest } from "@/lib/integrations/carriers/types";
 import { publicDb } from "@/lib/db/public-client";
 import { getCarrierCredentials, type TenantEntry } from "@/lib/integrations/tenant-connectors";
+import { resolveShipmentPackage } from "./package-defaults";
 
 async function getReadContext() {
   return requireTenantContext("shipping:read");
+}
+
+async function getDefaultCartonType(db: {
+  cartonType: { findFirst(args: unknown): Promise<unknown> };
+}) {
+  return db.cartonType.findFirst({
+    where: { isActive: true },
+    orderBy: [{ length: "asc" }, { width: "asc" }, { height: "asc" }],
+    select: {
+      length: true,
+      width: true,
+      height: true,
+      dimUnit: true,
+      tareWeight: true,
+      weightUnit: true,
+    },
+  });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +75,7 @@ export async function getRatesForShipment(
       include: { order: true },
     });
     if (!shipment) return { rates: [], error: "Shipment not found" };
+    const defaultCarton = await getDefaultCartonType(tenant.db as never);
 
     const { UPSAdapter } = await import("@/lib/integrations/carriers/ups");
     const { FedExAdapter } = await import("@/lib/integrations/carriers/fedex");
@@ -77,14 +96,7 @@ export async function getRatesForShipment(
       isResidential: true,
     };
 
-    const pkg = {
-      weight: shipment.packageWeight ? Number(shipment.packageWeight) : 1,
-      weightUnit: "lb" as const,
-      length: shipment.packageLength ? Number(shipment.packageLength) : 12,
-      width: shipment.packageWidth ? Number(shipment.packageWidth) : 10,
-      height: shipment.packageHeight ? Number(shipment.packageHeight) : 6,
-      dimUnit: "in" as const,
-    };
+    const pkg = resolveShipmentPackage(shipment, defaultCarton as never);
 
     const rateRequest = { from, to, packages: [pkg] };
 
@@ -252,6 +264,7 @@ export async function generateShipmentLabel(
     });
     if (!shipment) return { error: "Shipment not found" };
     if (!shipment.carrier) return { error: "No carrier selected — use rate shopping first" };
+    const defaultCarton = await getDefaultCartonType(tenant.db as never);
 
     const tenantEntry = await getTenantEntry(tenant.tenantId);
     const wh = getWarehouseAddress(tenantEntry);
@@ -279,16 +292,7 @@ export async function generateShipmentLabel(
       isResidential: true,
     };
 
-    const packages: LabelRequest["packages"] = [
-      {
-        weight: shipment.packageWeight ? Number(shipment.packageWeight) : 1,
-        weightUnit: "lb",
-        length: shipment.packageLength ? Number(shipment.packageLength) : 12,
-        width: shipment.packageWidth ? Number(shipment.packageWidth) : 10,
-        height: shipment.packageHeight ? Number(shipment.packageHeight) : 6,
-        dimUnit: "in",
-      },
-    ];
+    const packages: LabelRequest["packages"] = [resolveShipmentPackage(shipment, defaultCarton as never)];
 
     const labelRequest: LabelRequest = {
       from,
