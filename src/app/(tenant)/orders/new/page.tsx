@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ import { getProducts } from "@/modules/products/actions";
 import { createOrder } from "@/modules/orders/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
 import { useTranslations } from "next-intl";
-import { convertQuantityToBaseUom, getProductUomChoices } from "@/modules/products/uom";
+import { convertQuantityToBaseUom, getProductUomChoices, type ProductUomSource } from "@/modules/products/uom";
+import { COUNTRY_OPTIONS, getRegionOptions } from "@/modules/clients/reference-data";
 
 interface OrderLine {
   id: string;
@@ -45,13 +46,24 @@ interface AttributeDefinition {
   options?: Array<{ value: string; label: string }>;
 }
 
+type ClientOption = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+type ProductOption = ProductUomSource & {
+  id: string;
+  clientId: string;
+  sku: string;
+  name: string;
+};
+
 export default function NewOrderPage() {
   const t = useTranslations("tenant.orders");
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [clients, setClients] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [products, setProducts] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [attributeDefinitions, setAttributeDefinitions] = useState<AttributeDefinition[]>([]);
   const [clientId, setClientId] = useState("");
   const [priority, setPriority] = useState("standard");
@@ -60,6 +72,7 @@ export default function NewOrderPage() {
   const [shipToCity, setShipToCity] = useState("");
   const [shipToState, setShipToState] = useState("");
   const [shipToZip, setShipToZip] = useState("");
+  const [shipToCountry, setShipToCountry] = useState("US");
   const [shipToPhone, setShipToPhone] = useState("");
   const [shipToEmail, setShipToEmail] = useState("");
   const [shippingMethod, setShippingMethod] = useState("");
@@ -75,7 +88,7 @@ export default function NewOrderPage() {
 
   useEffect(() => {
     getClients().then(setClients);
-    getProducts().then(setProducts);
+    getProducts().then((next) => setProducts(next as ProductOption[]));
     getOperationalAttributeDefinitions("order_line", "orders:write").then(setAttributeDefinitions);
   }, []);
 
@@ -86,6 +99,7 @@ export default function NewOrderPage() {
   const selectedUomChoices = selectedProduct ? getProductUomChoices(selectedProduct) : [];
   const orderQuantityPreview =
     selectedProduct && addQty > 0 ? convertQuantityToBaseUom(selectedProduct, addQty, addUom) : null;
+  const regionOptions = useMemo(() => getRegionOptions(shipToCountry), [shipToCountry]);
 
   useEffect(() => {
     if (selectedProduct) {
@@ -94,6 +108,12 @@ export default function NewOrderPage() {
       setAddUom("EA");
     }
   }, [selectedProduct]);
+
+  useEffect(() => {
+    if (regionOptions.length === 0) return;
+    if (regionOptions.some((option) => option.code === shipToState)) return;
+    setShipToState("");
+  }, [regionOptions, shipToState]);
 
   function addLine() {
     const product = products.find((p) => p.id === addProductId);
@@ -156,7 +176,7 @@ export default function NewOrderPage() {
         shipToCity,
         shipToState,
         shipToZip,
-        shipToCountry: "US",
+        shipToCountry,
         shipToPhone: shipToPhone || null,
         shipToEmail: shipToEmail || null,
         requestedService: shippingMethod || null,
@@ -269,15 +289,46 @@ export default function NewOrderPage() {
               <Label>{t("city")} *</Label>
               <Input value={shipToCity} onChange={(e) => setShipToCity(e.target.value)} required />
             </div>
+            <div className="space-y-2">
+              <Label>{t("country")} *</Label>
+              <select
+                value={shipToCountry}
+                onChange={(e) => setShipToCountry(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                required
+              >
+                {COUNTRY_OPTIONS.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("state")} *</Label>
-                <Input
-                  value={shipToState}
-                  onChange={(e) => setShipToState(e.target.value)}
-                  placeholder="TX"
-                  required
-                />
+                {regionOptions.length > 0 ? (
+                  <select
+                    value={shipToState}
+                    onChange={(e) => setShipToState(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                    required
+                  >
+                    <option value="">{t("selectState")}</option>
+                    {regionOptions.map((region) => (
+                      <option key={region.code} value={region.code}>
+                        {region.code} - {region.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    value={shipToState}
+                    onChange={(e) => setShipToState(e.target.value)}
+                    placeholder="TX"
+                    required
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>{t("zip")} *</Label>
@@ -291,7 +342,7 @@ export default function NewOrderPage() {
             </div>
             <div className="space-y-2">
               <Label>{t("phone")}</Label>
-              <Input value={shipToPhone} onChange={(e) => setShipToPhone(e.target.value)} />
+              <Input inputMode="tel" value={shipToPhone} onChange={(e) => setShipToPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>{t("email")}</Label>

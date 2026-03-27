@@ -1,4 +1,5 @@
 import { clientSchemaStatic as clientSchema } from "@/modules/clients/schemas";
+import { orderSchemaStatic as orderSchema } from "@/modules/orders/schemas";
 import { productSchemaStatic as productSchema } from "@/modules/products/schemas";
 import { inboundShipmentSchemaStatic as inboundShipmentSchema } from "@/modules/receiving/schemas";
 import { moveInventorySchema } from "@/modules/inventory/schemas";
@@ -108,6 +109,44 @@ describe("Zod schemas", () => {
 
     it("rejects missing clientId", () => {
       const result = inboundShipmentSchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("orderSchema", () => {
+    it("normalizes shipping contact fields", () => {
+      const result = orderSchema.safeParse({
+        clientId: "client-1",
+        shipToName: "  Jane Cooper  ",
+        shipToAddress1: "  123 Main St  ",
+        shipToCity: "  Austin ",
+        shipToState: " tx ",
+        shipToZip: " 78701 ",
+        shipToCountry: "us",
+        shipToPhone: " (512) 555-0100 ",
+        shipToEmail: " JANE@EXAMPLE.COM ",
+      });
+
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.shipToName).toBe("Jane Cooper");
+      expect(result.data.shipToState).toBe("TX");
+      expect(result.data.shipToCountry).toBe("US");
+      expect(result.data.shipToPhone).toBe("5125550100");
+      expect(result.data.shipToEmail).toBe("jane@example.com");
+    });
+
+    it("rejects unsupported country and invalid region combinations", () => {
+      const result = orderSchema.safeParse({
+        clientId: "client-1",
+        shipToName: "Jane Cooper",
+        shipToAddress1: "123 Main St",
+        shipToCity: "Austin",
+        shipToState: "ON",
+        shipToZip: "78701",
+        shipToCountry: "US",
+      });
+
       expect(result.success).toBe(false);
     });
   });
