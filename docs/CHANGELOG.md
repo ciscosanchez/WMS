@@ -169,6 +169,14 @@ All notable changes to Ramola WMS.
 - Added `npm run db:migrate:tenants` as the standard operational entrypoint for tenant-schema rollout
 - This closes the rollout gap for live `tenant_*` schemas that do not use Prisma migration history
 
+## 2026-03-26 — Tenant Migration Reconciliation
+
+### Legacy Tenant Schemas
+
+- Added `scripts/reconcile-tenant-migrations.ts` to seed `_migrations` for legacy tenant schemas through `0021_customs_freight.sql`
+- Added `npm run db:reconcile:tenants` for the one-time reconciliation path on existing live tenants
+- This allows `0022_operational_attributes.sql` and `0023_order_line_operational_attributes.sql` to apply cleanly without rerunning baseline tenant DDL
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

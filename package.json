@@ -13,6 +13,7 @@
     "db:seed": "npx tsx scripts/seed-demo.ts",
     "db:provision": "npx tsx scripts/provision-tenant.ts",
     "db:migrate:tenants": "npx tsx scripts/apply-tenant-migrations.ts",
+    "db:reconcile:tenants": "npx tsx scripts/reconcile-tenant-migrations.ts",
     "admin:superadmin": "npx tsx scripts/create-superadmin.ts",
     "db:studio": "prisma studio --schema=prisma/schema.prisma",
     "test": "jest",
