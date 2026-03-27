@@ -1,4 +1,10 @@
-import { checkPermissionLevel, getPermissions, hasPermission } from "@/lib/auth/rbac";
+import {
+  checkPermissionLevel,
+  getAccessRisks,
+  getPermissionPreset,
+  getPermissions,
+  hasPermission,
+} from "@/lib/auth/rbac";
 
 describe("RBAC", () => {
   describe("hasPermission", () => {
@@ -104,6 +110,32 @@ describe("RBAC", () => {
           denies: ["inventory:read"],
         })
       ).toBe(false);
+    });
+  });
+
+  describe("phase 3 helpers", () => {
+    it("returns permission presets by key", () => {
+      const preset = getPermissionPreset("billing-reviewer");
+      expect(preset?.grants).toContain("billing:approve");
+    });
+
+    it("flags risky portal write access", () => {
+      const risks = getAccessRisks({
+        role: "viewer",
+        portalClientId: "client_123",
+        overrides: { grants: ["orders:write"], denies: [] },
+      });
+
+      expect(risks.some((risk) => risk.code === "portal-broad-write")).toBe(true);
+    });
+
+    it("flags viewer escalation to user management", () => {
+      const risks = getAccessRisks({
+        role: "viewer",
+        overrides: { grants: ["users:write"], denies: [] },
+      });
+
+      expect(risks.some((risk) => risk.code === "viewer-users-write")).toBe(true);
     });
   });
 });

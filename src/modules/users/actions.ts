@@ -276,6 +276,27 @@ export async function updateUserPermissionOverrides(
   }
 }
 
+export async function exportTenantAccessReview() {
+  const { tenant } = await requireTenantContext("users:read");
+
+  const members = await publicDb.tenantUser.findMany({
+    where: { tenantId: tenant.tenantId },
+    include: {
+      user: { select: { id: true, name: true, email: true, isSuperadmin: true } },
+    },
+    orderBy: { user: { createdAt: "asc" } },
+  });
+
+  return members.map((member) => ({
+    userId: member.user.id,
+    name: member.user.name,
+    email: member.user.email,
+    role: member.role,
+    portalClientId: member.portalClientId,
+    permissionOverrides: normalizePermissionOverrides(member.permissionOverrides),
+  }));
+}
+
 /**
  * Update the current user's locale preference.
  * Null = use tenant default.

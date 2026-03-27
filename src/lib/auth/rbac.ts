@@ -79,12 +79,65 @@ export type PermissionOverrides = {
   denies: Permission[];
 };
 
+export type PermissionPreset = {
+  key: string;
+  label: string;
+  description: string;
+  grants: Permission[];
+  denies: Permission[];
+};
+
+export type AccessRisk = {
+  code: string;
+  severity: "high" | "medium";
+  message: string;
+};
+
 const EMPTY_PERMISSION_OVERRIDES: PermissionOverrides = {
   grants: [],
   denies: [],
 };
 
 export const ALL_PERMISSIONS = Object.keys(PERMISSION_LEVEL) as Permission[];
+
+export const PERMISSION_PRESETS: PermissionPreset[] = [
+  {
+    key: "billing-reviewer",
+    label: "Billing Reviewer",
+    description: "Approves billing without broad settings access.",
+    grants: ["billing:approve"],
+    denies: [],
+  },
+  {
+    key: "receiving-lead",
+    label: "Receiving Lead",
+    description: "Adds completion authority to receiving-heavy operators.",
+    grants: ["receiving:complete"],
+    denies: [],
+  },
+  {
+    key: "floor-supervisor",
+    label: "Floor Supervisor",
+    description: "Adds warehouse and shipping write access for floor oversight.",
+    grants: ["warehouse:write", "shipping:write"],
+    denies: [],
+  },
+  {
+    key: "support-read-only",
+    label: "Support Read-Only",
+    description: "Broad visibility without tenant write access.",
+    grants: ["settings:read", "users:read"],
+    denies: [
+      "inventory:write",
+      "shipping:write",
+      "orders:write",
+      "billing:write",
+      "billing:approve",
+      "users:write",
+      "settings:write",
+    ],
+  },
+];
 
 export const PERMISSION_GROUPS: Array<{
   key: string;
@@ -236,4 +289,87 @@ export function getPermissionLabel(permission: Permission): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
   const actionLabel = action.replace(/\b\w/g, (char) => char.toUpperCase());
   return `${resourceLabel}: ${actionLabel}`;
+}
+
+export function getPermissionPreset(key: string): PermissionPreset | null {
+  return PERMISSION_PRESETS.find((preset) => preset.key === key) ?? null;
+}
+
+export function getPermissionDiffSummary(role: TenantRole, overrides?: unknown) {
+  const normalized = normalizePermissionOverrides(overrides);
+  const base = new Set(getPermissions(role));
+  const effective = new Set(getEffectivePermissions(role, normalized));
+
+  const added = [...effective].filter((permission) => !base.has(permission));
+  const removed = [...base].filter((permission) => !effective.has(permission));
+
+  return {
+    added,
+    removed,
+    effectiveCount: effective.size,
+    inheritedCount: base.size,
+  };
+}
+
+export function getAccessRisks(opts: {
+  role: TenantRole;
+  portalClientId?: string | null;
+  overrides?: unknown;
+}): AccessRisk[] {
+  const effective = new Set(getEffectivePermissions(opts.role, opts.overrides));
+  const risks: AccessRisk[] = [];
+
+  if (opts.role === "viewer" && effective.has("users:write")) {
+    risks.push({
+      code: "viewer-users-write",
+      severity: "high",
+      message: "Viewer has user management write access.",
+    });
+  }
+
+  if (opts.role === "viewer" && effective.has("settings:write")) {
+    risks.push({
+      code: "viewer-settings-write",
+      severity: "high",
+      message: "Viewer has tenant settings write access.",
+    });
+  }
+
+  if (opts.portalClientId) {
+    const riskyPortalPermissions: Permission[] = [
+      "users:write",
+      "settings:write",
+      "billing:approve",
+      "inventory:write",
+      "orders:write",
+      "shipping:write",
+    ];
+
+    const found = riskyPortalPermissions.filter((permission) => effective.has(permission));
+    if (found.length > 0) {
+      risks.push({
+        code: "portal-broad-write",
+        severity: "high",
+        message: `Portal-bound user has broad tenant write access: ${found.map(getPermissionLabel).join(", ")}.`,
+      });
+    }
+  }
+
+  if (opts.role === "warehouse_worker" && !effective.has("operator:write")) {
+    risks.push({
+      code: "operator-shell-mismatch",
+      severity: "medium",
+      message: "Warehouse worker no longer has operator write access and may lose their default shell.",
+    });
+  }
+
+  if (opts.role === "manager" && !effective.has("users:read")) {
+    risks.push({
+      code: "manager-users-read-removed",
+      severity: "medium",
+      message: "Manager cannot read users and may lose expected admin visibility.",
+    });
+  }
+
+  return risks;
 }

@@ -375,3 +375,4 @@ All notable changes to Ramola WMS.
 - 56 routes across 4 apps (WMS, Operator, Portal, Platform)
 - 124 unit tests, 8 integration adapters
 - Multi-tenancy, RBAC, Shopify connection
+- Added RBAC Phase 3 visibility tooling: tenant access review cards, per-user risk flags, and reusable permission presets in the custom-permissions editor.

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
 import { getUserPersonas } from "@/lib/auth/personas";
-import { normalizePermissionOverrides } from "@/lib/auth/rbac";
+import { getAccessRisks, normalizePermissionOverrides } from "@/lib/auth/rbac";
+import { AccessReview } from "./access-review";
 import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
@@ -31,6 +32,11 @@ export default async function UsersPage() {
     portalClientName: m.portalClientId ? clientMap.get(m.portalClientId)?.name ?? null : null,
     portalClientCode: m.portalClientId ? clientMap.get(m.portalClientId)?.code ?? null : null,
     permissionOverrides: normalizePermissionOverrides(m.permissionOverrides),
+    risks: getAccessRisks({
+      role: m.role,
+      portalClientId: m.portalClientId,
+      overrides: m.permissionOverrides,
+    }),
     joinedAt: m.user.createdAt.toISOString(),
   }));
 
@@ -44,6 +50,8 @@ export default async function UsersPage() {
           </Link>
         </Button>
       </PageHeader>
+
+      <AccessReview users={users} />
 
       <UserTable users={users} clients={clients} />
     </div>

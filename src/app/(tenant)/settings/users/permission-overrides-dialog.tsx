@@ -4,10 +4,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   getEffectivePermissions,
+  getPermissionDiffSummary,
   getPermissionLabel,
+  getPermissionPreset,
+  getAccessRisks,
   getPermissions,
   normalizePermissionOverrides,
   PERMISSION_GROUPS,
+  PERMISSION_PRESETS,
   type Permission,
   type PermissionOverrides,
 } from "@/lib/auth/rbac";
@@ -31,6 +35,7 @@ type PermissionOverridesDialogProps = {
     id: string;
     name: string;
     role: TenantRole;
+    portalClientId?: string | null;
     permissionOverrides: PermissionOverrides;
   };
   users: Array<{
@@ -57,11 +62,20 @@ export function PermissionOverridesDialog({
   const [denies, setDenies] = useState<Permission[]>(normalized.denies);
   const [isSaving, setIsSaving] = useState(false);
   const [copySourceId, setCopySourceId] = useState("");
+  const [presetKey, setPresetKey] = useState("");
 
   const basePermissions = useMemo(() => new Set(getPermissions(user.role)), [user.role]);
   const effectivePermissions = useMemo(
     () => new Set(getEffectivePermissions(user.role, { grants, denies })),
     [user.role, grants, denies]
+  );
+  const diff = useMemo(
+    () => getPermissionDiffSummary(user.role, { grants, denies }),
+    [user.role, grants, denies]
+  );
+  const risks = useMemo(
+    () => getAccessRisks({ role: user.role, portalClientId: user.portalClientId, overrides: { grants, denies } }),
+    [user.role, user.portalClientId, grants, denies]
   );
 
   function resetToRoleDefaults() {
@@ -113,6 +127,14 @@ export function PermissionOverridesDialog({
     setDenies(sourceOverrides.denies);
   }
 
+  function handleApplyPreset(nextPresetKey: string) {
+    setPresetKey(nextPresetKey);
+    const preset = getPermissionPreset(nextPresetKey);
+    if (!preset) return;
+    setGrants(preset.grants);
+    setDenies(preset.denies);
+  }
+
   const customOnlyCount = grants.length + denies.length;
   const inheritedCount = getPermissions(user.role).length;
   const copyCandidates = users.filter((candidate) => candidate.id !== user.id);
@@ -155,6 +177,12 @@ export function PermissionOverridesDialog({
                 ? "This user currently matches the base role exactly."
                 : `${grants.length} additive grants and ${denies.length} explicit denials are applied on top of ${inheritedCount} inherited role permissions.`}
             </div>
+            {(diff.added.length > 0 || diff.removed.length > 0) && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                {diff.added.length > 0 ? `${diff.added.length} permissions added.` : "No added permissions."}{" "}
+                {diff.removed.length > 0 ? `${diff.removed.length} permissions removed.` : "No removed permissions."}
+              </div>
+            )}
           </div>
           <div className="rounded-lg border p-4">
             <div className="text-sm font-medium">Copy Custom Access</div>
@@ -174,6 +202,46 @@ export function PermissionOverridesDialog({
               <p className="text-xs text-muted-foreground">
                 Copies grants and denies only. The base role does not change.
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border p-4">
+            <div className="text-sm font-medium">Apply Preset</div>
+            <div className="mt-2 space-y-2">
+              <select
+                value={presetKey}
+                onChange={(event) => handleApplyPreset(event.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              >
+                <option value="">Select a preset</option>
+                {PERMISSION_PRESETS.map((preset) => (
+                  <option key={preset.key} value={preset.key}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Reusable override bundles for common exception cases.
+              </p>
+            </div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-sm font-medium">Risk Review</div>
+            <div className="mt-2 space-y-2">
+              {risks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No current risk flags.</p>
+              ) : (
+                risks.map((risk) => (
+                  <div key={risk.code} className="text-sm text-muted-foreground">
+                    <span className={risk.severity === "high" ? "font-medium text-red-600" : "font-medium text-amber-600"}>
+                      {risk.severity === "high" ? "High" : "Medium"}:
+                    </span>{" "}
+                    {risk.message}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

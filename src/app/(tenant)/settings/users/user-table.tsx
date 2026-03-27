@@ -20,7 +20,13 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { removeUser, updateUserPortalBinding, updateUserRole } from "@/modules/users/actions";
 import type { TenantRole } from "../../../../../node_modules/.prisma/public-client";
-import { getEffectivePermissions, normalizePermissionOverrides, type PermissionOverrides } from "@/lib/auth/rbac";
+import {
+  getAccessRisks,
+  getEffectivePermissions,
+  normalizePermissionOverrides,
+  type AccessRisk,
+  type PermissionOverrides,
+} from "@/lib/auth/rbac";
 import { PermissionOverridesDialog } from "./permission-overrides-dialog";
 
 type UserRow = {
@@ -33,6 +39,7 @@ type UserRow = {
   portalClientName: string | null;
   portalClientCode: string | null;
   permissionOverrides: PermissionOverrides;
+  risks: AccessRisk[];
   joinedAt: string;
 };
 
@@ -217,6 +224,11 @@ function getColumns(clients: ClientOption[], users: UserRow[]): ColumnDef<UserRo
       }
 
       const effectiveCount = getEffectivePermissions(row.original.role, overrides).length;
+      const risks = getAccessRisks({
+        role: row.original.role,
+        portalClientId: row.original.portalClientId,
+        overrides,
+      });
       return (
         <div className="space-y-0.5">
           <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200">
@@ -225,9 +237,36 @@ function getColumns(clients: ClientOption[], users: UserRow[]): ColumnDef<UserRo
           <div className="text-xs text-muted-foreground">
             {overrides.grants.length} grants, {overrides.denies.length} denies, {effectiveCount} effective
           </div>
+          {risks.length > 0 && (
+            <div className="text-xs text-red-600">{risks.length} risk flag{risks.length > 1 ? "s" : ""}</div>
+          )}
         </div>
       );
     },
+  },
+  {
+    id: "riskFlags",
+    header: "Risk Flags",
+    cell: ({ row }) =>
+      row.original.risks.length === 0 ? (
+        <span className="text-sm text-muted-foreground">No flags</span>
+      ) : (
+        <div className="flex flex-wrap gap-1">
+          {row.original.risks.map((risk) => (
+            <Badge
+              key={risk.code}
+              variant="outline"
+              className={
+                risk.severity === "high"
+                  ? "bg-red-100 text-red-700 border-red-200"
+                  : "bg-amber-100 text-amber-700 border-amber-200"
+              }
+            >
+              {risk.severity === "high" ? "High" : "Medium"}
+            </Badge>
+          ))}
+        </div>
+      ),
   },
   {
     id: "portalAccess",

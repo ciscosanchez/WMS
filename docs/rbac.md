@@ -349,3 +349,26 @@ Intentional choices right now:
 - keep `portal_user` client-scoped rather than tenant-wide
 - keep middleware persona routing as a UX accelerator, not the only security control
 - require server-side permission checks and portal scoping on sensitive actions and exports
+## Phase 3 Governance
+
+RBAC now includes a governance layer on top of raw permission overrides:
+
+- `Settings -> Users` includes an `Access Review` summary for tenant admins.
+- Each user now shows risk flags for unusual combinations such as:
+  - `viewer` + sensitive write permissions
+  - portal-bound users with broad tenant write access
+  - operator/manager shell mismatches caused by denials
+- The custom-permissions dialog supports reusable presets such as:
+  - `Billing Reviewer`
+  - `Receiving Lead`
+  - `Floor Supervisor`
+  - `Support Read-Only`
+
+These are still built on the same underlying model:
+
+- base tenant role
+- optional portal client binding
+- additive permission grants
+- explicit permission denies
+
+No new persisted tenant roles were introduced for Phase 3.
