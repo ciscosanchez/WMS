@@ -1,12 +1,10 @@
 import { defaultLocale, localeLabels, locales, type Locale } from "@/i18n/config";
 
-const appDomain = process.env.APP_DOMAIN || "wms.ramola.app";
-
-const FALLBACK_APP_URL =
-  process.env.NODE_ENV === "production" ? `https://${appDomain}` : "http://localhost:3000";
-
 export function getAppBaseUrl(): string {
-  return process.env.AUTH_URL || process.env.NEXTAUTH_URL || FALLBACK_APP_URL;
+  const appDomain = process.env.APP_DOMAIN || "wms.ramola.app";
+  const fallback =
+    process.env.NODE_ENV === "production" ? `https://${appDomain}` : "http://localhost:3000";
+  return process.env.AUTH_URL || process.env.NEXTAUTH_URL || fallback;
 }
 
 export function getAppHost(): string {

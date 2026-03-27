@@ -116,7 +116,7 @@ describe("SSO discovery and start routes", () => {
   });
 
   it("redirects Microsoft providers through NextAuth and stores the pending SSO cookies", async () => {
-    process.env = { ...process.env, NODE_ENV: "production" };
+    process.env = { ...process.env, NODE_ENV: "production", AUTH_URL: "https://wms.ramola.app" };
     mockGetTenantAuthConfigForSlug.mockResolvedValue({ mode: "hybrid", ssoProviders: [] });
     mockGetEnabledSsoProviders.mockReturnValue([
       {
