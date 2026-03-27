@@ -58,6 +58,8 @@ All notable changes to Ramola WMS.
   - state / province validation
   - trimmed address fields
   - normalized shipping phone and email
+- Added structured carton-type create/edit flows with controlled dimension and weight unit selection
+- Replaced dead carton-type new/edit links with working pages backed by normalized carton schema validation
 
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 

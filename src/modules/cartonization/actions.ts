@@ -5,22 +5,7 @@ import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { cartonize, type PackItem, type BoxType, type PackedCarton } from "./algorithm";
-import { z } from "zod";
-
-// ─── Carton Type CRUD ───────────────────────────────────────────────────────
-
-const cartonTypeSchema = z.object({
-  name: z.string().min(1).max(100),
-  code: z.string().min(1).max(20),
-  length: z.number().positive(),
-  width: z.number().positive(),
-  height: z.number().positive(),
-  dimUnit: z.string().default("in"),
-  maxWeight: z.number().positive(),
-  weightUnit: z.string().default("lb"),
-  tareWeight: z.number().min(0).default(0),
-  cost: z.number().min(0).optional().nullable(),
-});
+import { cartonTypeSchemaStatic as cartonTypeSchema } from "./schemas";
 
 export async function getCartonTypes() {
   if (config.useMockData) return [];
@@ -33,6 +18,16 @@ export async function getCartonTypes() {
     where: { isActive: true },
     orderBy: [{ length: "asc" }, { width: "asc" }],
   });
+}
+
+export async function getCartonType(id: string) {
+  if (config.useMockData) return null;
+
+  const { tenant } = await requireTenantContext("shipping:read");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+
+  return db.cartonType.findUnique({ where: { id } });
 }
 
 export async function createCartonType(data: unknown): Promise<{ id?: string; error?: string }> {
