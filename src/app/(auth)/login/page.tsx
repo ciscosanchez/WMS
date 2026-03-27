@@ -103,7 +103,7 @@ export default function LoginPage() {
       const callbackUrl =
         requestedCallbackUrl && requestedCallbackUrl.startsWith("/")
           ? requestedCallbackUrl
-          : "/dashboard";
+          : "/";
 
       const result = await signIn("credentials", {
         email,

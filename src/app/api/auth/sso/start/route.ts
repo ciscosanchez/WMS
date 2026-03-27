@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     return redirectToLogin(request);
   }
 
-  const safeCallbackUrl = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/dashboard";
+  const safeCallbackUrl = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/";
 
   if (provider.type === "microsoft") {
     if (!isMicrosoftEntraConfigured()) {
