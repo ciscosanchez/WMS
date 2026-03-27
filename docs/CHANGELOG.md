@@ -148,6 +148,19 @@ All notable changes to Ramola WMS.
   - packing lists
 - Mapping is driven by `behaviorFlags` and `displayRules` rather than tenant-specific templates
 
+## 2026-03-26 — Configurable Operational Attributes Phase 4.6 (Admin Polish)
+
+### Settings UX
+
+- Settings now supports `order_line` as a first-class operational attribute scope
+- Added common admin toggles for:
+  - searchable
+  - allocatable
+  - show on label
+  - show on manifest
+  - show on packing list
+- Advanced JSON fields remain available for custom behavior and display rules
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model

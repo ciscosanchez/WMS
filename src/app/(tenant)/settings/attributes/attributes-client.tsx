@@ -8,6 +8,12 @@ import {
   updateOperationalAttributeDefinition,
 } from "@/modules/attributes/actions";
 import type { AttributeDataType, AttributeScope } from "@/modules/attributes/schemas";
+import {
+  DEFAULT_COMMON_ATTRIBUTE_FLAGS,
+  extractCommonAttributeFlags,
+  mergeCommonAttributeFlags,
+  type CommonAttributeFlagState,
+} from "@/modules/attributes/form-metadata";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,6 +43,7 @@ type AttributeDefinitionRow = {
 const SCOPE_OPTIONS: Array<{ value: AttributeScope; label: string }> = [
   { value: "inbound_shipment", label: "Inbound Shipment" },
   { value: "inbound_shipment_line", label: "Inbound Shipment Line" },
+  { value: "order_line", label: "Order Line" },
   { value: "lpn", label: "LPN" },
   { value: "inventory_unit", label: "Inventory Unit" },
   { value: "inventory_record", label: "Inventory Record" },
@@ -119,6 +126,9 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(buildInitialFormState());
+  const [commonFlags, setCommonFlags] = useState<CommonAttributeFlagState>(
+    DEFAULT_COMMON_ATTRIBUTE_FLAGS
+  );
 
   const sortedDefinitions = useMemo(
     () => [...definitions].sort((a, b) => a.entityScope.localeCompare(b.entityScope) || a.sortOrder - b.sortOrder),
@@ -132,11 +142,13 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
   function startEdit(definition: AttributeDefinitionRow) {
     setEditingId(definition.id);
     setForm(buildInitialFormState(definition));
+    setCommonFlags(extractCommonAttributeFlags(definition.behaviorFlags ?? {}));
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(buildInitialFormState());
+    setCommonFlags(DEFAULT_COMMON_ATTRIBUTE_FLAGS);
   }
 
   async function handleSubmit() {
@@ -154,7 +166,10 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
         sortOrder: Number(form.sortOrder || 0),
         validationRules: parseJsonObject(form.validationRules, "Validation rules"),
         displayRules: parseJsonObject(form.displayRules, "Display rules"),
-        behaviorFlags: parseJsonObject(form.behaviorFlags, "Behavior flags"),
+        behaviorFlags: mergeCommonAttributeFlags(
+          parseJsonObject(form.behaviorFlags, "Behavior flags"),
+          commonFlags
+        ),
         options: form.options.trim() ? parseOptions(form.options) : [],
       };
 
@@ -200,6 +215,8 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
   }
 
   const usesOptions = form.dataType === "single_select" || form.dataType === "multi_select";
+  const toggleFlag = (name: keyof CommonAttributeFlagState, checked: boolean) =>
+    setCommonFlags((current) => ({ ...current, [name]: checked }));
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
@@ -321,13 +338,44 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Behavior Flags (JSON)</Label>
+            <Label>Common Behavior Flags</Label>
+            <div className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={commonFlags.searchable} onCheckedChange={(checked) => toggleFlag("searchable", !!checked)} />
+                Searchable
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={commonFlags.allocatable} onCheckedChange={(checked) => toggleFlag("allocatable", !!checked)} />
+                Allocatable
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={commonFlags.showOnLabel} onCheckedChange={(checked) => toggleFlag("showOnLabel", !!checked)} />
+                Show on label
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={commonFlags.showOnManifest} onCheckedChange={(checked) => toggleFlag("showOnManifest", !!checked)} />
+                Show on manifest
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={commonFlags.showOnPackingList}
+                  onCheckedChange={(checked) => toggleFlag("showOnPackingList", !!checked)}
+                />
+                Show on packing list
+              </label>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Advanced Behavior Flags (JSON)</Label>
             <Textarea
               value={form.behaviorFlags}
               onChange={(e) => updateField("behaviorFlags", e.target.value)}
               rows={4}
               placeholder='{"searchable": true, "allocatable": true, "showInReceiving": true}'
             />
+            <p className="text-xs text-muted-foreground">
+              Use this for advanced flags. The common toggles above are merged automatically.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Validation Rules (JSON)</Label>
