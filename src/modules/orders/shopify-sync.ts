@@ -6,6 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { getShopifyAdapterForTenant } from "@/lib/integrations/marketplaces/shopify";
+import { asTenantDb } from "@/lib/tenant/db-types";
 import type { ShopifyAdapter } from "@/lib/integrations/marketplaces/shopify";
 import type { MarketplaceOrder } from "@/lib/integrations/marketplaces/types";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
@@ -15,12 +16,18 @@ import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
  * Reads from SalesChannel.config first, falls back to env vars.
  */
 
+type ShopifyChannelRecord = {
+  id: string;
+  config: unknown;
+};
+
 async function resolveShopifyAdapter(
-  db: any
-): Promise<{ adapter: ShopifyAdapter; channel: any } | null> {
-  let channel = await db.salesChannel.findFirst({
+  db: unknown
+): Promise<{ adapter: ShopifyAdapter; channel: ShopifyChannelRecord } | null> {
+  const tenantDb = asTenantDb(db);
+  let channel = (await tenantDb.salesChannel.findFirst({
     where: { type: "shopify", isActive: true },
-  });
+  })) as ShopifyChannelRecord | null;
 
   // Read credentials from channel config, fall back to env vars
   const cfg = (channel?.config ?? {}) as Record<string, string>;
@@ -33,14 +40,14 @@ async function resolveShopifyAdapter(
 
   // Auto-create channel record if it doesn't exist
   if (!channel) {
-    channel = await db.salesChannel.create({
+    channel = (await tenantDb.salesChannel.create({
       data: {
         name: "Shopify",
         type: "shopify",
         isActive: true,
         config: { shopDomain },
       },
-    });
+    })) as ShopifyChannelRecord;
   }
 
   const adapter = getShopifyAdapterForTenant({ shopDomain, accessToken, apiVersion, locationId });

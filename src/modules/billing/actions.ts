@@ -57,13 +57,12 @@ export async function getBillingConfig() {
   ]);
 
   const cardByClientId = Object.fromEntries(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    clientCards.map((c: any) => [c.clientId, c])
+    clientCards.map((c: { clientId: string | null }) => [c.clientId, c])
   );
 
   return {
     defaultCard: defaultCard ?? null,
-    clients: clients.map((c: any) => ({
+    clients: clients.map((c: { id: string; name: string }) => ({
       id: c.id,
       name: c.name,
       rateCard: cardByClientId[c.id] ?? null,
@@ -229,7 +228,10 @@ export async function generateInvoice(clientId: string, fromDate: Date, toDate: 
   // Group by service type
   type GroupEntry = { qty: number; unitRate: number; amount: number };
   const grouped = events.reduce(
-    (acc: Record<string, GroupEntry>, ev: any) => {
+    (
+      acc: Record<string, GroupEntry>,
+      ev: { serviceType: string; unitRate: number | string; qty: number | string; amount: number | string }
+    ) => {
       const key = ev.serviceType;
       if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
       acc[key].qty += Number(ev.qty);

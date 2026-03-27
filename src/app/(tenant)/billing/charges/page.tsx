@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Receipt } from "lucide-react";
 
+type BillingEventRow = Awaited<ReturnType<typeof getUnbilledEvents>>[number];
+
 export default async function ChargesPage() {
   const t = await getTranslations("tenant.billing");
   const events = await getUnbilledEvents().catch(() => []);
@@ -126,7 +128,7 @@ export default async function ChargesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {events.map((event: any) => (
+                  {events.map((event: BillingEventRow) => (
                     <tr key={event.id} className="border-b last:border-0">
                       <td className="py-2">{event.client?.name ?? event.clientId?.slice(0, 8)}</td>
                       <td className="py-2">{event.serviceType}</td>

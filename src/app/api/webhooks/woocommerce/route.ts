@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { nextSequence } from "@/lib/sequences";
 import { logAudit } from "@/lib/audit";
 
+type ProductLookup = { id: string; sku: string };
+
 export function verifyWooCommerceHmac(body: string, sig: string, secret: string): boolean {
   const computed = crypto.createHmac("sha256", secret).update(body, "utf8").digest("base64");
   const a = Buffer.from(computed),
@@ -128,10 +130,10 @@ async function handleCreate(order: any, conn: any, _source: string) {
         select: { id: true, sku: true },
       })
     : [];
-  const bySku = new Map(prods.map((p: any) => [p.sku, p]));
+  const bySku = new Map((prods as ProductLookup[]).map((p) => [p.sku, p]));
   const lines = mapped.lineItems
     .map((li) => ({
-      productId: (bySku.get(li.sku) as any)?.id,
+      productId: bySku.get(li.sku)?.id,
       quantity: li.quantity,
       uom: "EA",
       unitPrice: li.unitPrice ?? null,

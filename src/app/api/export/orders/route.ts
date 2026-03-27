@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { generateCsv, csvResponse, type ExportColumn } from "@/lib/export/server-csv";
 import { format } from "date-fns";
+import type {
+  OrderStatus,
+  PrismaClient as TenantClient,
+} from "../../../../../node_modules/.prisma/tenant-client";
 import {
   attachAggregatedOperationalAttributesToRows,
   buildOperationalAttributeExportColumns,
@@ -36,16 +40,16 @@ export async function GET(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
+  const where: { clientId?: string; status?: OrderStatus } = {};
+  if (portalClientId) where.clientId = portalClientId;
+  if (status) where.status = status as OrderStatus;
 
   const orders = await db.order.findMany({
-    where: {
-      ...(status ? { status } : {}),
-      ...(portalClientId ? { clientId: portalClientId } : {}),
-    },
+    where,
     include: {
       client: { select: { name: true } },
       lines: { select: { id: true } },
@@ -63,9 +67,9 @@ export async function GET(request: NextRequest) {
     orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
   })) as Array<{ id: string; key: string; label: string; sortOrder: number }>;
 
-  const lineIds = orders.flatMap((o: { lines: Array<{ id: string }> }) => o.lines.map((line) => line.id));
+  const lineIds = orders.flatMap((order) => order.lines.map((line) => line.id));
   const entityToRowId = orders.reduce(
-    (acc: Record<string, string>, order: { id: string; lines: Array<{ id: string }> }) => {
+    (acc, order) => {
       for (const line of order.lines) acc[line.id] = order.id;
       return acc;
     },
@@ -100,20 +104,7 @@ export async function GET(request: NextRequest) {
         }>)
       : [];
 
-  const baseRows = orders.map(
-    (o: {
-      id: string;
-      orderNumber: string;
-      client: { name: string };
-      status: string;
-      shipToName: string;
-      shipToCity: string;
-      shipToState: string | null;
-      totalItems: number;
-      orderDate: Date;
-      shippedDate: Date | null;
-      lines: Array<{ id: string }>;
-    }) => ({
+  const baseRows = orders.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
       client: o.client.name,
@@ -124,8 +115,7 @@ export async function GET(request: NextRequest) {
       totalItems: o.totalItems,
       orderDate: o.orderDate,
       shippedDate: o.shippedDate,
-    })
-  );
+    }));
 
   const rows = attachAggregatedOperationalAttributesToRows({
     rows: baseRows,

@@ -1,5 +1,6 @@
 import { asTenantDb } from "@/lib/tenant/db-types";
 import { logAudit } from "@/lib/audit";
+import type { PrismaClient as TenantClient } from "../../../node_modules/.prisma/tenant-client";
 import type { AttributeValueInput } from "./schemas";
 
 function isBlankValue(value: AttributeValueInput["value"]) {
@@ -127,7 +128,7 @@ export async function saveOperationalAttributeValuesForEntity(opts: {
       },
     });
 
-    await logAudit(opts.db as any, {
+    await logAudit(opts.db as TenantClient, {
       userId: opts.userId,
       action: "create",
       entityType: "operational_attribute_value",

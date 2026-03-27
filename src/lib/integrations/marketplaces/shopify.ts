@@ -23,6 +23,58 @@ export interface ShopifyConfig {
   locationId?: string;
 }
 
+type ShopifyFetchJson = {
+  orders?: ShopifyOrderPayload[];
+  fulfillment_orders?: Array<{ id: number; status?: string }>;
+  products?: Array<{
+    variants?: Array<{
+      sku?: string;
+      image_id?: number;
+      inventory_item_id?: number;
+    }>;
+    image?: { src?: string };
+    images?: Array<{ id: number; src?: string }>;
+  }>;
+  locations?: Array<{ id: number; active?: boolean }>;
+};
+
+type ShopifyShippingAddress = {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  province_code?: string;
+  province?: string;
+  zip?: string;
+  country_code?: string;
+  phone?: string;
+};
+
+type ShopifyShippingLine = { title?: string };
+
+type ShopifyLineItem = {
+  id: number | string;
+  sku?: string;
+  title?: string;
+  quantity?: number;
+  price?: string;
+  grams?: number;
+  image?: { src?: string };
+  vendor?: string;
+  variant_title?: string;
+};
+
+type ShopifyOrderPayload = {
+  id: number | string;
+  name: string;
+  email?: string;
+  created_at: string;
+  shipping_address?: ShopifyShippingAddress;
+  shipping_lines?: ShopifyShippingLine[];
+  line_items?: ShopifyLineItem[];
+  note?: string;
+};
+
 export class ShopifyAdapter implements MarketplaceAdapter {
   channelName = "Shopify";
   private config: ShopifyConfig;
@@ -40,7 +92,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     };
   }
 
-  private async shopifyFetch(path: string, init?: RequestInit) {
+  private async shopifyFetch(path: string, init?: RequestInit): Promise<ShopifyFetchJson> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: { ...this.headers(), ...(init?.headers ?? {}) },
@@ -64,7 +116,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     });
 
     const data = await this.shopifyFetch(`/orders.json?${params}`);
-    const orders: import("./types").MarketplaceOrder[] = (data.orders ?? []).map((o: any) =>
+    const orders: import("./types").MarketplaceOrder[] = (data.orders ?? []).map((o) =>
       this.mapOrder(o)
     );
 
@@ -74,8 +126,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     return orders;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mapOrder(o: any): MarketplaceOrder {
+  private mapOrder(o: ShopifyOrderPayload): MarketplaceOrder {
     const addr = o.shipping_address ?? {};
     const shippingLine = o.shipping_lines?.[0];
     return {
@@ -95,8 +146,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
         phone: addr.phone ?? undefined,
         email: o.email ?? undefined,
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      lineItems: (o.line_items ?? []).map((li: any) => ({
+      lineItems: (o.line_items ?? []).map((li) => ({
         externalLineId: String(li.id),
         sku: li.sku ?? "",
         name: li.title ?? "",
@@ -120,9 +170,10 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     const foData = await this.shopifyFetch(
       `/orders/${update.externalOrderId}/fulfillment_orders.json`
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fulfillmentOrders: any[] = foData.fulfillment_orders ?? [];
-    const open = fulfillmentOrders.find((fo: any) => ["open", "in_progress"].includes(fo.status));
+    const fulfillmentOrders = foData.fulfillment_orders ?? [];
+    const open = fulfillmentOrders.find((fulfillmentOrder) =>
+      ["open", "in_progress"].includes(fulfillmentOrder.status ?? "")
+    );
     if (!open) return; // Nothing to fulfill
 
     // Step 2: create fulfillment using Shopify's own FO line item IDs (not WMS IDs)
@@ -194,8 +245,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
           if (variant.sku && skusNeedingImage.has(variant.sku)) {
             // Use variant image if available, else fall back to first product image
             const src = variant.image_id
-              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (product.images ?? []).find((img: any) => img.id === variant.image_id)?.src
+              ? (product.images ?? []).find((img) => img.id === variant.image_id)?.src
               : product.image?.src;
             if (src) skuToImage.set(variant.sku, src);
           }
@@ -222,7 +272,11 @@ export class ShopifyAdapter implements MarketplaceAdapter {
 
     for (const product of data.products ?? []) {
       for (const variant of product.variants ?? []) {
-        if (skus.includes(variant.sku)) {
+        if (
+          variant.sku &&
+          typeof variant.inventory_item_id === "number" &&
+          skus.includes(variant.sku)
+        ) {
           map.set(variant.sku, variant.inventory_item_id);
         }
       }
@@ -236,8 +290,7 @@ export class ShopifyAdapter implements MarketplaceAdapter {
     if (this.config.locationId) return parseInt(this.config.locationId, 10);
     // Auto-detect: use the first active location
     const data = await this.shopifyFetch("/locations.json");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const active = (data.locations ?? []).find((l: any) => l.active);
+    const active = (data.locations ?? []).find((location) => location.active);
     if (!active) throw new Error("No active Shopify location found");
     this.config.locationId = String(active.id);
     return active.id;

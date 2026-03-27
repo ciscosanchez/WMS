@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { asTenantDb } from "@/lib/tenant/db-types";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { createLpnSchema, addContentSchema, moveLpnSchema, receiveLpnSchema } from "./schemas";
@@ -216,9 +217,10 @@ export async function consumeLpn(lpnId: string) {
   if (!lpn.binId) throw new Error("LPN has no bin assigned, cannot break down into inventory");
 
   // Atomic: create individual inventory records for each content line, then mark consumed
-  const result = await db(tenant).$transaction(async (prisma: any) => {
+  const result = await db(tenant).$transaction(async (prisma: unknown) => {
+    const tx = asTenantDb(prisma);
     for (const line of lpn.contents) {
-      const existing = await prisma.inventory.findFirst({
+      const existing = await tx.inventory.findFirst({
         where: {
           productId: line.productId,
           binId: lpn.binId!,
@@ -228,7 +230,7 @@ export async function consumeLpn(lpnId: string) {
       });
 
       if (existing) {
-        await prisma.inventory.update({
+        await tx.inventory.update({
           where: { id: existing.id },
           data: {
             onHand: { increment: line.quantity },
@@ -236,7 +238,7 @@ export async function consumeLpn(lpnId: string) {
           },
         });
         await copyOperationalAttributeValuesBetweenScopes({
-          db: prisma,
+          db: tx,
           userId: user.id,
           sourceScope: "lpn",
           sourceEntityId: lpn.id,
@@ -244,7 +246,7 @@ export async function consumeLpn(lpnId: string) {
           targetEntityId: existing.id,
         });
       } else {
-        const inventory = await prisma.inventory.create({
+        const inventory = await tx.inventory.create({
           data: {
             productId: line.productId,
             binId: lpn.binId!,
@@ -256,7 +258,7 @@ export async function consumeLpn(lpnId: string) {
           },
         });
         await copyOperationalAttributeValuesBetweenScopes({
-          db: prisma,
+          db: tx,
           userId: user.id,
           sourceScope: "lpn",
           sourceEntityId: lpn.id,
@@ -266,7 +268,7 @@ export async function consumeLpn(lpnId: string) {
       }
 
       // Log inventory transaction
-      await prisma.inventoryTransaction.create({
+      await tx.inventoryTransaction.create({
         data: {
           type: "receive",
           productId: line.productId,
@@ -280,7 +282,7 @@ export async function consumeLpn(lpnId: string) {
       });
     }
 
-    return prisma.lpn.update({
+    return tx.lpn.update({
       where: { id: lpnId },
       data: { status: "lpn_consumed" },
     });
@@ -306,8 +308,9 @@ export async function receiveLpn(data: unknown) {
   const lpnNumber = await nextSequence(tenant.db, "LPN");
 
   // One-scan receive: create LPN + contents + inventory in one transaction
-  const result = await db(tenant).$transaction(async (prisma: any) => {
-    const lpn = await prisma.lpn.create({
+  const result = await db(tenant).$transaction(async (prisma: unknown) => {
+    const tx = asTenantDb(prisma);
+    const lpn = await tx.lpn.create({
       data: {
         lpnNumber,
         binId: parsed.binId,
@@ -328,7 +331,7 @@ export async function receiveLpn(data: unknown) {
 
     // Also create inventory records
     for (const line of parsed.contents) {
-      const existing = await prisma.inventory.findFirst({
+      const existing = await tx.inventory.findFirst({
         where: {
           productId: line.productId,
           binId: parsed.binId,
@@ -338,7 +341,7 @@ export async function receiveLpn(data: unknown) {
       });
 
       if (existing) {
-        await prisma.inventory.update({
+        await tx.inventory.update({
           where: { id: existing.id },
           data: {
             onHand: { increment: line.quantity },
@@ -346,7 +349,7 @@ export async function receiveLpn(data: unknown) {
           },
         });
         await copyOperationalAttributeValuesBetweenScopes({
-          db: prisma,
+          db: tx,
           userId: user.id,
           sourceScope: "lpn",
           sourceEntityId: lpn.id,
@@ -354,7 +357,7 @@ export async function receiveLpn(data: unknown) {
           targetEntityId: existing.id,
         });
       } else {
-        const inventory = await prisma.inventory.create({
+        const inventory = await tx.inventory.create({
           data: {
             productId: line.productId,
             binId: parsed.binId,
@@ -366,7 +369,7 @@ export async function receiveLpn(data: unknown) {
           },
         });
         await copyOperationalAttributeValuesBetweenScopes({
-          db: prisma,
+          db: tx,
           userId: user.id,
           sourceScope: "lpn",
           sourceEntityId: lpn.id,
@@ -375,7 +378,7 @@ export async function receiveLpn(data: unknown) {
         });
       }
 
-      await prisma.inventoryTransaction.create({
+      await tx.inventoryTransaction.create({
         data: {
           type: "receive",
           productId: line.productId,

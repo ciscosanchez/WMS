@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { nextSequence } from "@/lib/sequences";
 import { logAudit } from "@/lib/audit";
 
+type ProductLookup = { id: string; sku: string };
+
 export function verifyEbaySignature(body: string, signature: string, token: string): boolean {
   if (!signature || !token) return false;
   try {
@@ -111,10 +113,10 @@ async function handleOrderCreated(payload: any, conn: any) {
         select: { id: true, sku: true },
       })
     : [];
-  const bySku = new Map(prods.map((p: any) => [p.sku, p]));
+  const bySku = new Map((prods as ProductLookup[]).map((p) => [p.sku, p]));
   const lines = mapped.lineItems
     .map((li) => ({
-      productId: (bySku.get(li.sku) as any)?.id,
+      productId: bySku.get(li.sku)?.id,
       quantity: li.quantity,
       uom: "EA",
       unitPrice: li.unitPrice ?? null,

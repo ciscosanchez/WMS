@@ -1,6 +1,43 @@
 "use server";
 
 import { requirePortalContext } from "@/lib/tenant/context";
+import type { PrismaClient as TenantClient } from "../../../node_modules/.prisma/tenant-client";
+
+type PortalClientRecord = {
+  id: string;
+  name: string;
+};
+
+type PortalInventoryProduct = {
+  id: string;
+  sku: string;
+  name: string;
+  baseUom: string;
+  inventory: Array<{ bin: { code: string } | null }>;
+};
+
+type PortalOrderRecord = {
+  id: string;
+  orderNumber: string;
+  status: string;
+  shipToName: string;
+  shipToCity: string | null;
+  shipToState: string | null;
+  totalItems: number | null;
+  shipByDate: Date | null;
+  orderDate: Date;
+  shipments: Array<{ trackingNumber: string | null; carrier: string | null }>;
+};
+
+type PortalShipmentRecord = {
+  id: string;
+  shipmentNumber: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  status: string;
+  shippedAt: Date | null;
+  order: { orderNumber: string } | null;
+};
 
 async function getContext() {
   return requirePortalContext();
@@ -11,8 +48,10 @@ async function getContext() {
  * Uses portalClientId from JWT (set via TenantUser.portalClientId).
  * Returns null (fail-closed) if no portalClientId is bound.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolvePortalClient(db: any, portalClientId: string | null | undefined) {
+async function resolvePortalClient(
+  db: TenantClient,
+  portalClientId: string | null | undefined
+): Promise<PortalClientRecord | null> {
   if (!portalClientId) return null;
   return db.client.findFirst({
     where: { id: portalClientId, isActive: true },
@@ -21,8 +60,7 @@ async function resolvePortalClient(db: any, portalClientId: string | null | unde
 
 export async function getPortalInventory() {
   const { tenant, portalClientId } = await getContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const client = await resolvePortalClient(db, portalClientId);
   if (!client) return [];
@@ -64,7 +102,7 @@ export async function getPortalInventory() {
     )
   );
 
-  return products.map((p: any) => {
+  return (products as PortalInventoryProduct[]).map((p) => {
     const inv = invMap[p.id] ?? { onHand: 0, allocated: 0, available: 0 };
     const primaryBin = p.inventory[0]?.bin;
     return {
@@ -82,8 +120,7 @@ export async function getPortalInventory() {
 
 export async function getPortalOrders() {
   const { tenant, portalClientId } = await getContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const client = await resolvePortalClient(db, portalClientId);
   if (!client) return [];
@@ -101,7 +138,7 @@ export async function getPortalOrders() {
     take: 100,
   });
 
-  return orders.map((o: any) => ({
+  return (orders as PortalOrderRecord[]).map((o) => ({
     id: o.id,
     orderNumber: o.orderNumber,
     status: o.status,
@@ -118,8 +155,7 @@ export async function getPortalOrders() {
 
 export async function getPortalProducts() {
   const { tenant, portalClientId } = await getContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const client = await resolvePortalClient(db, portalClientId);
   if (!client) return [];
@@ -141,8 +177,7 @@ export async function createPortalOrder(data: {
   lineItems: Array<{ productId: string; quantity: number }>;
 }): Promise<{ orderNumber?: string; error?: string }> {
   const { user, tenant, portalClientId } = await getContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const client = await resolvePortalClient(db, portalClientId);
   if (!client) return { error: "No client account found" };
@@ -220,8 +255,7 @@ export async function createPortalOrder(data: {
 
 export async function getPortalShipments() {
   const { tenant, portalClientId } = await getContext();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = tenant.db as any;
+  const db = tenant.db as TenantClient;
 
   const client = await resolvePortalClient(db, portalClientId);
   if (!client) return [];
@@ -235,7 +269,7 @@ export async function getPortalShipments() {
     take: 100,
   });
 
-  return shipments.map((s: any) => ({
+  return (shipments as PortalShipmentRecord[]).map((s) => ({
     id: s.id,
     shipmentNumber: s.shipmentNumber,
     orderNumber: s.order?.orderNumber ?? "—",

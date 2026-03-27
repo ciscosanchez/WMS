@@ -11,6 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
+type AttributeDefinition = Awaited<ReturnType<typeof getOperationalAttributeDefinitions>>[number];
+type AttributeValue = string | boolean | string[];
+type AttributeOption = AttributeDefinition["options"][number];
+
 interface AddLineDialogProps {
   shipmentId: string;
   clientId: string;
@@ -33,16 +37,16 @@ export function AddLineDialog({
   const [expectedQty, setExpectedQty] = useState(1);
   const [lotNumber, setLotNumber] = useState("");
   const [loading, setLoading] = useState(false);
-  const [attributeDefinitions, setAttributeDefinitions] = useState<any[]>([]);
-  const [attributeValues, setAttributeValues] = useState<Record<string, string | boolean | string[]>>({});
+  const [attributeDefinitions, setAttributeDefinitions] = useState<AttributeDefinition[]>([]);
+  const [attributeValues, setAttributeValues] = useState<Record<string, AttributeValue>>({});
 
   useEffect(() => {
     getOperationalAttributeDefinitions("inbound_shipment_line", "receiving:write")
-      .then((definitions) => {
+      .then((definitions: AttributeDefinition[]) => {
         setAttributeDefinitions(definitions);
         setAttributeValues(
           Object.fromEntries(
-            definitions.map((definition: any) => [
+            definitions.map((definition) => [
               definition.id,
               definition.dataType === "boolean" ? false : "",
             ])
@@ -61,7 +65,7 @@ export function AddLineDialog({
         productId,
         expectedQty,
         lotNumber: lotNumber || null,
-        operationalAttributes: attributeDefinitions.map((definition: any) => ({
+        operationalAttributes: attributeDefinitions.map((definition) => ({
           definitionId: definition.id,
           value: attributeValues[definition.id] ?? null,
         })),
@@ -116,7 +120,7 @@ export function AddLineDialog({
           {attributeDefinitions.length > 0 && (
             <div className="space-y-4 rounded-md border p-3">
               <div className="text-sm font-medium">Operational Attributes</div>
-              {attributeDefinitions.map((definition: any) => (
+              {attributeDefinitions.map((definition) => (
                 <div key={definition.id} className="space-y-2">
                   <Label>{definition.label}</Label>
                   {definition.dataType === "boolean" ? (
@@ -144,7 +148,7 @@ export function AddLineDialog({
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                     >
                       <option value="">Select value...</option>
-                      {definition.options?.map((option: any) => (
+                      {definition.options?.map((option: AttributeOption) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
