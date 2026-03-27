@@ -62,26 +62,6 @@ function makeNotificationRequest(overrides: Partial<Record<string, string>> = {}
   });
 }
 
-function makeSubscriptionRequest(overrides: Partial<Record<string, string>> = {}): NextRequest {
-  const envelope = {
-    Type: "SubscriptionConfirmation",
-    MessageId: "test-msg-id",
-    TopicArn: "arn:aws:sns:us-east-1:123456789:test",
-    Message: "You have chosen to subscribe.",
-    Timestamp: "2026-01-01T00:00:00.000Z",
-    Token: "test-token",
-    SignatureVersion: "1",
-    Signature: "fake-signature",
-    SigningCertURL: "https://sns.us-east-1.amazonaws.com/cert.pem",
-    SubscribeURL: "https://sns.us-east-1.amazonaws.com/confirm?token=abc",
-    ...overrides,
-  };
-  return new NextRequest("http://localhost/api/webhooks/amazon", {
-    method: "POST",
-    body: JSON.stringify(envelope),
-  });
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("Amazon webhook — SNS signature verification", () => {
@@ -178,11 +158,9 @@ describe("Amazon webhook — SSRF protection (SubscribeURL)", () => {
     const canonical = fields.map(([k, v]) => `${k}\n${v}\n`).join("");
     const signature = signCanonical(canonical, privateKey);
 
-    let certFetched = false;
     let subscribeUrlFetched = false;
     global.fetch = jest.fn().mockImplementation((url: string) => {
       if (url === envelope.SigningCertURL) {
-        certFetched = true;
         return Promise.resolve({ ok: true, text: async () => publicKey });
       }
       if (url === envelope.SubscribeURL) {

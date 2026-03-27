@@ -7,6 +7,12 @@
 
 import { WalmartAdapter } from "@/lib/integrations/marketplaces/walmart";
 
+type WalmartAdapterWithMapOrder = WalmartAdapter & {
+  mapOrder: (order: unknown) => ReturnType<WalmartAdapter["fetchOrders"]> extends Promise<infer T>
+    ? T[number]
+    : never;
+};
+
 // Create adapter instance (won't hit real API in unit tests)
 function createTestAdapter() {
   return new WalmartAdapter({
@@ -25,7 +31,7 @@ describe("WalmartAdapter", () => {
   it("maps Walmart order to MarketplaceOrder format", () => {
     const adapter = createTestAdapter();
     // Access private method via prototype for testing
-    const mapOrder = (adapter as any).mapOrder.bind(adapter);
+    const mapOrder = (adapter as WalmartAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const walmartOrder = {
       purchaseOrderId: "WM-123456",
@@ -117,7 +123,7 @@ describe("WalmartAdapter", () => {
 
   it("handles missing address fields gracefully", () => {
     const adapter = createTestAdapter();
-    const mapOrder = (adapter as any).mapOrder.bind(adapter);
+    const mapOrder = (adapter as WalmartAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const minimalOrder = {
       purchaseOrderId: "WM-MIN",
@@ -137,7 +143,7 @@ describe("WalmartAdapter", () => {
 
   it("handles missing charges — defaults unitPrice to 0", () => {
     const adapter = createTestAdapter();
-    const mapOrder = (adapter as any).mapOrder.bind(adapter);
+    const mapOrder = (adapter as WalmartAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const order = {
       purchaseOrderId: "WM-NO-CHARGE",
@@ -162,7 +168,7 @@ describe("WalmartAdapter", () => {
 
   it("handles missing quantity — defaults to 1", () => {
     const adapter = createTestAdapter();
-    const mapOrder = (adapter as any).mapOrder.bind(adapter);
+    const mapOrder = (adapter as WalmartAdapterWithMapOrder).mapOrder.bind(adapter);
 
     const order = {
       purchaseOrderId: "WM-NO-QTY",

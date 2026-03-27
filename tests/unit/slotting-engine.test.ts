@@ -34,7 +34,7 @@ const HIGH_BIN: BinCandidate = {
   isEmpty: true,
 };
 
-const FLOOR_BIN: BinCandidate = {
+const _FLOOR_BIN: BinCandidate = {
   binId: "bin-floor",
   barcode: "BIN-F-01",
   shelfLevel: 1,
@@ -42,7 +42,7 @@ const FLOOR_BIN: BinCandidate = {
   isEmpty: true,
 };
 
-const MEDIUM_BIN: BinCandidate = {
+const _MEDIUM_BIN: BinCandidate = {
   binId: "bin-med",
   barcode: "BIN-M-01",
   shelfLevel: 3,

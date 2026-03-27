@@ -7,8 +7,6 @@
  * - createDispute / resolveDispute
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // ── Mock DB primitives ───────────────────────────────────────────────────────
 
 const mockDb = {

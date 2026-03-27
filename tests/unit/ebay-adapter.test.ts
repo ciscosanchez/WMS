@@ -165,8 +165,8 @@ describe("eBay status mapping", () => {
 });
 
 describe("EbayAdapter constructor", () => {
-  it.each([true, false])("constructs with sandbox=%s", (sandbox) => {
-    const { EbayAdapter } = require("@/lib/integrations/marketplaces/ebay");
+  it.each([true, false])("constructs with sandbox=%s", async (sandbox) => {
+    const { EbayAdapter } = await import("@/lib/integrations/marketplaces/ebay");
     const adapter = new EbayAdapter({
       appId: "app",
       certId: "cert",

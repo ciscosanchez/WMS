@@ -147,7 +147,7 @@ describe("LPN Container Tracking", () => {
       });
       mockDb.lpn.update.mockResolvedValue({ id: "lpn-1", binId: "bin-B", status: "lpn_active" });
 
-      const result = await moveLpn({ lpnId: "lpn-1", targetBinId: "bin-B" });
+      await moveLpn({ lpnId: "lpn-1", targetBinId: "bin-B" });
 
       expect(mockDb.lpn.update).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -27,9 +27,9 @@ describe("Audit utilities", () => {
     });
 
     it("detects null to value changes", () => {
-      const old = { name: "Acme", email: null };
-      const updates = { name: "Acme", email: "test@acme.com" };
-      const diff = diffChanges(old as any, updates as any);
+      const old: { name: string; email: string | null } = { name: "Acme", email: null };
+      const updates: Partial<typeof old> = { name: "Acme", email: "test@acme.com" };
+      const diff = diffChanges(old, updates);
       expect(diff).toEqual({ email: { old: null, new: "test@acme.com" } });
     });
   });
