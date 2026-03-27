@@ -51,6 +51,9 @@ describe("Zod schemas", () => {
         sku: "WIDGET-001",
         name: "Standard Widget",
         baseUom: "EA",
+        unitsPerCase: 24,
+        caseBarcode: "1234567890123",
+        uomConversions: [{ fromUom: "CS", toUom: "EA", factor: 24 }],
         weightUnit: "lb",
         dimUnit: "in",
         trackLot: false,
@@ -65,6 +68,31 @@ describe("Zod schemas", () => {
         clientId: "client-1",
         name: "Widget",
         isActive: true,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects duplicate conversion rows", () => {
+      const result = productSchema.safeParse({
+        clientId: "client-1",
+        sku: "WIDGET-002",
+        name: "Configured Widget",
+        baseUom: "EA",
+        uomConversions: [
+          { fromUom: "CS", toUom: "EA", factor: 24 },
+          { fromUom: "CS", toUom: "EA", factor: 12 },
+        ],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects conversions that do not resolve to the base UOM", () => {
+      const result = productSchema.safeParse({
+        clientId: "client-1",
+        sku: "WIDGET-003",
+        name: "Configured Widget",
+        baseUom: "EA",
+        uomConversions: [{ fromUom: "PLT", toUom: "CS", factor: 40 }],
       });
       expect(result.success).toBe(false);
     });

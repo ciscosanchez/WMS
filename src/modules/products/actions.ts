@@ -39,8 +39,14 @@ export async function createProduct(data: unknown) {
 
   const { user, tenant } = await requireTenantContext("products:write");
   const parsed = productSchema.parse(data);
+  const { uomConversions, ...productData } = parsed;
 
-  const product = await tenant.db.product.create({ data: parsed });
+  const product = await tenant.db.product.create({
+    data: {
+      ...productData,
+      uomConversions: uomConversions.length > 0 ? { create: uomConversions } : undefined,
+    },
+  });
 
   await logAudit(tenant.db, {
     userId: user.id,
@@ -59,11 +65,19 @@ export async function updateProduct(id: string, data: unknown) {
 
   const { user, tenant } = await requireTenantContext("products:write");
   const parsed = productSchema.parse(data);
+  const { uomConversions, ...productData } = parsed;
 
   const existing = await tenant.db.product.findUniqueOrThrow({ where: { id } });
-  const product = await tenant.db.product.update({
-    where: { id },
-    data: parsed,
+  const product = await tenant.db.$transaction(async (tx) => {
+    await tx.uomConversion.deleteMany({ where: { productId: id } });
+    return tx.product.update({
+      where: { id },
+      data: {
+        ...productData,
+        uomConversions: uomConversions.length > 0 ? { create: uomConversions } : undefined,
+      },
+      include: { uomConversions: true },
+    });
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

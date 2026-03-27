@@ -22,6 +22,8 @@ interface Product {
   sku: string;
   name: string;
   baseUom: string;
+  unitsPerCase?: number | null;
+  caseBarcode?: string | null;
   trackLot: boolean;
   trackSerial: boolean;
   isActive: boolean;
@@ -67,6 +69,20 @@ const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "baseUom",
     header: "UOM",
+    cell: ({ row }) => (
+      <div className="space-y-1">
+        <div className="font-medium">{row.original.baseUom}</div>
+        <div className="flex flex-wrap gap-1">
+          {row.original.unitsPerCase ? (
+            <Badge variant="secondary">{row.original.unitsPerCase}/CS</Badge>
+          ) : null}
+          {row.original.caseBarcode ? <Badge variant="outline">Case BC</Badge> : null}
+          {!row.original.unitsPerCase && !row.original.caseBarcode ? (
+            <span className="text-xs text-muted-foreground">Base only</span>
+          ) : null}
+        </div>
+      </div>
+    ),
   },
   {
     id: "tracking",

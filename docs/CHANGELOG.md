@@ -2,6 +2,31 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-27 — Product UOM and Packaging Setup
+
+### Product Master Data
+
+- Replaced free-text `Base UOM` entry with a structured product packaging flow
+- Added controlled base-UOM selection for new and edit product screens
+- Added packaging metadata fields:
+  - units per case
+  - case barcode
+- Added packaging conversion management through a dedicated configuration dialog
+- Persisted `uom_conversions` during product create and update operations
+
+### Product UX
+
+- Unified new and edit product screens around a shared product editor
+- Added weight-unit and dimension-unit selectors to the new-product flow so it now matches edit behavior
+- Added packaging summary visibility to the products table so case-pack setup is visible without opening the SKU
+
+### Validation
+
+- Added schema validation for:
+  - normalized UOM codes
+  - duplicate conversion prevention
+  - ensuring conversions resolve back to the selected base UOM
+
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 
 ### RBAC Phase 5
