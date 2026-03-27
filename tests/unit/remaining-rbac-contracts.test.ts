@@ -110,10 +110,10 @@ describe("remaining RBAC contracts", () => {
     expect(mockRequireTenantContext).toHaveBeenCalledWith("operator:write");
   });
 
-  it("requires reports:read for locale updates", async () => {
+  it("allows locale updates for any tenant user", async () => {
     const { updateUserLocale } = await import("@/modules/users/actions");
     await updateUserLocale("en");
-    expect(mockRequireTenantContext).toHaveBeenCalledWith("reports:read");
+    expect(mockRequireTenantContext).toHaveBeenCalledWith();
   });
 
   it("requires orders:write for Shopify order imports", async () => {
