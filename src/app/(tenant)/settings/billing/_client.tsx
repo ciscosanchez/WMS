@@ -91,7 +91,11 @@ export default function BillingConfigClient({
   function handleSaveDefaults() {
     startDefault(async () => {
       await saveDefaultRateCard(
-        defaultRates.map((r) => ({ serviceType: r.serviceType, unitRate: r.unitRate, uom: r.uom })),
+        defaultRates.map((r) => ({
+          serviceType: r.serviceType,
+          unitRate: r.unitRate,
+          uom: r.basisCode,
+        })),
         defaultMinimum
       );
       toast.success("Default rates saved");
@@ -123,7 +127,11 @@ export default function BillingConfigClient({
     startClient(async () => {
       await saveClientRateCard(
         activeClient.id,
-        clientRates.map((r) => ({ serviceType: r.serviceType, unitRate: r.unitRate, uom: r.uom })),
+        clientRates.map((r) => ({
+          serviceType: r.serviceType,
+          unitRate: r.unitRate,
+          uom: r.basisCode,
+        })),
         clientMinimum
       );
       toast.success(`Rates saved for ${activeClient.name}`);
@@ -190,7 +198,7 @@ export default function BillingConfigClient({
                 <TableRow>
                   <TableHead>Service</TableHead>
                   <TableHead className="w-40">Rate</TableHead>
-                  <TableHead className="w-20">UOM</TableHead>
+                  <TableHead className="w-36">Rate Basis</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -209,7 +217,7 @@ export default function BillingConfigClient({
                         }
                       />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{rate.uom}</TableCell>
+                    <TableCell className="text-muted-foreground">{rate.basisLabel}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -412,7 +420,7 @@ export default function BillingConfigClient({
                 <TableRow>
                   <TableHead>Service</TableHead>
                   <TableHead className="w-40">Rate</TableHead>
-                  <TableHead className="w-20">UOM</TableHead>
+                  <TableHead className="w-36">Rate Basis</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -432,7 +440,7 @@ export default function BillingConfigClient({
                           onChange={(e) => handleClientRateChange(rate.serviceType, e.target.value)}
                         />
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{rate.uom}</TableCell>
+                      <TableCell className="text-muted-foreground">{rate.basisLabel}</TableCell>
                     </TableRow>
                   );
                 })}

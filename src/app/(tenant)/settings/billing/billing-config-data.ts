@@ -2,7 +2,8 @@ export interface RateLine {
   serviceType: string;
   label: string;
   unitRate: number;
-  uom: string;
+  basisCode: string;
+  basisLabel: string;
 }
 
 export interface ClientRow {
@@ -34,16 +35,66 @@ export interface BillingConfigProps {
   invoices: InvoiceRow[];
 }
 
-const SERVICE_CONFIG: Array<{ serviceType: string; label: string; uom: string }> = [
-  { serviceType: "receiving_pallet", label: "Receiving — Per Pallet", uom: "$" },
-  { serviceType: "receiving_carton", label: "Receiving — Per Carton", uom: "$" },
-  { serviceType: "storage_pallet", label: "Storage — Per Pallet / Month", uom: "$" },
-  { serviceType: "storage_sqft", label: "Storage — Per Sq Ft / Month", uom: "$" },
-  { serviceType: "handling_order", label: "Handling — Per Order", uom: "$" },
-  { serviceType: "handling_line", label: "Handling — Per Line", uom: "$" },
-  { serviceType: "handling_unit", label: "Handling — Per Unit", uom: "$" },
-  { serviceType: "shipping_markup", label: "Shipping — Markup", uom: "%" },
-  { serviceType: "value_add_hour", label: "Value-Add — Per Hour", uom: "$" },
+const SERVICE_CONFIG: Array<{
+  serviceType: string;
+  label: string;
+  basisCode: string;
+  basisLabel: string;
+}> = [
+  {
+    serviceType: "receiving_pallet",
+    label: "Receiving — Per Pallet",
+    basisCode: "per_pallet_usd",
+    basisLabel: "$ / pallet",
+  },
+  {
+    serviceType: "receiving_carton",
+    label: "Receiving — Per Carton",
+    basisCode: "per_carton_usd",
+    basisLabel: "$ / carton",
+  },
+  {
+    serviceType: "storage_pallet",
+    label: "Storage — Per Pallet / Month",
+    basisCode: "per_pallet_month_usd",
+    basisLabel: "$ / pallet / month",
+  },
+  {
+    serviceType: "storage_sqft",
+    label: "Storage — Per Sq Ft / Month",
+    basisCode: "per_sqft_month_usd",
+    basisLabel: "$ / sq ft / month",
+  },
+  {
+    serviceType: "handling_order",
+    label: "Handling — Per Order",
+    basisCode: "per_order_usd",
+    basisLabel: "$ / order",
+  },
+  {
+    serviceType: "handling_line",
+    label: "Handling — Per Line",
+    basisCode: "per_line_usd",
+    basisLabel: "$ / line",
+  },
+  {
+    serviceType: "handling_unit",
+    label: "Handling — Per Unit",
+    basisCode: "per_unit_usd",
+    basisLabel: "$ / unit",
+  },
+  {
+    serviceType: "shipping_markup",
+    label: "Shipping — Markup",
+    basisCode: "percent_markup",
+    basisLabel: "% markup",
+  },
+  {
+    serviceType: "value_add_hour",
+    label: "Value-Add — Per Hour",
+    basisCode: "per_hour_usd",
+    basisLabel: "$ / hour",
+  },
 ];
 
 const DEFAULT_RATES: Record<string, number> = {
@@ -67,7 +118,8 @@ export function buildRateLines(
       serviceType: cfg.serviceType,
       label: cfg.label,
       unitRate: saved ? Number(saved.unitRate) : (DEFAULT_RATES[cfg.serviceType] ?? 0),
-      uom: cfg.uom,
+      basisCode: cfg.basisCode,
+      basisLabel: cfg.basisLabel,
     };
   });
 }

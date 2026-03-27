@@ -41,6 +41,18 @@ All notable changes to Ramola WMS.
 - Added light, dark, and system theme support through a root theme provider
 - Added a theme selector in tenant settings for per-browser appearance preference
 
+### Client and Billing Cleanup
+
+- Replaced separate client create/edit forms with a shared structured client form
+- Normalized client master-data entry for:
+  - country
+  - state / province
+  - phone number
+  - trimmed contact and address fields
+- Added supported country and region reference data for client setup
+- Tightened client schema validation so unsupported country and region combinations are rejected consistently
+- Reframed billing service configuration from loose UOM labels to explicit rate-basis codes and labels in the settings UI
+
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 
 ### RBAC Phase 5

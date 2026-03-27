@@ -199,6 +199,7 @@
       "address": "Address",
       "city": "City",
       "state": "State",
+      "selectState": "Select state or province",
       "country": "Country",
       "zipCode": "Zip Code",
       "notes": "Notes",
@@ -218,7 +219,8 @@
       "creating": "Creating...",
       "createClient": "Create Client",
       "clientCreated": "Client created",
-      "failedCreate": "Failed to create client"
+      "failedCreate": "Failed to create client",
+      "deleting": "Deleting..."
     },
     "billing": {
       "title": "Billing Operations",

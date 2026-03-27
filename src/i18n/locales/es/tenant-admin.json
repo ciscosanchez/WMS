@@ -199,6 +199,7 @@
       "address": "Dirección",
       "city": "Ciudad",
       "state": "Estado",
+      "selectState": "Seleccionar estado o provincia",
       "country": "País",
       "zipCode": "Código postal",
       "notes": "Notas",
@@ -218,7 +219,8 @@
       "creating": "Creando...",
       "createClient": "Crear cliente",
       "clientCreated": "Cliente creado",
-      "failedCreate": "Error al crear cliente"
+      "failedCreate": "Error al crear cliente",
+      "deleting": "Eliminando..."
     },
     "billing": {
       "title": "Operaciones de Facturación",
