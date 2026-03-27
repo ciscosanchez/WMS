@@ -36,6 +36,11 @@ All notable changes to Ramola WMS.
   - case-pack fallback
   - requested-UOM to base-unit conversion
 
+### User Preferences
+
+- Added light, dark, and system theme support through a root theme provider
+- Added a theme selector in tenant settings for per-browser appearance preference
+
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 
 ### RBAC Phase 5

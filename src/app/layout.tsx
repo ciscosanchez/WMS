@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { QueryProvider } from "@/providers/query-provider";
 import { SessionProvider } from "@/providers/session-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -45,16 +46,18 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider>
           <QueryProvider>
-            <NextIntlClientProvider messages={messages}>
-              <TooltipProvider>
-                {children}
-                <Toaster />
-              </TooltipProvider>
-            </NextIntlClientProvider>
+            <ThemeProvider>
+              <NextIntlClientProvider messages={messages}>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                </TooltipProvider>
+              </NextIntlClientProvider>
+            </ThemeProvider>
           </QueryProvider>
         </SessionProvider>
       </body>

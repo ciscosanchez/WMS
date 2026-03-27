@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { TenantAuthMode, TenantSsoProviderConfig } from "@/lib/auth/tenant-auth";
 import { PageHeader } from "@/components/shared/page-header";
@@ -21,8 +21,12 @@ import {
   Trash2,
   Users,
   Plug,
+  MonitorCog,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { saveTenantSettings } from "@/modules/settings/actions";
+import { useTheme } from "next-themes";
 
 interface Settings {
   companyName: string;
@@ -40,6 +44,7 @@ interface Settings {
 }
 
 export function SettingsClient({ initialSettings }: { initialSettings: Settings }) {
+  const { theme, setTheme } = useTheme();
   const [companyName, setCompanyName] = useState(initialSettings.companyName);
   const [timezone, setTimezone] = useState(initialSettings.timezone);
   const [dateFormat, setDateFormat] = useState(initialSettings.dateFormat);
@@ -55,6 +60,11 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
     initialSettings.ssoProviders
   );
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function addSsoProvider() {
     setSsoProviders((current) => [
@@ -196,6 +206,42 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
               <p className="text-xs text-muted-foreground">
                 Default language for all users. Individual users can override this from their
                 profile menu.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Theme</Label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button
+                  type="button"
+                  variant={mounted && theme === "light" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("light")}
+                >
+                  <Sun className="mr-2 h-4 w-4" />
+                  Light
+                </Button>
+                <Button
+                  type="button"
+                  variant={mounted && theme === "dark" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("dark")}
+                >
+                  <Moon className="mr-2 h-4 w-4" />
+                  Dark
+                </Button>
+                <Button
+                  type="button"
+                  variant={mounted && theme === "system" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setTheme("system")}
+                >
+                  <MonitorCog className="mr-2 h-4 w-4" />
+                  System
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Applies to your current browser and device. Tenant defaults stay separate from this
+                personal preference.
               </p>
             </div>
           </CardContent>
