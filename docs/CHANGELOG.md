@@ -161,6 +161,14 @@ All notable changes to Ramola WMS.
   - show on packing list
 - Advanced JSON fields remain available for custom behavior and display rules
 
+## 2026-03-26 — Operational Attribute Rollout Prep
+
+### Tenant Migration Safety
+
+- Added `scripts/apply-tenant-migrations.ts` to apply versioned tenant SQL migrations across existing tenant schemas
+- Added `npm run db:migrate:tenants` as the standard operational entrypoint for tenant-schema rollout
+- This closes the rollout gap for live `tenant_*` schemas that do not use Prisma migration history
+
 ## 2026-03-26 — RBAC Persona Hardening
 
 ### Access Model
