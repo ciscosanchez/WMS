@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,15 +21,20 @@ interface Rate {
 }
 
 export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
+  const t = useTranslations("tenant.shipping");
   const router = useRouter();
   const [rates, setRates] = useState<Rate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     getRatesForShipment(shipmentId)
-      .then((result) => setRates(result.rates))
+      .then((result) => {
+        setRates(result.rates);
+        setError(result.error ?? null);
+      })
       .finally(() => setLoading(false));
   }, [shipmentId]);
 
@@ -45,7 +51,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
         toast.error(result.error);
         setSelectedCode(null);
       } else {
-        toast.success(`${rate.carrier} ${rate.service} selected`);
+        toast.success(t("rateSelected", { carrier: rate.carrier, service: rate.service }));
         router.refresh();
       }
     });
@@ -53,25 +59,34 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
 
   if (loading) {
     return (
-      <Card>
+        <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground animate-pulse">
-          Shopping rates…
+          {t("shoppingRates")}
         </CardContent>
       </Card>
     );
   }
 
   if (rates.length === 0) {
-    return null;
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{t("rateShopping")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{error ?? t("noRatesAvailable")}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const cheapest = rates[0];
   const fastest = [...rates].sort((a, b) => a.estimatedDays - b.estimatedDays)[0];
 
   return (
-    <Card>
+      <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Rate Shopping</CardTitle>
+        <CardTitle className="text-base">{t("rateShopping")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -91,28 +106,28 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
                     <div className="flex items-center gap-2 text-sm font-medium">
                       {rate.carrier} — {rate.service}
                       {isCheapest && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Zap className="mr-1 h-3 w-3" />
-                          Best price
+                          <Badge variant="secondary" className="text-xs">
+                            <Zap className="mr-1 h-3 w-3" />
+                          {t("bestPrice")}
                         </Badge>
                       )}
                       {isFastest && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Clock className="mr-1 h-3 w-3" />
-                          Fastest
+                          <Badge variant="secondary" className="text-xs">
+                            <Clock className="mr-1 h-3 w-3" />
+                          {t("fastest")}
                         </Badge>
                       )}
                       {rate.guaranteed && (
-                        <Badge variant="outline" className="text-xs text-green-700">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Guaranteed
+                          <Badge variant="outline" className="text-xs text-green-700">
+                            <CheckCircle2 className="mr-1 h-3 w-3" />
+                          {t("guaranteed")}
                         </Badge>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {rate.estimatedDays === 1
-                        ? "Next day"
-                        : `${rate.estimatedDays} business days`}
+                        ? t("nextDay")
+                        : t("businessDays", { count: rate.estimatedDays })}
                     </div>
                   </div>
                 </div>
@@ -124,7 +139,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
                     disabled={isPending}
                     onClick={() => handleSelect(rate)}
                   >
-                    {selectedCode === rate.serviceCode && isPending ? "Saving…" : "Select"}
+                    {selectedCode === rate.serviceCode && isPending ? t("saving") : t("select")}
                   </Button>
                 </div>
               </div>
@@ -132,7 +147,7 @@ export function RateShoppingCard({ shipmentId }: { shipmentId: string }) {
           })}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          * Rates are estimates. Live rates activate when carrier credentials are configured.
+          {t("ratesEstimateNote")}
         </p>
       </CardContent>
     </Card>

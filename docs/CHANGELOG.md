@@ -61,6 +61,7 @@ All notable changes to Ramola WMS.
 - Added structured carton-type create/edit flows with controlled dimension and weight unit selection
 - Replaced dead carton-type new/edit links with working pages backed by normalized carton schema validation
 - Shipping rate shopping and label generation now derive fallback package dimensions from configured carton types instead of always using hardcoded box defaults
+- Shipping rate shopping and mark-shipped surfaces now use fulfillment i18n strings and show clearer validation / empty-state feedback
 
 ## 2026-03-27 — RBAC Governance, CI Recovery, and Docs Refresh
 
