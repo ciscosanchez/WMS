@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import {
   Settings,
   Building2,
 } from "lucide-react";
+import { clearLocaleCookie } from "@/modules/users/actions";
 
 const navLinks = [
   { href: "/portal/inventory", label: "Inventory", icon: Package },
@@ -45,8 +47,10 @@ export default function PortalLayout({
   userName: string;
 }) {
   const pathname = usePathname();
+  const tCommon = useTranslations("common");
 
   async function handleSignOut() {
+    await clearLocaleCookie();
     await signOut({ redirect: false });
     window.location.href = `${window.location.origin}/login`;
   }
@@ -115,7 +119,7 @@ export default function PortalLayout({
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => void handleSignOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                {tCommon("signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

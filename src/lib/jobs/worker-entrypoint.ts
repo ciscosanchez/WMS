@@ -20,12 +20,13 @@ import { PrismaClient as PublicPrismaClient } from "../../../node_modules/.prism
 import { PrismaClient as TenantPrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { getDefaultEmailFrom } from "../app-runtime";
 import { getShopifyAdapterForTenant } from "../integrations/marketplaces/shopify";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
-const EMAIL_FROM = process.env.EMAIL_FROM || "Ramola WMS <noreply@wms.ramola.app>";
+const EMAIL_FROM = getDefaultEmailFrom("Ramola WMS");
 const APP_NAME = process.env.APP_NAME || "Ramola WMS";
 
 /**

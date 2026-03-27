@@ -4,6 +4,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import { compare } from "bcryptjs";
 import { cookies } from "next/headers";
 import { publicDb } from "@/lib/db";
+import { getCookieDomain } from "@/lib/app-runtime";
 import { RateLimiter } from "@/lib/security/rate-limit";
 import {
   WMS_SSO_PROVIDER_COOKIE,
@@ -189,8 +190,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "jwt",
   },
-  // Use cookies scoped to .wms.ramola.app so the session is shared
-  // across all tenant subdomains (armstrong.wms.ramola.app, etc.)
+  // Scope cookies to the base app domain in production so tenant subdomains
+  // share the same auth/session state.
   cookies:
     process.env.NODE_ENV === "production"
       ? {
@@ -201,7 +202,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               sameSite: "lax",
               path: "/",
               secure: true,
-              domain: ".wms.ramola.app",
+              domain: getCookieDomain(),
             },
           },
           callbackUrl: {
@@ -211,17 +212,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               sameSite: "lax",
               path: "/",
               secure: true,
-              domain: ".wms.ramola.app",
+              domain: getCookieDomain(),
             },
           },
           csrfToken: {
             name: "__Secure-authjs.csrf-token",
             options: {
-              httpOnly: true,
+              httpOnly: false,
               sameSite: "lax",
               path: "/",
               secure: true,
-              domain: ".wms.ramola.app",
+              domain: getCookieDomain(),
             },
           },
         }

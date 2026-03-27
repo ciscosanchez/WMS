@@ -38,7 +38,9 @@
     "noResultsTable": "No results.",
     "rows": "{count} row(s)",
     "pageOf": "Page {page} of {total}",
-    "searchPlaceholder": "Search..."
+    "searchPlaceholder": "Search...",
+    "useTenantDefault": "Use tenant default",
+    "failedToChangeLanguage": "Failed to change language"
   },
   "sidebar": {
     "overview": "Overview",

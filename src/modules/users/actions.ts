@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { hash } from "bcryptjs";
 import { randomBytes, createHash } from "crypto";
 import { publicDb } from "@/lib/db/public-client";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { sendPasswordSetLink } from "@/lib/email/resend";
+import { getAppBaseUrl, getCookieDomain, isSupportedLocale } from "@/lib/app-runtime";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import {
   getAccessRisks,
@@ -157,7 +159,7 @@ export async function inviteUser(opts: {
     });
 
     // Send invite email with password-set link — raw token in URL, hash in DB
-    const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+    const baseUrl = getAppBaseUrl();
     const setPasswordUrl = isNewUser
       ? `${baseUrl}/set-password?token=${rawToken}`
       : `${baseUrl}/login`;
@@ -722,7 +724,11 @@ export async function bulkApplyPermissionPreset(input: {
  */
 export async function updateUserLocale(locale: string | null): Promise<{ error?: string }> {
   try {
-    const { user } = await requireTenantContext("reports:read");
+    const { user } = await requireTenantContext();
+
+    if (locale !== null && !isSupportedLocale(locale)) {
+      return { error: "Unsupported locale" };
+    }
 
     await publicDb.user.update({
       where: { id: user.id },
@@ -731,9 +737,9 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
 
     // Set a cookie so the middleware picks up the change immediately
     // (JWT won't refresh until next sign-in)
-    const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
     const isProd = process.env.NODE_ENV === "production";
+    const cookieDomain = getCookieDomain();
 
     if (locale) {
       cookieStore.set("locale", locale, {
@@ -742,13 +748,13 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
         sameSite: "lax",
         secure: isProd,
         maxAge: 60 * 60 * 24 * 365,
-        ...(isProd && { domain: ".wms.ramola.app" }),
+        ...(cookieDomain && { domain: cookieDomain }),
       });
     } else {
       cookieStore.delete({
         name: "locale",
         path: "/",
-        ...(isProd && { domain: ".wms.ramola.app" }),
+        ...(cookieDomain && { domain: cookieDomain }),
       });
     }
 
@@ -758,6 +764,16 @@ export async function updateUserLocale(locale: string | null): Promise<{ error?:
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to update locale" };
   }
+}
+
+export async function clearLocaleCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  const cookieDomain = getCookieDomain();
+  cookieStore.delete({
+    name: "locale",
+    path: "/",
+    ...(cookieDomain && { domain: cookieDomain }),
+  });
 }
 
 export async function removeUser(userId: string): Promise<{ error: string } | { ok: true }> {

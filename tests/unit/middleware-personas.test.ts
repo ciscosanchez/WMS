@@ -27,6 +27,7 @@ describe("middleware persona routing", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.AUTH_SECRET = "test-secret";
+    process.env.AUTH_URL = "https://wms.ramola.app";
     delete process.env.TENANT_RESOLUTION;
     mockTenantMiddleware.mockReturnValue(NextResponse.next());
   });

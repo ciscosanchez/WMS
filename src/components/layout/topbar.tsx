@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -20,14 +20,11 @@ import { toast } from "sonner";
 import { Breadcrumbs } from "./breadcrumbs";
 import { SearchCommand } from "./search-command";
 import { NotificationBell } from "./notification-bell";
-import { updateUserLocale } from "@/modules/users/actions";
+import { clearLocaleCookie, updateUserLocale } from "@/modules/users/actions";
+import { getLocaleLabels } from "@/lib/app-runtime";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
-
-const LOCALE_LABELS: Record<string, string> = {
-  en: "English",
-  es: "Español",
-};
+const LOCALE_LABELS = getLocaleLabels();
 
 function getInitials(name: string | undefined | null): string {
   if (!name) return "??";
@@ -42,16 +39,20 @@ function getInitials(name: string | undefined | null): string {
 export function Topbar() {
   const { data: session } = useSession();
   const locale = useLocale();
+  const tCommon = useTranslations("common");
 
   const userName = USE_MOCK ? "Admin User" : (session?.user?.name ?? "User");
   const userEmail = USE_MOCK ? "admin@ramola.io" : (session?.user?.email ?? "");
   const initials = getInitials(userName);
+  const localeLabel =
+    locale in LOCALE_LABELS ? LOCALE_LABELS[locale as keyof typeof LOCALE_LABELS] : locale;
 
   async function handleSignOut() {
     if (USE_MOCK) {
       window.location.href = "/login";
       return;
     }
+    await clearLocaleCookie();
     // Sign out without NextAuth's redirect (it routes through AUTH_URL
     // which is wms.ramola.app, losing the tenant subdomain).
     // Instead, clear the session then redirect manually.
@@ -69,16 +70,20 @@ export function Topbar() {
         window.location.reload();
       }
     } catch {
-      toast.error("Failed to change language");
+      toast.error(tCommon("failedToChangeLanguage"));
     }
   }
 
   async function handleResetLocale() {
-    const result = await updateUserLocale(null);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      window.location.reload();
+    try {
+      const result = await updateUserLocale(null);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        window.location.reload();
+      }
+    } catch {
+      toast.error(tCommon("failedToChangeLanguage"));
     }
   }
 
@@ -105,7 +110,7 @@ export function Topbar() {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Globe className="mr-2 h-4 w-4" />
-                {LOCALE_LABELS[locale] ?? locale}
+                {localeLabel}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 {Object.entries(LOCALE_LABELS).map(([code, label]) => (
@@ -115,12 +120,14 @@ export function Topbar() {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleResetLocale()}>
-                  <span className="ml-6 text-muted-foreground">Use tenant default</span>
+                <DropdownMenuItem onClick={() => void handleResetLocale()}>
+                  <span className="ml-6 text-muted-foreground">{tCommon("useTenantDefault")}</span>
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => void handleSignOut()}>
+              {tCommon("signOut")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

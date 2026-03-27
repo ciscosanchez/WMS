@@ -9,6 +9,7 @@ import type { TenantPlan } from "../../../node_modules/.prisma/public-client";
 import { provisionTenant } from "@/lib/db/provisioner";
 import { runTenantMigrations } from "@/lib/db/tenant-migrations";
 import { sendPasswordSetLink } from "@/lib/email/resend";
+import { getAppBaseUrl } from "@/lib/app-runtime";
 
 const VALID_TENANT_PLANS = new Set(["starter", "professional", "enterprise"]);
 
@@ -173,7 +174,7 @@ async function createTenantAdmin(
 
   // Always send a fresh setup link so tenant onboarding works for existing
   // users that were partially created earlier or do not know their password.
-  const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+  const baseUrl = getAppBaseUrl();
   const setPasswordUrl = `${baseUrl}/set-password?token=${rawToken}`;
 
   await sendPasswordSetLink({

@@ -7,6 +7,7 @@
  * so emails are sent in the tenant's locale.
  */
 import { Resend } from "resend";
+import { getDefaultEmailFrom } from "@/lib/app-runtime";
 import { getServerTranslations } from "@/i18n/server";
 
 function getClient(): Resend | null {
@@ -15,7 +16,7 @@ function getClient(): Resend | null {
   return new Resend(key);
 }
 
-const FROM = process.env.EMAIL_FROM || "Ramola WMS <noreply@wms.ramola.app>";
+const FROM = getDefaultEmailFrom("Ramola WMS");
 const APP_NAME = process.env.APP_NAME || "Ramola WMS";
 
 export interface SendResult {

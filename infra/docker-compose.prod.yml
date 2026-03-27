@@ -68,7 +68,6 @@ services:
       - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.security-headers.headers.browserXssFilter=true"
       - "traefik.http.middlewares.security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
       # Rate limiting middleware
@@ -132,9 +131,9 @@ services:
       PORT: 3000
       DATABASE_URL: ${WMS_DATABASE_URL}
       REDIS_URL: redis://redis:6379
+      APP_DOMAIN: ${APP_DOMAIN:-wms.ramola.app}
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: https://wms.ramola.app
-      AUTH_TRUST_HOST: "true"
       USE_MOCK_AUTH: "false"
       USE_MOCK_DATA: "false"
       TENANT_RESOLUTION: subdomain
@@ -188,7 +187,6 @@ services:
       - "traefik.http.middlewares.wms-security-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.wms-security-headers.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.wms-security-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.wms-security-headers.headers.browserXssFilter=true"
       - "traefik.http.middlewares.wms-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.wms-security-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.wms-rate-limit.ratelimit.average=100"
@@ -205,7 +203,11 @@ services:
           cpus: "1.5"
           memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://localhost:3000/'').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -302,7 +304,11 @@ services:
           cpus: "1.0"
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3002/api/v1/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://localhost:3002/api/v1/health'').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -343,7 +349,6 @@ services:
       - "traefik.http.middlewares.dispatch-security-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.dispatch-security-headers.headers.forceSTSHeader=true"
       - "traefik.http.middlewares.dispatch-security-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.dispatch-security-headers.headers.browserXssFilter=true"
       - "traefik.http.middlewares.dispatch-security-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       - "traefik.http.middlewares.dispatch-security-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.dispatch-rate-limit.ratelimit.average=100"
@@ -359,7 +364,11 @@ services:
           cpus: "1.0"
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://localhost:3001/'').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

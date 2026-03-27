@@ -32,6 +32,17 @@ const DEFAULT_SSO_DISCOVERY: SsoDiscoveryResult = {
   sso: [],
 };
 
+function getSafeRedirectUrl(resultUrl: string | null | undefined, fallbackPath: string) {
+  if (!resultUrl) return fallbackPath;
+
+  try {
+    const resolved = new URL(resultUrl, window.location.origin);
+    return resolved.origin === window.location.origin ? resolved.toString() : fallbackPath;
+  } catch {
+    return fallbackPath;
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,7 +115,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError(t("invalidCredentials"));
       } else {
-        window.location.assign(result?.url ?? callbackUrl);
+        window.location.assign(getSafeRedirectUrl(result?.url, callbackUrl));
         return;
       }
     } catch {

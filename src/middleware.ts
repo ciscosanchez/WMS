@@ -3,6 +3,7 @@ import { tenantMiddleware } from "@/lib/tenant/middleware";
 import { getDefaultTenantPath, isPortalUser } from "@/lib/auth/personas";
 import type { SessionLikeUser } from "@/lib/auth/personas";
 import { MOCK_AUTH_COOKIE, decodeMockAuthCookie } from "@/lib/auth/mock-auth";
+import { buildTenantAppUrl, defaultLocale, isSupportedLocale } from "@/lib/app-runtime";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -112,7 +113,7 @@ export async function middleware(request: NextRequest) {
       if (tenants.length > 0) {
         const tenantPath =
           pathname === "/" ? getDefaultTenantPath(authUser, tenants[0].slug) : pathname;
-        const tenantUrl = `https://${tenants[0].slug}.wms.ramola.app${tenantPath}`;
+        const tenantUrl = buildTenantAppUrl(tenants[0].slug, tenantPath);
         return NextResponse.redirect(tenantUrl);
       }
     }
@@ -146,12 +147,14 @@ export async function middleware(request: NextRequest) {
   // --- Locale resolution ---
   // Priority: cookie (instant update) > JWT locale > tenant default > "en"
   const localeCookie = request.cookies.get("locale")?.value;
+  const localeCandidates = [
+    localeCookie,
+    token?.locale as string | undefined,
+    authUser?.locale,
+    token?.tenantLocale as string | undefined,
+  ];
   const locale =
-    localeCookie ??
-    (token?.locale as string | undefined) ??
-    authUser?.locale ??
-    (token?.tenantLocale as string | undefined) ??
-    "en";
+    localeCandidates.find((candidate) => isSupportedLocale(candidate)) ?? defaultLocale;
   response.headers.set("x-locale", locale);
 
   // --- Security headers ---

@@ -3,6 +3,7 @@
 import { createHash, randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { publicDb } from "@/lib/db/public-client";
+import { getAppBaseUrl } from "@/lib/app-runtime";
 import { sendPasswordResetLink } from "@/lib/email/resend";
 import { RateLimiter } from "@/lib/security/rate-limit";
 
@@ -55,7 +56,7 @@ export async function requestPasswordReset(
     },
   });
 
-  const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
+  const baseUrl = getAppBaseUrl();
   const resetPasswordUrl = `${baseUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
   const tenantLocale = (user.tenantUsers[0]?.tenant?.settings as Record<string, unknown> | null)
     ?.locale;
