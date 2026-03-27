@@ -212,20 +212,20 @@ const rolePermissions: Record<TenantRole, string[]> = {
   viewer: Object.keys(PERMISSION_LEVEL).filter((p) => PERMISSION_LEVEL[p] <= ROLE_LEVEL.viewer),
 };
 
-export function normalizePermissionOverrides(
-  raw: unknown
-): PermissionOverrides {
+export function normalizePermissionOverrides(raw: unknown): PermissionOverrides {
   if (!raw || typeof raw !== "object") return EMPTY_PERMISSION_OVERRIDES;
 
   const candidate = raw as { grants?: unknown; denies?: unknown };
   const grants = Array.isArray(candidate.grants)
-    ? candidate.grants.filter((permission): permission is Permission =>
-        typeof permission === "string" && permission in PERMISSION_LEVEL
+    ? candidate.grants.filter(
+        (permission): permission is Permission =>
+          typeof permission === "string" && permission in PERMISSION_LEVEL
       )
     : [];
   const denies = Array.isArray(candidate.denies)
-    ? candidate.denies.filter((permission): permission is Permission =>
-        typeof permission === "string" && permission in PERMISSION_LEVEL
+    ? candidate.denies.filter(
+        (permission): permission is Permission =>
+          typeof permission === "string" && permission in PERMISSION_LEVEL
       )
     : [];
 
@@ -239,10 +239,7 @@ export function getPermissions(role: TenantRole): Permission[] {
   return (rolePermissions[role] ?? []) as Permission[];
 }
 
-export function getEffectivePermissions(
-  role: TenantRole,
-  overrides?: unknown
-): Permission[] {
+export function getEffectivePermissions(role: TenantRole, overrides?: unknown): Permission[] {
   const normalized = normalizePermissionOverrides(overrides);
   const effective = new Set<Permission>(getPermissions(role));
 
@@ -257,11 +254,7 @@ export function getEffectivePermissions(
   return [...effective];
 }
 
-export function hasPermission(
-  role: TenantRole,
-  permission: string,
-  overrides?: unknown
-): boolean {
+export function hasPermission(role: TenantRole, permission: string, overrides?: unknown): boolean {
   if (!(permission in PERMISSION_LEVEL)) return false;
   return getEffectivePermissions(role, overrides).includes(permission as Permission);
 }
@@ -364,7 +357,8 @@ export function getAccessRisks(opts: {
     risks.push({
       code: "operator-shell-mismatch",
       severity: "medium",
-      message: "Warehouse worker no longer has operator write access and may lose their default shell.",
+      message:
+        "Warehouse worker no longer has operator write access and may lose their default shell.",
     });
   }
 
@@ -388,7 +382,11 @@ export function validatePermissionPolicy(opts: {
   const violations: PolicyViolation[] = [];
 
   if (opts.portalClientId) {
-    const blockedPortalPermissions: Permission[] = ["users:write", "settings:write", "billing:approve"];
+    const blockedPortalPermissions: Permission[] = [
+      "users:write",
+      "settings:write",
+      "billing:approve",
+    ];
     const found = blockedPortalPermissions.filter((permission) => effective.has(permission));
     if (found.length > 0) {
       violations.push({

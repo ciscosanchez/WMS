@@ -30,7 +30,9 @@ export function encryptSecret(plaintext: string): string {
   const key = getKey();
   if (!key) {
     if (process.env.NODE_ENV === "production") {
-      throw new Error("SECRETS_KEY is required in production — refusing to store secrets unencrypted");
+      throw new Error(
+        "SECRETS_KEY is required in production — refusing to store secrets unencrypted"
+      );
     }
     return plaintext;
   }

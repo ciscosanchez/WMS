@@ -93,6 +93,8 @@ describe("requirePortalContext", () => {
     });
 
     const { requirePortalContext } = await import("@/lib/tenant/context");
-    await expect(requirePortalContext()).rejects.toThrow("Forbidden: portal client binding required");
+    await expect(requirePortalContext()).rejects.toThrow(
+      "Forbidden: portal client binding required"
+    );
   });
 });

@@ -158,7 +158,13 @@ export default function LoginPage() {
               {ssoOptions.length > 0 && (
                 <div className="grid gap-2">
                   {ssoOptions.map((provider) => (
-                    <Button key={provider.id} type="button" variant="outline" className="w-full" asChild>
+                    <Button
+                      key={provider.id}
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      asChild
+                    >
                       <Link href={provider.startUrl}>
                         <Building2 className="h-4 w-4" />
                         {provider.label}

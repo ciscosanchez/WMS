@@ -128,7 +128,9 @@ describe("platform tenant actions", () => {
       name: "Acme Admin",
       tenantName: "Acme Warehousing",
       role: "admin",
-      setPasswordUrl: expect.stringMatching(/^https:\/\/wms\.ramola\.app\/set-password\?token=[a-f0-9]+$/),
+      setPasswordUrl: expect.stringMatching(
+        /^https:\/\/wms\.ramola\.app\/set-password\?token=[a-f0-9]+$/
+      ),
     });
     expect(mockRevalidatePath).toHaveBeenCalledWith("/platform/tenants");
   });
@@ -192,7 +194,9 @@ describe("platform tenant actions", () => {
     expect(result).toEqual({ ok: true });
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockTenantDelete).toHaveBeenCalledWith({ where: { id: "tenant-1" } });
-    expect(mockExecuteRawUnsafe).toHaveBeenCalledWith('DROP SCHEMA IF EXISTS "tenant_acme" CASCADE');
+    expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
+      'DROP SCHEMA IF EXISTS "tenant_acme" CASCADE'
+    );
     expect(mockRevalidatePath).toHaveBeenCalledWith("/platform/users");
   });
 });

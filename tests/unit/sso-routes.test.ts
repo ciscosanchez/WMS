@@ -168,7 +168,9 @@ describe("SSO discovery and start routes", () => {
     );
 
     const res = await GET(req);
-    expect(res.headers.get("location")).toBe("https://wms.ramola.app/oidc/start?callbackUrl=%2Forders");
+    expect(res.headers.get("location")).toBe(
+      "https://wms.ramola.app/oidc/start?callbackUrl=%2Forders"
+    );
     expect(mockSignIn).not.toHaveBeenCalled();
     expect(cookieSet).not.toHaveBeenCalled();
   });

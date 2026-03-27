@@ -27,7 +27,8 @@ type RawInventoryAttributeValue = {
 };
 
 function toSearchableAttributeText(value: RawInventoryAttributeValue) {
-  if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+  if (value.numberValue !== null && value.numberValue !== undefined)
+    return String(value.numberValue);
   if (value.booleanValue !== null && value.booleanValue !== undefined) {
     return value.booleanValue ? "true yes" : "false no";
   }

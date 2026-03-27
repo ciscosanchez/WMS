@@ -282,8 +282,8 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
                 <option value="sso_only">SSO only</option>
               </select>
               <p className="text-xs text-muted-foreground">
-                Tenant subdomain login will follow this mode. Base-domain platform admin login
-                stays password-based.
+                Tenant subdomain login will follow this mode. Base-domain platform admin login stays
+                password-based.
               </p>
             </div>
 

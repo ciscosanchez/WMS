@@ -7,9 +7,10 @@ import {
 } from "@/lib/auth/tenant-auth";
 
 export async function POST(request: NextRequest) {
-  const body = await request
-    .json()
-    .catch(() => ({})) as { callbackUrl?: string; tenantSlug?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    callbackUrl?: string;
+    tenantSlug?: string;
+  };
 
   const requestedCallbackUrl =
     typeof body.callbackUrl === "string" && body.callbackUrl.startsWith("/")

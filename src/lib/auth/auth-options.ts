@@ -53,10 +53,7 @@ function toAuthUser(user: NonNullable<Awaited<ReturnType<typeof getUserWithTenan
   };
 }
 
-function applyAuthUserToToken(
-  token: Record<string, unknown>,
-  user: ReturnType<typeof toAuthUser>
-) {
+function applyAuthUserToToken(token: Record<string, unknown>, user: ReturnType<typeof toAuthUser>) {
   token.id = user.id;
   token.email = user.email;
   token.name = user.name;
@@ -140,7 +137,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const dbUser = await getUserWithTenantsByEmail(email);
         if (!dbUser) return false;
 
-        return dbUser.isSuperadmin || dbUser.tenantUsers.some((tu) => tu.tenant.slug === tenantSlug);
+        return (
+          dbUser.isSuperadmin || dbUser.tenantUsers.some((tu) => tu.tenant.slug === tenantSlug)
+        );
       } finally {
         await clearPendingSsoContext();
       }

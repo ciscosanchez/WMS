@@ -34,7 +34,10 @@ export const attributeDefinitionSchema = z.object({
     .string()
     .trim()
     .min(1)
-    .regex(/^[a-z][a-z0-9_]*$/, "Key must start with a letter and use lowercase letters, numbers, and underscores"),
+    .regex(
+      /^[a-z][a-z0-9_]*$/,
+      "Key must start with a letter and use lowercase letters, numbers, and underscores"
+    ),
   label: z.string().trim().min(1),
   description: z.string().trim().nullable().optional(),
   entityScope: attributeScopeSchema,
@@ -51,7 +54,10 @@ export const attributeDefinitionSchema = z.object({
 
 export const attributeValueInputSchema = z.object({
   definitionId: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]).optional().nullable(),
+  value: z
+    .union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])
+    .optional()
+    .nullable(),
 });
 
 export type AttributeScope = z.infer<typeof attributeScopeSchema>;

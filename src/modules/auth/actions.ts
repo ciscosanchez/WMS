@@ -57,8 +57,8 @@ export async function requestPasswordReset(
 
   const baseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://wms.ramola.app";
   const resetPasswordUrl = `${baseUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
-  const tenantLocale =
-    (user.tenantUsers[0]?.tenant?.settings as Record<string, unknown> | null)?.locale;
+  const tenantLocale = (user.tenantUsers[0]?.tenant?.settings as Record<string, unknown> | null)
+    ?.locale;
 
   await sendPasswordResetLink({
     to: user.email,

@@ -79,7 +79,10 @@ function serializeOptions(
   options: Array<{ value: string; label: string; sortOrder: number; isActive: boolean }>
 ) {
   return options
-    .map((option) => `${option.value}|${option.label}|${option.sortOrder}|${option.isActive ? "true" : "false"}`)
+    .map(
+      (option) =>
+        `${option.value}|${option.label}|${option.sortOrder}|${option.isActive ? "true" : "false"}`
+    )
     .join("\n");
 }
 
@@ -121,7 +124,11 @@ function buildInitialFormState(definition?: AttributeDefinitionRow | null) {
   };
 }
 
-export function AttributesClient({ initialDefinitions }: { initialDefinitions: AttributeDefinitionRow[] }) {
+export function AttributesClient({
+  initialDefinitions,
+}: {
+  initialDefinitions: AttributeDefinitionRow[];
+}) {
   const [definitions, setDefinitions] = useState(initialDefinitions);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -131,7 +138,10 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
   );
 
   const sortedDefinitions = useMemo(
-    () => [...definitions].sort((a, b) => a.entityScope.localeCompare(b.entityScope) || a.sortOrder - b.sortOrder),
+    () =>
+      [...definitions].sort(
+        (a, b) => a.entityScope.localeCompare(b.entityScope) || a.sortOrder - b.sortOrder
+      ),
     [definitions]
   );
 
@@ -247,7 +257,9 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       {definition.isRequired && <span>Required</span>}
                       {definition.allowSuggestions && <span>Suggestions</span>}
-                      {definition._count?.values ? <span>{definition._count.values} stored values</span> : null}
+                      {definition._count?.values ? (
+                        <span>{definition._count.values} stored values</span>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -255,7 +267,11 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
                       Edit
                     </Button>
                     {definition.isActive && (
-                      <Button variant="ghost" size="sm" onClick={() => handleArchive(definition.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleArchive(definition.id)}
+                      >
                         Archive
                       </Button>
                     )}
@@ -274,15 +290,27 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Key</Label>
-            <Input value={form.key} onChange={(e) => updateField("key", e.target.value)} placeholder="room_reference" />
+            <Input
+              value={form.key}
+              onChange={(e) => updateField("key", e.target.value)}
+              placeholder="room_reference"
+            />
           </div>
           <div className="space-y-2">
             <Label>Label</Label>
-            <Input value={form.label} onChange={(e) => updateField("label", e.target.value)} placeholder="Room Reference" />
+            <Input
+              value={form.label}
+              onChange={(e) => updateField("label", e.target.value)}
+              placeholder="Room Reference"
+            />
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea value={form.description} onChange={(e) => updateField("description", e.target.value)} rows={2} />
+            <Textarea
+              value={form.description}
+              onChange={(e) => updateField("description", e.target.value)}
+              rows={2}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -317,15 +345,24 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Sort Order</Label>
-              <Input value={form.sortOrder} onChange={(e) => updateField("sortOrder", e.target.value)} />
+              <Input
+                value={form.sortOrder}
+                onChange={(e) => updateField("sortOrder", e.target.value)}
+              />
             </div>
             <div className="space-y-3 pt-7">
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={form.isRequired} onCheckedChange={(checked) => updateField("isRequired", !!checked)} />
+                <Checkbox
+                  checked={form.isRequired}
+                  onCheckedChange={(checked) => updateField("isRequired", !!checked)}
+                />
                 Required
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={form.isActive} onCheckedChange={(checked) => updateField("isActive", !!checked)} />
+                <Checkbox
+                  checked={form.isActive}
+                  onCheckedChange={(checked) => updateField("isActive", !!checked)}
+                />
                 Active
               </label>
               <label className="flex items-center gap-2 text-sm">
@@ -341,19 +378,31 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
             <Label>Common Behavior Flags</Label>
             <div className="grid gap-3 rounded-md border p-3 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={commonFlags.searchable} onCheckedChange={(checked) => toggleFlag("searchable", !!checked)} />
+                <Checkbox
+                  checked={commonFlags.searchable}
+                  onCheckedChange={(checked) => toggleFlag("searchable", !!checked)}
+                />
                 Searchable
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={commonFlags.allocatable} onCheckedChange={(checked) => toggleFlag("allocatable", !!checked)} />
+                <Checkbox
+                  checked={commonFlags.allocatable}
+                  onCheckedChange={(checked) => toggleFlag("allocatable", !!checked)}
+                />
                 Allocatable
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={commonFlags.showOnLabel} onCheckedChange={(checked) => toggleFlag("showOnLabel", !!checked)} />
+                <Checkbox
+                  checked={commonFlags.showOnLabel}
+                  onCheckedChange={(checked) => toggleFlag("showOnLabel", !!checked)}
+                />
                 Show on label
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={commonFlags.showOnManifest} onCheckedChange={(checked) => toggleFlag("showOnManifest", !!checked)} />
+                <Checkbox
+                  checked={commonFlags.showOnManifest}
+                  onCheckedChange={(checked) => toggleFlag("showOnManifest", !!checked)}
+                />
                 Show on manifest
               </label>
               <label className="flex items-center gap-2 text-sm">
@@ -402,7 +451,9 @@ export function AttributesClient({ initialDefinitions }: { initialDefinitions: A
                 value={form.options}
                 onChange={(e) => updateField("options", e.target.value)}
                 rows={5}
-                placeholder={"living_room|Living Room|0|true\nprimary_bedroom|Primary Bedroom|1|true"}
+                placeholder={
+                  "living_room|Living Room|0|true\nprimary_bedroom|Primary Bedroom|1|true"
+                }
               />
               <p className="text-xs text-muted-foreground">
                 One option per line: value|label|sortOrder|isActive

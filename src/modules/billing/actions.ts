@@ -230,7 +230,12 @@ export async function generateInvoice(clientId: string, fromDate: Date, toDate: 
   const grouped = events.reduce(
     (
       acc: Record<string, GroupEntry>,
-      ev: { serviceType: string; unitRate: number | string; qty: number | string; amount: number | string }
+      ev: {
+        serviceType: string;
+        unitRate: number | string;
+        qty: number | string;
+        amount: number | string;
+      }
     ) => {
       const key = ev.serviceType;
       if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };

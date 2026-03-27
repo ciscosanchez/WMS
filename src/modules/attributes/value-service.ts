@@ -180,8 +180,10 @@ export async function copyOperationalAttributeValuesBetweenScopes(opts: {
       if (!targetDefinition) return null;
 
       let normalizedValue: string | number | boolean | string[] | null = value.textValue ?? null;
-      if (value.numberValue !== null && value.numberValue !== undefined) normalizedValue = value.numberValue;
-      if (value.booleanValue !== null && value.booleanValue !== undefined) normalizedValue = value.booleanValue;
+      if (value.numberValue !== null && value.numberValue !== undefined)
+        normalizedValue = value.numberValue;
+      if (value.booleanValue !== null && value.booleanValue !== undefined)
+        normalizedValue = value.booleanValue;
       if (value.dateValue) normalizedValue = value.dateValue.toISOString();
       if (value.jsonValue !== null && value.jsonValue !== undefined) {
         normalizedValue = Array.isArray(value.jsonValue)

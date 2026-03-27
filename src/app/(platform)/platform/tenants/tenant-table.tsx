@@ -23,7 +23,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MoreHorizontal, Ban, RefreshCw, CreditCard, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -56,9 +62,7 @@ const tenantPlans = ["starter", "professional", "enterprise"] as const;
 
 function TenantActions({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
-  const [pending, setPending] = useState<"suspend" | "reactivate" | "plan" | "delete" | null>(
-    null
-  );
+  const [pending, setPending] = useState<"suspend" | "reactivate" | "plan" | "delete" | null>(null);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(tenant.plan);
 
@@ -189,7 +193,10 @@ function TenantActions({ tenant }: { tenant: Tenant }) {
             <label className="text-sm font-medium" htmlFor={`tenant-plan-${tenant.id}`}>
               Plan
             </label>
-            <Select value={selectedPlan} onValueChange={(value) => setSelectedPlan(value ?? tenant.plan)}>
+            <Select
+              value={selectedPlan}
+              onValueChange={(value) => setSelectedPlan(value ?? tenant.plan)}
+            >
               <SelectTrigger id={`tenant-plan-${tenant.id}`} className="w-full">
                 <SelectValue placeholder="Select a plan" />
               </SelectTrigger>
@@ -204,7 +211,11 @@ function TenantActions({ tenant }: { tenant: Tenant }) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanDialogOpen(false)} disabled={pending !== null}>
+            <Button
+              variant="outline"
+              onClick={() => setPlanDialogOpen(false)}
+              disabled={pending !== null}
+            >
               Cancel
             </Button>
             <Button onClick={() => void handlePlanSave()} disabled={pending !== null}>

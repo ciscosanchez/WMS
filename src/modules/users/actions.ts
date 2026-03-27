@@ -44,7 +44,8 @@ function normalizeTenantRbacSettings(raw: unknown): TenantRbacSettings {
       typeof candidate.reviewCadenceDays === "number" ? candidate.reviewCadenceDays : 90,
     lastReviewCompletedAt:
       typeof candidate.lastReviewCompletedAt === "string" ? candidate.lastReviewCompletedAt : null,
-    nextReviewDueAt: typeof candidate.nextReviewDueAt === "string" ? candidate.nextReviewDueAt : null,
+    nextReviewDueAt:
+      typeof candidate.nextReviewDueAt === "string" ? candidate.nextReviewDueAt : null,
   };
 }
 
@@ -379,7 +380,9 @@ export async function exportTenantAccessReview() {
     where: { isActive: true },
     select: { id: true, name: true, code: true },
   });
-  const clientMap = new Map(clients.map((client: { id: string; name: string; code: string }) => [client.id, client]));
+  const clientMap = new Map(
+    clients.map((client: { id: string; name: string; code: string }) => [client.id, client])
+  );
 
   return members.map((member) => {
     const permissionOverrides = normalizePermissionOverrides(member.permissionOverrides);
@@ -396,7 +399,9 @@ export async function exportTenantAccessReview() {
       portalClientId: member.portalClientId,
       overrides: permissionOverrides,
     });
-    const portalClient = member.portalClientId ? clientMap.get(member.portalClientId) ?? null : null;
+    const portalClient = member.portalClientId
+      ? (clientMap.get(member.portalClientId) ?? null)
+      : null;
 
     return {
       userId: member.user.id,
@@ -717,7 +722,6 @@ export async function bulkApplyPermissionPreset(input: {
  */
 export async function updateUserLocale(locale: string | null): Promise<{ error?: string }> {
   try {
-
     const { user } = await requireTenantContext("reports:read");
 
     await publicDb.user.update({

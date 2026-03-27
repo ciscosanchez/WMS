@@ -325,7 +325,8 @@ type RawOperationalAttributeValueWithEntityId = RawOperationalAttributeValue & {
 };
 
 function attributeValueToDisplay(value: RawOperationalAttributeValue) {
-  if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+  if (value.numberValue !== null && value.numberValue !== undefined)
+    return String(value.numberValue);
   if (value.booleanValue !== null && value.booleanValue !== undefined)
     return value.booleanValue ? "Yes" : "No";
   if (value.dateValue) return value.dateValue.toISOString().slice(0, 10);
@@ -382,7 +383,9 @@ async function findInventoryForOrderLine(
 
   if (targetDefinitions.length === 0) return null;
 
-  const targetByKey = new Map(targetDefinitions.map((definition) => [definition.key, definition.id]));
+  const targetByKey = new Map(
+    targetDefinitions.map((definition) => [definition.key, definition.id])
+  );
   const candidateInventory = ((await prisma.inventory.findMany({
     where: { productId: line.productId, available: { gte: line.quantity } },
     orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],

@@ -126,7 +126,9 @@ export async function GET(req: NextRequest) {
               unitPrice: li.unitPrice,
             }))
             .filter(
-              (line): line is { productId: string; quantity: number; uom: string; unitPrice: number } =>
+              (
+                line
+              ): line is { productId: string; quantity: number; uom: string; unitPrice: number } =>
                 line.productId != null
             );
 

@@ -18,7 +18,15 @@ type AttributeDefinition = {
   id: string;
   label: string;
   description: string | null;
-  dataType: "text" | "number" | "currency" | "date" | "boolean" | "single_select" | "multi_select" | "json";
+  dataType:
+    | "text"
+    | "number"
+    | "currency"
+    | "date"
+    | "boolean"
+    | "single_select"
+    | "multi_select"
+    | "json";
   options: Array<{ value: string; label: string }>;
 };
 
@@ -46,9 +54,14 @@ export function NewLpnClient({
   const [contents, setContents] = useState<ContentRow[]>([
     { productId: "", quantity: 1, lotNumber: "", serialNumber: "" },
   ]);
-  const [attributeValues, setAttributeValues] = useState<Record<string, string | boolean | string[]>>(
+  const [attributeValues, setAttributeValues] = useState<
+    Record<string, string | boolean | string[]>
+  >(
     Object.fromEntries(
-      attributeDefinitions.map((definition) => [definition.id, definition.dataType === "boolean" ? false : ""])
+      attributeDefinitions.map((definition) => [
+        definition.id,
+        definition.dataType === "boolean" ? false : "",
+      ])
     )
   );
   const [saving, setSaving] = useState(false);
@@ -104,7 +117,10 @@ export function NewLpnClient({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="New LPN" description="Create a license plate with optional operational attributes." />
+      <PageHeader
+        title="New LPN"
+        description="Create a license plate with optional operational attributes."
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
         <Card>
@@ -133,7 +149,12 @@ export function NewLpnClient({
             </div>
             <div className="space-y-2">
               <Label>Total Weight</Label>
-              <Input type="number" step="0.01" value={totalWeight} onChange={(e) => setTotalWeight(e.target.value)} />
+              <Input
+                type="number"
+                step="0.01"
+                value={totalWeight}
+                onChange={(e) => setTotalWeight(e.target.value)}
+              />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label>Notes</Label>
@@ -255,7 +276,9 @@ export function NewLpnClient({
                     type="number"
                     min={1}
                     value={row.quantity}
-                    onChange={(e) => updateContentRow(index, { quantity: Number(e.target.value || 1) })}
+                    onChange={(e) =>
+                      updateContentRow(index, { quantity: Number(e.target.value || 1) })
+                    }
                   />
                 </div>
                 <div className="flex items-end justify-end">
@@ -267,7 +290,10 @@ export function NewLpnClient({
                 </div>
                 <div className="space-y-2">
                   <Label>Lot Number</Label>
-                  <Input value={row.lotNumber} onChange={(e) => updateContentRow(index, { lotNumber: e.target.value })} />
+                  <Input
+                    value={row.lotNumber}
+                    onChange={(e) => updateContentRow(index, { lotNumber: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Serial Number</Label>

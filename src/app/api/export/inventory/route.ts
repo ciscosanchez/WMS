@@ -104,7 +104,10 @@ export async function GET(_request: NextRequest) {
     values: attributeValues,
   }).map(({ id: _id, ...row }) => row);
 
-  const csv = generateCsv(rows, [...COLUMNS, ...buildOperationalAttributeExportColumns(attributeDefinitions)]);
+  const csv = generateCsv(rows, [
+    ...COLUMNS,
+    ...buildOperationalAttributeExportColumns(attributeDefinitions),
+  ]);
   const date = new Date().toISOString().slice(0, 10);
   return csvResponse(csv, `inventory-export-${date}.csv`);
 }

@@ -31,7 +31,9 @@ describe("Armstrong seed persona matrix", () => {
 
   it("keeps the platform superadmin distinct from the tenant admin", () => {
     const superadmins = armstrongSeedUsers.filter((user) => user.isSuperadmin);
-    const tenantAdmins = armstrongSeedUsers.filter((user) => user.role === "admin" && !user.isSuperadmin);
+    const tenantAdmins = armstrongSeedUsers.filter(
+      (user) => user.role === "admin" && !user.isSuperadmin
+    );
 
     expect(superadmins).toHaveLength(1);
     expect(superadmins[0]?.email).toBe("superadmin@ramola.io");

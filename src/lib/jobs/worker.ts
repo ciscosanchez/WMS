@@ -46,7 +46,12 @@ async function processIntegration(job: Job) {
 
     const db = getTenantDb(tenant.dbSchema);
     const { pushShopifyFulfillment } = await import("@/modules/orders/shopify-sync");
-    const result = await pushShopifyFulfillment(data.orderId, data.trackingNumber, data.carrier, db);
+    const result = await pushShopifyFulfillment(
+      data.orderId,
+      data.trackingNumber,
+      data.carrier,
+      db
+    );
     if (result.error) throw new Error(result.error);
   }
 }

@@ -21,7 +21,15 @@ type AttributeDefinition = {
   key: string;
   label: string;
   description: string | null;
-  dataType: "text" | "number" | "currency" | "date" | "boolean" | "single_select" | "multi_select" | "json";
+  dataType:
+    | "text"
+    | "number"
+    | "currency"
+    | "date"
+    | "boolean"
+    | "single_select"
+    | "multi_select"
+    | "json";
   isRequired: boolean;
   options: Array<{ value: string; label: string; sortOrder: number; isActive: boolean }>;
 };
@@ -53,10 +61,11 @@ export function NewShipmentClient({
     },
   });
 
-  const watchedAttributes = useWatch({
-    control,
-    name: "operationalAttributes",
-  }) ?? [];
+  const watchedAttributes =
+    useWatch({
+      control,
+      name: "operationalAttributes",
+    }) ?? [];
 
   async function onSubmit(data: InboundShipmentFormData) {
     try {
@@ -173,14 +182,14 @@ export function NewShipmentClient({
                     ) : definition.dataType === "number" || definition.dataType === "currency" ? (
                       <Input type="number" step="0.01" {...register(fieldName)} />
                     ) : definition.dataType === "json" ? (
-                      <Textarea
-                        {...register(fieldName)}
-                        rows={3}
-                        placeholder='{"key":"value"}'
-                      />
+                      <Textarea {...register(fieldName)} rows={3} placeholder='{"key":"value"}' />
                     ) : definition.dataType === "multi_select" ? (
                       <Textarea
-                        value={Array.isArray(currentValue) ? currentValue.join(", ") : String(currentValue ?? "")}
+                        value={
+                          Array.isArray(currentValue)
+                            ? currentValue.join(", ")
+                            : String(currentValue ?? "")
+                        }
                         onChange={(e) =>
                           setValue(
                             fieldName,

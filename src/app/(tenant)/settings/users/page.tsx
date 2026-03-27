@@ -26,13 +26,16 @@ export default async function UsersPage() {
     name: m.user.name,
     email: m.user.email,
     role: m.role,
-    personas: getUserPersonas({
-      isSuperadmin: m.user.isSuperadmin,
-      tenants: [{ slug: tenant.slug, role: m.role, portalClientId: m.portalClientId }],
-    }, tenant.slug),
+    personas: getUserPersonas(
+      {
+        isSuperadmin: m.user.isSuperadmin,
+        tenants: [{ slug: tenant.slug, role: m.role, portalClientId: m.portalClientId }],
+      },
+      tenant.slug
+    ),
     portalClientId: m.portalClientId,
-    portalClientName: m.portalClientId ? clientMap.get(m.portalClientId)?.name ?? null : null,
-    portalClientCode: m.portalClientId ? clientMap.get(m.portalClientId)?.code ?? null : null,
+    portalClientName: m.portalClientId ? (clientMap.get(m.portalClientId)?.name ?? null) : null,
+    portalClientCode: m.portalClientId ? (clientMap.get(m.portalClientId)?.code ?? null) : null,
     permissionOverrides: normalizePermissionOverrides(m.permissionOverrides),
     risks: getAccessRisks({
       role: m.role,
@@ -61,9 +64,7 @@ export default async function UsersPage() {
         </div>
       </PageHeader>
 
-      <AccessReview
-        users={users}
-      />
+      <AccessReview users={users} />
 
       <UserTable
         users={users}

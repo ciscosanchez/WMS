@@ -18,11 +18,7 @@ import {
   markTenantAccessReviewComplete,
   saveTenantAccessReviewCadence,
 } from "@/modules/users/actions";
-import {
-  getPermissionPreset,
-  PERMISSION_PRESETS,
-  type PermissionPreset,
-} from "@/lib/auth/rbac";
+import { getPermissionPreset, PERMISSION_PRESETS, type PermissionPreset } from "@/lib/auth/rbac";
 
 type UserOption = {
   id: string;
@@ -56,7 +52,12 @@ export function BulkApplyPresetDialog({
   const [isSaving, setIsSaving] = useState(false);
 
   const allPresets = useMemo(
-    () => [...savedPresets, ...PERMISSION_PRESETS.filter((preset) => !savedPresets.some((saved) => saved.key === preset.key))],
+    () => [
+      ...savedPresets,
+      ...PERMISSION_PRESETS.filter(
+        (preset) => !savedPresets.some((saved) => saved.key === preset.key)
+      ),
+    ],
     [savedPresets]
   );
 
@@ -68,7 +69,8 @@ export function BulkApplyPresetDialog({
 
   async function handleBulkApply() {
     const preset =
-      savedPresets.find((item) => item.key === selectedPresetKey) ?? getPermissionPreset(selectedPresetKey);
+      savedPresets.find((item) => item.key === selectedPresetKey) ??
+      getPermissionPreset(selectedPresetKey);
     if (!preset) {
       toast.error("Select a preset");
       return;
@@ -146,9 +148,13 @@ export function BulkApplyPresetDialog({
               <option value="180">Every 180 days</option>
             </select>
             <div className="text-xs text-muted-foreground">
-              Last review: {lastReviewCompletedAt ? new Date(lastReviewCompletedAt).toLocaleDateString() : "Not recorded"}
+              Last review:{" "}
+              {lastReviewCompletedAt
+                ? new Date(lastReviewCompletedAt).toLocaleDateString()
+                : "Not recorded"}
               <br />
-              Next due: {nextReviewDueAt ? new Date(nextReviewDueAt).toLocaleDateString() : "Not scheduled"}
+              Next due:{" "}
+              {nextReviewDueAt ? new Date(nextReviewDueAt).toLocaleDateString() : "Not scheduled"}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleSaveCadence}>
@@ -166,12 +172,19 @@ export function BulkApplyPresetDialog({
               <p className="text-sm text-muted-foreground">No tenant-specific presets yet.</p>
             ) : (
               savedPresets.map((preset) => (
-                <div key={preset.key} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                <div
+                  key={preset.key}
+                  className="flex items-start justify-between gap-3 rounded-md border p-3"
+                >
                   <div>
                     <div className="font-medium">{preset.label}</div>
                     <div className="text-xs text-muted-foreground">{preset.description}</div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => handleDeletePreset(preset.key)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeletePreset(preset.key)}
+                  >
                     Delete
                   </Button>
                 </div>
@@ -197,13 +210,17 @@ export function BulkApplyPresetDialog({
 
           <div className="grid gap-2 md:grid-cols-2">
             {users.map((user) => (
-              <label key={user.id} className="flex items-center gap-2 rounded-md border p-3 text-sm">
+              <label
+                key={user.id}
+                className="flex items-center gap-2 rounded-md border p-3 text-sm"
+              >
                 <Checkbox
                   checked={selectedUserIds.includes(user.id)}
                   onCheckedChange={(checked) => toggleUser(user.id, Boolean(checked))}
                 />
                 <span>
-                  {user.name} <span className="text-muted-foreground">({user.role.replace(/_/g, " ")})</span>
+                  {user.name}{" "}
+                  <span className="text-muted-foreground">({user.role.replace(/_/g, " ")})</span>
                 </span>
               </label>
             ))}
@@ -214,7 +231,10 @@ export function BulkApplyPresetDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Close
           </Button>
-          <Button onClick={handleBulkApply} disabled={isSaving || selectedUserIds.length === 0 || !selectedPresetKey}>
+          <Button
+            onClick={handleBulkApply}
+            disabled={isSaving || selectedUserIds.length === 0 || !selectedPresetKey}
+          >
             Apply Preset To Selected Users
           </Button>
         </DialogFooter>

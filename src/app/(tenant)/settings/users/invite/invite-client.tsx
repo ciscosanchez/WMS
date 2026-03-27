@@ -175,7 +175,9 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
         <Card>
           <CardHeader>
             <CardTitle>Access Experience</CardTitle>
-            <CardDescription>Choose the primary experience this user should land in.</CardDescription>
+            <CardDescription>
+              Choose the primary experience this user should land in.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -227,7 +229,8 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
                 </select>
                 {selectedClientLabel ? (
                   <p className="text-xs text-muted-foreground">
-                    This invite will create a viewer with portal access scoped to {selectedClientLabel.name}.
+                    This invite will create a viewer with portal access scoped to{" "}
+                    {selectedClientLabel.name}.
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
@@ -239,15 +242,19 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
 
             {accessExperience === "operator" && (
               <p className="text-sm text-muted-foreground">
-                Operators are invited as <span className="font-medium text-foreground">Warehouse Worker</span>
-                {" "}and land in the floor app at <span className="font-medium text-foreground">/my-tasks</span>.
+                Operators are invited as{" "}
+                <span className="font-medium text-foreground">Warehouse Worker</span> and land in
+                the floor app at <span className="font-medium text-foreground">/my-tasks</span>.
               </p>
             )}
 
             {accessExperience === "standard" && (
               <p className="text-sm text-muted-foreground">
-                This user will be invited with the <span className="font-medium text-foreground">{effectiveRole.replace(/_/g, " ")}</span>
-                {" "}role and use the normal tenant experience.
+                This user will be invited with the{" "}
+                <span className="font-medium text-foreground">
+                  {effectiveRole.replace(/_/g, " ")}
+                </span>{" "}
+                role and use the normal tenant experience.
               </p>
             )}
           </CardContent>
@@ -259,8 +266,8 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>
-              <span className="font-medium text-foreground">Standard Team Member</span> uses one
-              of the four stored tenant roles directly.
+              <span className="font-medium text-foreground">Standard Team Member</span> uses one of
+              the four stored tenant roles directly.
             </p>
             <p>
               <span className="font-medium text-foreground">Operator</span> is a

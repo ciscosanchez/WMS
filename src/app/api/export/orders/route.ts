@@ -105,17 +105,17 @@ export async function GET(request: NextRequest) {
       : [];
 
   const baseRows = orders.map((o) => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      client: o.client.name,
-      status: o.status,
-      shipToName: o.shipToName,
-      shipToCity: o.shipToCity,
-      shipToState: o.shipToState ?? "",
-      totalItems: o.totalItems,
-      orderDate: o.orderDate,
-      shippedDate: o.shippedDate,
-    }));
+    id: o.id,
+    orderNumber: o.orderNumber,
+    client: o.client.name,
+    status: o.status,
+    shipToName: o.shipToName,
+    shipToCity: o.shipToCity,
+    shipToState: o.shipToState ?? "",
+    totalItems: o.totalItems,
+    orderDate: o.orderDate,
+    shippedDate: o.shippedDate,
+  }));
 
   const rows = attachAggregatedOperationalAttributesToRows({
     rows: baseRows,
@@ -124,7 +124,10 @@ export async function GET(request: NextRequest) {
     entityToRowId,
   }).map(({ id: _id, ...row }) => row);
 
-  const csv = generateCsv(rows, [...COLUMNS, ...buildOperationalAttributeExportColumns(attributeDefinitions)]);
+  const csv = generateCsv(rows, [
+    ...COLUMNS,
+    ...buildOperationalAttributeExportColumns(attributeDefinitions),
+  ]);
   const date = new Date().toISOString().slice(0, 10);
   return csvResponse(csv, `orders-export-${date}.csv`);
 }

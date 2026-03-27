@@ -14,7 +14,9 @@ export const DEFAULT_COMMON_ATTRIBUTE_FLAGS: CommonAttributeFlagState = {
   showOnPackingList: false,
 };
 
-export function extractCommonAttributeFlags(flags: Record<string, unknown>): CommonAttributeFlagState {
+export function extractCommonAttributeFlags(
+  flags: Record<string, unknown>
+): CommonAttributeFlagState {
   return {
     searchable: flags.searchable === true,
     allocatable: flags.allocatable === true,

@@ -79,7 +79,12 @@ export function PermissionOverridesDialog({
     [user.role, grants, denies]
   );
   const risks = useMemo(
-    () => getAccessRisks({ role: user.role, portalClientId: user.portalClientId, overrides: { grants, denies } }),
+    () =>
+      getAccessRisks({
+        role: user.role,
+        portalClientId: user.portalClientId,
+        overrides: { grants, denies },
+      }),
     [user.role, user.portalClientId, grants, denies]
   );
 
@@ -91,7 +96,9 @@ export function PermissionOverridesDialog({
 
   function toggleGrant(permission: Permission, checked: boolean) {
     setGrants((current) =>
-      checked ? [...new Set([...current, permission])] : current.filter((item) => item !== permission)
+      checked
+        ? [...new Set([...current, permission])]
+        : current.filter((item) => item !== permission)
     );
     if (checked) {
       setDenies((current) => current.filter((item) => item !== permission));
@@ -100,7 +107,9 @@ export function PermissionOverridesDialog({
 
   function toggleDeny(permission: Permission, checked: boolean) {
     setDenies((current) =>
-      checked ? [...new Set([...current, permission])] : current.filter((item) => item !== permission)
+      checked
+        ? [...new Set([...current, permission])]
+        : current.filter((item) => item !== permission)
     );
     if (checked) {
       setGrants((current) => current.filter((item) => item !== permission));
@@ -134,7 +143,8 @@ export function PermissionOverridesDialog({
 
   function handleApplyPreset(nextPresetKey: string) {
     setPresetKey(nextPresetKey);
-    const preset = savedPresets.find((item) => item.key === nextPresetKey) ?? getPermissionPreset(nextPresetKey);
+    const preset =
+      savedPresets.find((item) => item.key === nextPresetKey) ?? getPermissionPreset(nextPresetKey);
     if (!preset) return;
     setGrants(preset.grants);
     setDenies(preset.denies);
@@ -173,8 +183,9 @@ export function PermissionOverridesDialog({
         <DialogHeader>
           <DialogTitle>Custom Permissions</DialogTitle>
           <DialogDescription>
-            {user.name} keeps the <span className="font-medium text-foreground">{user.role.replace(/_/g, " ")}</span>
-            {" "}role, then gets additive grants and explicit denials. Deny wins over the base role.
+            {user.name} keeps the{" "}
+            <span className="font-medium text-foreground">{user.role.replace(/_/g, " ")}</span>{" "}
+            role, then gets additive grants and explicit denials. Deny wins over the base role.
           </DialogDescription>
         </DialogHeader>
 
@@ -187,7 +198,9 @@ export function PermissionOverridesDialog({
           </div>
           <div className="rounded-lg border p-4">
             <div className="text-sm font-medium">Custom Grants</div>
-            <div className="mt-1 text-sm text-muted-foreground">{grants.length} extra permissions</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {grants.length} extra permissions
+            </div>
           </div>
           <div className="rounded-lg border p-4">
             <div className="text-sm font-medium">Effective Access</div>
@@ -207,8 +220,12 @@ export function PermissionOverridesDialog({
             </div>
             {(diff.added.length > 0 || diff.removed.length > 0) && (
               <div className="mt-2 text-xs text-muted-foreground">
-                {diff.added.length > 0 ? `${diff.added.length} permissions added.` : "No added permissions."}{" "}
-                {diff.removed.length > 0 ? `${diff.removed.length} permissions removed.` : "No removed permissions."}
+                {diff.added.length > 0
+                  ? `${diff.added.length} permissions added.`
+                  : "No added permissions."}{" "}
+                {diff.removed.length > 0
+                  ? `${diff.removed.length} permissions removed.`
+                  : "No removed permissions."}
               </div>
             )}
           </div>
@@ -244,7 +261,12 @@ export function PermissionOverridesDialog({
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
                 <option value="">Select a preset</option>
-                {[...savedPresets, ...PERMISSION_PRESETS.filter((preset) => !savedPresets.some((saved) => saved.key === preset.key))].map((preset) => (
+                {[
+                  ...savedPresets,
+                  ...PERMISSION_PRESETS.filter(
+                    (preset) => !savedPresets.some((saved) => saved.key === preset.key)
+                  ),
+                ].map((preset) => (
                   <option key={preset.key} value={preset.key}>
                     {preset.label}
                   </option>
@@ -263,7 +285,13 @@ export function PermissionOverridesDialog({
               ) : (
                 risks.map((risk) => (
                   <div key={risk.code} className="text-sm text-muted-foreground">
-                    <span className={risk.severity === "high" ? "font-medium text-red-600" : "font-medium text-amber-600"}>
+                    <span
+                      className={
+                        risk.severity === "high"
+                          ? "font-medium text-red-600"
+                          : "font-medium text-amber-600"
+                      }
+                    >
                       {risk.severity === "high" ? "High" : "Medium"}:
                     </span>{" "}
                     {risk.message}
@@ -309,7 +337,10 @@ export function PermissionOverridesDialog({
                   const effective = effectivePermissions.has(permission);
 
                   return (
-                    <div key={permission} className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
+                    <div
+                      key={permission}
+                      className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_auto_auto_auto] md:items-center"
+                    >
                       <div>
                         <div className="font-medium">{getPermissionLabel(permission)}</div>
                         <div className="text-xs text-muted-foreground">

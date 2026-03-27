@@ -182,10 +182,15 @@ export function ReportsClient({
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {attributeCoverage.topDefinitions.length === 0 ? (
-                  <p className="text-muted-foreground">No operational attribute values captured yet.</p>
+                  <p className="text-muted-foreground">
+                    No operational attribute values captured yet.
+                  </p>
                 ) : (
                   attributeCoverage.topDefinitions.map((definition) => (
-                    <div key={`${definition.scope}-${definition.label}`} className="flex justify-between gap-4">
+                    <div
+                      key={`${definition.scope}-${definition.label}`}
+                      className="flex justify-between gap-4"
+                    >
                       <div>
                         <div>{definition.label}</div>
                         <div className="text-xs text-muted-foreground">

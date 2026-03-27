@@ -40,10 +40,7 @@ export const DEFAULT_MOCK_AUTH_USER: MockAuthUser = {
 
 function isTenantRole(value: unknown): value is TenantRole {
   return (
-    value === "admin" ||
-    value === "manager" ||
-    value === "warehouse_worker" ||
-    value === "viewer"
+    value === "admin" || value === "manager" || value === "warehouse_worker" || value === "viewer"
   );
 }
 

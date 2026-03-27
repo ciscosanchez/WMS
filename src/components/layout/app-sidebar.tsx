@@ -69,14 +69,24 @@ const navigation: NavGroup[] = [
   {
     labelKey: "overview",
     items: [
-      { titleKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "reports:read" },
+      {
+        titleKey: "dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+        permission: "reports:read",
+      },
       { titleKey: "operations", href: "/operations", icon: Users, permission: "reports:read" },
     ],
   },
   {
     labelKey: "inbound",
     items: [
-      { titleKey: "inboundShipments", href: "/receiving", icon: PackageOpen, permission: "receiving:read" },
+      {
+        titleKey: "inboundShipments",
+        href: "/receiving",
+        icon: PackageOpen,
+        permission: "receiving:read",
+      },
       {
         titleKey: "discrepancies",
         href: "/receiving/discrepancies",
@@ -90,13 +100,23 @@ const navigation: NavGroup[] = [
     items: [
       { titleKey: "laborDashboard", href: "/labor", icon: HardHat, permission: "operator:read" },
       { titleKey: "shifts", href: "/labor/shifts", icon: Clock, permission: "operator:read" },
-      { titleKey: "laborCosts", href: "/labor/costs", icon: DollarSign, permission: "settings:read" },
+      {
+        titleKey: "laborCosts",
+        href: "/labor/costs",
+        icon: DollarSign,
+        permission: "settings:read",
+      },
     ],
   },
   {
     labelKey: "yardDock",
     items: [
-      { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar, permission: "yard-dock:read" },
+      {
+        titleKey: "dockSchedule",
+        href: "/yard-dock",
+        icon: Calendar,
+        permission: "yard-dock:read",
+      },
       {
         titleKey: "appointments",
         href: "/yard-dock/appointments",
@@ -143,9 +163,24 @@ const navigation: NavGroup[] = [
         icon: Repeat,
         permission: "cross_dock:read",
       },
-      { titleKey: "customs", href: "/shipping/customs", icon: FileCheck, permission: "customs:read" },
-      { titleKey: "compliance", href: "/shipping/compliance", icon: Shield, permission: "shipping:read" },
-      { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine, permission: "shipping:read" },
+      {
+        titleKey: "customs",
+        href: "/shipping/customs",
+        icon: FileCheck,
+        permission: "customs:read",
+      },
+      {
+        titleKey: "compliance",
+        href: "/shipping/compliance",
+        icon: Shield,
+        permission: "shipping:read",
+      },
+      {
+        titleKey: "gs1Labels",
+        href: "/shipping/labels",
+        icon: ScanLine,
+        permission: "shipping:read",
+      },
     ],
   },
   {
@@ -153,7 +188,12 @@ const navigation: NavGroup[] = [
     items: [
       { titleKey: "stockBrowser", href: "/inventory", icon: Boxes, permission: "inventory:read" },
       { titleKey: "lpn", href: "/inventory/lpn", icon: Package, permission: "inventory:read" },
-      { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine, permission: "inventory:read" },
+      {
+        titleKey: "putaway",
+        href: "/inventory/putaway",
+        icon: ArrowDownToLine,
+        permission: "inventory:read",
+      },
       {
         titleKey: "movements",
         href: "/inventory/movements",
@@ -172,9 +212,24 @@ const navigation: NavGroup[] = [
         icon: ListChecks,
         permission: "inventory:read",
       },
-      { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3, permission: "inventory:read" },
-      { titleKey: "expiring", href: "/inventory/expiring", icon: AlertTriangle, permission: "inventory:read" },
-      { titleKey: "transfers", href: "/inventory/transfers", icon: Truck, permission: "inventory:read" },
+      {
+        titleKey: "slotting",
+        href: "/inventory/slotting",
+        icon: BarChart3,
+        permission: "inventory:read",
+      },
+      {
+        titleKey: "expiring",
+        href: "/inventory/expiring",
+        icon: AlertTriangle,
+        permission: "inventory:read",
+      },
+      {
+        titleKey: "transfers",
+        href: "/inventory/transfers",
+        icon: Truck,
+        permission: "inventory:read",
+      },
       {
         titleKey: "replenishment",
         href: "/inventory/replenishment",
@@ -191,13 +246,25 @@ const navigation: NavGroup[] = [
       { titleKey: "products", href: "/products", icon: Package, permission: "products:read" },
       { titleKey: "kits", href: "/products/kits", icon: Puzzle, permission: "products:read" },
       { titleKey: "channels", href: "/channels", icon: Store, permission: "orders:read" },
-      { titleKey: "automation", href: "/warehouse/automation", icon: Bot, permission: "warehouse:read" },
-      { titleKey: "workflowRules", href: "/settings/rules", icon: Zap, permission: "settings:read" },
+      {
+        titleKey: "automation",
+        href: "/warehouse/automation",
+        icon: Bot,
+        permission: "warehouse:read",
+      },
+      {
+        titleKey: "workflowRules",
+        href: "/settings/rules",
+        icon: Zap,
+        permission: "settings:read",
+      },
     ],
   },
   {
     labelKey: "billing",
-    items: [{ titleKey: "billingDashboard", href: "/billing", icon: Receipt, permission: "billing:read" }],
+    items: [
+      { titleKey: "billingDashboard", href: "/billing", icon: Receipt, permission: "billing:read" },
+    ],
   },
   {
     labelKey: "system",
@@ -242,12 +309,10 @@ function getCurrentMembership(sessionUser: SidebarSession | undefined) {
 
 function canAccessNavItem(
   item: NavItem,
-  membership:
-    | {
-        role: TenantRole;
-        permissionOverrides?: { grants: string[]; denies: string[] } | null;
-      }
-    | null
+  membership: {
+    role: TenantRole;
+    permissionOverrides?: { grants: string[]; denies: string[] } | null;
+  } | null
 ): boolean {
   if (!item.permission) return true;
   if (!membership) return false;
@@ -299,7 +364,16 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter className="border-t p-3">
-        {status !== "loading" && canAccessNavItem({ titleKey: "floorApp", href: "/receive", icon: Smartphone, permission: "operator:write" }, currentMembership) ? (
+        {status !== "loading" &&
+        canAccessNavItem(
+          {
+            titleKey: "floorApp",
+            href: "/receive",
+            icon: Smartphone,
+            permission: "operator:write",
+          },
+          currentMembership
+        ) ? (
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link href="/receive" />}>

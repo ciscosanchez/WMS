@@ -63,7 +63,9 @@ export default function NewOrderPage() {
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [addProductId, setAddProductId] = useState("");
   const [addQty, setAddQty] = useState(1);
-  const [draftAttributeValues, setDraftAttributeValues] = useState<Record<string, string | boolean>>({});
+  const [draftAttributeValues, setDraftAttributeValues] = useState<
+    Record<string, string | boolean>
+  >({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -90,7 +92,8 @@ export default function NewOrderPage() {
         ) {
           return null;
         }
-        const displayValue = typeof rawValue === "boolean" ? (rawValue ? "Yes" : "No") : String(rawValue);
+        const displayValue =
+          typeof rawValue === "boolean" ? (rawValue ? "Yes" : "No") : String(rawValue);
         return {
           definitionId: definition.id,
           label: definition.label,
@@ -311,7 +314,12 @@ export default function NewOrderPage() {
                     onChange={(e) => setAddQty(parseInt(e.target.value) || 1)}
                     className="w-20"
                   />
-                  <Button type="button" variant="outline" onClick={addLine} disabled={!addProductId}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addLine}
+                    disabled={!addProductId}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -400,7 +408,10 @@ export default function NewOrderPage() {
                           {line.operationalAttributes.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {line.operationalAttributes.map((attribute) => (
-                                <Badge key={`${line.id}-${attribute.definitionId}`} variant="outline">
+                                <Badge
+                                  key={`${line.id}-${attribute.definitionId}`}
+                                  variant="outline"
+                                >
                                   {attribute.label}: {attribute.value}
                                 </Badge>
                               ))}

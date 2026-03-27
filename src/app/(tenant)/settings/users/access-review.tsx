@@ -23,7 +23,8 @@ function severityClasses(severity: AccessRisk["severity"]) {
 
 export function AccessReview({ users }: { users: AccessReviewUser[] }) {
   const customAccessUsers = users.filter(
-    (user) => user.permissionOverrides.grants.length > 0 || user.permissionOverrides.denies.length > 0
+    (user) =>
+      user.permissionOverrides.grants.length > 0 || user.permissionOverrides.denies.length > 0
   );
   const portalUsers = users.filter((user) => user.portalClientId);
   const riskEntries = users.flatMap((user) => user.risks.map((risk) => ({ user, risk })));
@@ -86,7 +87,10 @@ export function AccessReview({ users }: { users: AccessReviewUser[] }) {
                         </Badge>
                       ))}
                       {user.portalClientName && (
-                        <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-100 text-emerald-700 border-emerald-200"
+                        >
                           Portal: {user.portalClientName}
                         </Badge>
                       )}
@@ -102,7 +106,11 @@ export function AccessReview({ users }: { users: AccessReviewUser[] }) {
                 {user.risks.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {user.risks.map((risk) => (
-                      <Badge key={risk.code} variant="outline" className={severityClasses(risk.severity)}>
+                      <Badge
+                        key={risk.code}
+                        variant="outline"
+                        className={severityClasses(risk.severity)}
+                      >
                         {risk.message}
                       </Badge>
                     ))}

@@ -7,17 +7,41 @@ export {};
 const mockRequireTenantContext = jest.fn();
 
 const mockTenantDb = {
-  inboundShipment: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
+  inboundShipment: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
   receivingTransaction: { findMany: jest.fn().mockResolvedValue([]) },
-  shipment: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
-  order: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
-  salesChannel: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null) },
-  client: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
-  product: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
+  shipment: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
+  order: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
+  salesChannel: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findFirst: jest.fn().mockResolvedValue(null),
+  },
+  client: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
+  product: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
   inventory: { findMany: jest.fn().mockResolvedValue([]) },
-  warehouse: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
+  warehouse: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
   rateCard: { findFirst: jest.fn().mockResolvedValue(null) },
-  invoice: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
+  invoice: {
+    findMany: jest.fn().mockResolvedValue([]),
+    findUnique: jest.fn().mockResolvedValue(null),
+  },
   receivingDiscrepancy: { findMany: jest.fn().mockResolvedValue([]) },
   inventoryAdjustment: { findMany: jest.fn().mockResolvedValue([]) },
   pickTask: { findMany: jest.fn().mockResolvedValue([]) },

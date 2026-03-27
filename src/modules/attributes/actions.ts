@@ -205,7 +205,8 @@ export async function getOperationalAttributeValuesForEntities(
   return values.reduce<Record<string, Array<{ key: string; label: string; value: string }>>>(
     (acc, value) => {
       let displayValue = value.textValue ?? "";
-      if (value.numberValue !== null && value.numberValue !== undefined) displayValue = String(value.numberValue);
+      if (value.numberValue !== null && value.numberValue !== undefined)
+        displayValue = String(value.numberValue);
       if (value.booleanValue !== null && value.booleanValue !== undefined)
         displayValue = value.booleanValue ? "Yes" : "No";
       if (value.dateValue) displayValue = value.dateValue.toISOString().slice(0, 10);

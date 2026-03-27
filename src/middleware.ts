@@ -52,7 +52,9 @@ export async function middleware(request: NextRequest) {
 
   const authUser =
     (token as SessionLikeUser | null) ??
-    (appConfig.useMockAuth ? decodeMockAuthCookie(request.cookies.get(MOCK_AUTH_COOKIE)?.value) : null);
+    (appConfig.useMockAuth
+      ? decodeMockAuthCookie(request.cookies.get(MOCK_AUTH_COOKIE)?.value)
+      : null);
 
   // --- /platform/* route protection (superadmin only) ---
   if (pathname.startsWith("/platform")) {
@@ -69,7 +71,8 @@ export async function middleware(request: NextRequest) {
   const hostParts = host.split(".");
   const isBaseDomain = hostParts.length < 4; // wms.ramola.app = 3 parts
   const isLocalTenantMode =
-    (host.includes("localhost") || host.startsWith("127.0.0.1")) && process.env.NODE_ENV !== "production";
+    (host.includes("localhost") || host.startsWith("127.0.0.1")) &&
+    process.env.NODE_ENV !== "production";
   if (
     isBaseDomain &&
     !pathname.startsWith("/login") &&
@@ -87,14 +90,16 @@ export async function middleware(request: NextRequest) {
       const tenants = authUser.tenants ?? [];
       if (tenants.length > 0) {
         const tenantSlug = tenants[0].slug;
-        const tenantPath =
-          pathname === "/" ? getDefaultTenantPath(authUser, tenantSlug) : pathname;
+        const tenantPath = pathname === "/" ? getDefaultTenantPath(authUser, tenantSlug) : pathname;
 
         if (pathname === "/") {
           return NextResponse.redirect(new URL(tenantPath, request.url));
         }
 
-        if (tenantPath !== pathname && (pathname === "/dashboard" || isPortalUser(authUser, tenantSlug))) {
+        if (
+          tenantPath !== pathname &&
+          (pathname === "/dashboard" || isPortalUser(authUser, tenantSlug))
+        ) {
           return NextResponse.redirect(new URL(tenantPath, request.url));
         }
       }
@@ -143,7 +148,8 @@ export async function middleware(request: NextRequest) {
   const localeCookie = request.cookies.get("locale")?.value;
   const locale =
     localeCookie ??
-    ((token?.locale as string | undefined) ?? authUser?.locale) ??
+    (token?.locale as string | undefined) ??
+    authUser?.locale ??
     (token?.tenantLocale as string | undefined) ??
     "en";
   response.headers.set("x-locale", locale);

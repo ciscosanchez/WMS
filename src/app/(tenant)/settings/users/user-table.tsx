@@ -16,7 +16,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserMinus, ShieldCheck, Link2, Link2Off, SlidersHorizontal } from "lucide-react";
+import {
+  MoreHorizontal,
+  UserMinus,
+  ShieldCheck,
+  Link2,
+  Link2Off,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { removeUser, updateUserPortalBinding, updateUserRole } from "@/modules/users/actions";
@@ -186,136 +193,139 @@ function getColumns(
 ): ColumnDef<UserRow>[] {
   return [
     {
-    accessorKey: "name",
-    header: ({ column }) => <SortableHeader column={column} title="Name" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
-  },
-  {
-    accessorKey: "email",
-    header: ({ column }) => <SortableHeader column={column} title="Email" />,
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => {
-      const role = row.original.role;
-      const label = role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      return (
-        <Badge variant="outline" className={`font-medium ${roleColors[role] ?? ""}`}>
-          {label}
-        </Badge>
-      );
+      accessorKey: "name",
+      header: ({ column }) => <SortableHeader column={column} title="Name" />,
+      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
     },
-  },
-  {
-    id: "personas",
-    header: "Personas",
-    cell: ({ row }) => (
-      <div className="flex flex-wrap gap-1">
-        {row.original.personas.map((persona) => (
-          <Badge
-            key={persona}
-            variant="outline"
-            className={`font-medium ${personaColors[persona] ?? "bg-muted text-foreground"}`}
-          >
-            {formatPersonaLabel(persona)}
-          </Badge>
-        ))}
-      </div>
-    ),
-  },
-  {
-    id: "customAccess",
-    header: "Custom Access",
-    cell: ({ row }) => {
-      const overrides = normalizePermissionOverrides(row.original.permissionOverrides);
-      if (overrides.grants.length === 0 && overrides.denies.length === 0) {
-        return <span className="text-sm text-muted-foreground">Role default</span>;
-      }
-
-      const effectiveCount = getEffectivePermissions(row.original.role, overrides).length;
-      const risks = getAccessRisks({
-        role: row.original.role,
-        portalClientId: row.original.portalClientId,
-        overrides,
-      });
-      return (
-        <div className="space-y-0.5">
-          <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200">
-            Custom Access
-          </Badge>
-          <div className="text-xs text-muted-foreground">
-            {overrides.grants.length} grants, {overrides.denies.length} denies, {effectiveCount} effective
-          </div>
-          {risks.length > 0 && (
-            <div className="text-xs text-red-600">{risks.length} risk flag{risks.length > 1 ? "s" : ""}</div>
-          )}
-        </div>
-      );
+    {
+      accessorKey: "email",
+      header: ({ column }) => <SortableHeader column={column} title="Email" />,
     },
-  },
-  {
-    id: "riskFlags",
-    header: "Risk Flags",
-    cell: ({ row }) =>
-      row.original.risks.length === 0 ? (
-        <span className="text-sm text-muted-foreground">No flags</span>
-      ) : (
+    {
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }) => {
+        const role = row.original.role;
+        const label = role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        return (
+          <Badge variant="outline" className={`font-medium ${roleColors[role] ?? ""}`}>
+            {label}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "personas",
+      header: "Personas",
+      cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
-          {row.original.risks.map((risk) => (
+          {row.original.personas.map((persona) => (
             <Badge
-              key={risk.code}
+              key={persona}
               variant="outline"
-              className={
-                risk.severity === "high"
-                  ? "bg-red-100 text-red-700 border-red-200"
-                  : "bg-amber-100 text-amber-700 border-amber-200"
-              }
+              className={`font-medium ${personaColors[persona] ?? "bg-muted text-foreground"}`}
             >
-              {risk.severity === "high" ? "High" : "Medium"}
+              {formatPersonaLabel(persona)}
             </Badge>
           ))}
         </div>
       ),
-  },
-  {
-    id: "portalAccess",
-    header: "Portal Access",
-    cell: ({ row }) => {
-      if (!row.original.portalClientId) {
-        return <span className="text-sm text-muted-foreground">Not enabled</span>;
-      }
-
-      return (
-        <div className="space-y-0.5">
-          <div className="font-medium">{row.original.portalClientName ?? "Bound client"}</div>
-          <div className="text-xs text-muted-foreground">{row.original.portalClientCode}</div>
-        </div>
-      );
     },
-  },
-  {
-    accessorKey: "joinedAt",
-    header: ({ column }) => <SortableHeader column={column} title="Joined" />,
-    cell: ({ row }) =>
-      new Date(row.original.joinedAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }),
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }) => (
-      <UserActions
-        user={row.original}
-        clients={clients}
-        users={users}
-        savedPresets={savedPresets}
-      />
-    ),
-  },
+    {
+      id: "customAccess",
+      header: "Custom Access",
+      cell: ({ row }) => {
+        const overrides = normalizePermissionOverrides(row.original.permissionOverrides);
+        if (overrides.grants.length === 0 && overrides.denies.length === 0) {
+          return <span className="text-sm text-muted-foreground">Role default</span>;
+        }
+
+        const effectiveCount = getEffectivePermissions(row.original.role, overrides).length;
+        const risks = getAccessRisks({
+          role: row.original.role,
+          portalClientId: row.original.portalClientId,
+          overrides,
+        });
+        return (
+          <div className="space-y-0.5">
+            <Badge variant="outline" className="bg-violet-100 text-violet-700 border-violet-200">
+              Custom Access
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {overrides.grants.length} grants, {overrides.denies.length} denies, {effectiveCount}{" "}
+              effective
+            </div>
+            {risks.length > 0 && (
+              <div className="text-xs text-red-600">
+                {risks.length} risk flag{risks.length > 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "riskFlags",
+      header: "Risk Flags",
+      cell: ({ row }) =>
+        row.original.risks.length === 0 ? (
+          <span className="text-sm text-muted-foreground">No flags</span>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {row.original.risks.map((risk) => (
+              <Badge
+                key={risk.code}
+                variant="outline"
+                className={
+                  risk.severity === "high"
+                    ? "bg-red-100 text-red-700 border-red-200"
+                    : "bg-amber-100 text-amber-700 border-amber-200"
+                }
+              >
+                {risk.severity === "high" ? "High" : "Medium"}
+              </Badge>
+            ))}
+          </div>
+        ),
+    },
+    {
+      id: "portalAccess",
+      header: "Portal Access",
+      cell: ({ row }) => {
+        if (!row.original.portalClientId) {
+          return <span className="text-sm text-muted-foreground">Not enabled</span>;
+        }
+
+        return (
+          <div className="space-y-0.5">
+            <div className="font-medium">{row.original.portalClientName ?? "Bound client"}</div>
+            <div className="text-xs text-muted-foreground">{row.original.portalClientCode}</div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "joinedAt",
+      header: ({ column }) => <SortableHeader column={column} title="Joined" />,
+      cell: ({ row }) =>
+        new Date(row.original.joinedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <UserActions
+          user={row.original}
+          clients={clients}
+          users={users}
+          savedPresets={savedPresets}
+        />
+      ),
+    },
   ];
 }
 

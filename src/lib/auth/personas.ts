@@ -19,7 +19,10 @@ export type UserPersona =
   | "portal_user"
   | "operator";
 
-export function getTenantMembership(user: SessionLikeUser | null | undefined, slug?: string | null) {
+export function getTenantMembership(
+  user: SessionLikeUser | null | undefined,
+  slug?: string | null
+) {
   const tenants = user?.tenants ?? [];
   if (tenants.length === 0) return null;
 
@@ -30,7 +33,10 @@ export function getTenantMembership(user: SessionLikeUser | null | undefined, sl
   return tenants[0] ?? null;
 }
 
-export function isPortalUser(user: SessionLikeUser | null | undefined, slug?: string | null): boolean {
+export function isPortalUser(
+  user: SessionLikeUser | null | undefined,
+  slug?: string | null
+): boolean {
   return Boolean(getTenantMembership(user, slug)?.portalClientId);
 }
 

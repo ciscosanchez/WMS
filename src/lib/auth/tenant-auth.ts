@@ -53,11 +53,7 @@ function normalizeProviderType(value: unknown): TenantSsoProviderType {
 
 function normalizeDomains(value: unknown): string[] {
   const rawValues =
-    typeof value === "string"
-      ? value.split(",")
-      : Array.isArray(value)
-        ? value
-        : [];
+    typeof value === "string" ? value.split(",") : Array.isArray(value) ? value : [];
 
   return rawValues
     .filter((item): item is string => typeof item === "string")

@@ -30,12 +30,12 @@ const billingFallback = [
 export default async function ReportsPage() {
   const [attributeCoverage, receiving, inventory, fulfillment, billing, movement] =
     await Promise.allSettled([
-    getOperationalAttributeCoverage(),
-    getReceivingStats(),
-    getInventoryStats(),
-    getFulfillmentStats(),
-    getBillingSummaryMTD(),
-    getMovementAnalytics(),
+      getOperationalAttributeCoverage(),
+      getReceivingStats(),
+      getInventoryStats(),
+      getFulfillmentStats(),
+      getBillingSummaryMTD(),
+      getMovementAnalytics(),
     ]);
 
   return (

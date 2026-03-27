@@ -17,8 +17,11 @@ type RawAttributeValue = {
   jsonValue?: unknown;
 };
 
-export function formatOperationalAttributeValue(value: Omit<RawAttributeValue, "entityId" | "definitionId">) {
-  if (value.numberValue !== null && value.numberValue !== undefined) return String(value.numberValue);
+export function formatOperationalAttributeValue(
+  value: Omit<RawAttributeValue, "entityId" | "definitionId">
+) {
+  if (value.numberValue !== null && value.numberValue !== undefined)
+    return String(value.numberValue);
   if (value.booleanValue !== null && value.booleanValue !== undefined)
     return value.booleanValue ? "Yes" : "No";
   if (value.dateValue) return value.dateValue.toISOString().slice(0, 10);
@@ -29,7 +32,9 @@ export function formatOperationalAttributeValue(value: Omit<RawAttributeValue, "
   return value.textValue ?? "";
 }
 
-export function buildOperationalAttributeExportColumns(definitions: AttributeDefinition[]): ExportColumn[] {
+export function buildOperationalAttributeExportColumns(
+  definitions: AttributeDefinition[]
+): ExportColumn[] {
   return definitions.map((definition) => ({
     key: `attr_${definition.key}`,
     header: definition.label,
@@ -71,27 +76,33 @@ export function attachAggregatedOperationalAttributesToRows(opts: {
   entityToRowId: Record<string, string>;
 }) {
   const definitionById = new Map(opts.definitions.map((definition) => [definition.id, definition]));
-  const rowDefinitionValues = opts.values.reduce<Record<string, Record<string, Set<string>>>>((acc, value) => {
-    const rowId = opts.entityToRowId[value.entityId];
-    if (!rowId) return acc;
+  const rowDefinitionValues = opts.values.reduce<Record<string, Record<string, Set<string>>>>(
+    (acc, value) => {
+      const rowId = opts.entityToRowId[value.entityId];
+      if (!rowId) return acc;
 
-    const definition = definitionById.get(value.definitionId);
-    if (!definition) return acc;
+      const definition = definitionById.get(value.definitionId);
+      if (!definition) return acc;
 
-    if (!acc[rowId]) acc[rowId] = {};
-    if (!acc[rowId][definition.key]) acc[rowId][definition.key] = new Set();
+      if (!acc[rowId]) acc[rowId] = {};
+      if (!acc[rowId][definition.key]) acc[rowId][definition.key] = new Set();
 
-    const formatted = formatOperationalAttributeValue(value);
-    if (formatted) acc[rowId][definition.key].add(formatted);
-    return acc;
-  }, {});
+      const formatted = formatOperationalAttributeValue(value);
+      if (formatted) acc[rowId][definition.key].add(formatted);
+      return acc;
+    },
+    {}
+  );
 
   return opts.rows.map((row) => {
     const rowValues = rowDefinitionValues[row.id] ?? {};
-    const flattened = Object.entries(rowValues).reduce<Record<string, string>>((acc, [key, values]) => {
-      acc[`attr_${key}`] = [...values].join(" | ");
-      return acc;
-    }, {});
+    const flattened = Object.entries(rowValues).reduce<Record<string, string>>(
+      (acc, [key, values]) => {
+        acc[`attr_${key}`] = [...values].join(" | ");
+        return acc;
+      },
+      {}
+    );
 
     return {
       ...row,

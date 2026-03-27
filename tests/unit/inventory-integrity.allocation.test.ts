@@ -204,7 +204,10 @@ describe("Transactional inventory integrity", () => {
         { id: "inv-room-reference", key: "room_reference" },
       ]);
 
-      mockTxPrisma.inventory.findMany.mockResolvedValue([{ id: "inv-2", binId: "bin-B" }, { id: "inv-1", binId: "bin-A" }]);
+      mockTxPrisma.inventory.findMany.mockResolvedValue([
+        { id: "inv-2", binId: "bin-B" },
+        { id: "inv-1", binId: "bin-A" },
+      ]);
       mockTxPrisma.inventory.update.mockResolvedValue({});
       mockTxPrisma.inventoryTransaction.create.mockResolvedValue({});
       mockTxPrisma.pickTask.create.mockResolvedValue({ id: "pick-1" });

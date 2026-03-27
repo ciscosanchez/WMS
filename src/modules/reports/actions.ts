@@ -159,25 +159,24 @@ export async function getOperationalAttributeCoverage() {
     _count: { values: number };
   }>;
 
-  const byScope = definitions.reduce<Record<string, { activeDefinitions: number; populatedValues: number }>>(
-    (acc, definition) => {
-      if (!acc[definition.entityScope]) {
-        acc[definition.entityScope] = { activeDefinitions: 0, populatedValues: 0 };
-      }
-      acc[definition.entityScope].activeDefinitions += 1;
-      acc[definition.entityScope].populatedValues += definition._count.values ?? 0;
-      return acc;
-    },
-    {}
-  );
+  const byScope = definitions.reduce<
+    Record<string, { activeDefinitions: number; populatedValues: number }>
+  >((acc, definition) => {
+    if (!acc[definition.entityScope]) {
+      acc[definition.entityScope] = { activeDefinitions: 0, populatedValues: 0 };
+    }
+    acc[definition.entityScope].activeDefinitions += 1;
+    acc[definition.entityScope].populatedValues += definition._count.values ?? 0;
+    return acc;
+  }, {});
 
   return {
     totalDefinitions: definitions.length,
-    searchableDefinitions: definitions.filter(
-      (definition) => Boolean((definition.behaviorFlags ?? {}).searchable)
+    searchableDefinitions: definitions.filter((definition) =>
+      Boolean((definition.behaviorFlags ?? {}).searchable)
     ).length,
-    allocatableDefinitions: definitions.filter(
-      (definition) => Boolean((definition.behaviorFlags ?? {}).allocatable)
+    allocatableDefinitions: definitions.filter((definition) =>
+      Boolean((definition.behaviorFlags ?? {}).allocatable)
     ).length,
     topDefinitions: definitions
       .slice()
