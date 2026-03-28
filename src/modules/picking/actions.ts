@@ -8,7 +8,7 @@ import { nextSequence } from "@/lib/sequences";
 import { asTenantDb } from "@/lib/tenant/db-types";
 
 async function getContext() {
-  return requireTenantContext("shipping:read");
+  return requireTenantContext("orders:read");
 }
 
 async function getWriteContext() {
@@ -109,32 +109,44 @@ async function createPickTaskForOrder(
 
       for (const line of order.lines) {
         const inventory = await findInventoryForOrderLine(prisma, line);
+        let claimedInventory = inventory;
 
         if (inventory) {
-          await prisma.inventory.update({
-            where: { id: inventory.id },
+          const updated = await prisma.inventory.updateMany({
+            where: {
+              id: inventory.id,
+              available: { gte: line.quantity },
+            },
             data: {
               allocated: { increment: line.quantity },
               available: { decrement: line.quantity },
             },
           });
 
+          if (updated.count === 0) {
+            claimedInventory = null;
+          }
+        }
+
+        if (claimedInventory) {
           await prisma.inventoryTransaction.create({
             data: {
               type: "allocate",
               productId: line.productId,
-              fromBinId: inventory.binId,
+              fromBinId: claimedInventory.binId,
               quantity: line.quantity,
               referenceType: "order",
               referenceId: order.id,
               performedBy: userId,
             },
           });
+        } else {
+          throw new Error(`Insufficient available inventory for product ${line.productId}`);
         }
 
         lineData.push({
           productId: line.productId,
-          binId: inventory?.binId ?? null,
+          binId: claimedInventory.binId,
           quantity: line.quantity,
           pickedQty: 0,
         });
@@ -201,13 +213,17 @@ async function generatePickTasksForEligibleOrders(method: PickTaskMethod) {
       continue;
     }
 
-    await createPickTaskForOrder(db, order, user.id, method);
-    await db.order.update({
-      where: { id: order.id },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { status: "picking" as any },
-    });
-    created += 1;
+    try {
+      await createPickTaskForOrder(db, order, user.id, method);
+      await db.order.update({
+        where: { id: order.id },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: { status: "picking" as any },
+      });
+      created += 1;
+    } catch {
+      skipped += 1;
+    }
   }
 
   revalidatePath("/picking");

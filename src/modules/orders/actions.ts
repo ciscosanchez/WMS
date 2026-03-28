@@ -280,11 +280,13 @@ async function generatePickTasksForOrder(
               performedBy: userId,
             },
           });
+        } else {
+          throw new Error(`Insufficient available inventory for product ${line.productId}`);
         }
 
         lineData.push({
           productId: line.productId,
-          binId: inv?.binId ?? null,
+          binId: inv.binId,
           quantity: line.quantity,
           pickedQty: 0,
         });

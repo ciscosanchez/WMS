@@ -160,8 +160,10 @@ export async function deleteTransferOrder(id: string) {
     throw new Error("Only draft transfer orders can be deleted");
   }
 
-  await tenant.db.transferOrderLine.deleteMany({ where: { transferOrderId: id } });
-  await tenant.db.transferOrder.delete({ where: { id } });
+  await tenant.db.$transaction([
+    tenant.db.transferOrderLine.deleteMany({ where: { transferOrderId: id } }),
+    tenant.db.transferOrder.delete({ where: { id } }),
+  ]);
 
   await logAudit(tenant.db, {
     userId: user.id,

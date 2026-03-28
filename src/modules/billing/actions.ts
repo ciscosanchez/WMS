@@ -231,88 +231,90 @@ export async function generateInvoice(clientId: string, fromDate: Date, toDate: 
   const { user, tenant } = await requireTenantContext("settings:write");
   const db = tenant.db as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  // Fetch uninvoiced events in range
-  const events = await db.billingEvent.findMany({
-    where: {
-      clientId,
-      invoiceId: null,
-      occurredAt: { gte: fromDate, lte: toDate },
-    },
-  });
-
-  if (events.length === 0) {
-    throw new Error("No uninvoiced billing events found in this period");
-  }
-
-  // Group by service type
   type GroupEntry = { qty: number; unitRate: number; amount: number };
-  const grouped = events.reduce(
-    (
-      acc: Record<string, GroupEntry>,
-      ev: {
-        serviceType: string;
-        unitRate: number | string;
-        qty: number | string;
-        amount: number | string;
+
+  const invoice = await db.$transaction(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async (prisma: any) => {
+      const events = await prisma.billingEvent.findMany({
+        where: {
+          clientId,
+          invoiceId: null,
+          occurredAt: { gte: fromDate, lte: toDate },
+        },
+      });
+
+      if (events.length === 0) {
+        throw new Error("No uninvoiced billing events found in this period");
       }
-    ) => {
-      const key = ev.serviceType;
-      if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
-      acc[key].qty += Number(ev.qty);
-      acc[key].amount += Number(ev.amount);
-      return acc;
-    },
-    {} as Record<string, GroupEntry>
+
+      const grouped = events.reduce(
+        (
+          acc: Record<string, GroupEntry>,
+          ev: {
+            serviceType: string;
+            unitRate: number | string;
+            qty: number | string;
+            amount: number | string;
+          }
+        ) => {
+          const key = ev.serviceType;
+          if (!acc[key]) acc[key] = { qty: 0, unitRate: Number(ev.unitRate), amount: 0 };
+          acc[key].qty += Number(ev.qty);
+          acc[key].amount += Number(ev.amount);
+          return acc;
+        },
+        {} as Record<string, GroupEntry>
+      );
+
+      const invoiceLines = (Object.entries(grouped) as [string, GroupEntry][]).map(
+        ([serviceType, data]) => ({
+          description: SERVICE_LABELS[serviceType] ?? serviceType,
+          serviceType,
+          qty: data.qty,
+          unitRate: data.unitRate,
+          amount: data.amount,
+        })
+      );
+
+      const subtotal = invoiceLines.reduce((sum, line) => sum + line.amount, 0);
+
+      const rateCard = await prisma.rateCard.findFirst({
+        where: { OR: [{ clientId }, { clientId: null }] },
+        orderBy: { clientId: "asc" },
+      });
+      const monthlyMinimum = rateCard ? Number(rateCard.monthlyMinimum) : 0;
+      const total = Math.max(subtotal, monthlyMinimum);
+      const invoiceNumber = await nextSequence(prisma, "INV");
+
+      const createdInvoice = await prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          clientId,
+          status: "draft",
+          periodStart: fromDate,
+          periodEnd: toDate,
+          subtotal,
+          total,
+          dueDate: new Date(toDate.getTime() + 30 * 24 * 60 * 60 * 1000),
+          lines: {
+            create: invoiceLines,
+          },
+        },
+        include: { lines: true },
+      });
+
+      await prisma.billingEvent.updateMany({
+        where: {
+          id: { in: events.map((event: { id: string }) => event.id) },
+          invoiceId: null,
+        },
+        data: { invoiceId: createdInvoice.id },
+      });
+
+      return createdInvoice;
+    }
   );
-
-  const invoiceLines = (Object.entries(grouped) as [string, GroupEntry][]).map(
-    ([serviceType, data]) => ({
-      description: SERVICE_LABELS[serviceType] ?? serviceType,
-      serviceType,
-      qty: data.qty,
-      unitRate: data.unitRate,
-      amount: data.amount,
-    })
-  );
-
-  const subtotal = invoiceLines.reduce((sum, l) => sum + l.amount, 0);
-
-  // Apply monthly minimum if configured
-  const rateCard = await db.rateCard.findFirst({
-    where: { OR: [{ clientId }, { clientId: null }] },
-    orderBy: { clientId: "asc" }, // client-specific first (non-null sorts before null)
-  });
-  const monthlyMinimum = rateCard ? Number(rateCard.monthlyMinimum) : 0;
-  const total = Math.max(subtotal, monthlyMinimum);
-
-  const invoiceNumber = await nextSequence(tenant.db, "INV");
-
-  const invoice = await db.invoice.create({
-    data: {
-      invoiceNumber,
-      clientId,
-      status: "draft",
-      periodStart: fromDate,
-      periodEnd: toDate,
-      subtotal,
-      total,
-      dueDate: new Date(toDate.getTime() + 30 * 24 * 60 * 60 * 1000), // Net 30
-      lines: {
-        create: invoiceLines,
-      },
-    },
-    include: { lines: true },
-  });
-
-  // Mark events as invoiced
-  await db.billingEvent.updateMany({
-    where: {
-      clientId,
-      invoiceId: null,
-      occurredAt: { gte: fromDate, lte: toDate },
-    },
-    data: { invoiceId: invoice.id },
-  });
 
   await logAudit(tenant.db, {
     userId: user.id,
