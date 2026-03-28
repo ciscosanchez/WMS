@@ -152,7 +152,7 @@ export default function BulkGeneratePage() {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? t("generating") : `${t("generate")} ${totalBins} ${t("bins")}`}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={() => router.push("/warehouse")}>
             {t("cancel")}
           </Button>
         </div>

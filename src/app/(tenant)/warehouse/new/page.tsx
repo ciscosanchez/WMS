@@ -149,7 +149,7 @@ export default function NewWarehousePage() {
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? t("creating") : t("createWarehouse")}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" variant="outline" onClick={() => router.push("/warehouse")}>
                 {t("cancel")}
               </Button>
             </div>

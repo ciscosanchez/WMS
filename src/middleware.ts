@@ -29,6 +29,7 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.sentry.io https://*.resend.com",
+      "frame-src 'self' https://www.google.com https://maps.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
