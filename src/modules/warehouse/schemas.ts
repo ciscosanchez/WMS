@@ -34,8 +34,19 @@ export const bulkLocationSchema = z.object({
   binType: z.enum(["standard", "bulk", "pick"]).default("standard"),
 });
 
+export const binSchema = z.object({
+  shelfId: z.string().min(1),
+  code: z.string().min(1).max(20),
+  barcode: z.string().min(1).max(120),
+  type: z.enum(["standard", "bulk", "pick"]).default("standard"),
+  status: z.enum(["available", "full", "reserved", "blocked"]).default("available"),
+  capacity: z.coerce.number().int().min(1).max(100000).optional().nullable(),
+});
+
 export const warehouseSchemaStatic = warehouseSchema();
 export const zoneSchemaStatic = zoneSchema();
+export const binSchemaStatic = binSchema;
 export type WarehouseFormData = z.input<ReturnType<typeof warehouseSchema>>;
 export type ZoneFormData = z.input<ReturnType<typeof zoneSchema>>;
 export type BulkLocationFormData = z.input<typeof bulkLocationSchema>;
+export type BinFormData = z.input<typeof binSchema>;

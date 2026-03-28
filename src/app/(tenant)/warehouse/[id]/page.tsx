@@ -21,6 +21,7 @@ import { Plus, MapPin, Boxes, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getWarehouse, createZone } from "@/modules/warehouse/actions";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function countBinsInAisle(aisle: any): number {
@@ -150,6 +151,9 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
     <div className="space-y-6">
       <PageHeader title={wh.name} description={wh.address}>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/warehouse/bins/new">{t("addBin")}</Link>
+          </Button>
           <Badge variant="outline" className="text-base">
             {wh.code}
           </Badge>

@@ -9,6 +9,7 @@ import {
   warehouseSchemaStatic as warehouseSchema,
   zoneSchemaStatic as zoneSchema,
   bulkLocationSchema,
+  binSchemaStatic as binSchema,
 } from "./schemas";
 import { mockWarehouses } from "@/lib/mock-data";
 
@@ -209,4 +210,93 @@ export async function getBins(_warehouseId?: string) {
     },
     orderBy: { barcode: "asc" },
   });
+}
+
+export async function getBin(id: string) {
+  if (config.useMockData) return null;
+
+  const { tenant } = await getReadContext();
+  return tenant.db.bin.findUnique({
+    where: { id },
+    include: {
+      shelf: {
+        include: {
+          rack: {
+            include: {
+              aisle: {
+                include: {
+                  zone: {
+                    include: { warehouse: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getShelfOptions() {
+  if (config.useMockData) return [];
+
+  const { tenant } = await getReadContext();
+  return tenant.db.shelf.findMany({
+    include: {
+      rack: {
+        include: {
+          aisle: {
+            include: {
+              zone: {
+                include: { warehouse: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: [{ rack: { aisle: { zone: { warehouse: { code: "asc" } } } } }, { code: "asc" }],
+  });
+}
+
+export async function createBin(data: unknown) {
+  if (config.useMockData) return { id: "mock-bin" };
+
+  const { user, tenant } = await requireTenantContext("warehouse:write");
+  const parsed = binSchema.parse(data);
+
+  const bin = await tenant.db.bin.create({ data: parsed });
+
+  await logAudit(tenant.db, {
+    userId: user.id,
+    action: "create",
+    entityType: "bin",
+    entityId: bin.id,
+  });
+
+  revalidatePath("/warehouse");
+  return bin;
+}
+
+export async function updateBin(id: string, data: unknown) {
+  if (config.useMockData) return { id };
+
+  const { user, tenant } = await requireTenantContext("warehouse:write");
+  const parsed = binSchema.parse(data);
+
+  const bin = await tenant.db.bin.update({
+    where: { id },
+    data: parsed,
+  });
+
+  await logAudit(tenant.db, {
+    userId: user.id,
+    action: "update",
+    entityType: "bin",
+    entityId: id,
+  });
+
+  revalidatePath("/warehouse");
+  return bin;
 }

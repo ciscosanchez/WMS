@@ -42,6 +42,9 @@ export default async function WarehousePage() {
         <PageHeader title={t("title")} description={t("noWarehouses")}>
           <div className="flex gap-2">
             <Button asChild variant="outline">
+              <Link href="/warehouse/bins/new">{t("addBin")}</Link>
+            </Button>
+            <Button asChild variant="outline">
               <Link href="/warehouse/bulk-generate">{t("bulkGenerate")}</Link>
             </Button>
             <Button asChild>
@@ -72,6 +75,9 @@ export default async function WarehousePage() {
         description={`${warehouses.length} ${t("warehouses")}, ${totalBins} ${t("bins")}`}
       >
         <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/warehouse/bins/new">{t("addBin")}</Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/warehouse/bulk-generate">{t("bulkGenerate")}</Link>
           </Button>
