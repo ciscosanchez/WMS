@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
 
 interface Channel {
   id: string;
@@ -33,9 +34,11 @@ export function ChannelsClient({ channels }: Props) {
   return (
     <div className="space-y-6">
       <PageHeader title="Sales Channels" description="Connect marketplaces and order sources">
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Channel
+        <Button asChild>
+          <Link href="/settings/integrations">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Channel
+          </Link>
         </Button>
       </PageHeader>
 

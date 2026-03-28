@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { ScanLine, Clock, CheckCircle, AlertCircle, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { createWave, generatePickTasks } from "@/modules/picking/actions";
 
 interface PickTask {
   id: string;
@@ -41,7 +44,9 @@ interface Kpis {
 const SHOW_COMPLETED_LIMIT = 5;
 
 export function PickingClient({ tasks, kpis }: { tasks: PickTask[]; kpis: Kpis }) {
+  const router = useRouter();
   const [showAllCompleted, setShowAllCompleted] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const activeTasks = tasks.filter((t) => t.status !== "completed");
   const completedTasks = tasks.filter((t) => t.status === "completed");
@@ -50,12 +55,41 @@ export function PickingClient({ tasks, kpis }: { tasks: PickTask[]; kpis: Kpis }
     : completedTasks.slice(0, SHOW_COMPLETED_LIMIT);
   const displayTasks = [...activeTasks, ...visibleCompleted];
 
+  function handleGenerate(mode: "wave" | "single_order") {
+    startTransition(async () => {
+      try {
+        const result = mode === "wave" ? await createWave() : await generatePickTasks();
+        if (result.created === 0) {
+          toast.info("No eligible orders were found.");
+        } else {
+          toast.success(
+            mode === "wave"
+              ? `Created ${result.created} wave pick task${result.created === 1 ? "" : "s"}.`
+              : `Generated ${result.created} pick task${result.created === 1 ? "" : "s"}.`
+          );
+        }
+        if (result.skipped > 0) {
+          toast.info(
+            `Skipped ${result.skipped} order${result.skipped === 1 ? "" : "s"} without pickable lines.`
+          );
+        }
+        router.refresh();
+      } catch (cause) {
+        toast.error(cause instanceof Error ? cause.message : "Failed to generate pick tasks");
+      }
+    });
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Picking" description="Pick tasks and wave management">
         <div className="flex gap-2">
-          <Button variant="outline">Create Wave</Button>
-          <Button>Generate Pick Tasks</Button>
+          <Button variant="outline" disabled={isPending} onClick={() => handleGenerate("wave")}>
+            {isPending ? "Working..." : "Create Wave"}
+          </Button>
+          <Button disabled={isPending} onClick={() => handleGenerate("single_order")}>
+            {isPending ? "Working..." : "Generate Pick Tasks"}
+          </Button>
         </div>
       </PageHeader>
 

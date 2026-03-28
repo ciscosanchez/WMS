@@ -158,6 +158,7 @@
       "cartonTypeCreated": "Tipo de caja creado",
       "cartonTypeUpdated": "Tipo de caja actualizado",
       "cartonTypeNotFound": "Tipo de caja no encontrado",
+      "createCartonType": "Crear Tipo de Caja",
       "creating": "Creando...",
       "saving": "Guardando...",
       "saveChanges": "Guardar Cambios",

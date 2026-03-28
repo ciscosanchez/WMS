@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createYardSpot, updateYardSpot } from "@/modules/yard-dock/actions";
+import { createDockDoor, updateDockDoor } from "@/modules/yard-dock/actions";
 
 type WarehouseOption = {
   id: string;
@@ -17,44 +17,40 @@ type WarehouseOption = {
   name: string;
 };
 
-type YardSpotFormData = {
+type DockDoorFormData = {
   code: string;
   name: string;
   warehouseId: string;
-  type: "parking" | "staging" | "refrigerated" | "hazmat";
-  row: string;
-  col: string;
+  type: "inbound" | "outbound" | "both";
   notes: string;
 };
 
-const DEFAULT_FORM: YardSpotFormData = {
+const DEFAULT_FORM: DockDoorFormData = {
   code: "",
   name: "",
   warehouseId: "",
-  type: "parking",
-  row: "",
-  col: "",
+  type: "both",
   notes: "",
 };
 
-interface YardSpotFormProps {
+interface DockDoorFormProps {
   mode: "create" | "edit";
   warehouses: WarehouseOption[];
-  yardSpotId?: string;
-  initialValues?: Partial<YardSpotFormData>;
+  dockDoorId?: string;
+  initialValues?: Partial<DockDoorFormData>;
 }
 
-export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: YardSpotFormProps) {
+export function DockDoorForm({ mode, warehouses, dockDoorId, initialValues }: DockDoorFormProps) {
   const router = useRouter();
-  const [form, setForm] = useState<YardSpotFormData>({ ...DEFAULT_FORM, ...initialValues });
+  const [form, setForm] = useState<DockDoorFormData>({ ...DEFAULT_FORM, ...initialValues });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const title = mode === "create" ? "New Yard Spot" : "Edit Yard Spot";
+  const title = mode === "create" ? "New Dock Door" : "Edit Dock Door";
   const description =
     mode === "create"
-      ? "Create a parking, staging, refrigerated, or hazmat spot in the yard."
-      : "Update yard spot details and location metadata.";
+      ? "Create an inbound, outbound, or shared dock door."
+      : "Update dock door details and warehouse assignment.";
 
   const submitLabel = useMemo(
     () =>
@@ -63,7 +59,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
           ? "Creating..."
           : "Saving..."
         : mode === "create"
-          ? "Create Yard Spot"
+          ? "Create Dock Door"
           : "Save Changes",
     [isSubmitting, mode]
   );
@@ -78,24 +74,22 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
       name: form.name,
       warehouseId: form.warehouseId,
       type: form.type,
-      row: form.row ? Number(form.row) : null,
-      col: form.col ? Number(form.col) : null,
       notes: form.notes || null,
     };
 
     try {
       if (mode === "create") {
-        const result = await createYardSpot(payload);
-        toast.success(`Yard spot ${result.code} created`);
-      } else if (yardSpotId) {
-        const result = await updateYardSpot(yardSpotId, payload);
-        toast.success(`Yard spot ${result.code} updated`);
+        const result = await createDockDoor(payload);
+        toast.success(`Dock door ${result.code} created`);
+      } else if (dockDoorId) {
+        const result = await updateDockDoor(dockDoorId, payload);
+        toast.success(`Dock door ${result.code} updated`);
       }
 
-      router.push("/yard-dock/yard-spots");
+      router.push("/yard-dock/dock-doors");
       router.refresh();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Failed to save yard spot";
+      const message = cause instanceof Error ? cause.message : "Failed to save dock door";
       setError(message);
       toast.error(message);
       setIsSubmitting(false);
@@ -118,7 +112,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
 
         <Card>
           <CardHeader>
-            <CardTitle>Spot Details</CardTitle>
+            <CardTitle>Door Details</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -129,7 +123,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
                 onChange={(event) =>
                   setForm((current) => ({ ...current, code: event.target.value }))
                 }
-                placeholder="e.g. Y-01"
+                placeholder="e.g. D-01"
                 required
               />
             </div>
@@ -141,7 +135,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
                 onChange={(event) =>
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
-                placeholder="North Yard Spot 1"
+                placeholder="Inbound Door 1"
                 required
               />
             </div>
@@ -172,42 +166,15 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    type: event.target.value as YardSpotFormData["type"],
+                    type: event.target.value as DockDoorFormData["type"],
                   }))
                 }
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
               >
-                <option value="parking">Parking</option>
-                <option value="staging">Staging</option>
-                <option value="refrigerated">Refrigerated</option>
-                <option value="hazmat">Hazmat</option>
+                <option value="inbound">Inbound</option>
+                <option value="outbound">Outbound</option>
+                <option value="both">Both</option>
               </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="row">Row</Label>
-              <Input
-                id="row"
-                type="number"
-                min="0"
-                value={form.row}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, row: event.target.value }))
-                }
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="col">Column</Label>
-              <Input
-                id="col"
-                type="number"
-                min="0"
-                value={form.col}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, col: event.target.value }))
-                }
-                placeholder="0"
-              />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="notes">Notes</Label>
@@ -218,7 +185,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
                   setForm((current) => ({ ...current, notes: event.target.value }))
                 }
                 rows={4}
-                placeholder="Optional notes about access, equipment, or restrictions"
+                placeholder="Optional notes about equipment, restrictions, or door usage"
               />
             </div>
           </CardContent>
@@ -228,7 +195,7 @@ export function YardSpotForm({ mode, warehouses, yardSpotId, initialValues }: Ya
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/yard-dock/yard-spots")}
+            onClick={() => router.push("/yard-dock/dock-doors")}
           >
             Cancel
           </Button>

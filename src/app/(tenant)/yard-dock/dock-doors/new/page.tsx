@@ -1,11 +1,11 @@
 import { getWarehouses } from "@/modules/warehouse/actions";
-import { YardSpotForm } from "../yard-spot-form";
+import { DockDoorForm } from "../dock-door-form";
 
-export default async function NewYardSpotPage() {
+export default async function NewDockDoorPage() {
   const warehouses = await getWarehouses();
 
   return (
-    <YardSpotForm
+    <DockDoorForm
       mode="create"
       warehouses={warehouses.map((warehouse) => ({
         id: warehouse.id,

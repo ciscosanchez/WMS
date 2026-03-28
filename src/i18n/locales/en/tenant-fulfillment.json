@@ -158,6 +158,7 @@
       "cartonTypeCreated": "Carton type created",
       "cartonTypeUpdated": "Carton type updated",
       "cartonTypeNotFound": "Carton type not found",
+      "createCartonType": "Create Carton Type",
       "creating": "Creating...",
       "saving": "Saving...",
       "saveChanges": "Save Changes",

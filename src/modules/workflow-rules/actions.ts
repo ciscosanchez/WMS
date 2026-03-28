@@ -16,17 +16,32 @@ export async function getRules(trigger?: string) {
   const { tenant } = await requireTenantContext("settings:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
+  if (typeof db.workflowRule?.findMany !== "function") {
+    return [];
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = { isActive: true };
   if (trigger) where.trigger = trigger;
-  return db.workflowRule.findMany({ where, orderBy: { priority: "desc" } });
+  try {
+    return await db.workflowRule.findMany({ where, orderBy: { priority: "desc" } });
+  } catch {
+    return [];
+  }
 }
 
 export async function getRule(id: string) {
   if (config.useMockData) return null;
   const { tenant } = await requireTenantContext("settings:read");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (tenant.db as any).workflowRule.findUnique({ where: { id } });
+  const db = tenant.db as any;
+  if (typeof db.workflowRule?.findUnique !== "function") {
+    return null;
+  }
+  try {
+    return await db.workflowRule.findUnique({ where: { id } });
+  } catch {
+    return null;
+  }
 }
 
 export async function createRule(data: unknown): Promise<{ id?: string; error?: string }> {

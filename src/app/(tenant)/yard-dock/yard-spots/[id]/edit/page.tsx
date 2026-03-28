@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getYardSpot } from "@/modules/yard-dock/actions";
 import { YardSpotForm } from "../../yard-spot-form";
+import { getWarehouses } from "@/modules/warehouse/actions";
 
 interface EditYardSpotPageProps {
   params: Promise<{ id: string }>;
@@ -8,7 +9,7 @@ interface EditYardSpotPageProps {
 
 export default async function EditYardSpotPage({ params }: EditYardSpotPageProps) {
   const { id } = await params;
-  const spot = await getYardSpot(id);
+  const [spot, warehouses] = await Promise.all([getYardSpot(id), getWarehouses()]);
 
   if (!spot) {
     notFound();
@@ -17,6 +18,11 @@ export default async function EditYardSpotPage({ params }: EditYardSpotPageProps
   return (
     <YardSpotForm
       mode="edit"
+      warehouses={warehouses.map((warehouse) => ({
+        id: warehouse.id,
+        code: warehouse.code,
+        name: warehouse.name,
+      }))}
       yardSpotId={spot.id}
       initialValues={{
         code: spot.code,
