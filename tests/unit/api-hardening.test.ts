@@ -146,4 +146,22 @@ describe("Rate limiter", () => {
     const r2 = await limiter.check("expire-key");
     expect(r2.allowed).toBe(true); // Should be allowed again
   });
+
+  it("can reset an accumulated key after a successful auth path", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { RateLimiter } = require("@/lib/security/rate-limit");
+
+    const limiter = new RateLimiter(2, 60_000);
+
+    await limiter.check("login:user@example.com");
+    const blocked = await limiter.check("login:user@example.com");
+    expect(blocked.allowed).toBe(true);
+    expect(blocked.remaining).toBe(0);
+
+    await limiter.reset("login:user@example.com");
+
+    const afterReset = await limiter.check("login:user@example.com");
+    expect(afterReset.allowed).toBe(true);
+    expect(afterReset.remaining).toBe(1);
+  });
 });

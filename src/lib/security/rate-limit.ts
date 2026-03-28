@@ -57,6 +57,15 @@ export class RateLimiter {
     }
   }
 
+  async reset(key: string): Promise<void> {
+    try {
+      await this.resetRedis(key);
+      this.redisDownSince = null;
+    } catch {
+      this.fallbackStore.delete(key);
+    }
+  }
+
   private async checkRedis(
     key: string
   ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
@@ -82,6 +91,16 @@ export class RateLimiter {
       remaining,
       resetAt,
     };
+  }
+
+  private async resetRedis(key: string): Promise<void> {
+    const redisKey = `rl:${key}`;
+
+    if (redis.status === "wait") {
+      await redis.connect();
+    }
+
+    await redis.del(redisKey);
   }
 
   /**

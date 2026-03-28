@@ -83,6 +83,14 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/platform") &&
     !pathname.startsWith("/api")
   ) {
+    if (!authUser) {
+      const loginUrl = new URL("/login", request.url);
+      if (pathname !== "/") {
+        loginUrl.searchParams.set("callbackUrl", pathname);
+      }
+      return NextResponse.redirect(loginUrl);
+    }
+
     if (authUser?.isSuperadmin) {
       return NextResponse.redirect(new URL("/platform", request.url));
     }
@@ -106,16 +114,13 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Non-superadmin on base domain with no tenant — send to login
-    if (authUser) {
-      // Logged in but not superadmin — redirect to their first tenant
-      const tenants = authUser.tenants ?? [];
-      if (tenants.length > 0) {
-        const tenantPath =
-          pathname === "/" ? getDefaultTenantPath(authUser, tenants[0].slug) : pathname;
-        const tenantUrl = buildTenantAppUrl(tenants[0].slug, tenantPath);
-        return NextResponse.redirect(tenantUrl);
-      }
+    // Logged in but not superadmin — redirect to their first tenant
+    const tenants = authUser.tenants ?? [];
+    if (tenants.length > 0) {
+      const tenantPath =
+        pathname === "/" ? getDefaultTenantPath(authUser, tenants[0].slug) : pathname;
+      const tenantUrl = buildTenantAppUrl(tenants[0].slug, tenantPath);
+      return NextResponse.redirect(tenantUrl);
     }
   }
 

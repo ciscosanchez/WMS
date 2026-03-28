@@ -106,6 +106,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await compare(credentials.password as string, user.passwordHash);
         if (!isValid) return null;
 
+        await loginLimiter.reset(`login:${email}`);
+
         return toAuthUser(user);
       },
     }),

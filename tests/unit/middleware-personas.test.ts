@@ -44,6 +44,15 @@ describe("middleware persona routing", () => {
     expect(response.headers.get("location")).toBe("https://wms.ramola.app/platform");
   });
 
+  it("redirects unauthenticated base-domain root requests to /login", async () => {
+    mockGetToken.mockResolvedValue(null);
+
+    const { middleware } = await import("@/middleware");
+    const response = await middleware(makeRequest("https://wms.ramola.app/", "wms.ramola.app"));
+
+    expect(response.headers.get("location")).toBe("https://wms.ramola.app/login");
+  });
+
   it("routes warehouse workers to /my-tasks on tenant root", async () => {
     mockGetToken.mockResolvedValue({
       isSuperadmin: false,
