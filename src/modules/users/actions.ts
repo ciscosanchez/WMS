@@ -79,7 +79,19 @@ export async function getTenantUsers(tenantId: string) {
   const actorAccessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   return publicDb.tenantUser.findMany({
-    where: { tenantId },
+    where: {
+      tenantId,
+      // Scoped admins only see admins + users assigned to their accessible warehouses.
+      // Unrestricted actors (accessibleIds === null) see everyone.
+      ...(actorAccessibleIds !== null
+        ? {
+            OR: [
+              { role: "admin" },
+              { warehouseAssignments: { some: { warehouseId: { in: actorAccessibleIds } } } },
+            ],
+          }
+        : {}),
+    },
     include: {
       user: { select: { id: true, name: true, email: true, createdAt: true, isSuperadmin: true } },
       // Only return assignments for warehouses the actor can access — prevents
@@ -97,7 +109,10 @@ export async function inviteUser(opts: {
   role: TenantRole;
   portalClientId?: string | null;
   permissionOverrides?: PermissionOverrides | null;
-}): Promise<{ error: string } | { userId: string; emailSent: boolean; emailWarning?: string }> {
+}): Promise<
+  | { error: string }
+  | { userId: string; emailSent: boolean; emailWarning?: string; accessWarning?: string }
+> {
   const { tenant } = await getAdminContext();
 
   try {
@@ -179,11 +194,17 @@ export async function inviteUser(opts: {
       setPasswordUrl,
     });
 
+    const SCOPED_ROLES: TenantRole[] = ["warehouse_worker", "manager"];
+    const accessWarning = SCOPED_ROLES.includes(opts.role)
+      ? `User invited as ${opts.role.replace(/_/g, " ")} with no warehouse assignments — they will have no access until you assign a warehouse.`
+      : undefined;
+
     revalidatePath("/settings/users");
     return {
       userId,
       emailSent: emailResult.sent,
       emailWarning: emailResult.warning,
+      accessWarning,
     };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to invite user" };
@@ -390,7 +411,17 @@ export async function exportTenantAccessReview() {
   const actorAccessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const members = await publicDb.tenantUser.findMany({
-    where: { tenantId: tenant.tenantId },
+    where: {
+      tenantId: tenant.tenantId,
+      ...(actorAccessibleIds !== null
+        ? {
+            OR: [
+              { role: "admin" },
+              { warehouseAssignments: { some: { warehouseId: { in: actorAccessibleIds } } } },
+            ],
+          }
+        : {}),
+    },
     include: {
       user: { select: { id: true, name: true, email: true, isSuperadmin: true } },
       // Only export assignments the actor can access — prevents cross-warehouse
@@ -437,7 +468,7 @@ export async function exportTenantAccessReview() {
       member.role === "admin" || member.user.isSuperadmin
         ? "Unrestricted (admin)"
         : member.warehouseAssignments.length === 0
-          ? "Unrestricted"
+          ? "No access (0 assignments)"
           : member.warehouseAssignments
               .map((wa) => `${wa.warehouseId}${wa.role ? ` (${wa.role})` : ""}`)
               .join("; ");

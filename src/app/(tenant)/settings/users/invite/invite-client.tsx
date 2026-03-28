@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, KeyRound, Mail, MailX } from "lucide-react";
+import { Loader2, KeyRound, Mail, MailX, ShieldAlert } from "lucide-react";
 import { inviteUser } from "@/modules/users/actions";
 
 type TenantRole = "admin" | "manager" | "warehouse_worker" | "viewer";
@@ -41,6 +41,7 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
   const [result, setResult] = useState<{
     emailSent: boolean;
     emailWarning?: string;
+    accessWarning?: string;
   } | null>(null);
 
   const {
@@ -92,6 +93,7 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
     setResult({
       emailSent: res.emailSent,
       emailWarning: res.emailWarning,
+      accessWarning: res.accessWarning,
     });
     toast.success(`${data.name} added to the team`);
   }
@@ -110,6 +112,13 @@ export function InviteUserClient({ clients }: { clients: PortalClientOption[] })
           <div className="flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <MailX className="h-4 w-4 shrink-0 text-amber-600" />
             {result.emailWarning ?? "Email not sent."}
+          </div>
+        )}
+
+        {result.accessWarning && (
+          <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+            {result.accessWarning}
           </div>
         )}
 

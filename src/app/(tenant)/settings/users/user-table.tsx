@@ -446,7 +446,7 @@ function getColumns(
           return <span className="text-sm text-muted-foreground">All (admin)</span>;
         }
         if (warehouseAssignments.length === 0) {
-          return <span className="text-sm text-muted-foreground">Unrestricted</span>;
+          return <span className="text-sm text-destructive/80">No access</span>;
         }
         return (
           <div className="space-y-0.5">
