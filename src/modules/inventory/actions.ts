@@ -100,15 +100,17 @@ async function attachInventoryRelations(tenantDb: TenantDb, rows: InventoryRowBa
   ])) as [InventoryProductChoice[], InventoryBinChoice[]];
 
   const clientIds = [...new Set(products.map((product) => product.clientId).filter(Boolean))];
-  const clients = (clientIds.length
-    ? await tenantDb.client.findMany({
-        where: { id: { in: clientIds } },
-        select: {
-          id: true,
-          code: true,
-        },
-      })
-    : []) as InventoryClientChoice[];
+  const clients = (
+    clientIds.length
+      ? await tenantDb.client.findMany({
+          where: { id: { in: clientIds } },
+          select: {
+            id: true,
+            code: true,
+          },
+        })
+      : []
+  ) as InventoryClientChoice[];
 
   const productMap = new Map(products.map((product) => [product.id, product]));
   const binMap = new Map(bins.map((bin) => [bin.id, bin]));
