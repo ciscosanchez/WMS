@@ -275,6 +275,12 @@ const navigation: NavGroup[] = [
     items: [
       { titleKey: "analytics", href: "/analytics", icon: TrendingUp, permission: "reports:read" },
       { titleKey: "reports", href: "/reports", icon: BarChart3, permission: "reports:read" },
+      {
+        titleKey: "pickMovement",
+        href: "/reports/pick-movement",
+        icon: MapPin,
+        permission: "reports:read",
+      },
       { titleKey: "settings", href: "/settings", icon: Settings, permission: "settings:read" },
     ],
   },

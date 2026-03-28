@@ -12,6 +12,7 @@ import { Check, ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getShipment, receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 import { getBinByBarcode } from "@/modules/operator/actions";
+import { getSuggestedBins, type PutawaySuggestion } from "@/modules/receiving/putaway-suggestions";
 import { actionKey } from "@/hooks/use-offline";
 import { useSharedOffline } from "@/providers/offline-provider";
 
@@ -44,6 +45,7 @@ export default function ReceiveShipmentPage() {
   const [binId, setBinId] = useState<string | null>(null);
   const [qty, setQty] = useState("1");
   const [submitting, setSubmitting] = useState(false);
+  const [suggestions, setSuggestions] = useState<PutawaySuggestion[]>([]);
   const { executeAction } = useSharedOffline();
 
   useEffect(() => {
@@ -63,6 +65,22 @@ export default function ReceiveShipmentPage() {
       .catch(() => toast.error(t("failedLoadShipment")))
       .finally(() => setLoading(false));
   }, [id, router, t]);
+
+  // Fetch putaway suggestions when the active line changes (keyed by line ID, not whole shipment)
+  const activeLineId = shipment?.lines[activeLineIdx]?.id;
+  const activeLineDone =
+    !shipment?.lines[activeLineIdx] ||
+    (shipment.lines[activeLineIdx].receivedQty ?? 0) >=
+      (shipment.lines[activeLineIdx].expectedQty ?? 0);
+  useEffect(() => {
+    if (!activeLineId || activeLineDone) {
+      setSuggestions([]);
+      return;
+    }
+    getSuggestedBins(activeLineId)
+      .then(setSuggestions)
+      .catch(() => setSuggestions([]));
+  }, [activeLineId, activeLineDone]);
 
   async function handleBinScan(barcode: string) {
     const bin = await getBinByBarcode(barcode);
@@ -226,6 +244,35 @@ export default function ReceiveShipmentPage() {
               </div>
               {binBarcode && (
                 <p className="mt-1 text-xs text-green-600">{t("binLabel", { binBarcode })}</p>
+              )}
+              {!binBarcode && suggestions.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-muted-foreground">{t("suggestedBins")}</p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.binId}
+                        type="button"
+                        onClick={() => {
+                          setBinBarcode(s.binBarcode);
+                          setBinId(s.binId);
+                        }}
+                        className={`rounded-md border px-3 py-1.5 text-xs font-mono transition-colors ${
+                          s.distance === "same"
+                            ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                            : s.distance === "adjacent"
+                              ? "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                              : "border-border bg-muted text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {s.binCode}
+                        {s.onHand > 0 && (
+                          <span className="ml-1 text-muted-foreground">({s.onHand})</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 

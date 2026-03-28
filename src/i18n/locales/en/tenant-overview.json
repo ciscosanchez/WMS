@@ -57,7 +57,24 @@
     },
     "reports": {
       "title": "Reports",
-      "subtitle": "Warehouse analytics and insights"
+      "subtitle": "Warehouse analytics and insights",
+      "pickMovement": {
+        "title": "Pick Movement Report",
+        "subtitle": "Picks completed today by zone and bin frequency",
+        "totalLinesPickedToday": "Lines Picked Today",
+        "activeZones": "Active Zones",
+        "peakOperatorsInZone": "Peak Operators in Zone",
+        "zoneBreakdown": "Zone Breakdown",
+        "noPicksToday": "No pick lines completed today.",
+        "zone": "Zone",
+        "linesPickedToday": "Lines Picked",
+        "operators": "Operators",
+        "pctOfTotal": "% of Total",
+        "topBins": "Top 10 Bins by Frequency",
+        "rank": "Rank",
+        "binCode": "Bin",
+        "picksToday": "Picks Today"
+      }
     }
   }
 }

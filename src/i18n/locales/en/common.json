@@ -96,6 +96,7 @@
     "gs1Labels": "GS1 Labels",
     "lpn": "LPN Tracking",
     "transfers": "Transfers",
-    "replenishment": "Replenishment"
+    "replenishment": "Replenishment",
+    "pickMovement": "Pick Movement"
   }
 }

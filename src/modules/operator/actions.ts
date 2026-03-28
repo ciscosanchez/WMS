@@ -168,7 +168,10 @@ export async function claimPickTask(taskId: string) {
     where: { id: taskId },
     include: {
       order: true,
-      lines: { include: { product: true, bin: true } },
+      lines: {
+        include: { product: true, bin: true },
+        orderBy: { bin: { barcode: "asc" } }, // Pick path order: zone → aisle → rack → shelf
+      },
     },
   });
 

@@ -385,6 +385,136 @@ export async function getOperationsBoard() {
 }
 
 /**
+ * Movement analytics report: picks completed today, grouped by zone.
+ * Returns zone-level stats and top 10 bins by pick frequency.
+ */
+export async function getPickMovementReport() {
+  if (config.useMockData) {
+    return {
+      zones: [] as Array<{
+        zoneName: string;
+        zoneCode: string;
+        linesPickedToday: number;
+        uniqueOperators: number;
+        pctOfTotal: number;
+      }>,
+      topBins: [] as Array<{ binCode: string; binBarcode: string; pickCount: number }>,
+      totalLinesPickedToday: 0,
+    };
+  }
+
+  const { tenant, role, warehouseAccess } = await requireTenantContext("reports:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+  const today = startOfDay(new Date());
+
+  // Fetch all completed pick task lines today, traversing the bin→shelf→rack→aisle→zone chain
+  const lines = await db.pickTaskLine.findMany({
+    where: {
+      pickedQty: { gt: 0 },
+      task: {
+        status: { in: ["completed", "short_picked"] },
+        completedAt: { gte: today },
+        ...(accessibleIds !== null
+          ? {
+              lines: {
+                some: {
+                  bin: {
+                    shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                  },
+                },
+              },
+            }
+          : {}),
+      },
+    },
+    select: {
+      id: true,
+      task: { select: { assignedTo: true } },
+      bin: {
+        select: {
+          code: true,
+          barcode: true,
+          shelf: {
+            select: {
+              rack: {
+                select: {
+                  aisle: {
+                    select: {
+                      zone: { select: { name: true, code: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Aggregate by zone
+  const zoneMap = new Map<
+    string,
+    { zoneName: string; zoneCode: string; lineCount: number; operators: Set<string> }
+  >();
+
+  // Aggregate by bin
+  const binCountMap = new Map<string, { binCode: string; binBarcode: string; count: number }>();
+
+  for (const line of lines as Array<{
+    id: string;
+    task: { assignedTo: string | null };
+    bin: {
+      code: string;
+      barcode: string;
+      shelf: { rack: { aisle: { zone: { name: string; code: string } } } };
+    };
+  }>) {
+    const zone = line.bin.shelf.rack.aisle.zone;
+    const zoneKey = zone.code;
+
+    if (!zoneMap.has(zoneKey)) {
+      zoneMap.set(zoneKey, {
+        zoneName: zone.name,
+        zoneCode: zone.code,
+        lineCount: 0,
+        operators: new Set(),
+      });
+    }
+    const entry = zoneMap.get(zoneKey)!;
+    entry.lineCount++;
+    if (line.task.assignedTo) entry.operators.add(line.task.assignedTo);
+
+    const binKey = line.bin.barcode;
+    if (!binCountMap.has(binKey)) {
+      binCountMap.set(binKey, { binCode: line.bin.code, binBarcode: line.bin.barcode, count: 0 });
+    }
+    binCountMap.get(binKey)!.count++;
+  }
+
+  const totalLines = lines.length;
+
+  const zones = [...zoneMap.values()]
+    .map((z) => ({
+      zoneName: z.zoneName,
+      zoneCode: z.zoneCode,
+      linesPickedToday: z.lineCount,
+      uniqueOperators: z.operators.size,
+      pctOfTotal: totalLines > 0 ? Math.round((z.lineCount / totalLines) * 100) : 0,
+    }))
+    .sort((a, b) => b.linesPickedToday - a.linesPickedToday);
+
+  const topBins = [...binCountMap.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+    .map((b) => ({ binCode: b.binCode, binBarcode: b.binBarcode, pickCount: b.count }));
+
+  return { zones, topBins, totalLinesPickedToday: totalLines };
+}
+
+/**
  * Assign a pending pick task to an operator.
  */
 export async function assignTaskToOperator(taskId: string, operatorUserId: string) {

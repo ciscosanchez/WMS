@@ -96,6 +96,7 @@
     "gs1Labels": "Etiquetas GS1",
     "lpn": "Rastreo LPN",
     "transfers": "Transferencias",
-    "replenishment": "Reabastecimiento"
+    "replenishment": "Reabastecimiento",
+    "pickMovement": "Movimiento de Picking"
   }
 }

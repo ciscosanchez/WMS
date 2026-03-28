@@ -57,7 +57,24 @@
     },
     "reports": {
       "title": "Reportes",
-      "subtitle": "Analíticas e información del almacén"
+      "subtitle": "Analíticas e información del almacén",
+      "pickMovement": {
+        "title": "Reporte de Movimiento de Picking",
+        "subtitle": "Picks completados hoy por zona y frecuencia de bin",
+        "totalLinesPickedToday": "Líneas Pickeadas Hoy",
+        "activeZones": "Zonas Activas",
+        "peakOperatorsInZone": "Máx. Operadores en Zona",
+        "zoneBreakdown": "Desglose por Zona",
+        "noPicksToday": "No hay líneas de picking completadas hoy.",
+        "zone": "Zona",
+        "linesPickedToday": "Líneas Pickeadas",
+        "operators": "Operadores",
+        "pctOfTotal": "% del Total",
+        "topBins": "Top 10 Bins por Frecuencia",
+        "rank": "Posición",
+        "binCode": "Bin",
+        "picksToday": "Picks Hoy"
+      }
     }
   }
 }

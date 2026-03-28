@@ -132,7 +132,8 @@
       "failedReceiveLine": "Failed to receive line",
       "failedCompleteShipment": "Failed to complete shipment",
       "loadingShipment": "Loading shipment...",
-      "enterValidQty": "Enter a valid quantity"
+      "enterValidQty": "Enter a valid quantity",
+      "suggestedBins": "Suggested bins"
     },
     "move": {
       "title": "Move Inventory",

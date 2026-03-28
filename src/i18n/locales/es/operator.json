@@ -132,7 +132,8 @@
       "failedReceiveLine": "Error al recibir línea",
       "failedCompleteShipment": "Error al completar envío",
       "loadingShipment": "Cargando envío...",
-      "enterValidQty": "Ingresa una cantidad válida"
+      "enterValidQty": "Ingresa una cantidad válida",
+      "suggestedBins": "Bins sugeridos"
     },
     "move": {
       "title": "Mover inventario",
