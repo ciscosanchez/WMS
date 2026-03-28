@@ -101,9 +101,7 @@ export default function LoginPage() {
     try {
       const requestedCallbackUrl = searchParams.get("callbackUrl");
       const callbackUrl =
-        requestedCallbackUrl && requestedCallbackUrl.startsWith("/")
-          ? requestedCallbackUrl
-          : "/";
+        requestedCallbackUrl && requestedCallbackUrl.startsWith("/") ? requestedCallbackUrl : "/";
 
       const result = await signIn("credentials", {
         email,
