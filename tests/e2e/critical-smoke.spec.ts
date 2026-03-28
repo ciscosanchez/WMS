@@ -65,6 +65,30 @@ test.describe("Critical Tenant Smoke", () => {
     await expect(page.getByText("Something went wrong")).toHaveCount(0);
   });
 
+  test("operator release gate page loads without crashing", async ({ page, signInAs }) => {
+    await signInAs("operator");
+    await page.goto("/release");
+
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+    // Either empty-state message or queue header must be visible
+    await expect(
+      page
+        .getByText("No shipments awaiting release.")
+        .or(page.getByText(/AWAITING RELEASE/))
+        .or(page.getByRole("heading", { name: "Release" }))
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("operations board shows release gate KPIs", async ({ page, signInAs }) => {
+    await signInAs("manager");
+    await page.goto("/operations");
+
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+    await expect(
+      page.getByText("Awaiting Release").or(page.getByText("Released Today"))
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
   test("location_manager warehouse access is enforced (requires db:seed:e2e)", async ({
     page,
     signInAs,

@@ -76,6 +76,9 @@ function makeDb(overrides: Record<string, unknown> = {}) {
     inventoryAdjustment: {
       groupBy: jest.fn().mockResolvedValue([]),
     },
+    shipment: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     ...overrides,
   };
 }
@@ -203,6 +206,71 @@ describe("getOperationsBoard", () => {
       const opA = result.operators.find((o) => o.userId === WORKER_A.userId);
 
       expect(opA?.countTasks).toBe(4);
+    });
+  });
+
+  describe("release gate", () => {
+    it("includes pending release count in kpis", async () => {
+      const pendingShipment = {
+        id: "ship-1",
+        shipmentNumber: "SHIP-001",
+        carrier: "UPS",
+        createdAt: new Date(),
+        order: { orderNumber: "ORD-001", client: { name: "Acme" } },
+        items: [{ id: "item-1" }, { id: "item-2" }],
+      };
+      const db = makeDb({
+        shipment: {
+          findMany: jest
+            .fn()
+            .mockResolvedValueOnce([pendingShipment]) // pending release
+            .mockResolvedValueOnce([]), // released today
+        },
+      });
+      setupContext([WORKER_A], db);
+
+      const result = await getOperationsBoard();
+
+      expect(result.kpis.pendingRelease).toBe(1);
+      expect(result.kpis.releasedToday).toBe(0);
+      expect(result.releaseGate.pending).toHaveLength(1);
+      expect(result.releaseGate.pending[0].id).toBe("ship-1");
+    });
+
+    it("includes released today count in kpis", async () => {
+      const releasedShipment = {
+        id: "ship-2",
+        shipmentNumber: "SHIP-002",
+        releasedAt: new Date(),
+        carrier: "FedEx",
+        order: { orderNumber: "ORD-002" },
+      };
+      const db = makeDb({
+        shipment: {
+          findMany: jest
+            .fn()
+            .mockResolvedValueOnce([]) // pending release
+            .mockResolvedValueOnce([releasedShipment]), // released today
+        },
+      });
+      setupContext([WORKER_A], db);
+
+      const result = await getOperationsBoard();
+
+      expect(result.kpis.releasedToday).toBe(1);
+      expect(result.kpis.pendingRelease).toBe(0);
+      expect(result.releaseGate.releasedToday).toHaveLength(1);
+    });
+
+    it("returns zero release counts when no shipments", async () => {
+      setupContext([WORKER_A], makeDb());
+
+      const result = await getOperationsBoard();
+
+      expect(result.kpis.pendingRelease).toBe(0);
+      expect(result.kpis.releasedToday).toBe(0);
+      expect(result.releaseGate.pending).toHaveLength(0);
+      expect(result.releaseGate.releasedToday).toHaveLength(0);
     });
   });
 

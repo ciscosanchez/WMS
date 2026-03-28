@@ -76,9 +76,9 @@ export async function getOperationsBoard() {
     receivingActive,
     activeShifts,
     receivingTxnsToday,
-    countsToday,
     pendingRelease,
     releasedToday,
+    countsToday,
   ] = await Promise.all([
     // All pick tasks that are active or created today, scoped to accessible warehouses
     db.pickTask.findMany({
