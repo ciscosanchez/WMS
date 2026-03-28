@@ -21,6 +21,8 @@ const mockTenantDb = {
   receivingTransaction: { findMany: jest.fn().mockResolvedValue([]) },
   pickTask: { findMany: jest.fn().mockResolvedValue([]) },
   inventoryAdjustment: { findMany: jest.fn().mockResolvedValue([]) },
+  operatorShift: { findFirst: jest.fn().mockResolvedValue(null) },
+  vasTask: { findMany: jest.fn().mockResolvedValue([]) },
   order: {
     findUnique: jest.fn().mockResolvedValue(null),
     findMany: jest.fn().mockResolvedValue([]),

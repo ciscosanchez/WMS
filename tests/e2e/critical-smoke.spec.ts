@@ -45,6 +45,26 @@ test.describe("Critical Tenant Smoke", () => {
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });
 
+  test("operations board loads for manager without crashing", async ({ page, signInAs }) => {
+    await signInAs("manager");
+    await page.goto("/operations");
+
+    await expect(page.getByRole("heading", { name: "Operations Board" })).toBeVisible();
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+  });
+
+  test("operator my-tasks page loads without crashing when not clocked in", async ({
+    page,
+    signInAs,
+  }) => {
+    await signInAs("operator");
+    // Navigate directly to the operator app
+    await page.goto("/my-tasks");
+
+    // Should render the dashboard — not crash. The not-clocked-in banner may appear.
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+  });
+
   test("location_manager warehouse access is enforced (requires db:seed:e2e)", async ({
     page,
     signInAs,
