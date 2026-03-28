@@ -206,6 +206,7 @@ model Warehouse {
   dockDoors            DockDoor[]
   yardSpots            YardSpot[]
   appointments         DockAppointment[]
+  inboundShipments     InboundShipment[]   @relation("inbound_shipments")
   interleavingEnabled  Boolean  @default(false) @map("interleaving_enabled")
   transfersOut         TransferOrder[] @relation("transfer_from")
   transfersIn          TransferOrder[] @relation("transfer_to")
@@ -317,6 +318,7 @@ model InboundShipment {
   id              String         @id @default(cuid())
   shipmentNumber  String         @unique @map("shipment_number")
   clientId        String         @map("client_id")
+  warehouseId     String?        @map("warehouse_id")
   carrier         String?
   trackingNumber  String?        @map("tracking_number")
   bolNumber       String?        @map("bol_number")
@@ -330,6 +332,7 @@ model InboundShipment {
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
   client            Client                @relation(fields: [clientId], references: [id])
+  warehouse         Warehouse?            @relation("inbound_shipments", fields: [warehouseId], references: [id])
   lines             InboundShipmentLine[]
   transactions      ReceivingTransaction[]
   discrepancies     ReceivingDiscrepancy[]
@@ -337,6 +340,7 @@ model InboundShipment {
   dockAppointments  DockAppointment[]     @relation("inbound_appointment")
 
   @@index([clientId])
+  @@index([warehouseId])
   @@index([status])
   @@index([createdAt])
   @@map("inbound_shipments")
