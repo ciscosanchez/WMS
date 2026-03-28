@@ -109,9 +109,12 @@ export async function getOperationsBoard() {
         },
       }),
 
-      // Active inbound shipments
+      // Active inbound shipments — scoped to accessible warehouses
       db.inboundShipment.findMany({
-        where: { status: { in: ["expected", "arrived", "receiving"] } },
+        where: {
+          status: { in: ["expected", "arrived", "receiving"] },
+          ...(accessibleIds !== null ? { warehouseId: { in: accessibleIds } } : {}),
+        },
         select: {
           id: true,
           shipmentNumber: true,

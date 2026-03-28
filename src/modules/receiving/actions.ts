@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext, type TenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import {
@@ -26,10 +27,15 @@ export async function getShipments(status?: string) {
   if (config.useMockData)
     return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.inboundShipment.findMany({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where: status ? { status: status as any } : undefined,
+    where: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(status ? { status: status as any } : {}),
+      ...(accessibleIds !== null ? { warehouseId: { in: accessibleIds } } : {}),
+    },
     include: {
       client: true,
       lines: { include: { product: true } },
@@ -68,6 +74,7 @@ export async function createShipment(data: unknown) {
   const shipment = await tenant.db.inboundShipment.create({
     data: {
       clientId: parsed.clientId,
+      warehouseId: parsed.warehouseId,
       carrier: parsed.carrier,
       trackingNumber: parsed.trackingNumber,
       bolNumber: parsed.bolNumber,
