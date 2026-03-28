@@ -301,9 +301,7 @@ export async function getLaborCostReport(dateFrom: string, dateTo: string, clien
     const cost = Math.round(totalCost * proportion * 100) / 100;
     return {
       clientId: cId,
-      clientLabel: String(
-        cId === "unattributed" ? "Unattributed" : (clientMap.get(cId) ?? cId)
-      ),
+      clientLabel: String(cId === "unattributed" ? "Unattributed" : (clientMap.get(cId) ?? cId)),
       hours: Math.round(data.hours * 10) / 10,
       units: data.units,
       cost,

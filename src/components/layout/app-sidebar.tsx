@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -17,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -53,6 +55,8 @@ import {
   Receipt,
   Zap,
   FileCheck,
+  ChevronDown,
+  PanelLeft,
 } from "lucide-react";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
@@ -319,10 +323,15 @@ function canAccessNavItem(
   return checkPermissionLevel(membership.role, item.permission, membership.permissionOverrides);
 }
 
+function getGroupHrefMatch(pathname: string, group: NavGroup) {
+  return group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
   const { data: session, status } = useSession();
+  const { state, toggleSidebar } = useSidebar();
   const currentMembership = getCurrentMembership(session?.user as SidebarSession | undefined);
   const visibleGroups = navigation
     .map((group) => ({
@@ -330,28 +339,88 @@ export function AppSidebar() {
       items: group.items.filter((item) => canAccessNavItem(item, currentMembership)),
     }))
     .filter((group) => group.items.length > 0);
+  const [manualOpenGroup, setManualOpenGroup] = useState<string | null>(null);
+  const activeGroup =
+    visibleGroups.find((group) => getGroupHrefMatch(pathname, group))?.labelKey ?? null;
+  const openGroup =
+    manualOpenGroup && visibleGroups.some((group) => group.labelKey === manualOpenGroup)
+      ? manualOpenGroup
+      : (activeGroup ?? visibleGroups[0]?.labelKey ?? null);
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b px-6 py-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Warehouse className="h-4 w-4" />
+      <SidebarHeader className={`border-b py-4 ${state === "collapsed" ? "px-2" : "px-3"}`}>
+        {state === "collapsed" ? (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-accent-foreground transition-colors hover:bg-sidebar-accent/80"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+            <Link
+              href="/dashboard"
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground"
+              aria-label="Dashboard"
+              title="Dashboard"
+            >
+              <Warehouse className="h-4 w-4" />
+            </Link>
           </div>
-          <span className="text-lg font-semibold">Ramola</span>
-        </Link>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <Warehouse className="h-4 w-4" />
+              </div>
+              <span className="truncate text-lg font-semibold">Ramola</span>
+            </Link>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </SidebarHeader>
       <SidebarContent>
         {visibleGroups.map((group) => (
           <SidebarGroup key={group.labelKey}>
-            <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
-            <SidebarGroupContent>
+            <SidebarGroupLabel>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between text-left"
+                onClick={() =>
+                  setManualOpenGroup((current) =>
+                    current === group.labelKey ? null : group.labelKey
+                  )
+                }
+              >
+                <span>{t(group.labelKey)}</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    openGroup === group.labelKey ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </SidebarGroupLabel>
+            <SidebarGroupContent
+              className={state === "collapsed" || openGroup === group.labelKey ? "" : "hidden"}
+            >
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
                       isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                      tooltip={t(item.titleKey)}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
@@ -376,7 +445,7 @@ export function AppSidebar() {
         ) ? (
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton render={<Link href="/receive" />}>
+              <SidebarMenuButton render={<Link href="/receive" />} tooltip={t("floorApp")}>
                 <Smartphone className="h-4 w-4" />
                 <span>{t("floorApp")}</span>
               </SidebarMenuButton>

@@ -93,12 +93,12 @@ export default async function LaborCostReportPage({ searchParams }: CostPageProp
                       units: number;
                       cost: number;
                     }) => (
-                    <tr key={row.clientId} className="border-b last:border-0">
-                      <td className="py-2">{row.clientLabel}</td>
-                      <td className="py-2">{row.hours}h</td>
-                      <td className="py-2">{row.units}</td>
-                      <td className="py-2 font-semibold">${row.cost.toLocaleString()}</td>
-                    </tr>
+                      <tr key={row.clientId} className="border-b last:border-0">
+                        <td className="py-2">{row.clientLabel}</td>
+                        <td className="py-2">{row.hours}h</td>
+                        <td className="py-2">{row.units}</td>
+                        <td className="py-2 font-semibold">${row.cost.toLocaleString()}</td>
+                      </tr>
                     )
                   )}
                 </tbody>
