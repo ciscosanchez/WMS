@@ -22,13 +22,20 @@ jest.mock("next-intl", () => ({
 }));
 
 jest.mock("@/components/ui/sidebar", () => {
-  const Div = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>;
+  const Div = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div {...props}>{children}</div>
+  );
   const Button = ({
     children,
     render,
     isActive: _isActive,
     ...props
-  }: { children?: React.ReactNode; render?: React.ReactElement; isActive?: boolean; [key: string]: unknown }) => (
+  }: {
+    children?: React.ReactNode;
+    render?: React.ReactElement;
+    isActive?: boolean;
+    [key: string]: unknown;
+  }) => (
     <div {...props}>
       {render ?? null}
       {children}
@@ -46,6 +53,15 @@ jest.mock("@/components/ui/sidebar", () => {
     SidebarMenu: Div,
     SidebarMenuItem: Div,
     SidebarMenuButton: Button,
+    useSidebar: () => ({
+      state: "expanded",
+      open: true,
+      setOpen: jest.fn(),
+      openMobile: false,
+      setOpenMobile: jest.fn(),
+      isMobile: false,
+      toggleSidebar: jest.fn(),
+    }),
   };
 });
 
