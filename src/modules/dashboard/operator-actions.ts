@@ -2,6 +2,7 @@
 
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { startOfDay } from "date-fns";
 
 /**
@@ -22,7 +23,8 @@ export async function getMyTasksSummary() {
     };
   }
 
-  const { user, tenant } = await requireTenantContext("operator:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("operator:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
   const today = startOfDay(new Date());
@@ -66,9 +68,23 @@ export async function getMyTasksSummary() {
         select: { id: true, clockIn: true },
       }),
 
-      // Available (pending, unassigned) tasks I can claim — up to 5, rush first
+      // Available (pending, unassigned) tasks I can claim — scoped to my warehouse(s)
       db.pickTask.findMany({
-        where: { status: "pending", assignedTo: null },
+        where: {
+          status: "pending",
+          assignedTo: null,
+          ...(accessibleIds !== null
+            ? {
+                lines: {
+                  some: {
+                    bin: {
+                      shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
         include: {
           order: { select: { orderNumber: true, priority: true, shipToName: true } },
           lines: { select: { id: true } },

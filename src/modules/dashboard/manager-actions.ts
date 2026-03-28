@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { startOfDay } from "date-fns";
 
@@ -34,7 +35,8 @@ export async function getOperationsBoard() {
     };
   }
 
-  const { tenant } = await requireTenantContext("reports:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("reports:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
   const today = startOfDay(new Date());
@@ -49,13 +51,24 @@ export async function getOperationsBoard() {
 
   const [allTasks, completedToday, receivingActive, activeShifts, receivingTxnsToday, countsToday] =
     await Promise.all([
-      // All pick tasks that are active or created today
+      // All pick tasks that are active or created today, scoped to accessible warehouses
       db.pickTask.findMany({
         where: {
           OR: [
             { status: { in: ["pending", "assigned", "in_progress"] } },
             { completedAt: { gte: today } },
           ],
+          ...(accessibleIds !== null
+            ? {
+                lines: {
+                  some: {
+                    bin: {
+                      shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                    },
+                  },
+                },
+              }
+            : {}),
         },
         include: {
           order: { select: { orderNumber: true, priority: true, shipToName: true } },
