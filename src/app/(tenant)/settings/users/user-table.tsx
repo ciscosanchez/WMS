@@ -23,10 +23,20 @@ import {
   Link2,
   Link2Off,
   SlidersHorizontal,
+  Warehouse,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { removeUser, updateUserPortalBinding, updateUserRole } from "@/modules/users/actions";
+import {
+  removeUser,
+  updateUserPortalBinding,
+  updateUserRole,
+  assignWarehouseToUser,
+  removeWarehouseAssignment,
+  updateWarehouseAssignmentRole,
+} from "@/modules/users/actions";
 import type { TenantRole } from "../../../../../node_modules/.prisma/public-client";
 import {
   getAccessRisks,
@@ -39,6 +49,11 @@ import {
 import { PermissionOverridesDialog } from "./permission-overrides-dialog";
 import { BulkApplyPresetDialog } from "./bulk-apply-preset-dialog";
 
+type WarehouseAssignment = {
+  warehouseId: string;
+  role: TenantRole | null;
+};
+
 type UserRow = {
   id: string;
   name: string;
@@ -50,10 +65,17 @@ type UserRow = {
   portalClientCode: string | null;
   permissionOverrides: PermissionOverrides;
   risks: AccessRisk[];
+  warehouseAssignments: WarehouseAssignment[];
   joinedAt: string;
 };
 
 type ClientOption = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+type WarehouseOption = {
   id: string;
   name: string;
   code: string;
@@ -85,16 +107,49 @@ function formatPersonaLabel(persona: string) {
 function UserActions({
   user,
   clients,
+  warehouses,
   users,
   savedPresets,
 }: {
   user: UserRow;
   clients: ClientOption[];
+  warehouses: WarehouseOption[];
   users: UserRow[];
   savedPresets: PermissionPreset[];
 }) {
   const router = useRouter();
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+
+  const assignedIds = new Set(user.warehouseAssignments.map((wa) => wa.warehouseId));
+  const assignedWarehouses = user.warehouseAssignments;
+  const unassignedWarehouses = warehouses.filter((wh) => !assignedIds.has(wh.id));
+
+  async function handleAssignWarehouse(warehouseId: string) {
+    const result = await assignWarehouseToUser(user.id, warehouseId);
+    if ("error" in result) toast.error(result.error);
+    else {
+      toast.success("Warehouse assigned");
+      router.refresh();
+    }
+  }
+
+  async function handleRemoveWarehouse(warehouseId: string) {
+    const result = await removeWarehouseAssignment(user.id, warehouseId);
+    if ("error" in result) toast.error(result.error);
+    else {
+      toast.success("Warehouse assignment removed");
+      router.refresh();
+    }
+  }
+
+  async function handleWarehouseRoleChange(warehouseId: string, role: TenantRole | null) {
+    const result = await updateWarehouseAssignmentRole(user.id, warehouseId, role);
+    if ("error" in result) toast.error(result.error);
+    else {
+      toast.success("Warehouse role updated");
+      router.refresh();
+    }
+  }
 
   async function handleRemove() {
     if (!confirm(`Remove ${user.name} from this tenant?`)) return;
@@ -136,13 +191,13 @@ function UserActions({
             Change role
           </DropdownMenuItem>
           {ROLES.filter((r) => r !== user.role).map((role) => (
-            <DropdownMenuItem key={role} onSelect={() => handleRoleChange(role)}>
+            <DropdownMenuItem key={role} onClick={() => handleRoleChange(role)}>
               <ShieldCheck className="mr-2 h-4 w-4" />
               {role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setPermissionsOpen(true)}>
+          <DropdownMenuItem onClick={() => setPermissionsOpen(true)}>
             <SlidersHorizontal className="mr-2 h-4 w-4" />
             Custom Permissions
           </DropdownMenuItem>
@@ -153,13 +208,13 @@ function UserActions({
               Portal Access
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              <DropdownMenuItem onSelect={() => handlePortalBinding(null)}>
+              <DropdownMenuItem onClick={() => handlePortalBinding(null)}>
                 <Link2Off className="mr-2 h-4 w-4" />
                 Disable Portal Access
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {clients.map((client) => (
-                <DropdownMenuItem key={client.id} onSelect={() => handlePortalBinding(client.id)}>
+                <DropdownMenuItem key={client.id} onClick={() => handlePortalBinding(client.id)}>
                   <Link2 className="mr-2 h-4 w-4" />
                   {client.name} ({client.code})
                 </DropdownMenuItem>
@@ -167,7 +222,72 @@ function UserActions({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onSelect={handleRemove}>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Warehouse className="mr-2 h-4 w-4" />
+              Warehouse Access
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {user.role === "admin" ? (
+                <DropdownMenuItem disabled>Admin — unrestricted</DropdownMenuItem>
+              ) : (
+                <>
+                  {unassignedWarehouses.map((wh) => (
+                    <DropdownMenuItem key={wh.id} onClick={() => handleAssignWarehouse(wh.id)}>
+                      <Square className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {wh.name}
+                    </DropdownMenuItem>
+                  ))}
+                  {assignedWarehouses.length > 0 && unassignedWarehouses.length > 0 && (
+                    <DropdownMenuSeparator />
+                  )}
+                  {assignedWarehouses.map((wa) => {
+                    const wh = warehouses.find((w) => w.id === wa.warehouseId);
+                    const roleLabel = wa.role
+                      ? wa.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                      : "inherit";
+                    return (
+                      <DropdownMenuSub key={wa.warehouseId}>
+                        <DropdownMenuSubTrigger>
+                          <CheckSquare className="mr-2 h-4 w-4 text-green-600" />
+                          <span className="flex-1">{wh?.name ?? wa.warehouseId}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{roleLabel}</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                            Role at this warehouse
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleWarehouseRoleChange(wa.warehouseId, null)}>
+                            Inherit tenant role
+                          </DropdownMenuItem>
+                          {ROLES.map((role) => (
+                            <DropdownMenuItem
+                              key={role}
+                              onClick={() => handleWarehouseRoleChange(wa.warehouseId, role)}
+                            >
+                              {role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => handleRemoveWarehouse(wa.warehouseId)}
+                          >
+                            Remove assignment
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    );
+                  })}
+                  {warehouses.length === 0 && (
+                    <DropdownMenuItem disabled>No warehouses configured</DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={handleRemove}>
             <UserMinus className="mr-2 h-4 w-4" />
             Remove
           </DropdownMenuItem>
@@ -188,6 +308,7 @@ function UserActions({
 
 function getColumns(
   clients: ClientOption[],
+  warehouses: WarehouseOption[],
   users: UserRow[],
   savedPresets: PermissionPreset[]
 ): ColumnDef<UserRow>[] {
@@ -315,12 +436,42 @@ function getColumns(
         }),
     },
     {
+      id: "warehouseAccess",
+      header: "Warehouse Access",
+      cell: ({ row }) => {
+        const { role, warehouseAssignments } = row.original;
+        if (role === "admin") {
+          return <span className="text-sm text-muted-foreground">All (admin)</span>;
+        }
+        if (warehouseAssignments.length === 0) {
+          return <span className="text-sm text-muted-foreground">Unrestricted</span>;
+        }
+        return (
+          <div className="space-y-0.5">
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              {warehouseAssignments.length}{" "}
+              {warehouseAssignments.length === 1 ? "warehouse" : "warehouses"}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {warehouseAssignments
+                .map((wa) => {
+                  const wh = warehouses.find((w) => w.id === wa.warehouseId);
+                  return wh?.code ?? wa.warehouseId.slice(0, 8);
+                })
+                .join(", ")}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       id: "actions",
       header: "",
       cell: ({ row }) => (
         <UserActions
           user={row.original}
           clients={clients}
+          warehouses={warehouses}
           users={users}
           savedPresets={savedPresets}
         />
@@ -332,6 +483,7 @@ function getColumns(
 export function UserTable({
   users,
   clients,
+  warehouses,
   savedPresets,
   reviewCadenceDays,
   lastReviewCompletedAt,
@@ -339,6 +491,7 @@ export function UserTable({
 }: {
   users: UserRow[];
   clients: ClientOption[];
+  warehouses: WarehouseOption[];
   savedPresets: PermissionPreset[];
   reviewCadenceDays: number;
   lastReviewCompletedAt: string | null;
@@ -355,7 +508,7 @@ export function UserTable({
         </Button>
       </div>
       <DataTable
-        columns={getColumns(clients, users, savedPresets)}
+        columns={getColumns(clients, warehouses, users, savedPresets)}
         data={users}
         searchKey="name"
         searchPlaceholder="Search users..."

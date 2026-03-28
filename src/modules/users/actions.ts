@@ -79,6 +79,7 @@ export async function getTenantUsers(tenantId: string) {
     where: { tenantId },
     include: {
       user: { select: { id: true, name: true, email: true, createdAt: true, isSuperadmin: true } },
+      warehouseAssignments: true,
     },
     orderBy: { user: { createdAt: "asc" } },
   });
@@ -787,5 +788,150 @@ export async function removeUser(userId: string): Promise<{ error: string } | { 
     return { ok: true };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Failed to remove user" };
+  }
+}
+
+// ─── Warehouse Assignment Actions ─────────────────────────────────────────────
+
+export async function getUserWarehouseAssignments(userId: string) {
+  const { tenant } = await requireTenantContext("users:read");
+
+  const membership = await publicDb.tenantUser.findUnique({
+    where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    include: { warehouseAssignments: true },
+  });
+
+  return membership?.warehouseAssignments ?? [];
+}
+
+export async function assignWarehouseToUser(
+  userId: string,
+  warehouseId: string,
+  role?: TenantRole | null
+): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const membership = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+    if (!membership) return { error: "User not found in this tenant" };
+
+    // Portal users are client-scoped, not warehouse-scoped
+    if (membership.portalClientId) {
+      return { error: "Portal-bound users cannot be assigned to warehouses" };
+    }
+
+    // Validate warehouse exists and is active in this tenant
+    const warehouse = await tenant.db.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { id: true, isActive: true },
+    });
+    if (!warehouse?.isActive) return { error: "Warehouse not found or inactive" };
+
+    await publicDb.tenantUserWarehouse.upsert({
+      where: { tenantUserId_warehouseId: { tenantUserId: membership.id, warehouseId } },
+      create: { tenantUserId: membership.id, warehouseId, role: role ?? null },
+      update: { role: role ?? null },
+    });
+
+    // Bump authVersion so the user's next request re-loads their warehouse access from DB
+    await publicDb.user.update({
+      where: { id: userId },
+      data: { authVersion: { increment: 1 } },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "create",
+      entityType: "user_warehouse_assignment",
+      entityId: `${userId}:${warehouseId}`,
+      changes: { role: { old: null, new: role ?? null } },
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to assign warehouse" };
+  }
+}
+
+export async function removeWarehouseAssignment(
+  userId: string,
+  warehouseId: string
+): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const membership = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+    if (!membership) return { error: "User not found in this tenant" };
+
+    await publicDb.tenantUserWarehouse.deleteMany({
+      where: { tenantUserId: membership.id, warehouseId },
+    });
+
+    // Bump authVersion so the user's stale JWT is invalidated on next request
+    await publicDb.user.update({
+      where: { id: userId },
+      data: { authVersion: { increment: 1 } },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "delete",
+      entityType: "user_warehouse_assignment",
+      entityId: `${userId}:${warehouseId}`,
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to remove warehouse assignment" };
+  }
+}
+
+export async function updateWarehouseAssignmentRole(
+  userId: string,
+  warehouseId: string,
+  role: TenantRole | null
+): Promise<{ error: string } | { ok: true }> {
+  const { user, tenant } = await getAdminContext();
+
+  try {
+    const membership = await publicDb.tenantUser.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+    });
+    if (!membership) return { error: "User not found in this tenant" };
+
+    const existing = await publicDb.tenantUserWarehouse.findUnique({
+      where: { tenantUserId_warehouseId: { tenantUserId: membership.id, warehouseId } },
+    });
+    if (!existing) return { error: "Warehouse assignment not found" };
+
+    await publicDb.tenantUserWarehouse.update({
+      where: { tenantUserId_warehouseId: { tenantUserId: membership.id, warehouseId } },
+      data: { role },
+    });
+
+    // Bump authVersion so the role change takes effect on next login
+    await publicDb.user.update({
+      where: { id: userId },
+      data: { authVersion: { increment: 1 } },
+    });
+
+    await logAudit(tenant.db, {
+      userId: user.id,
+      action: "update",
+      entityType: "user_warehouse_assignment",
+      entityId: `${userId}:${warehouseId}`,
+      changes: { role: { old: existing.role, new: role } },
+    });
+
+    revalidatePath("/settings/users");
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to update warehouse role" };
   }
 }

@@ -12,13 +12,20 @@ import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
   const { tenant } = await requireTenantContext("users:read");
-  const members = await getTenantUsers(tenant.tenantId);
-  const governance = await getTenantRbacGovernance();
-  const clients = await tenant.db.client.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, code: true },
-  });
+  const [members, governance, clients, warehouses] = await Promise.all([
+    getTenantUsers(tenant.tenantId),
+    getTenantRbacGovernance(),
+    tenant.db.client.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, code: true },
+    }),
+    tenant.db.warehouse.findMany({
+      where: { isActive: true },
+      orderBy: { code: "asc" },
+      select: { id: true, name: true, code: true },
+    }),
+  ]);
   const clientMap = new Map(clients.map((client) => [client.id, client]));
 
   const users = members.map((m) => ({
@@ -42,6 +49,10 @@ export default async function UsersPage() {
       portalClientId: m.portalClientId,
       overrides: m.permissionOverrides,
     }),
+    warehouseAssignments: m.warehouseAssignments.map((wa) => ({
+      warehouseId: wa.warehouseId,
+      role: wa.role,
+    })),
     joinedAt: m.user.createdAt.toISOString(),
   }));
 
@@ -69,6 +80,7 @@ export default async function UsersPage() {
       <UserTable
         users={users}
         clients={clients}
+        warehouses={warehouses}
         savedPresets={governance.savedPresets}
         reviewCadenceDays={governance.reviewCadenceDays}
         lastReviewCompletedAt={governance.lastReviewCompletedAt ?? null}
