@@ -75,9 +75,18 @@ export async function createTransferOrder(data: unknown, lines: unknown[]) {
   if (config.useMockData)
     return { id: "mock-new", transferNumber: "TRF-MOCK-0001", status: "draft" };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("inventory:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const parsed = transferOrderSchema.parse(data);
   const parsedLines = lines.map((l) => transferOrderLineSchema.parse(l));
+
+  if (
+    accessibleIds !== null &&
+    (!accessibleIds.includes(parsed.fromWarehouseId) ||
+      !accessibleIds.includes(parsed.toWarehouseId))
+  ) {
+    throw new Error("Forbidden: cannot create a transfer for warehouses outside your access");
+  }
 
   if (parsed.fromWarehouseId === parsed.toWarehouseId) {
     throw new Error("Source and destination warehouses must be different");
@@ -140,11 +149,20 @@ export async function createTransferOrder(data: unknown, lines: unknown[]) {
 export async function updateTransferStatus(id: string, status: string) {
   if (config.useMockData) return { id, status };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("inventory:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const existing = await tenant.db.transferOrder.findUniqueOrThrow({
     where: { id },
   });
+
+  if (
+    accessibleIds !== null &&
+    !accessibleIds.includes(existing.fromWarehouseId) &&
+    !accessibleIds.includes(existing.toWarehouseId)
+  ) {
+    throw new Error("Forbidden: transfer is outside your warehouse access");
+  }
 
   assertTransition("transfer_order", existing.status, status, TRANSFER_ORDER_TRANSITIONS);
 
@@ -180,9 +198,19 @@ export async function updateTransferStatus(id: string, status: string) {
 export async function deleteTransferOrder(id: string) {
   if (config.useMockData) return { id, deleted: true };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("inventory:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const existing = await tenant.db.transferOrder.findUniqueOrThrow({ where: { id } });
+
+  if (
+    accessibleIds !== null &&
+    !accessibleIds.includes(existing.fromWarehouseId) &&
+    !accessibleIds.includes(existing.toWarehouseId)
+  ) {
+    throw new Error("Forbidden: transfer is outside your warehouse access");
+  }
+
   if (existing.status !== "draft") {
     throw new Error("Only draft transfer orders can be deleted");
   }
