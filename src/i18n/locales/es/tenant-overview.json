@@ -48,7 +48,9 @@
       "noOperatorActivity": "Sin actividad de operadores hoy.",
       "active": "activo",
       "done": "listo",
-      "short": "faltante"
+      "short": "faltante",
+      "counts": "conteos",
+      "notOnFloor": "No en piso"
     },
     "reports": {
       "title": "Reportes",

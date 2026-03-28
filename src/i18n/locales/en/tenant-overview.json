@@ -48,7 +48,9 @@
       "noOperatorActivity": "No operator activity today.",
       "active": "active",
       "done": "done",
-      "short": "short"
+      "short": "short",
+      "counts": "counts",
+      "notOnFloor": "Not on Floor"
     },
     "reports": {
       "title": "Reports",

@@ -13,10 +13,24 @@ import { startOfDay } from "date-fns";
 export async function getOperationsBoard() {
   if (config.useMockData) {
     return {
-      operators: [],
+      operators: [] as Array<{
+        userId: string;
+        name: string;
+        active: number;
+        completed: number;
+        shortPicked: number;
+        total: number;
+        clockedIn: boolean;
+        clockInTime: Date | null;
+        hoursOnShift: number;
+        receivingCount: number;
+        countTasks: number;
+      }>,
+      notOnFloor: [] as Array<{ userId: string; name: string }>,
       unassignedTasks: [],
       receivingActive: [],
       kpis: { completedToday: 0, avgMinutes: 0, pendingTasks: 0, activeReceiving: 0 },
+      availableOperators: [] as Array<{ userId: string; name: string }>,
     };
   }
 
@@ -33,42 +47,63 @@ export async function getOperationsBoard() {
   });
   const userMap = new Map(members.map((m) => [m.userId, m.user.name]));
 
-  const [allTasks, completedToday, receivingActive] = await Promise.all([
-    // All pick tasks that are active or created today
-    db.pickTask.findMany({
-      where: {
-        OR: [
-          { status: { in: ["pending", "assigned", "in_progress"] } },
-          { completedAt: { gte: today } },
-        ],
-      },
-      include: {
-        order: { select: { orderNumber: true, priority: true, shipToName: true } },
-        lines: { select: { id: true, quantity: true, pickedQty: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+  const [allTasks, completedToday, receivingActive, activeShifts, receivingTxnsToday, countsToday] =
+    await Promise.all([
+      // All pick tasks that are active or created today
+      db.pickTask.findMany({
+        where: {
+          OR: [
+            { status: { in: ["pending", "assigned", "in_progress"] } },
+            { completedAt: { gte: today } },
+          ],
+        },
+        include: {
+          order: { select: { orderNumber: true, priority: true, shipToName: true } },
+          lines: { select: { id: true, quantity: true, pickedQty: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
 
-    // Count of completed tasks today
-    db.pickTask.count({
-      where: { status: "completed", completedAt: { gte: today } },
-    }),
+      // Count of completed tasks today
+      db.pickTask.count({
+        where: { status: "completed", completedAt: { gte: today } },
+      }),
 
-    // Active inbound shipments
-    db.inboundShipment.findMany({
-      where: { status: { in: ["expected", "arrived", "receiving"] } },
-      select: {
-        id: true,
-        shipmentNumber: true,
-        status: true,
-        expectedDate: true,
-        client: { select: { name: true } },
-        lines: { select: { expectedQty: true, receivedQty: true } },
-      },
-      orderBy: { expectedDate: "asc" },
-      take: 20,
-    }),
-  ]);
+      // Active inbound shipments
+      db.inboundShipment.findMany({
+        where: { status: { in: ["expected", "arrived", "receiving"] } },
+        select: {
+          id: true,
+          shipmentNumber: true,
+          status: true,
+          expectedDate: true,
+          client: { select: { name: true } },
+          lines: { select: { expectedQty: true, receivedQty: true } },
+        },
+        orderBy: { expectedDate: "asc" },
+        take: 20,
+      }),
+
+      // Currently clocked-in shifts
+      db.operatorShift.findMany({
+        where: { status: "clocked_in" },
+        select: { operatorId: true, clockIn: true },
+      }),
+
+      // Receiving transactions today — to see who's working on receiving
+      db.receivingTransaction.groupBy({
+        by: ["receivedBy"],
+        where: { createdAt: { gte: today } },
+        _count: { id: true },
+      }),
+
+      // Cycle counts today — to see who's doing counts
+      db.inventoryAdjustment.groupBy({
+        by: ["createdBy"],
+        where: { type: "cycle_count", createdAt: { gte: today } },
+        _count: { id: true },
+      }),
+    ]);
 
   // Split tasks
   const unassignedTasks = allTasks
@@ -92,6 +127,27 @@ export async function getOperationsBoard() {
       })
     );
 
+  // Index shift data by operatorId
+  const shiftMap = new Map(
+    activeShifts.map((s: { operatorId: string; clockIn: Date }) => [s.operatorId, s.clockIn])
+  );
+
+  // Index receiving counts by operator
+  const receivingMap = new Map(
+    receivingTxnsToday.map((r: { receivedBy: string; _count: { id: number } }) => [
+      r.receivedBy,
+      r._count.id,
+    ])
+  );
+
+  // Index cycle count tasks by operator
+  const countMap = new Map(
+    countsToday.map((c: { createdBy: string; _count: { id: number } }) => [
+      c.createdBy,
+      c._count.id,
+    ])
+  );
+
   // Build operator workload map
   const operatorTasks = new Map<
     string,
@@ -108,16 +164,43 @@ export async function getOperationsBoard() {
     else if (status === "short_picked") entry.shortPicked++;
   }
 
+  // Include all operators who have any activity today (picks, receiving, counts, or clocked in)
+  const activeUserIds = new Set([
+    ...operatorTasks.keys(),
+    ...shiftMap.keys(),
+    ...receivingMap.keys(),
+    ...countMap.keys(),
+  ]);
+
   const operators = [...userMap.entries()]
+    .filter(([userId]) => activeUserIds.has(userId))
     .map(([userId, name]) => {
       const tasks = operatorTasks.get(userId) ?? { active: 0, completed: 0, shortPicked: 0 };
-      return { userId, name, ...tasks, total: tasks.active + tasks.completed + tasks.shortPicked };
+      const clockInTime = shiftMap.get(userId) ?? null;
+      const hoursOnShift = clockInTime
+        ? Math.round(
+            ((Date.now() - new Date(clockInTime as string | number | Date).getTime()) / 3600000) *
+              10
+          ) / 10
+        : 0;
+      return {
+        userId,
+        name,
+        ...tasks,
+        total: tasks.active + tasks.completed + tasks.shortPicked,
+        clockedIn: shiftMap.has(userId),
+        clockInTime,
+        hoursOnShift,
+        receivingCount: (receivingMap.get(userId) as number | undefined) ?? 0,
+        countTasks: (countMap.get(userId) as number | undefined) ?? 0,
+      };
     })
-    .filter(
-      (op) =>
-        op.total > 0 || members.some((m) => m.userId === op.userId && m.role === "warehouse_worker")
-    )
-    .sort((a, b) => b.active - a.active || b.completed - a.completed);
+    .sort((a, b) => Number(b.clockedIn) - Number(a.clockedIn) || b.active - a.active);
+
+  // Operators with warehouse_worker role who have no activity today (not on floor)
+  const notOnFloor = members
+    .filter((m) => m.role === "warehouse_worker" && !activeUserIds.has(m.userId))
+    .map((m) => ({ userId: m.userId, name: m.user.name }));
 
   // Avg completion time (minutes) for tasks completed today
   const completedTasks = allTasks.filter(
@@ -157,6 +240,7 @@ export async function getOperationsBoard() {
 
   return {
     operators,
+    notOnFloor,
     unassignedTasks,
     receivingActive: mappedReceiving,
     kpis: {
