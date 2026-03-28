@@ -32,13 +32,22 @@
       "picking": "Recolección",
       "receiving": "Recepción",
       "cycleCounts": "Conteos cíclicos",
+      "vasTasks": "Tareas de valor agregado",
       "count": "Conteo",
       "rush": "Urgente",
       "expedited": "Prioritario",
       "short": "Faltante",
+      "inProgress": "En progreso",
+      "pending": "Pendiente",
       "noTasksTitle": "Sin tareas aún",
       "noTasksMessage": "Reclama una tarea de recolección o inicia una recepción para ver tu trabajo aquí.",
-      "failedLoadDashboard": "Error al cargar el panel"
+      "failedLoadDashboard": "Error al cargar el panel",
+      "onShift": "En turno",
+      "notClockedIn": "No has registrado entrada — toca para registrarte",
+      "availableToClaim": "Disponibles para reclamar",
+      "taskClaimed": "Tarea reclamada",
+      "claimFailed": "Error al reclamar tarea",
+      "claim": "Reclamar"
     },
     "pick": {
       "title": "Recolectar",

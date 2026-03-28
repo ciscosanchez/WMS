@@ -32,13 +32,22 @@
       "picking": "Picking",
       "receiving": "Receiving",
       "cycleCounts": "Cycle Counts",
+      "vasTasks": "Value-Add Tasks",
       "count": "Count",
       "rush": "Rush",
       "expedited": "Expedited",
       "short": "Short",
+      "inProgress": "In Progress",
+      "pending": "Pending",
       "noTasksTitle": "No tasks yet",
       "noTasksMessage": "Claim a pick task or start receiving to see your work here.",
-      "failedLoadDashboard": "Failed to load dashboard"
+      "failedLoadDashboard": "Failed to load dashboard",
+      "onShift": "On shift",
+      "notClockedIn": "You're not clocked in — tap to clock in",
+      "availableToClaim": "Available to Claim",
+      "taskClaimed": "Task claimed",
+      "claimFailed": "Failed to claim task",
+      "claim": "Claim"
     },
     "pick": {
       "title": "Pick",
