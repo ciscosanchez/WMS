@@ -240,7 +240,18 @@ export async function updateUserRole(
   try {
     const existing = await publicDb.tenantUser.findUnique({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },
+      include: { warehouseAssignments: { select: { id: true } } },
     });
+
+    // Downgrading to a scoped role with no assignments would produce warehouseAccess: []
+    // (fully revoked) in the auth token — the user would lose all warehouse access.
+    // Require at least one assignment to exist before the role change is allowed.
+    const SCOPED_ROLES: TenantRole[] = ["warehouse_worker", "manager"];
+    if (SCOPED_ROLES.includes(role) && existing && existing.warehouseAssignments.length === 0) {
+      return {
+        error: `Cannot assign role "${role}" without a warehouse assignment. Add at least one warehouse assignment first.`,
+      };
+    }
 
     await publicDb.tenantUser.update({
       where: { tenantId_userId: { tenantId: tenant.tenantId, userId } },

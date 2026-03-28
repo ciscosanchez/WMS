@@ -53,9 +53,11 @@ function toAuthUser(user: NonNullable<Awaited<ReturnType<typeof getUserWithTenan
       role: tu.role,
       portalClientId: tu.portalClientId ?? null,
       permissionOverrides: normalizePermissionOverrides(tu.permissionOverrides),
-      // admin always unrestricted; no rows = unrestricted; otherwise restrict to assignments
+      // null  → unrestricted (admin only)
+      // []   → fully revoked (scoped role, no assignments yet — no warehouse access)
+      // [...] → restricted to these warehouse IDs
       warehouseAccess:
-        tu.role === "admin" || tu.warehouseAssignments.length === 0
+        tu.role === "admin"
           ? null
           : tu.warehouseAssignments.map((wa) => ({
               warehouseId: wa.warehouseId,

@@ -428,7 +428,10 @@ export function getEffectiveWarehouseRole(
   warehouseId: string
 ): TenantRole | null {
   if (tenantRole === "admin") return tenantRole;
-  if (!warehouseAccess || warehouseAccess.length === 0) return tenantRole;
+  // null = unrestricted (admin path above covers this, but guard defensively)
+  if (!warehouseAccess) return tenantRole;
+  // [] = fully revoked — no assignments means no access to any warehouse
+  if (warehouseAccess.length === 0) return null;
 
   const assignment = warehouseAccess.find((a) => a.warehouseId === warehouseId);
   if (!assignment) return null;
@@ -439,15 +442,16 @@ export function getEffectiveWarehouseRole(
 /**
  * Returns the set of warehouse IDs this user can access, or null if unrestricted.
  *
- * null  → user sees all warehouses (admin or no assignments)
- * string[] → user is restricted to this set of warehouse IDs
+ * null  → unrestricted (admin only — sees all warehouses)
+ * []    → fully revoked (scoped role with no assignments — sees no warehouses)
+ * [...] → restricted to this set of warehouse IDs
  */
 export function getAccessibleWarehouseIds(
   tenantRole: TenantRole,
   warehouseAccess: WarehouseAccess[] | null
 ): string[] | null {
   if (tenantRole === "admin") return null;
-  if (!warehouseAccess || warehouseAccess.length === 0) return null;
+  if (!warehouseAccess) return null;
 
   return warehouseAccess.map((a) => a.warehouseId);
 }
