@@ -37,6 +37,7 @@ interface ExtractionReviewProps {
   fileViewUrl?: string;
   clientId?: string;
   clients?: Array<{ id: string; name: string }>;
+  warehouses?: Array<{ id: string; code: string; name: string }>;
 }
 
 function confidenceBadge(confidence: number) {
@@ -104,13 +105,20 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   shipping_label: "Shipping Label",
 };
 
-export function ExtractionReview({ job, fileViewUrl, clientId, clients }: ExtractionReviewProps) {
+export function ExtractionReview({
+  job,
+  fileViewUrl,
+  clientId,
+  clients,
+  warehouses,
+}: ExtractionReviewProps) {
   const router = useRouter();
   const data = (job.reviewedData ?? job.extractedData) as ShipmentData | null;
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(clientId || "");
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
 
   // Editable field values — initialize from extracted data
   const [edits, setEdits] = useState<Record<string, string>>(() => {
@@ -171,9 +179,17 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
       toast.error("Select a client first");
       return;
     }
+    if (!selectedWarehouseId) {
+      toast.error("Select a destination warehouse first");
+      return;
+    }
     setCreating(true);
     try {
-      const shipment = await createShipmentFromExtraction(job.id, selectedClientId);
+      const shipment = await createShipmentFromExtraction(
+        job.id,
+        selectedClientId,
+        selectedWarehouseId
+      );
       toast.success(`Shipment ${shipment.shipmentNumber} created`);
       router.push(`/receiving/${shipment.id}`);
     } catch (e: unknown) {
@@ -345,9 +361,26 @@ export function ExtractionReview({ job, fileViewUrl, clientId, clients }: Extrac
                   </select>
                 </div>
               )}
+              {warehouses && warehouses.length > 0 && (
+                <div>
+                  <Label className="text-sm">Destination Warehouse</Label>
+                  <select
+                    value={selectedWarehouseId}
+                    onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-sm bg-background"
+                  >
+                    <option value="">Select warehouse...</option>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.code} - {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <Button
                 onClick={handleCreateShipment}
-                disabled={creating || !selectedClientId}
+                disabled={creating || !selectedClientId || !selectedWarehouseId}
                 className="w-full"
               >
                 {creating ? (

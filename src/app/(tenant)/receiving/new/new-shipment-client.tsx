@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 type ClientOption = { id: string; code: string; name: string };
+type WarehouseOption = { id: string; code: string; name: string };
 type AttributeDefinition = {
   id: string;
   key: string;
@@ -36,9 +37,11 @@ type AttributeDefinition = {
 
 export function NewShipmentClient({
   clients,
+  warehouses,
   attributeDefinitions,
 }: {
   clients: ClientOption[];
+  warehouses: WarehouseOption[];
   attributeDefinitions: AttributeDefinition[];
 }) {
   const router = useRouter();
@@ -102,6 +105,23 @@ export function NewShipmentClient({
               </select>
               {errors.clientId && (
                 <p className="text-xs text-destructive">{errors.clientId.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>{t("warehouse")} *</Label>
+              <select
+                {...register("warehouseId")}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              >
+                <option value="">{t("selectWarehouse")}</option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} - {w.name}
+                  </option>
+                ))}
+              </select>
+              {errors.warehouseId && (
+                <p className="text-xs text-destructive">{errors.warehouseId.message}</p>
               )}
             </div>
             <div className="space-y-2">

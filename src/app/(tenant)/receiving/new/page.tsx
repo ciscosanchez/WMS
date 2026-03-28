@@ -1,11 +1,13 @@
 import { getClients } from "@/modules/clients/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
+import { getWarehouses } from "@/modules/warehouse/actions";
 import { NewShipmentClient } from "./new-shipment-client";
 
 export default async function NewShipmentPage() {
-  const [clients, attributeDefinitions] = await Promise.all([
+  const [clients, attributeDefinitions, warehouses] = await Promise.all([
     getClients(),
     getOperationalAttributeDefinitions("inbound_shipment", "receiving:write"),
+    getWarehouses(),
   ]);
 
   return (
@@ -14,6 +16,11 @@ export default async function NewShipmentPage() {
         id: client.id,
         code: client.code,
         name: client.name,
+      }))}
+      warehouses={warehouses.map((w: { id: string; code: string; name: string }) => ({
+        id: w.id,
+        code: w.code,
+        name: w.name,
       }))}
       attributeDefinitions={attributeDefinitions.map(
         (definition: {
