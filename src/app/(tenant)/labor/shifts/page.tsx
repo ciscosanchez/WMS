@@ -39,6 +39,7 @@ export default async function ShiftHistoryPage() {
                     (shift: {
                       id: string;
                       operatorId: string;
+                      operatorLabel: string;
                       clockIn: Date;
                       clockOut: Date | null;
                       breakMinutes: number;
@@ -60,9 +61,7 @@ export default async function ShiftHistoryPage() {
 
                       return (
                         <tr key={shift.id} className="border-b last:border-0">
-                          <td className="py-2 font-mono text-xs">
-                            {shift.operatorId.slice(0, 8)}...
-                          </td>
+                          <td className="py-2">{shift.operatorLabel}</td>
                           <td className="py-2">
                             {format(new Date(shift.clockIn), "MMM d, yyyy HH:mm")}
                           </td>

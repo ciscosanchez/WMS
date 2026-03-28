@@ -4,6 +4,25 @@ import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
+import { publicDb } from "@/lib/db/public-client";
+
+async function getOperatorLabels(operatorIds: string[]) {
+  const uniqueIds = [...new Set(operatorIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return new Map<string, string>();
+
+  const users = await publicDb.user.findMany({
+    where: { id: { in: uniqueIds } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  return new Map(
+    users.map((user) => [user.id, user.name?.trim() || user.email || user.id.slice(0, 8)])
+  );
+}
 
 // ─── Manager Dashboard Queries ──────────────────────────────────────────────
 
@@ -96,9 +115,12 @@ export async function getLaborDashboard() {
     }
   }
 
+  const operatorLabels = await getOperatorLabels(Object.keys(operatorStats));
+
   const leaderboard = Object.entries(operatorStats)
     .map(([operatorId, stats]) => ({
       operatorId,
+      operatorLabel: operatorLabels.get(operatorId) ?? operatorId.slice(0, 8),
       tasks: stats.tasks,
       units: stats.units,
       hours: Math.round(stats.hours * 10) / 10,
@@ -115,7 +137,7 @@ export async function getLaborDashboard() {
     taskDistribution,
     leaderboard,
     productivityByOperator: leaderboard.map((op) => ({
-      name: op.operatorId.slice(0, 8),
+      name: op.operatorLabel,
       uph: op.uph,
     })),
     productivityTrend: await getProductivityTrend(db, 14),
@@ -188,7 +210,7 @@ export async function getShifts(filters?: {
     }
   }
 
-  return db.operatorShift.findMany({
+  const shifts = await db.operatorShift.findMany({
     where,
     include: {
       taskTimeLogs: {
@@ -198,6 +220,15 @@ export async function getShifts(filters?: {
     orderBy: { clockIn: "desc" },
     take: 200,
   });
+
+  const operatorLabels = await getOperatorLabels(
+    shifts.map((shift: { operatorId: string }) => shift.operatorId)
+  );
+
+  return shifts.map((shift: { operatorId: string }) => ({
+    ...shift,
+    operatorLabel: operatorLabels.get(shift.operatorId) ?? shift.operatorId.slice(0, 8),
+  }));
 }
 
 // ─── Cost Report ────────────────────────────────────────────────────────────
@@ -249,11 +280,34 @@ export async function getLaborCostReport(dateFrom: string, dateTo: string, clien
   }
 
   let totalUnits = 0;
+  const clientIds = Object.keys(byClient).filter((client) => client !== "unattributed");
+  const clients =
+    clientIds.length > 0
+      ? await db.client.findMany({
+          where: { id: { in: clientIds } },
+          select: { id: true, name: true, code: true },
+        })
+      : [];
+  const clientMap = new Map(
+    clients.map((client: { id: string; name: string; code: string }) => [
+      client.id,
+      client.name || client.code,
+    ])
+  );
+
   const clientEntries = Object.entries(byClient).map(([cId, data]) => {
     totalUnits += data.units;
     const proportion = totalHours > 0 ? data.hours / totalHours : 0;
     const cost = Math.round(totalCost * proportion * 100) / 100;
-    return { clientId: cId, hours: Math.round(data.hours * 10) / 10, units: data.units, cost };
+    return {
+      clientId: cId,
+      clientLabel: String(
+        cId === "unattributed" ? "Unattributed" : (clientMap.get(cId) ?? cId)
+      ),
+      hours: Math.round(data.hours * 10) / 10,
+      units: data.units,
+      cost,
+    };
   });
 
   return {

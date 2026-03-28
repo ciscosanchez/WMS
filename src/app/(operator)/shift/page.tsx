@@ -173,14 +173,14 @@ export default function OperatorShiftPage() {
               <CardContent className="flex flex-col items-center py-4">
                 <CheckCircle2 className="mb-1 h-5 w-5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">{t("tasksToday")}</p>
-                <p className="text-2xl font-bold">{shift._count?.taskTimeLogs ?? 0}</p>
+                <p className="text-2xl font-bold">{shift.tasksToday ?? 0}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="flex flex-col items-center py-4">
                 <Package className="mb-1 h-5 w-5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">{t("unitsToday")}</p>
-                <p className="text-2xl font-bold">{shift._sum?.unitsHandled ?? 0}</p>
+                <p className="text-2xl font-bold">{shift.unitsToday ?? 0}</p>
               </CardContent>
             </Card>
           </div>

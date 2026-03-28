@@ -154,9 +154,29 @@ export async function getMyActiveShift() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
-  return db.operatorShift.findFirst({
+  const shift = await db.operatorShift.findFirst({
     where: { operatorId: user.id, status: "clocked_in" },
   });
+
+  if (!shift) return null;
+
+  const taskTimeLogs = await db.taskTimeLog.findMany({
+    where: {
+      operatorId: user.id,
+      startedAt: { gte: shift.clockIn },
+    },
+    select: {
+      unitsHandled: true,
+    },
+  });
+
+  return {
+    ...shift,
+    tasksToday: taskTimeLogs.length,
+    unitsToday: taskTimeLogs.reduce((sum: number, log: { unitsHandled: number }) => {
+      return sum + log.unitsHandled;
+    }, 0),
+  };
 }
 
 export async function addBreakTime(minutes: number): Promise<{ error?: string }> {

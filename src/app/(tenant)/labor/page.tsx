@@ -88,7 +88,7 @@ export default async function LaborDashboardPage() {
                 <tbody>
                   {data.leaderboard.map((op) => (
                     <tr key={op.operatorId} className="border-b last:border-0">
-                      <td className="py-2 font-mono text-xs">{op.operatorId.slice(0, 8)}...</td>
+                      <td className="py-2">{op.operatorLabel}</td>
                       <td className="py-2">{op.tasks}</td>
                       <td className="py-2">{op.units}</td>
                       <td className="py-2 font-semibold">{op.uph}</td>

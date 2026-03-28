@@ -2,7 +2,7 @@
   "tenant": {
     "labor": {
       "title": "Labor Management",
-      "subtitle": "Operator productivity, shift tracking, and labor costs",
+      "subtitle": "Operational labor analytics based on operator shifts, task logs, and cost attribution",
       "activeOperators": "Active Operators",
       "activeOperatorsDesc": "Currently clocked in",
       "avgUnitsPerHour": "Avg Units/Hour",
@@ -45,7 +45,7 @@
       "noCosts": "No cost data",
       "noCostsDesc": "Cost data will appear after operators complete shifts",
       "rates": "Labor Rates",
-      "ratesSubtitle": "Configure hourly rates for cost calculations",
+      "ratesSubtitle": "Configure operational costing rates used for labor analytics and billing capture",
       "defaultRate": "Default Rate",
       "operatorRate": "Operator-Specific Rate",
       "hourlyRate": "Hourly Rate",
