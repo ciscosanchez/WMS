@@ -127,6 +127,36 @@ Notes:
 
 See [docs/rbac.md](rbac.md) for the current source-of-truth explanation.
 
+## Operator Labor Analytics
+
+The labor module is an operational analytics and costing layer, not a payroll system.
+
+```
+Operator App / Task Flows
+   │
+   ├── clockIn / clockOut ───────► operator_shifts
+   │
+   └── start / complete task ────► task_time_logs
+                                    │
+                                    ├── dashboard KPIs
+                                    ├── shift history
+                                    ├── labor cost attribution
+                                    └── labor billing events
+```
+
+Key points:
+
+- `operator_shifts` track when an operator is clocked in, clocked out, and on break
+- `task_time_logs` track warehouse work such as pick, pack, receive, putaway, move, count, and interleaving
+- `labor_rates` provide operational hourly costing used for analytics and billing capture
+- clock-out allocates labor cost to clients proportionally based on logged task time
+
+This means labor dashboards are only meaningful when:
+
+- operators actually clock in
+- work runs through instrumented task flows
+- labor rates are configured
+
 ## Data Architecture
 
 ### Dual-Mode Operations
@@ -155,6 +185,30 @@ See [docs/rbac.md](rbac.md) for the current source-of-truth explanation.
 ```
 
 Both modes share the same inventory, warehouse, and client infrastructure. A single tenant can have both modes enabled simultaneously — e.g., receiving containers from overseas (freight) and shipping DTC orders from the same warehouse (fulfillment).
+
+## Warehouse Setup and Layout Entry
+
+Warehouse setup now supports both bulk-generated locations and manual location maintenance.
+
+- manual bin creation and edit under `/warehouse/bins/new` and `/warehouse/bins/[id]/edit`
+- yard spot create/edit routes
+- dock door create/edit routes
+- structured warehouse address entry:
+  - `address1`
+  - `address2`
+  - `city`
+  - `state/province`
+  - `postalCode`
+- `country`
+- map verification link on warehouse create/detail pages
+
+Warehouse addresses are still stored as a composed address string in the tenant schema today, but the UI now collects the structured parts explicitly.
+
+The warehouse map surface is intentionally CSP-safe:
+
+- the app shows the composed address in-app
+- users can open the address in Google Maps in a new tab
+- we do not rely on inline-script-heavy map embeds inside the app shell
 
 ### Document Intelligence (AI-Powered OCR)
 
@@ -217,3 +271,9 @@ The `inventory` table holds current state; the `inventory_transactions` table is
 | **Cursor pagination** for large tables | O(1) vs O(n) for inventory tables                            |
 | **Pre-signed URL uploads**             | Client uploads directly to MinIO, server never buffers files |
 | **JsBarcode (Code128)**                | Industry standard for warehouse bin labels                   |
+
+## Notes on Current Boundaries
+
+- warehouse map preview is a convenience verification surface, not a geocoding source of truth
+- labor analytics is not full workforce management or payroll
+- tenant-specific custom bin types are not implemented yet; manual bin create/edit currently uses the built-in bin type set

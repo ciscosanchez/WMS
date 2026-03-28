@@ -2,6 +2,54 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-28 — Workflow Hardening, Warehouse Setup, and Browser Smoke Coverage
+
+### Warehouse and Layout Setup
+
+- Added manual bin create and edit flows under `/warehouse/bins/new` and `/warehouse/bins/[id]/edit`
+- Added structured warehouse address entry with:
+  - address line 1
+  - address line 2
+  - city
+  - state / province
+  - postal code
+  - country
+- Replaced the brittle embedded warehouse map preview with a CSP-safe external Google Maps verification link
+- Added missing yard spot and dock door create/edit routes and shared forms
+
+### Product and Inventory Runtime Hardening
+
+- Added a real `/products/kits/new` route with a working kit-definition form
+- Hardened the stock browser so missing product, bin, or client relations render placeholders instead of crashing
+- Hardened `/inventory/lpn/new` to use lightweight product/bin choices instead of deep relation-heavy reads
+- Added a friendlier Shopify inventory-sync error when merchant approval is still required for `read_locations`
+
+### Shipping, Picking, and Billing Safety
+
+- Fixed wave-generation inventory allocation to claim stock atomically instead of allowing concurrent over-allocation
+- Changed pick-task reads to use `orders:read` semantics instead of `shipping:read`
+- Wrapped transfer-order delete in a transaction
+- Wrapped invoice generation and billing-event marking in a single transaction
+
+### Labor and Navigation
+
+- Clarified labor screens as operational analytics and costing, not payroll
+- Fixed operator shift stats so “Tasks Today” and “Units Today” are backed by real queried values
+- Replaced raw operator/client IDs in labor views with user/client labels where possible
+- Improved the tenant sidebar collapse behavior so the collapsed rail can be reopened cleanly
+
+### Browser Regression Coverage
+
+- Added focused Playwright smoke coverage for:
+  - warehouse create with structured address fields
+  - manual bin create
+  - yard spot and dock door create routes
+  - channels -> integrations routing
+  - kit create route
+  - LPN create route
+  - workflow-rules fail-soft rendering
+  - sidebar collapse / expand behavior
+
 ## 2026-03-27 — Product UOM and Packaging Setup
 
 ### Product Master Data

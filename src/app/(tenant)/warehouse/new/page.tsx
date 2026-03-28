@@ -49,7 +49,7 @@ export default function NewWarehousePage() {
   const fullAddress = useMemo(() => composeWarehouseAddress(address), [address]);
   const mapUrl = useMemo(() => {
     if (!fullAddress) return "";
-    return `https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
   }, [fullAddress]);
 
   return (
@@ -168,15 +168,19 @@ export default function NewWarehousePage() {
                 <p className="text-muted-foreground">{t("mapPreviewEmpty")}</p>
               )}
             </div>
-            <div className="overflow-hidden rounded-lg border">
+            <div className="rounded-lg border bg-muted/20 p-6">
               {mapUrl ? (
-                <iframe
-                  title={t("mapPreview")}
-                  src={mapUrl}
-                  className="h-72 w-full"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+                <div className="flex min-h-72 flex-col items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{t("mapPreviewReady")}</p>
+                    <p className="text-sm text-muted-foreground">{t("mapPreviewHelp")}</p>
+                  </div>
+                  <Button asChild variant="outline">
+                    <a href={mapUrl} target="_blank" rel="noreferrer">
+                      {t("openInMaps")}
+                    </a>
+                  </Button>
+                </div>
               ) : (
                 <div className="flex h-72 items-center justify-center bg-muted/20 text-sm text-muted-foreground">
                   {t("mapPreviewEmpty")}

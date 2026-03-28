@@ -20,6 +20,7 @@
                      │ user_id      │
                      │ role (RBAC)  │
                      │ portal_client_id │
+                     │ permission_overrides │
                      └──────────────┘
 ```
 
@@ -28,6 +29,7 @@ Notes:
 - `users.is_superadmin` controls platform-level `/platform` access
 - `tenant_users.role` controls tenant-scoped RBAC
 - `tenant_users.portal_client_id` enables client-scoped portal access without adding a separate persisted portal role
+- `tenant_users.permission_overrides` stores additive grants and subtractive denies on top of the base role
 - product personas like `operator` and `portal_user` are derived from this stored model rather than stored as additional enum roles
 - middleware and layouts use those derived personas for default routing, but sensitive actions still enforce access server-side
 
@@ -72,6 +74,17 @@ Notes:
                                                                            reserved
                                                                            blocked
 ```
+
+Warehouse UI now captures structured address fields:
+
+- `address1`
+- `address2`
+- `city`
+- `state/province`
+- `postalCode`
+- `country`
+
+Those values are currently composed into the existing warehouse `address` string in storage, while the create/detail screens provide structured entry and a map-verification link.
 
 ### Receiving Module (Freight/3PL)
 
@@ -222,8 +235,15 @@ Products now include:
 
 - `units_per_case` (int, optional) — how many units per carton/case
 - `case_barcode` (string, optional) — barcode for case-level scanning
+- `uom_conversions` surfaced through create/edit product UI for controlled packaging setup
 
 These fields support the scan-out verification feature (#3a) where operators need clarity on whether pick quantities are individual units or full cartons.
+
+Those packaging definitions now flow into:
+
+- receiving line UOM entry
+- order requested-UOM entry
+- allocation normalization into base units
 
 ### Integration Credentials
 
@@ -248,6 +268,14 @@ Carrier and ERP credentials are stored in `Tenant.settings` (JSON field in publi
 ```
 
 This replaces the single-tenant pattern of global env vars, enabling multi-tenant credential management.
+
+### Recent UX-backed Structural Additions
+
+- manual bin create/edit flows under `/warehouse/bins/*`
+- yard spot create/edit flows under `/yard-dock/yard-spots/*`
+- dock door create/edit flows under `/yard-dock/dock-doors/*`
+- LPN create flow backed by lightweight product/bin choice loaders
+- inventory browser relation hardening so missing product/bin/client records degrade gracefully instead of crashing
 
 ---
 
