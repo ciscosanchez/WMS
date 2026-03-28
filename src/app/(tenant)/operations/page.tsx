@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, AlertTriangle, PackageOpen, Users, Zap, UserX } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  PackageOpen,
+  Users,
+  Zap,
+  UserX,
+  Truck,
+} from "lucide-react";
 import { getOperationsBoard } from "@/modules/dashboard/manager-actions";
 import { AssignTaskButton } from "./assign-task-button";
 import { useTranslations } from "next-intl";
@@ -69,6 +78,8 @@ export default function OperationsPage() {
           value={data.kpis.activeReceiving}
           icon={PackageOpen}
         />
+        <KpiCard title={t("awaitingRelease")} value={data.kpis.pendingRelease} icon={Truck} />
+        <KpiCard title={t("releasedToday")} value={data.kpis.releasedToday} icon={CheckCircle2} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -222,6 +233,40 @@ export default function OperationsPage() {
                     </div>
                     <div className="text-xs text-muted-foreground">{tc("units")}</div>
                   </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Release Gate */}
+      {data.releaseGate.pending.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Truck className="h-4 w-4 text-amber-500" />
+              {t("awaitingRelease")} ({data.releaseGate.pending.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {data.releaseGate.pending.map((s) => (
+                <div key={s.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {s.order?.orderNumber ?? s.shipmentNumber}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {s.order?.client?.name} · {s.carrier} · {s.items.length} line(s)
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="shrink-0 text-xs text-amber-700 border-amber-300"
+                  >
+                    {t("pendingRelease")}
+                  </Badge>
                 </div>
               ))}
             </div>

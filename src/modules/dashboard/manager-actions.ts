@@ -30,7 +30,15 @@ export async function getOperationsBoard() {
       notOnFloor: [] as Array<{ userId: string; name: string }>,
       unassignedTasks: [],
       receivingActive: [],
-      kpis: { completedToday: 0, avgMinutes: 0, pendingTasks: 0, activeReceiving: 0 },
+      releaseGate: { pending: [], releasedToday: [] },
+      kpis: {
+        completedToday: 0,
+        avgMinutes: 0,
+        pendingTasks: 0,
+        activeReceiving: 0,
+        pendingRelease: 0,
+        releasedToday: 0,
+      },
       availableOperators: [] as Array<{ userId: string; name: string }>,
     };
   }
@@ -62,112 +70,149 @@ export async function getOperationsBoard() {
   });
   const userMap = new Map(members.map((m) => [m.userId, m.user.name]));
 
-  const [allTasks, completedToday, receivingActive, activeShifts, receivingTxnsToday, countsToday] =
-    await Promise.all([
-      // All pick tasks that are active or created today, scoped to accessible warehouses
-      db.pickTask.findMany({
-        where: {
-          OR: [
-            { status: { in: ["pending", "assigned", "in_progress"] } },
-            { completedAt: { gte: today } },
-          ],
-          ...(accessibleIds !== null
-            ? {
-                lines: {
-                  some: {
-                    bin: {
-                      shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
-                    },
-                  },
-                },
-              }
-            : {}),
-        },
-        include: {
-          order: { select: { orderNumber: true, priority: true, shipToName: true } },
-          lines: { select: { id: true, quantity: true, pickedQty: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-
-      // Count of completed tasks today — scoped to accessible warehouses
-      db.pickTask.count({
-        where: {
-          status: "completed",
-          completedAt: { gte: today },
-          ...(accessibleIds !== null
-            ? {
-                lines: {
-                  some: {
-                    bin: {
-                      shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
-                    },
-                  },
-                },
-              }
-            : {}),
-        },
-      }),
-
-      // Active inbound shipments — scoped to accessible warehouses
-      db.inboundShipment.findMany({
-        where: {
-          status: { in: ["expected", "arrived", "receiving"] },
-          ...(accessibleIds !== null ? { warehouseId: { in: accessibleIds } } : {}),
-        },
-        select: {
-          id: true,
-          shipmentNumber: true,
-          status: true,
-          expectedDate: true,
-          client: { select: { name: true } },
-          lines: { select: { expectedQty: true, receivedQty: true } },
-        },
-        orderBy: { expectedDate: "asc" },
-        take: 20,
-      }),
-
-      // Currently clocked-in shifts
-      db.operatorShift.findMany({
-        where: { status: "clocked_in" },
-        select: { operatorId: true, clockIn: true },
-      }),
-
-      // Receiving transactions today — scoped to accessible warehouse bins
-      db.receivingTransaction.groupBy({
-        by: ["receivedBy"],
-        where: {
-          createdAt: { gte: today },
-          ...(accessibleIds !== null
-            ? {
-                bin: {
-                  shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
-                },
-              }
-            : {}),
-        },
-        _count: { id: true },
-      }),
-
-      // Cycle counts today — scoped to accessible warehouses via inventory record
-      db.inventoryAdjustment.groupBy({
-        by: ["createdBy"],
-        where: {
-          type: "cycle_count",
-          createdAt: { gte: today },
-          ...(accessibleIds !== null
-            ? {
-                inventory: {
+  const [
+    allTasks,
+    completedToday,
+    receivingActive,
+    activeShifts,
+    receivingTxnsToday,
+    countsToday,
+    pendingRelease,
+    releasedToday,
+  ] = await Promise.all([
+    // All pick tasks that are active or created today, scoped to accessible warehouses
+    db.pickTask.findMany({
+      where: {
+        OR: [
+          { status: { in: ["pending", "assigned", "in_progress"] } },
+          { completedAt: { gte: today } },
+        ],
+        ...(accessibleIds !== null
+          ? {
+              lines: {
+                some: {
                   bin: {
                     shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
                   },
                 },
-              }
-            : {}),
+              },
+            }
+          : {}),
+      },
+      include: {
+        order: { select: { orderNumber: true, priority: true, shipToName: true } },
+        lines: { select: { id: true, quantity: true, pickedQty: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+
+    // Count of completed tasks today — scoped to accessible warehouses
+    db.pickTask.count({
+      where: {
+        status: "completed",
+        completedAt: { gte: today },
+        ...(accessibleIds !== null
+          ? {
+              lines: {
+                some: {
+                  bin: {
+                    shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                  },
+                },
+              },
+            }
+          : {}),
+      },
+    }),
+
+    // Active inbound shipments — scoped to accessible warehouses
+    db.inboundShipment.findMany({
+      where: {
+        status: { in: ["expected", "arrived", "receiving"] },
+        ...(accessibleIds !== null ? { warehouseId: { in: accessibleIds } } : {}),
+      },
+      select: {
+        id: true,
+        shipmentNumber: true,
+        status: true,
+        expectedDate: true,
+        client: { select: { name: true } },
+        lines: { select: { expectedQty: true, receivedQty: true } },
+      },
+      orderBy: { expectedDate: "asc" },
+      take: 20,
+    }),
+
+    // Currently clocked-in shifts
+    db.operatorShift.findMany({
+      where: { status: "clocked_in" },
+      select: { operatorId: true, clockIn: true },
+    }),
+
+    // Receiving transactions today — scoped to accessible warehouse bins
+    db.receivingTransaction.groupBy({
+      by: ["receivedBy"],
+      where: {
+        createdAt: { gte: today },
+        ...(accessibleIds !== null
+          ? {
+              bin: {
+                shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+              },
+            }
+          : {}),
+      },
+      _count: { id: true },
+    }),
+
+    // Outbound shipments awaiting dock release
+    db.shipment.findMany({
+      where: { status: "label_created", releasedAt: null },
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            client: { select: { name: true } },
+          },
         },
-        _count: { id: true },
-      }),
-    ]);
+        items: { select: { id: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+
+    // Shipments released at the dock today
+    db.shipment.findMany({
+      where: { releasedAt: { gte: today } },
+      select: {
+        id: true,
+        shipmentNumber: true,
+        releasedAt: true,
+        carrier: true,
+        order: { select: { orderNumber: true } },
+      },
+      orderBy: { releasedAt: "desc" },
+      take: 20,
+    }),
+
+    // Cycle counts today — scoped to accessible warehouses via inventory record
+    db.inventoryAdjustment.groupBy({
+      by: ["createdBy"],
+      where: {
+        type: "cycle_count",
+        createdAt: { gte: today },
+        ...(accessibleIds !== null
+          ? {
+              inventory: {
+                bin: {
+                  shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                },
+              },
+            }
+          : {}),
+      },
+      _count: { id: true },
+    }),
+  ]);
 
   // Split tasks
   const unassignedTasks = allTasks
@@ -307,11 +352,30 @@ export async function getOperationsBoard() {
     notOnFloor,
     unassignedTasks,
     receivingActive: mappedReceiving,
+    releaseGate: {
+      pending: pendingRelease as Array<{
+        id: string;
+        shipmentNumber: string;
+        carrier: string | null;
+        createdAt: Date;
+        order: { orderNumber: string; client: { name: string } | null } | null;
+        items: Array<{ id: string }>;
+      }>,
+      releasedToday: releasedToday as Array<{
+        id: string;
+        shipmentNumber: string;
+        releasedAt: Date | null;
+        carrier: string | null;
+        order: { orderNumber: string } | null;
+      }>,
+    },
     kpis: {
       completedToday,
       avgMinutes,
       pendingTasks: unassignedTasks.length,
       activeReceiving: receivingActive.length,
+      pendingRelease: pendingRelease.length,
+      releasedToday: releasedToday.length,
     },
     // Pass operator list for assignment dropdown
     availableOperators: members

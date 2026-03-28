@@ -50,6 +50,9 @@
       "done": "listo",
       "short": "faltante",
       "counts": "conteos",
+      "awaitingRelease": "En espera de liberación",
+      "releasedToday": "Liberado hoy",
+      "pendingRelease": "Liberación pendiente",
       "notOnFloor": "No en piso"
     },
     "reports": {
