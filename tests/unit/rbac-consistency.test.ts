@@ -60,7 +60,11 @@ afterAll(() => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function asRole(role: TenantRole, isSuperadmin = false) {
+function asRole(
+  role: TenantRole,
+  isSuperadmin = false,
+  warehouseAccess: WarehouseAccess[] | null = null
+) {
   mockRequireTenantAccess.mockResolvedValue({
     user: {
       id: "user-1",
@@ -70,6 +74,7 @@ function asRole(role: TenantRole, isSuperadmin = false) {
       tenants: [{ tenantId: "tenant-1", slug: "test", role, portalClientId: null }],
     },
     role,
+    warehouseAccess,
   });
 }
 
@@ -368,6 +373,38 @@ describe("RBAC consistency — PERMISSION_LEVEL maps", () => {
       it("empty assignments array treated same as null", () => {
         expect(getEffectiveWarehouseRole("manager", [], WH_A)).toBe("manager");
         expect(getAccessibleWarehouseIds("manager", [])).toBeNull();
+      });
+    });
+
+    describe("warehouse role downgrade gates permission check (regression: was using tenant role)", () => {
+      // A manager downgraded to viewer at a specific warehouse must NOT be able
+      // to call write actions at that warehouse — requireTenantContext must use
+      // effectiveWarehouseRole, not the broader tenant role, for the permission check.
+      it("manager with viewer warehouse override is blocked from inventory:write at that warehouse", async () => {
+        asRole("manager", false, [{ warehouseId: WH_A, role: "viewer" }]);
+        await expect(
+          requireTenantContext("inventory:write", { warehouseId: WH_A })
+        ).rejects.toThrow("Forbidden");
+      });
+
+      it("manager with viewer warehouse override can still read at that warehouse", async () => {
+        asRole("manager", false, [{ warehouseId: WH_A, role: "viewer" }]);
+        await expect(
+          requireTenantContext("inventory:read", { warehouseId: WH_A })
+        ).resolves.toBeDefined();
+      });
+
+      it("viewer with manager warehouse override can write at that warehouse", async () => {
+        asRole("viewer", false, [{ warehouseId: WH_A, role: "manager" }]);
+        await expect(
+          requireTenantContext("inventory:write", { warehouseId: WH_A })
+        ).resolves.toBeDefined();
+      });
+
+      it("warehouse role override does not affect checks at other warehouses (no warehouseId opt)", async () => {
+        // Without warehouseId opt, requireTenantContext uses the tenant role
+        asRole("manager", false, [{ warehouseId: WH_A, role: "viewer" }]);
+        await expect(requireTenantContext("inventory:write")).resolves.toBeDefined();
       });
     });
 

@@ -104,19 +104,23 @@ export async function requireTenantContext(
   const { requireTenantAccess } = await import("@/lib/auth/session");
   const { user, role, permissionOverrides, warehouseAccess } = await requireTenantAccess(slug);
 
-  // Optional permission check — uses the already-resolved role (no extra DB call)
-  if (permission && !user.isSuperadmin) {
-    if (!checkPermissionLevel(role, permission, permissionOverrides)) {
-      throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
-    }
-  }
-
-  // Optional warehouse access check
+  // Resolve warehouse role first — permission check must use it if present.
+  // A per-warehouse role override (e.g. manager downgraded to viewer at a location)
+  // must gate the permission check, not the broader tenant role.
   let effectiveWarehouseRole: TenantRole | null | undefined;
   if (opts?.warehouseId && !user.isSuperadmin) {
     effectiveWarehouseRole = getEffectiveWarehouseRole(role, warehouseAccess, opts.warehouseId);
     if (effectiveWarehouseRole === null) {
       throw new Error(`Forbidden: no access to warehouse "${opts.warehouseId}"`);
+    }
+  }
+
+  // Permission check — use effectiveWarehouseRole when available so a warehouse-scoped
+  // downgrade (manager→viewer at location) is enforced, not bypassed by the tenant role.
+  if (permission && !user.isSuperadmin) {
+    const roleForCheck = effectiveWarehouseRole ?? role;
+    if (!checkPermissionLevel(roleForCheck, permission, permissionOverrides)) {
+      throw new Error(`Forbidden: requires "${permission}" (your role: ${roleForCheck})`);
     }
   }
 
