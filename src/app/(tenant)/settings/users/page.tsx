@@ -6,12 +6,17 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { getTenantUsers } from "@/modules/users/actions";
 import { getTenantRbacGovernance } from "@/modules/users/actions";
 import { getUserPersonas } from "@/lib/auth/personas";
-import { getAccessRisks, normalizePermissionOverrides } from "@/lib/auth/rbac";
+import {
+  getAccessRisks,
+  getAccessibleWarehouseIds,
+  normalizePermissionOverrides,
+} from "@/lib/auth/rbac";
 import { AccessReview } from "./access-review";
 import { UserTable } from "./user-table";
 
 export default async function UsersPage() {
-  const { tenant } = await requireTenantContext("users:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("users:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const [members, governance, clients, warehouses] = await Promise.all([
     getTenantUsers(tenant.tenantId),
     getTenantRbacGovernance(),
@@ -21,7 +26,10 @@ export default async function UsersPage() {
       select: { id: true, name: true, code: true },
     }),
     tenant.db.warehouse.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(accessibleIds !== null ? { id: { in: accessibleIds } } : {}),
+      },
       orderBy: { code: "asc" },
       select: { id: true, name: true, code: true },
     }),

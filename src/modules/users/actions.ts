@@ -11,6 +11,7 @@ import { getAppBaseUrl, getCookieDomain, isSupportedLocale } from "@/lib/app-run
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import {
   getAccessRisks,
+  getAccessibleWarehouseIds,
   getPermissionDiffSummary,
   normalizePermissionOverrides,
   validatePermissionPolicy,
@@ -822,7 +823,11 @@ export async function assignWarehouseToUser(
   warehouseId: string,
   role?: TenantRole | null
 ): Promise<{ error: string } | { ok: true }> {
-  const { user, tenant } = await getAdminContext();
+  const { user, tenant, role: actorRole, warehouseAccess } = await getAdminContext();
+  const actorAccessibleIds = getAccessibleWarehouseIds(actorRole, warehouseAccess);
+  if (actorAccessibleIds !== null && !actorAccessibleIds.includes(warehouseId)) {
+    return { error: "Forbidden: warehouse is outside your access" };
+  }
 
   try {
     const membership = await publicDb.tenantUser.findUnique({
@@ -873,7 +878,11 @@ export async function removeWarehouseAssignment(
   userId: string,
   warehouseId: string
 ): Promise<{ error: string } | { ok: true }> {
-  const { user, tenant } = await getAdminContext();
+  const { user, tenant, role: actorRole, warehouseAccess } = await getAdminContext();
+  const actorAccessibleIds = getAccessibleWarehouseIds(actorRole, warehouseAccess);
+  if (actorAccessibleIds !== null && !actorAccessibleIds.includes(warehouseId)) {
+    return { error: "Forbidden: warehouse is outside your access" };
+  }
 
   try {
     const membership = await publicDb.tenantUser.findUnique({
@@ -922,7 +931,11 @@ export async function updateWarehouseAssignmentRole(
   warehouseId: string,
   role: TenantRole | null
 ): Promise<{ error: string } | { ok: true }> {
-  const { user, tenant } = await getAdminContext();
+  const { user, tenant, role: actorRole, warehouseAccess } = await getAdminContext();
+  const actorAccessibleIds = getAccessibleWarehouseIds(actorRole, warehouseAccess);
+  if (actorAccessibleIds !== null && !actorAccessibleIds.includes(warehouseId)) {
+    return { error: "Forbidden: warehouse is outside your access" };
+  }
 
   try {
     const membership = await publicDb.tenantUser.findUnique({
