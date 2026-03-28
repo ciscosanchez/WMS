@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -38,6 +38,7 @@ function getInitials(name: string | undefined | null): string {
 
 export function Topbar() {
   const { data: session } = useSession();
+  const { isMobile } = useSidebar();
   const locale = useLocale();
   const tCommon = useTranslations("common");
 
@@ -89,8 +90,12 @@ export function Topbar() {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+      {isMobile ? (
+        <>
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+        </>
+      ) : null}
       <Breadcrumbs />
       <div className="ml-auto flex items-center gap-2">
         <SearchCommand />
