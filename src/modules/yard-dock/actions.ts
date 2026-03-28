@@ -139,6 +139,26 @@ export async function getYardSpots(warehouseId?: string) {
   });
 }
 
+export async function getYardSpot(id: string) {
+  if (config.useMockData) return null;
+
+  const { tenant } = await requireTenantContext("yard-dock:read");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = tenant.db as any;
+
+  return db.yardSpot.findUnique({
+    where: { id },
+    include: {
+      warehouse: { select: { code: true, name: true } },
+      yardVisits: {
+        where: { status: { not: "departed" } },
+        take: 1,
+        orderBy: { arrivedAt: "desc" },
+      },
+    },
+  });
+}
+
 export async function createYardSpot(data: unknown) {
   if (config.useMockData) return { id: "mock-new" };
 
