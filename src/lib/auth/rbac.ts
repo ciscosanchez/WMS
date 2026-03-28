@@ -405,3 +405,49 @@ export function validatePermissionPolicy(opts: {
 
   return violations;
 }
+
+// ─── Warehouse-level access helpers ──────────────────────────────────────────
+
+export type WarehouseAccess = {
+  warehouseId: string;
+  role: TenantRole | null; // null = inherit tenant role at this warehouse
+};
+
+/**
+ * Returns the effective role for a user at a specific warehouse.
+ *
+ * Rules:
+ *   - role === 'admin' → always returns 'admin' (bypasses warehouse restrictions)
+ *   - warehouseAccess null/empty → unrestricted, returns tenantRole
+ *   - warehouse found in assignments → returns assignment.role ?? tenantRole
+ *   - warehouse not in assignments → returns null (no access)
+ */
+export function getEffectiveWarehouseRole(
+  tenantRole: TenantRole,
+  warehouseAccess: WarehouseAccess[] | null,
+  warehouseId: string
+): TenantRole | null {
+  if (tenantRole === "admin") return tenantRole;
+  if (!warehouseAccess || warehouseAccess.length === 0) return tenantRole;
+
+  const assignment = warehouseAccess.find((a) => a.warehouseId === warehouseId);
+  if (!assignment) return null;
+
+  return assignment.role ?? tenantRole;
+}
+
+/**
+ * Returns the set of warehouse IDs this user can access, or null if unrestricted.
+ *
+ * null  → user sees all warehouses (admin or no assignments)
+ * string[] → user is restricted to this set of warehouse IDs
+ */
+export function getAccessibleWarehouseIds(
+  tenantRole: TenantRole,
+  warehouseAccess: WarehouseAccess[] | null
+): string[] | null {
+  if (tenantRole === "admin") return null;
+  if (!warehouseAccess || warehouseAccess.length === 0) return null;
+
+  return warehouseAccess.map((a) => a.warehouseId);
+}

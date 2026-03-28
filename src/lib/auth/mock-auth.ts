@@ -9,6 +9,7 @@ export type MockTenantMembership = {
   role: TenantRole;
   portalClientId: string | null;
   permissionOverrides?: PermissionOverrides | null;
+  warehouseAccess?: Array<{ warehouseId: string; role: TenantRole | null }> | null;
 };
 
 export type MockAuthUser = {
@@ -85,6 +86,22 @@ export function decodeMockAuthCookie(value: string | null | undefined): MockAuth
           return null;
         }
 
+        const rawAccess = membership.warehouseAccess;
+        const warehouseAccess =
+          Array.isArray(rawAccess) && rawAccess.length > 0
+            ? rawAccess
+                .map((wa) => {
+                  if (!wa || typeof wa !== "object") return null;
+                  const entry = wa as Record<string, unknown>;
+                  if (typeof entry.warehouseId !== "string") return null;
+                  return {
+                    warehouseId: entry.warehouseId,
+                    role: isTenantRole(entry.role) ? entry.role : null,
+                  };
+                })
+                .filter((wa): wa is Exclude<typeof wa, null> => wa !== null)
+            : null;
+
         return {
           tenantId: membership.tenantId,
           slug: membership.slug,
@@ -94,6 +111,7 @@ export function decodeMockAuthCookie(value: string | null | undefined): MockAuth
               ? membership.portalClientId
               : null,
           permissionOverrides: normalizePermissionOverrides(membership.permissionOverrides),
+          warehouseAccess: warehouseAccess && warehouseAccess.length > 0 ? warehouseAccess : null,
         };
       })
       .filter((tenant): tenant is Exclude<typeof tenant, null> => tenant !== null);

@@ -2,7 +2,13 @@ import { headers } from "next/headers";
 import type { PrismaClient } from "../../../node_modules/.prisma/tenant-client";
 import type { TenantRole } from "../../../node_modules/.prisma/public-client";
 import type { SessionUser } from "@/lib/auth/session";
-import { checkPermissionLevel, type PermissionOverrides } from "@/lib/auth/rbac";
+import {
+  checkPermissionLevel,
+  getEffectiveWarehouseRole,
+  getAccessibleWarehouseIds,
+  type PermissionOverrides,
+  type WarehouseAccess,
+} from "@/lib/auth/rbac";
 
 export interface TenantContext {
   tenantId: string;
@@ -74,25 +80,43 @@ export async function resolveTenant(): Promise<TenantContext | null> {
  * - No valid session
  * - No tenant in request context
  * - User is not a member of this tenant (and is not a superadmin)
+ * - warehouseId provided and user has no access to that warehouse
+ *
+ * When warehouseId is provided, returns effectiveWarehouseRole (the role to
+ * use for permission checks at that specific warehouse).
  */
-export async function requireTenantContext(permission?: string): Promise<{
+export async function requireTenantContext(
+  permission?: string,
+  opts?: { warehouseId?: string }
+): Promise<{
   user: SessionUser;
   role: TenantRole;
   tenant: TenantContext;
   portalClientId?: string | null;
   permissionOverrides?: PermissionOverrides | null;
+  warehouseAccess: WarehouseAccess[] | null;
+  effectiveWarehouseRole?: TenantRole | null;
 }> {
   const slug = await getTenantFromHeaders();
   if (!slug) throw new Error("No tenant context");
 
   // requireTenantAccess does auth + membership check together
   const { requireTenantAccess } = await import("@/lib/auth/session");
-  const { user, role, permissionOverrides } = await requireTenantAccess(slug);
+  const { user, role, permissionOverrides, warehouseAccess } = await requireTenantAccess(slug);
 
   // Optional permission check — uses the already-resolved role (no extra DB call)
   if (permission && !user.isSuperadmin) {
     if (!checkPermissionLevel(role, permission, permissionOverrides)) {
       throw new Error(`Forbidden: requires "${permission}" (your role: ${role})`);
+    }
+  }
+
+  // Optional warehouse access check
+  let effectiveWarehouseRole: TenantRole | null | undefined;
+  if (opts?.warehouseId && !user.isSuperadmin) {
+    effectiveWarehouseRole = getEffectiveWarehouseRole(role, warehouseAccess, opts.warehouseId);
+    if (effectiveWarehouseRole === null) {
+      throw new Error(`Forbidden: no access to warehouse "${opts.warehouseId}"`);
     }
   }
 
@@ -121,7 +145,25 @@ export async function requireTenantContext(permission?: string): Promise<{
     },
     portalClientId,
     permissionOverrides,
+    warehouseAccess,
+    effectiveWarehouseRole,
   };
+}
+
+/**
+ * Returns the accessible warehouse IDs for the current request.
+ * Convenience wrapper for use in list queries.
+ * null = unrestricted (show all), string[] = show only these.
+ */
+export async function getRequestWarehouseFilter(): Promise<string[] | null> {
+  const slug = await getTenantFromHeaders();
+  if (!slug) return null;
+
+  const { requireTenantAccess } = await import("@/lib/auth/session");
+  const { user, role, warehouseAccess } = await requireTenantAccess(slug);
+
+  if (user.isSuperadmin) return null;
+  return getAccessibleWarehouseIds(role, warehouseAccess);
 }
 
 export async function requirePortalContext() {

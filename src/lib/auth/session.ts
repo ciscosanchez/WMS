@@ -23,16 +23,30 @@ export interface SessionUser {
     role: TenantRole;
     portalClientId?: string | null;
     permissionOverrides?: PermissionOverrides | null;
+    // null = unrestricted (admin role or no assignments). Array = restricted to those IDs.
+    warehouseAccess: Array<{ warehouseId: string; role: TenantRole | null }> | null;
   }>;
 }
 
-const MOCK_USER: SessionUser = DEFAULT_MOCK_AUTH_USER;
+// Normalize MockAuthUser → SessionUser: warehouseAccess optional in mock type, required in session type
+function normalizeMockUser(user: import("@/lib/auth/mock-auth").MockAuthUser): SessionUser {
+  return {
+    ...user,
+    tenants: user.tenants.map((t) => ({
+      ...t,
+      warehouseAccess: t.warehouseAccess ?? null,
+    })),
+  };
+}
+
+const MOCK_USER: SessionUser = normalizeMockUser(DEFAULT_MOCK_AUTH_USER);
 
 async function getMockSessionUser(): Promise<SessionUser> {
   try {
     const cookieStore = await cookies();
     const cookieValue = cookieStore.get(MOCK_AUTH_COOKIE)?.value;
-    return (decodeMockAuthCookie(cookieValue) as SessionUser | null) ?? MOCK_USER;
+    const decoded = decodeMockAuthCookie(cookieValue);
+    return decoded ? normalizeMockUser(decoded) : MOCK_USER;
   } catch {
     return MOCK_USER;
   }
@@ -100,6 +114,7 @@ export async function requireTenantAccess(tenantSlug: string) {
       user,
       role: (membership?.role ?? "admin") as TenantRole,
       permissionOverrides: membership?.permissionOverrides ?? null,
+      warehouseAccess: membership?.warehouseAccess ?? null,
     };
   }
 
@@ -114,6 +129,7 @@ export async function requireTenantAccess(tenantSlug: string) {
     user,
     role: (membership?.role ?? "admin") as TenantRole,
     permissionOverrides: membership?.permissionOverrides ?? null,
+    warehouseAccess: membership?.warehouseAccess ?? null,
   };
 }
 

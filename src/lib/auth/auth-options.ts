@@ -26,7 +26,10 @@ async function getUserWithTenantsByEmail(email: string) {
     where: { email },
     include: {
       tenantUsers: {
-        include: { tenant: true },
+        include: {
+          tenant: true,
+          warehouseAssignments: true,
+        },
       },
     },
   });
@@ -50,6 +53,14 @@ function toAuthUser(user: NonNullable<Awaited<ReturnType<typeof getUserWithTenan
       role: tu.role,
       portalClientId: tu.portalClientId ?? null,
       permissionOverrides: normalizePermissionOverrides(tu.permissionOverrides),
+      // admin always unrestricted; no rows = unrestricted; otherwise restrict to assignments
+      warehouseAccess:
+        tu.role === "admin" || tu.warehouseAssignments.length === 0
+          ? null
+          : tu.warehouseAssignments.map((wa) => ({
+              warehouseId: wa.warehouseId,
+              role: wa.role ?? null,
+            })),
     })),
   };
 }

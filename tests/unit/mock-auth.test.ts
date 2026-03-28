@@ -37,6 +37,7 @@ describe("mock auth cookie helpers", () => {
             grants: [],
             denies: [],
           },
+          warehouseAccess: null,
         },
       ],
     });
