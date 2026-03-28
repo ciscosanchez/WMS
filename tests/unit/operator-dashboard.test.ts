@@ -78,7 +78,9 @@ function setupUser(db: ReturnType<typeof makeDb>) {
       email: "op@test.com",
       name: "Operator",
       isSuperadmin: false,
-      tenants: [{ tenantId: "tenant-1", slug: "test", role: "warehouse_worker", portalClientId: null }],
+      tenants: [
+        { tenantId: "tenant-1", slug: "test", role: "warehouse_worker", portalClientId: null },
+      ],
     },
     role: "warehouse_worker",
     warehouseAccess: null,
@@ -228,8 +230,24 @@ describe("getMyTasksSummary", () => {
             if (where?.OR) {
               // My tasks query
               return Promise.resolve([
-                { id: "t1", taskNumber: "PCK-001", status: "in_progress", startedAt: new Date(), completedAt: null, order: { orderNumber: "O1", priority: "standard", shipToName: "A" }, lines: [] },
-                { id: "t2", taskNumber: "PCK-002", status: "completed", startedAt: new Date(), completedAt: new Date(), order: { orderNumber: "O2", priority: "standard", shipToName: "B" }, lines: [] },
+                {
+                  id: "t1",
+                  taskNumber: "PCK-001",
+                  status: "in_progress",
+                  startedAt: new Date(),
+                  completedAt: null,
+                  order: { orderNumber: "O1", priority: "standard", shipToName: "A" },
+                  lines: [],
+                },
+                {
+                  id: "t2",
+                  taskNumber: "PCK-002",
+                  status: "completed",
+                  startedAt: new Date(),
+                  completedAt: new Date(),
+                  order: { orderNumber: "O2", priority: "standard", shipToName: "B" },
+                  lines: [],
+                },
               ]);
             }
             return Promise.resolve([]);

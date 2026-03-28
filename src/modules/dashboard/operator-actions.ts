@@ -191,7 +191,13 @@ export async function getMyTasksSummary() {
       })
     ),
     vasTasks: vasTasks.map(
-      (v: { id: string; taskNumber: string; type: string; status: string; orderId: string | null }) => ({
+      (v: {
+        id: string;
+        taskNumber: string;
+        type: string;
+        status: string;
+        orderId: string | null;
+      }) => ({
         id: v.id,
         taskNumber: v.taskNumber,
         type: v.type,

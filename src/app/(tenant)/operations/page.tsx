@@ -4,15 +4,7 @@ import { useEffect, useState } from "react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  PackageOpen,
-  Users,
-  Zap,
-  UserX,
-} from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, PackageOpen, Users, Zap, UserX } from "lucide-react";
 import { getOperationsBoard } from "@/modules/dashboard/manager-actions";
 import { AssignTaskButton } from "./assign-task-button";
 import { useTranslations } from "next-intl";
@@ -148,8 +140,7 @@ export default function OperationsPage() {
                         <span className="font-medium text-sm truncate">{op.name}</span>
                         {op.clockedIn && op.hoursOnShift > 0 && (
                           <span className="text-xs text-muted-foreground shrink-0">
-                            {Math.floor(op.hoursOnShift)}h{" "}
-                            {Math.round((op.hoursOnShift % 1) * 60)}m
+                            {Math.floor(op.hoursOnShift)}h {Math.round((op.hoursOnShift % 1) * 60)}m
                           </span>
                         )}
                       </div>

@@ -42,9 +42,21 @@ afterAll(() => {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const WORKER_A = { userId: "user-a", user: { id: "user-a", name: "Alex", email: "a@test.com" }, role: "warehouse_worker" };
-const WORKER_B = { userId: "user-b", user: { id: "user-b", name: "Brook", email: "b@test.com" }, role: "warehouse_worker" };
-const MANAGER_C = { userId: "user-c", user: { id: "user-c", name: "Casey", email: "c@test.com" }, role: "manager" };
+const WORKER_A = {
+  userId: "user-a",
+  user: { id: "user-a", name: "Alex", email: "a@test.com" },
+  role: "warehouse_worker",
+};
+const WORKER_B = {
+  userId: "user-b",
+  user: { id: "user-b", name: "Brook", email: "b@test.com" },
+  role: "warehouse_worker",
+};
+const MANAGER_C = {
+  userId: "user-c",
+  user: { id: "user-c", name: "Casey", email: "c@test.com" },
+  role: "manager",
+};
 
 function makeDb(overrides: Record<string, unknown> = {}) {
   return {
@@ -68,9 +80,15 @@ function makeDb(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function setupContext(members: typeof WORKER_A[], db: ReturnType<typeof makeDb>) {
+function setupContext(members: (typeof WORKER_A)[], db: ReturnType<typeof makeDb>) {
   mockRequireTenantAccess.mockResolvedValue({
-    user: { id: "manager-1", email: "mgr@test.com", name: "Manager", isSuperadmin: false, tenants: [] },
+    user: {
+      id: "manager-1",
+      email: "mgr@test.com",
+      name: "Manager",
+      isSuperadmin: false,
+      tenants: [],
+    },
     role: "manager",
     warehouseAccess: null,
   });
@@ -104,7 +122,9 @@ describe("getOperationsBoard", () => {
           findMany: jest.fn().mockResolvedValue([{ operatorId: WORKER_A.userId, clockIn }]),
         },
         receivingTransaction: {
-          groupBy: jest.fn().mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 5 } }]),
+          groupBy: jest
+            .fn()
+            .mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 5 } }]),
         },
       });
       setupContext([WORKER_A, WORKER_B], db);
@@ -120,7 +140,9 @@ describe("getOperationsBoard", () => {
     it("marks operator as not clocked in when they have no active shift", async () => {
       const db = makeDb({
         receivingTransaction: {
-          groupBy: jest.fn().mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 2 } }]),
+          groupBy: jest
+            .fn()
+            .mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 2 } }]),
         },
       });
       setupContext([WORKER_A], db);
@@ -137,7 +159,9 @@ describe("getOperationsBoard", () => {
     it("includes operator who only has receiving activity (no pick tasks)", async () => {
       const db = makeDb({
         receivingTransaction: {
-          groupBy: jest.fn().mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 3 } }]),
+          groupBy: jest
+            .fn()
+            .mockResolvedValue([{ receivedBy: WORKER_A.userId, _count: { id: 3 } }]),
         },
       });
       setupContext([WORKER_A, WORKER_B], db);
@@ -153,7 +177,9 @@ describe("getOperationsBoard", () => {
     it("includes operator who is clocked in with no tasks", async () => {
       const db = makeDb({
         operatorShift: {
-          findMany: jest.fn().mockResolvedValue([{ operatorId: WORKER_A.userId, clockIn: new Date() }]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([{ operatorId: WORKER_A.userId, clockIn: new Date() }]),
         },
       });
       setupContext([WORKER_A, WORKER_B], db);
@@ -203,7 +229,9 @@ describe("getOperationsBoard", () => {
     it("excludes operator from notOnFloor when they are clocked in", async () => {
       const db = makeDb({
         operatorShift: {
-          findMany: jest.fn().mockResolvedValue([{ operatorId: WORKER_A.userId, clockIn: new Date() }]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([{ operatorId: WORKER_A.userId, clockIn: new Date() }]),
         },
       });
       setupContext([WORKER_A, WORKER_B], db);
