@@ -158,8 +158,8 @@ export async function updateTransferStatus(id: string, status: string) {
 
   if (
     accessibleIds !== null &&
-    !accessibleIds.includes(existing.fromWarehouseId) &&
-    !accessibleIds.includes(existing.toWarehouseId)
+    (!accessibleIds.includes(existing.fromWarehouseId) ||
+      !accessibleIds.includes(existing.toWarehouseId))
   ) {
     throw new Error("Forbidden: transfer is outside your warehouse access");
   }
@@ -205,8 +205,8 @@ export async function deleteTransferOrder(id: string) {
 
   if (
     accessibleIds !== null &&
-    !accessibleIds.includes(existing.fromWarehouseId) &&
-    !accessibleIds.includes(existing.toWarehouseId)
+    (!accessibleIds.includes(existing.fromWarehouseId) ||
+      !accessibleIds.includes(existing.toWarehouseId))
   ) {
     throw new Error("Forbidden: transfer is outside your warehouse access");
   }
