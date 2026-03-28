@@ -40,10 +40,7 @@ test("location_manager sees only Memphis in warehouse list", async ({ page, sign
 
 // ─── Scenario 4: Location manager can navigate to their assigned warehouse ────
 
-test("location_manager can open the Memphis warehouse detail page", async ({
-  page,
-  signInAs,
-}) => {
+test("location_manager can open the Memphis warehouse detail page", async ({ page, signInAs }) => {
   await signInAs("location_manager");
   await page.goto(`/warehouse/${E2E_WAREHOUSE_MEMPHIS}`);
 

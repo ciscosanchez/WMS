@@ -53,9 +53,11 @@ test.describe("Critical Tenant Smoke", () => {
     await page.goto("/warehouse");
 
     // Memphis is assigned — must appear
-    await expect(page.getByTestId(`warehouse-${E2E_WAREHOUSE_MEMPHIS}`).or(
-      page.getByText("Memphis Distribution Center")
-    )).toBeVisible();
+    await expect(
+      page
+        .getByTestId(`warehouse-${E2E_WAREHOUSE_MEMPHIS}`)
+        .or(page.getByText("Memphis Distribution Center"))
+    ).toBeVisible();
 
     // Arkansas is not assigned — must not appear in list
     await expect(page.getByText("Arkansas Fulfillment Center")).not.toBeVisible();

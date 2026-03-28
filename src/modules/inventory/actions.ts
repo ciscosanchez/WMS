@@ -302,7 +302,9 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
   const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const txBinFilter =
     accessibleIds !== null
-      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      ? {
+          fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        }
       : {};
 
   return tenant.db.inventoryTransaction.findMany({
@@ -356,7 +358,9 @@ export async function getInventoryTransactionsPaginated(opts: {
   const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const txBinFilter =
     accessibleIds !== null
-      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      ? {
+          fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        }
       : {};
 
   const where = {
@@ -485,7 +489,9 @@ export async function getTransactionsCursor(opts: {
   // Transactions filter via fromBin (the source bin is in an accessible warehouse)
   const binFilter =
     accessibleIds !== null
-      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      ? {
+          fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        }
       : {};
 
   const where = {

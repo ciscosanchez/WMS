@@ -37,9 +37,7 @@ function createPersonaUser(persona: MockPersona, slug: string): MockAuthUser {
     role,
     portalClientId: persona === "portal" ? "mock-client-1" : null,
     warehouseAccess:
-      persona === "location_manager"
-        ? [{ warehouseId: E2E_WAREHOUSE_MEMPHIS, role: null }]
-        : null,
+      persona === "location_manager" ? [{ warehouseId: E2E_WAREHOUSE_MEMPHIS, role: null }] : null,
   } as const;
 
   switch (persona) {

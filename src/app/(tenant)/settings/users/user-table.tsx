@@ -257,7 +257,9 @@ function UserActions({
                           <DropdownMenuItem disabled className="text-xs text-muted-foreground">
                             Role at this warehouse
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleWarehouseRoleChange(wa.warehouseId, null)}>
+                          <DropdownMenuItem
+                            onClick={() => handleWarehouseRoleChange(wa.warehouseId, null)}
+                          >
                             Inherit tenant role
                           </DropdownMenuItem>
                           {ROLES.map((role) => (

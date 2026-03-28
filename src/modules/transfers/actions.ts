@@ -27,7 +27,12 @@ export async function getTransferOrders(status?: string) {
       ...(status ? { status: status as any } : {}),
       // Restrict to transfers involving at least one accessible warehouse
       ...(accessibleIds !== null
-        ? { OR: [{ fromWarehouseId: { in: accessibleIds } }, { toWarehouseId: { in: accessibleIds } }] }
+        ? {
+            OR: [
+              { fromWarehouseId: { in: accessibleIds } },
+              { toWarehouseId: { in: accessibleIds } },
+            ],
+          }
         : {}),
     },
     include: {
