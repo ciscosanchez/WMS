@@ -41,10 +41,23 @@ export async function getOperationsBoard() {
   const db = tenant.db as any;
   const today = startOfDay(new Date());
 
-  // Resolve operator names from public DB
+  // Resolve operator names from public DB — scoped to the manager's accessible warehouses
   const { publicDb } = await import("@/lib/db/public-client");
   const members = await publicDb.tenantUser.findMany({
-    where: { tenantId: tenant.tenantId, role: { in: ["warehouse_worker", "manager", "admin"] } },
+    where: {
+      tenantId: tenant.tenantId,
+      role: { in: ["warehouse_worker", "manager", "admin"] },
+      // Scoped managers only see members assigned to their warehouses.
+      // Admins (accessibleIds === null) see everyone.
+      ...(accessibleIds !== null
+        ? {
+            OR: [
+              { role: "admin" },
+              { warehouseAssignments: { some: { warehouseId: { in: accessibleIds } } } },
+            ],
+          }
+        : {}),
+    },
     include: { user: { select: { id: true, name: true, email: true } } },
   });
   const userMap = new Map(members.map((m) => [m.userId, m.user.name]));
@@ -77,9 +90,23 @@ export async function getOperationsBoard() {
         orderBy: { createdAt: "desc" },
       }),
 
-      // Count of completed tasks today
+      // Count of completed tasks today — scoped to accessible warehouses
       db.pickTask.count({
-        where: { status: "completed", completedAt: { gte: today } },
+        where: {
+          status: "completed",
+          completedAt: { gte: today },
+          ...(accessibleIds !== null
+            ? {
+                lines: {
+                  some: {
+                    bin: {
+                      shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
       }),
 
       // Active inbound shipments
@@ -103,17 +130,38 @@ export async function getOperationsBoard() {
         select: { operatorId: true, clockIn: true },
       }),
 
-      // Receiving transactions today — to see who's working on receiving
+      // Receiving transactions today — scoped to accessible warehouse bins
       db.receivingTransaction.groupBy({
         by: ["receivedBy"],
-        where: { createdAt: { gte: today } },
+        where: {
+          createdAt: { gte: today },
+          ...(accessibleIds !== null
+            ? {
+                bin: {
+                  shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                },
+              }
+            : {}),
+        },
         _count: { id: true },
       }),
 
-      // Cycle counts today — to see who's doing counts
+      // Cycle counts today — scoped to accessible warehouses via inventory record
       db.inventoryAdjustment.groupBy({
         by: ["createdBy"],
-        where: { type: "cycle_count", createdAt: { gte: today } },
+        where: {
+          type: "cycle_count",
+          createdAt: { gte: today },
+          ...(accessibleIds !== null
+            ? {
+                inventory: {
+                  bin: {
+                    shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } },
+                  },
+                },
+              }
+            : {}),
+        },
         _count: { id: true },
       }),
     ]);
