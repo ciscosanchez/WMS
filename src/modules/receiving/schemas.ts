@@ -7,6 +7,7 @@ export function inboundShipmentSchema(t?: T) {
   const msg = (key: string, fallback: string) => (t ? t(key) : fallback);
   return z.object({
     clientId: z.string().min(1, msg("clientRequired", "Client is required")),
+    warehouseId: z.string().min(1, msg("warehouseRequired", "Destination warehouse is required")),
     carrier: z.string().optional().nullable(),
     trackingNumber: z.string().optional().nullable(),
     bolNumber: z.string().optional().nullable(),

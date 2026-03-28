@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { markShipmentShipped } from "./ship-actions";
 import { startOfDay } from "date-fns";
@@ -10,13 +11,38 @@ import { startOfDay } from "date-fns";
 /**
  * Get outbound shipments that are labeled and awaiting dock release.
  * Used by the operator release gate screen.
+ *
+ * Outbound Shipment has no warehouseId — scope via pick task → bin → warehouse chain.
  */
 export async function getShipmentsReadyForRelease() {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext("shipping:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("shipping:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   return tenant.db.shipment.findMany({
-    where: { status: "label_created", releasedAt: null },
+    where: {
+      status: "label_created",
+      releasedAt: null,
+      ...(accessibleIds !== null
+        ? {
+            order: {
+              picks: {
+                some: {
+                  lines: {
+                    some: {
+                      bin: {
+                        shelf: {
+                          rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+        : {}),
+    },
     include: {
       order: {
         select: {
@@ -71,9 +97,15 @@ export async function releaseShipment(
     if (!shipment) return { error: "Shipment not found" };
     if (shipment.releasedAt) return {}; // Already released — idempotent
 
+    // Call markShipmentShipped FIRST — only stamp releasedAt if it succeeds.
+    // Stamping first would leave the shipment in a stuck half-released state on failure.
+    const result = await markShipmentShipped(shipmentId, trackingNumber, carrier);
+    if (result.error) return result;
+
+    const releasedAt = new Date();
     await tenant.db.shipment.update({
       where: { id: shipmentId },
-      data: { releasedAt: new Date(), releasedBy: user.id },
+      data: { releasedAt, releasedBy: user.id },
     });
 
     await logAudit(tenant.db, {
@@ -82,13 +114,10 @@ export async function releaseShipment(
       entityType: "shipment",
       entityId: shipmentId,
       changes: {
-        releasedAt: { old: null, new: new Date().toISOString() },
+        releasedAt: { old: null, new: releasedAt.toISOString() },
         releasedBy: { old: null, new: user.id },
       },
     });
-
-    const result = await markShipmentShipped(shipmentId, trackingNumber, carrier);
-    if (result.error) return result;
 
     revalidatePath("/release");
     revalidatePath("/operations");
@@ -105,9 +134,31 @@ export async function releaseShipment(
 export async function getReleasedShipmentsToday() {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext("reports:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("reports:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   return tenant.db.shipment.findMany({
-    where: { releasedAt: { gte: startOfDay(new Date()) } },
+    where: {
+      releasedAt: { gte: startOfDay(new Date()) },
+      ...(accessibleIds !== null
+        ? {
+            order: {
+              picks: {
+                some: {
+                  lines: {
+                    some: {
+                      bin: {
+                        shelf: {
+                          rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+        : {}),
+    },
     include: {
       order: {
         select: {

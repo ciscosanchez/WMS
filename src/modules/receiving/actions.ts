@@ -23,6 +23,26 @@ async function getReadContext() {
   return requireTenantContext("receiving:read");
 }
 
+/**
+ * Throws if the actor does not have access to the warehouse that owns the shipment.
+ * No-op for unrestricted actors (accessibleIds === null).
+ */
+async function assertShipmentWarehouseAccess(
+  tenant: TenantContext,
+  shipmentId: string,
+  accessibleIds: string[] | null
+) {
+  if (accessibleIds === null) return;
+  const shipment = await tenant.db.inboundShipment.findUnique({
+    where: { id: shipmentId },
+    select: { warehouseId: true },
+  });
+  if (!shipment) throw new Error("Shipment not found");
+  if (shipment.warehouseId && !accessibleIds.includes(shipment.warehouseId)) {
+    throw new Error("Access denied: shipment is outside your warehouse access");
+  }
+}
+
 export async function getShipments(status?: string) {
   if (config.useMockData)
     return status ? mockShipments.filter((s) => s.status === status) : mockShipments;
@@ -48,7 +68,9 @@ export async function getShipments(status?: string) {
 export async function getShipment(id: string) {
   if (config.useMockData) return mockShipments.find((s) => s.id === id) ?? null;
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  await assertShipmentWarehouseAccess(tenant, id, accessibleIds);
   return tenant.db.inboundShipment.findUnique({
     where: { id },
     include: {
@@ -66,8 +88,12 @@ export async function createShipment(data: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001", ...(data as any) };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
   const parsed = inboundShipmentSchema.parse(data);
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  if (accessibleIds !== null && parsed.warehouseId && !accessibleIds.includes(parsed.warehouseId)) {
+    throw new Error("Access denied: you do not have access to this warehouse");
+  }
 
   const shipmentNumber = await nextSequence(tenant.db, "ASN");
 
@@ -109,8 +135,10 @@ export async function addShipmentLine(shipmentId: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
   const parsed = shipmentLineSchema.parse(data);
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  await assertShipmentWarehouseAccess(tenant, shipmentId, accessibleIds);
   const product = await tenant.db.product.findUniqueOrThrow({
     where: { id: parsed.productId },
     select: {
@@ -165,7 +193,9 @@ export async function updateShipmentStatus(
 ) {
   if (config.useMockData) return { id, status };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  await assertShipmentWarehouseAccess(tenant, id, accessibleIds);
 
   const current = await tenant.db.inboundShipment.findUniqueOrThrow({
     where: { id },
@@ -247,8 +277,10 @@ export async function receiveLine(shipmentId: string, data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", shipmentId, ...(data as any) };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
   const parsed = receiveLineSchema.parse(data);
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  await assertShipmentWarehouseAccess(tenant, shipmentId, accessibleIds);
 
   // Atomic: create receiving transaction + update line qty + transition shipment status
   const transaction = await tenant.db.$transaction(
@@ -408,8 +440,12 @@ async function captureBillingOnReceive(tenant: TenantContext, shipmentId: string
 export async function getDiscrepancies() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   return tenant.db.receivingDiscrepancy.findMany({
+    where: {
+      ...(accessibleIds !== null ? { shipment: { warehouseId: { in: accessibleIds } } } : {}),
+    },
     include: {
       shipment: { select: { shipmentNumber: true } },
     },
@@ -421,8 +457,10 @@ export async function createDiscrepancy(data: unknown) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (config.useMockData) return { id: "mock-new", ...(data as any) };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
   const parsed = discrepancySchema.parse(data);
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  await assertShipmentWarehouseAccess(tenant, parsed.shipmentId, accessibleIds);
 
   const disc = await tenant.db.receivingDiscrepancy.create({
     data: parsed,
@@ -442,7 +480,18 @@ export async function createDiscrepancy(data: unknown) {
 export async function resolveDiscrepancy(id: string, resolution: string) {
   if (config.useMockData) return { id, status: "resolved", resolution };
 
-  const { user, tenant } = await requireTenantContext("receiving:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("receiving:write");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  if (accessibleIds !== null) {
+    const existing = await tenant.db.receivingDiscrepancy.findUnique({
+      where: { id },
+      select: { shipment: { select: { warehouseId: true } } },
+    });
+    if (!existing) throw new Error("Discrepancy not found");
+    if (existing.shipment.warehouseId && !accessibleIds.includes(existing.shipment.warehouseId)) {
+      throw new Error("Access denied: discrepancy is outside your warehouse access");
+    }
+  }
 
   const disc = await tenant.db.receivingDiscrepancy.update({
     where: { id },

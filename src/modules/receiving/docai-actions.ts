@@ -206,7 +206,11 @@ export async function saveReview(jobId: string, reviewedData: Record<string, unk
  * Create a shipment from reviewed extraction data.
  * Takes the reviewed (or original extracted) data and creates an InboundShipment.
  */
-export async function createShipmentFromExtraction(jobId: string, clientId: string) {
+export async function createShipmentFromExtraction(
+  jobId: string,
+  clientId: string,
+  warehouseId: string
+) {
   if (config.useMockData) {
     return { id: "mock-new", shipmentNumber: "ASN-MOCK-0001" };
   }
@@ -232,6 +236,7 @@ export async function createShipmentFromExtraction(jobId: string, clientId: stri
     data: {
       shipmentNumber,
       clientId,
+      warehouseId,
       status: "draft",
       carrier: data.carrier?.value || null,
       trackingNumber: data.trackingNumber?.value || null,

@@ -165,9 +165,31 @@ export async function getOperationsBoard() {
       _count: { id: true },
     }),
 
-    // Outbound shipments awaiting dock release
+    // Outbound shipments awaiting dock release — scoped via pick task → bin → warehouse chain
     db.shipment.findMany({
-      where: { status: "label_created", releasedAt: null },
+      where: {
+        status: "label_created",
+        releasedAt: null,
+        ...(accessibleIds !== null
+          ? {
+              order: {
+                picks: {
+                  some: {
+                    lines: {
+                      some: {
+                        bin: {
+                          shelf: {
+                            rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }
+          : {}),
+      },
       include: {
         order: {
           select: {
@@ -180,9 +202,30 @@ export async function getOperationsBoard() {
       orderBy: { createdAt: "asc" },
     }),
 
-    // Shipments released at the dock today
+    // Shipments released at the dock today — scoped via pick task → bin → warehouse chain
     db.shipment.findMany({
-      where: { releasedAt: { gte: today } },
+      where: {
+        releasedAt: { gte: today },
+        ...(accessibleIds !== null
+          ? {
+              order: {
+                picks: {
+                  some: {
+                    lines: {
+                      some: {
+                        bin: {
+                          shelf: {
+                            rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }
+          : {}),
+      },
       select: {
         id: true,
         shipmentNumber: true,
