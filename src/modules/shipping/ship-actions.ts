@@ -11,16 +11,31 @@ export async function getLabelDownloadUrl(
   shipmentId: string
 ): Promise<{ url?: string; error?: string }> {
   try {
-    const { tenant } = await requireTenantContext("shipping:read");
-    const { getPresignedDownloadUrl } = await import("@/lib/s3/client");
+    const { tenant, role, warehouseAccess } = await requireTenantContext("shipping:read");
 
     const shipment = await tenant.db.shipment.findUnique({
       where: { id: shipmentId },
-      select: { labelUrl: true },
+      select: { labelUrl: true, orderId: true },
     });
 
-    if (!shipment?.labelUrl) return { error: "No label on file" };
+    if (!shipment) return { error: "Shipment not found" };
 
+    // Warehouse scope guard — same chain as write paths.
+    const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+    if (accessibleIds !== null) {
+      const pickLine = await tenant.db.pickTaskLine.findFirst({
+        where: {
+          task: { orderId: shipment.orderId },
+          bin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        },
+        select: { id: true },
+      });
+      if (!pickLine) return { error: "Access denied: shipment is outside your warehouse access" };
+    }
+
+    if (!shipment.labelUrl) return { error: "No label on file" };
+
+    const { getPresignedDownloadUrl } = await import("@/lib/s3/client");
     const url = await getPresignedDownloadUrl(shipment.labelUrl, 300); // 5 min
     return { url };
   } catch (err) {
