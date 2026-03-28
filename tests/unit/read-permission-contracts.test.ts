@@ -168,10 +168,10 @@ describe("read permission contracts", () => {
     expect(mockRequireTenantContext).toHaveBeenCalledWith("inventory:read");
   });
 
-  it("requires shipping:read for picking reads", async () => {
+  it("requires orders:read for picking reads", async () => {
     const { getPickTasks } = await import("@/modules/picking/actions");
     await getPickTasks();
-    expect(mockRequireTenantContext).toHaveBeenCalledWith("shipping:read");
+    expect(mockRequireTenantContext).toHaveBeenCalledWith("orders:read");
   });
 
   it("requires inventory:read for replenishment reads", async () => {

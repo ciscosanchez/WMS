@@ -134,30 +134,17 @@ describe("Transactional inventory integrity", () => {
       );
     });
 
-    it("skips allocation when no bin has enough stock (no crash)", async () => {
+    it("fails cleanly when no bin has enough stock", async () => {
       mockDb.order.findUniqueOrThrow.mockResolvedValue(existingOrder);
       mockDb.order.update.mockResolvedValue({ ...existingOrder, status: "picking" });
 
       mockTxPrisma.inventory.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-      mockTxPrisma.pickTask.create.mockResolvedValue({ id: "pick-1" });
 
-      await updateOrderStatus(orderId, "picking");
-
-      expect(mockTxPrisma.pickTask.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            orderId,
-            status: "pending",
-            lines: {
-              create: expect.arrayContaining([
-                expect.objectContaining({ productId: "prod-1", binId: null, quantity: 5 }),
-                expect.objectContaining({ productId: "prod-2", binId: null, quantity: 3 }),
-              ]),
-            },
-          }),
-        })
+      await expect(updateOrderStatus(orderId, "picking")).rejects.toThrow(
+        "Insufficient available inventory for product prod-1"
       );
 
+      expect(mockTxPrisma.pickTask.create).not.toHaveBeenCalled();
       expect(mockTxPrisma.inventory.update).not.toHaveBeenCalled();
     });
 
