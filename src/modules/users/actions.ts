@@ -881,6 +881,18 @@ export async function removeWarehouseAssignment(
     });
     if (!membership) return { error: "User not found in this tenant" };
 
+    // Guard: removing the last assignment would silently grant unrestricted access.
+    // Require at least one assignment to remain; to fully revoke access, remove the user.
+    const assignmentCount = await publicDb.tenantUserWarehouse.count({
+      where: { tenantUserId: membership.id },
+    });
+    if (assignmentCount <= 1) {
+      return {
+        error:
+          "Cannot remove the last warehouse assignment — this would grant unrestricted access. Remove the user from this tenant instead.",
+      };
+    }
+
     await publicDb.tenantUserWarehouse.deleteMany({
       where: { tenantUserId: membership.id, warehouseId },
     });
