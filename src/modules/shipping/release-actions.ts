@@ -88,14 +88,28 @@ export async function releaseShipment(
   if (config.useMockData) return {};
 
   try {
-    const { user, tenant } = await requireTenantContext("shipping:write");
+    const { user, tenant, role, warehouseAccess } = await requireTenantContext("shipping:write");
 
     const shipment = await tenant.db.shipment.findUnique({
       where: { id: shipmentId },
-      select: { status: true, releasedAt: true },
+      select: { status: true, releasedAt: true, orderId: true },
     });
     if (!shipment) return { error: "Shipment not found" };
     if (shipment.releasedAt) return {}; // Already released — idempotent
+
+    // Warehouse scope guard: scoped actors may only release orders whose pick lines
+    // are in their accessible warehouses. Fail-closed: no pick lines found = deny.
+    const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+    if (accessibleIds !== null) {
+      const pickLine = await tenant.db.pickTaskLine.findFirst({
+        where: {
+          task: { orderId: shipment.orderId },
+          bin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        },
+        select: { id: true },
+      });
+      if (!pickLine) return { error: "Access denied: shipment is outside your warehouse access" };
+    }
 
     // Call markShipmentShipped FIRST — only stamp releasedAt if it succeeds.
     // Stamping first would leave the shipment in a stuck half-released state on failure.

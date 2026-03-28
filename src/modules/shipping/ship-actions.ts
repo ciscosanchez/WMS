@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
 
@@ -39,7 +40,7 @@ export async function markShipmentShipped(
   if (config.useMockData) return {};
 
   try {
-    const { user, tenant } = await requireTenantContext("shipping:write");
+    const { user, tenant, role, warehouseAccess } = await requireTenantContext("shipping:write");
 
     const shipment = await tenant.db.shipment.findUnique({
       where: { id: shipmentId },
@@ -49,6 +50,20 @@ export async function markShipmentShipped(
 
     // Idempotency guard: if already shipped, return success (no double-decrement)
     if (shipment.status === "shipped") return {};
+
+    // Warehouse scope guard: scoped actors may only ship orders whose pick lines
+    // are in their accessible warehouses. Fail-closed: no pick lines found = deny.
+    const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+    if (accessibleIds !== null) {
+      const pickLine = await tenant.db.pickTaskLine.findFirst({
+        where: {
+          task: { orderId: shipment.orderId },
+          bin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+        },
+        select: { id: true },
+      });
+      if (!pickLine) throw new Error("Access denied: shipment is outside your warehouse access");
+    }
 
     // Atomic: update shipment + order status + decrement inventory + write ledger
     await tenant.db.$transaction(

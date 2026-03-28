@@ -38,7 +38,8 @@ async function assertShipmentWarehouseAccess(
     select: { warehouseId: true },
   });
   if (!shipment) throw new Error("Shipment not found");
-  if (shipment.warehouseId && !accessibleIds.includes(shipment.warehouseId)) {
+  // Fail-closed: a null warehouseId (legacy/pre-migration row) is also denied for scoped actors.
+  if (!shipment.warehouseId || !accessibleIds.includes(shipment.warehouseId)) {
     throw new Error("Access denied: shipment is outside your warehouse access");
   }
 }
