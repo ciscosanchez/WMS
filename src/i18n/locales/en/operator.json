@@ -9,7 +9,8 @@
       "count": "Count",
       "interleave": "Route",
       "inspect": "Inspect",
-      "shift": "Shift"
+      "shift": "Shift",
+      "release": "Release"
     },
     "shift": {
       "clockIn": "Clock In",
@@ -182,6 +183,28 @@
       "failedSubmitCount": "Failed to submit count",
       "counting": "Counting: {barcode}",
       "binNotFound": "Bin not found: {barcode}"
+    },
+    "release": {
+      "title": "Release",
+      "subtitle": "Verify shipment at dock before carrier pickup",
+      "scanOrderBarcode": "Scan order or shipment barcode...",
+      "scanEachItem": "SCAN EACH ITEM TO VERIFY",
+      "scanItemBarcode": "Scan item barcode or SKU...",
+      "product": "Product",
+      "qty": "Qty",
+      "verified": "Verified",
+      "tap": "Tap",
+      "releaseToCarrier": "Release to Carrier",
+      "awaitingRelease": "AWAITING RELEASE ({count})",
+      "failedLoadQueue": "Failed to load release queue",
+      "noShipmentFound": "No shipment found for: {value}",
+      "shipmentSelected": "Shipment: {number}",
+      "itemNotInShipment": "Item not in this shipment: {value}",
+      "itemVerified": "Verified: {sku}",
+      "releaseSuccess": "Released: {number}",
+      "releaseFailed": "Release failed",
+      "loading": "Loading release queue...",
+      "noShipments": "No shipments awaiting release."
     }
   }
 }

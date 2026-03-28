@@ -9,7 +9,8 @@
       "count": "Contar",
       "interleave": "Ruta",
       "inspect": "Inspección",
-      "shift": "Turno"
+      "shift": "Turno",
+      "release": "Liberar"
     },
     "shift": {
       "clockIn": "Registrar Entrada",
@@ -182,6 +183,28 @@
       "failedSubmitCount": "Error al enviar conteo",
       "counting": "Contando: {barcode}",
       "binNotFound": "Bin no encontrado: {barcode}"
+    },
+    "release": {
+      "title": "Liberar",
+      "subtitle": "Verifica el envío en el muelle antes de la recolección del transportista",
+      "scanOrderBarcode": "Escanea el código de orden o envío...",
+      "scanEachItem": "ESCANEA CADA ARTÍCULO PARA VERIFICAR",
+      "scanItemBarcode": "Escanea código de artículo o SKU...",
+      "product": "Producto",
+      "qty": "Cant.",
+      "verified": "Verificado",
+      "tap": "Toca",
+      "releaseToCarrier": "Liberar al Transportista",
+      "awaitingRelease": "EN ESPERA DE LIBERACIÓN ({count})",
+      "failedLoadQueue": "Error al cargar la cola de liberación",
+      "noShipmentFound": "No se encontró envío para: {value}",
+      "shipmentSelected": "Envío: {number}",
+      "itemNotInShipment": "Artículo no en este envío: {value}",
+      "itemVerified": "Verificado: {sku}",
+      "releaseSuccess": "Liberado: {number}",
+      "releaseFailed": "Error al liberar",
+      "loading": "Cargando cola de liberación...",
+      "noShipments": "No hay envíos en espera de liberación."
     }
   }
 }

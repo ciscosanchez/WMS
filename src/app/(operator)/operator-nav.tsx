@@ -16,6 +16,7 @@ import {
   Combine,
   Sun,
   LogIn,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OfflineIndicator } from "@/components/shared/offline-indicator";
@@ -29,6 +30,7 @@ const navKeys = [
   { href: "/receive", key: "receive" as const, icon: PackageOpen },
   { href: "/pick", key: "pick" as const, icon: ScanLine },
   { href: "/pack", key: "pack" as const, icon: Package },
+  { href: "/release", key: "release" as const, icon: Truck },
   { href: "/move", key: "move" as const, icon: ArrowLeftRight },
   { href: "/count", key: "count" as const, icon: ListChecks },
   { href: "/interleave", key: "interleave" as const, icon: Combine },

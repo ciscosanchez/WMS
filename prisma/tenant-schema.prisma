@@ -834,6 +834,8 @@ model Shipment {
   status          String   @default("pending") // pending, label_created, shipped, delivered
   shippedAt       DateTime? @map("shipped_at")
   deliveredAt     DateTime? @map("delivered_at")
+  releasedAt      DateTime? @map("released_at")
+  releasedBy      String?   @map("released_by")
   createdAt       DateTime  @default(now()) @map("created_at")
 
   order            Order              @relation(fields: [orderId], references: [id])
@@ -849,6 +851,7 @@ model Shipment {
 
   @@index([orderId])
   @@index([shippedAt])
+  @@index([releasedAt])
   @@map("shipments")
 }
 
