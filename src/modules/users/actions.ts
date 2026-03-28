@@ -73,14 +73,19 @@ async function getAdminContext() {
 }
 
 export async function getTenantUsers(tenantId: string) {
-  const { tenant } = await requireTenantContext("users:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("users:read");
   if (tenant.tenantId !== tenantId) throw new Error("Forbidden");
+
+  const actorAccessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   return publicDb.tenantUser.findMany({
     where: { tenantId },
     include: {
       user: { select: { id: true, name: true, email: true, createdAt: true, isSuperadmin: true } },
-      warehouseAssignments: true,
+      // Only return assignments for warehouses the actor can access — prevents
+      // cross-warehouse assignment disclosure to scoped admins.
+      warehouseAssignments:
+        actorAccessibleIds !== null ? { where: { warehouseId: { in: actorAccessibleIds } } } : true,
     },
     orderBy: { user: { createdAt: "asc" } },
   });
