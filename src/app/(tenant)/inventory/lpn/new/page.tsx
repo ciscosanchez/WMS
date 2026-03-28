@@ -1,16 +1,16 @@
-import { getBins } from "@/modules/warehouse/actions";
-import { getProducts } from "@/modules/products/actions";
+import { getBinChoices } from "@/modules/warehouse/actions";
+import { getProductChoices } from "@/modules/products/actions";
 import { getOperationalAttributeDefinitions } from "@/modules/attributes/actions";
 import { NewLpnClient } from "./new-lpn-client";
 
-type BinOption = Awaited<ReturnType<typeof getBins>>[number];
-type ProductOption = Awaited<ReturnType<typeof getProducts>>[number];
+type BinOption = Awaited<ReturnType<typeof getBinChoices>>[number];
+type ProductOption = Awaited<ReturnType<typeof getProductChoices>>[number];
 type AttributeDefinition = Awaited<ReturnType<typeof getOperationalAttributeDefinitions>>[number];
 
 export default async function NewLpnPage() {
   const [bins, products, attributeDefinitions] = await Promise.all([
-    getBins(),
-    getProducts(),
+    getBinChoices(),
+    getProductChoices(),
     getOperationalAttributeDefinitions("lpn", "inventory:write"),
   ]);
 

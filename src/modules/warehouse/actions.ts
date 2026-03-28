@@ -212,6 +212,19 @@ export async function getBins(_warehouseId?: string) {
   });
 }
 
+export async function getBinChoices() {
+  if (config.useMockData) return [];
+
+  const { tenant } = await getReadContext();
+  return tenant.db.bin.findMany({
+    select: {
+      id: true,
+      code: true,
+    },
+    orderBy: { code: "asc" },
+  });
+}
+
 export async function getBin(id: string) {
   if (config.useMockData) return null;
 

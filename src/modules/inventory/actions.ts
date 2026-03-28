@@ -40,6 +40,99 @@ function toSearchableAttributeText(value: RawInventoryAttributeValue) {
   return value.textValue ?? "";
 }
 
+type InventoryRowBase = {
+  id: string;
+  productId: string;
+  binId: string;
+  lotNumber: string | null;
+  serialNumber: string | null;
+  expirationDate: Date | null;
+  onHand: number;
+  allocated: number;
+  available: number;
+  uom: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type InventoryProductChoice = {
+  id: string;
+  sku: string;
+  name: string;
+  clientId: string;
+};
+
+type InventoryBinChoice = {
+  id: string;
+  barcode: string;
+};
+
+type InventoryClientChoice = {
+  id: string;
+  code: string;
+};
+
+async function attachInventoryRelations(tenantDb: TenantDb, rows: InventoryRowBase[]) {
+  const productIds = [...new Set(rows.map((row) => row.productId))];
+  const binIds = [...new Set(rows.map((row) => row.binId))];
+
+  const [products, bins] = (await Promise.all([
+    productIds.length
+      ? tenantDb.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            clientId: true,
+          },
+        })
+      : Promise.resolve([]),
+    binIds.length
+      ? tenantDb.bin.findMany({
+          where: { id: { in: binIds } },
+          select: {
+            id: true,
+            barcode: true,
+          },
+        })
+      : Promise.resolve([]),
+  ])) as [InventoryProductChoice[], InventoryBinChoice[]];
+
+  const clientIds = [...new Set(products.map((product) => product.clientId).filter(Boolean))];
+  const clients = (clientIds.length
+    ? await tenantDb.client.findMany({
+        where: { id: { in: clientIds } },
+        select: {
+          id: true,
+          code: true,
+        },
+      })
+    : []) as InventoryClientChoice[];
+
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  const binMap = new Map(bins.map((bin) => [bin.id, bin]));
+  const clientMap = new Map(clients.map((client) => [client.id, client]));
+
+  return rows.map((row) => {
+    const product = productMap.get(row.productId);
+    const client = product ? clientMap.get(product.clientId) : null;
+    const bin = binMap.get(row.binId);
+
+    return {
+      ...row,
+      product: {
+        sku: product?.sku ?? "UNKNOWN",
+        name: product?.name ?? "Missing product",
+        client: { code: client?.code ?? "-" },
+      },
+      bin: {
+        barcode: bin?.barcode ?? "Missing bin",
+      },
+    };
+  });
+}
+
 async function getInventoryIdsMatchingAttributeFilter(
   tenantDb: TenantDb,
   attributeDefinitionId: string,
@@ -89,7 +182,7 @@ export async function getInventory(filters?: {
         )
       : null;
 
-  return tenant.db.inventory.findMany({
+  const rows = await tenant.db.inventory.findMany({
     where: {
       ...(filters?.productId ? { productId: filters.productId } : {}),
       ...(filters?.binId ? { binId: filters.binId } : {}),
@@ -105,28 +198,10 @@ export async function getInventory(filters?: {
           }
         : {}),
     },
-    include: {
-      product: { include: { client: true } },
-      bin: {
-        include: {
-          shelf: {
-            include: {
-              rack: {
-                include: {
-                  aisle: {
-                    include: {
-                      zone: { include: { warehouse: true } },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
     orderBy: { updatedAt: "desc" },
   });
+
+  return attachInventoryRelations(tenantDb, rows as InventoryRowBase[]);
 }
 
 export async function getInventoryPaginated(opts: {
@@ -186,29 +261,9 @@ export async function getInventoryPaginated(opts: {
 
   const { skip, take } = paginateQuery(page, pageSize);
 
-  const [data, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     tenant.db.inventory.findMany({
       where,
-      include: {
-        product: { include: { client: true } },
-        bin: {
-          include: {
-            shelf: {
-              include: {
-                rack: {
-                  include: {
-                    aisle: {
-                      include: {
-                        zone: { include: { warehouse: true } },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
       orderBy: { updatedAt: "desc" },
       skip,
       take,
@@ -216,6 +271,7 @@ export async function getInventoryPaginated(opts: {
     tenant.db.inventory.count({ where }),
   ]);
 
+  const data = await attachInventoryRelations(tenantDb, rows as InventoryRowBase[]);
   return buildPaginatedResult(data, total, page, pageSize);
 }
 

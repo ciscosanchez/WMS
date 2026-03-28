@@ -20,16 +20,6 @@ interface InventoryRow {
   };
   bin: {
     barcode: string;
-    shelf: {
-      rack: {
-        aisle: {
-          zone: {
-            code: string;
-            warehouse: { code: string };
-          };
-        };
-      };
-    };
   };
   operationalAttributes?: Array<{ key: string; label: string; value: string }>;
 }

@@ -33,7 +33,9 @@ export function ShopifyInventorySyncButton({ clientId }: Props) {
     startTransition(async () => {
       const result = await syncInventoryToShopify(clientId);
       if ("error" in result) {
-        toast.error(formatShopifyInventorySyncError(result.error));
+        toast.error(
+          formatShopifyInventorySyncError(result.error ?? "Failed to sync inventory to Shopify.")
+        );
       } else {
         toast.success(`Synced ${result.synced} SKU${result.synced !== 1 ? "s" : ""} to Shopify`);
       }

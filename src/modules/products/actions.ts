@@ -23,6 +23,28 @@ export async function getProducts(clientId?: string) {
   });
 }
 
+export async function getProductChoices(clientId?: string) {
+  if (config.useMockData)
+    return (clientId ? mockProducts.filter((p) => p.clientId === clientId) : mockProducts).map(
+      (product) => ({
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+      })
+    );
+
+  const { tenant } = await getReadContext();
+  return tenant.db.product.findMany({
+    where: clientId ? { clientId } : undefined,
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+    },
+    orderBy: { sku: "asc" },
+  });
+}
+
 export async function getProduct(id: string) {
   if (config.useMockData) return mockProducts.find((p) => p.id === id) ?? null;
 
