@@ -12,7 +12,12 @@
  */
 
 import type { TenantRole } from "../../node_modules/.prisma/public-client";
-import { getPermissions } from "@/lib/auth/rbac";
+import {
+  getPermissions,
+  getEffectiveWarehouseRole,
+  getAccessibleWarehouseIds,
+  type WarehouseAccess,
+} from "@/lib/auth/rbac";
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -332,7 +337,75 @@ describe("RBAC consistency — PERMISSION_LEVEL maps", () => {
     });
   });
 
-  // ── 5. session.ts and context.ts PERMISSION_LEVEL maps are in sync ────────
+  // ── 5. Warehouse isolation invariants ────────────────────────────────────
+
+  describe("warehouse isolation invariants", () => {
+    const WH_A = "wh-a";
+    const WH_B = "wh-b";
+
+    describe("admin always bypasses warehouse restrictions", () => {
+      it("getAccessibleWarehouseIds returns null for admin regardless of assignments", () => {
+        const access: WarehouseAccess[] = [{ warehouseId: WH_A, role: null }];
+        expect(getAccessibleWarehouseIds("admin", access)).toBeNull();
+      });
+
+      it("getEffectiveWarehouseRole returns admin for any warehouse", () => {
+        const access: WarehouseAccess[] = [{ warehouseId: WH_A, role: "viewer" }];
+        expect(getEffectiveWarehouseRole("admin", access, WH_B)).toBe("admin");
+      });
+    });
+
+    describe("unrestricted users (null or empty assignments) access all warehouses", () => {
+      it.each(["manager", "warehouse_worker", "viewer"] as TenantRole[])(
+        "%s with null assignments gets tenant role at any warehouse",
+        (role) => {
+          expect(getEffectiveWarehouseRole(role, null, WH_A)).toBe(role);
+          expect(getEffectiveWarehouseRole(role, null, WH_B)).toBe(role);
+          expect(getAccessibleWarehouseIds(role, null)).toBeNull();
+        }
+      );
+
+      it("empty assignments array treated same as null", () => {
+        expect(getEffectiveWarehouseRole("manager", [], WH_A)).toBe("manager");
+        expect(getAccessibleWarehouseIds("manager", [])).toBeNull();
+      });
+    });
+
+    describe("restricted users only access assigned warehouses", () => {
+      const access: WarehouseAccess[] = [{ warehouseId: WH_A, role: null }];
+
+      it("returns null for an unassigned warehouse — no access granted", () => {
+        expect(getEffectiveWarehouseRole("manager", access, WH_B)).toBeNull();
+      });
+
+      it("returns tenant role for assigned warehouse with null warehouse role", () => {
+        expect(getEffectiveWarehouseRole("manager", access, WH_A)).toBe("manager");
+      });
+
+      it("returns warehouse-specific role when set (can be lower than tenant role)", () => {
+        const downgradedAccess: WarehouseAccess[] = [{ warehouseId: WH_A, role: "viewer" }];
+        expect(getEffectiveWarehouseRole("manager", downgradedAccess, WH_A)).toBe("viewer");
+      });
+
+      it("returns warehouse-specific role when set (can be higher than tenant role)", () => {
+        const upgradedAccess: WarehouseAccess[] = [{ warehouseId: WH_A, role: "manager" }];
+        expect(getEffectiveWarehouseRole("viewer", upgradedAccess, WH_A)).toBe("manager");
+      });
+
+      it("getAccessibleWarehouseIds returns exactly the assigned IDs", () => {
+        const multiAccess: WarehouseAccess[] = [
+          { warehouseId: WH_A, role: null },
+          { warehouseId: WH_B, role: "viewer" },
+        ];
+        const ids = getAccessibleWarehouseIds("manager", multiAccess);
+        expect(ids).toHaveLength(2);
+        expect(ids).toContain(WH_A);
+        expect(ids).toContain(WH_B);
+      });
+    });
+  });
+
+  // ── 6. session.ts and context.ts PERMISSION_LEVEL maps are in sync ──────────
 
   describe("session.ts and context.ts enforce the same levels", () => {
     // We cannot directly compare the maps since they are not exported.

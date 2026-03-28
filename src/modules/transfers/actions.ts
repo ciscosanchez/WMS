@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { transferOrderSchema, transferOrderLineSchema } from "./schemas";
@@ -17,10 +18,18 @@ async function getContext() {
 export async function getTransferOrders(status?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await getContext();
+  const { tenant, role, warehouseAccess } = await getContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.transferOrder.findMany({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    where: status ? { status: status as any } : undefined,
+    where: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(status ? { status: status as any } : {}),
+      // Restrict to transfers involving at least one accessible warehouse
+      ...(accessibleIds !== null
+        ? { OR: [{ fromWarehouseId: { in: accessibleIds } }, { toWarehouseId: { in: accessibleIds } }] }
+        : {}),
+    },
     include: {
       fromWarehouse: true,
       toWarehouse: true,
@@ -33,8 +42,10 @@ export async function getTransferOrders(status?: string) {
 export async function getTransferOrder(id: string) {
   if (config.useMockData) return null;
 
-  const { tenant } = await getContext();
-  return tenant.db.transferOrder.findUnique({
+  const { tenant, role, warehouseAccess } = await getContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
+  const transfer = await tenant.db.transferOrder.findUnique({
     where: { id },
     include: {
       fromWarehouse: true,
@@ -42,6 +53,17 @@ export async function getTransferOrder(id: string) {
       lines: { include: { product: true } },
     },
   });
+
+  if (
+    transfer &&
+    accessibleIds !== null &&
+    !accessibleIds.includes(transfer.fromWarehouseId) &&
+    !accessibleIds.includes(transfer.toWarehouseId)
+  ) {
+    return null;
+  }
+
+  return transfer;
 }
 
 export async function createTransferOrder(data: unknown, lines: unknown[]) {

@@ -375,6 +375,7 @@ export async function exportTenantAccessReview() {
     where: { tenantId: tenant.tenantId },
     include: {
       user: { select: { id: true, name: true, email: true, isSuperadmin: true } },
+      warehouseAssignments: { select: { warehouseId: true, role: true } },
     },
     orderBy: { user: { createdAt: "asc" } },
   });
@@ -406,6 +407,15 @@ export async function exportTenantAccessReview() {
       ? (clientMap.get(member.portalClientId) ?? null)
       : null;
 
+    const warehouseScope =
+      member.role === "admin" || member.user.isSuperadmin
+        ? "Unrestricted (admin)"
+        : member.warehouseAssignments.length === 0
+          ? "Unrestricted"
+          : member.warehouseAssignments
+              .map((wa) => `${wa.warehouseId}${wa.role ? ` (${wa.role})` : ""}`)
+              .join("; ");
+
     return {
       userId: member.user.id,
       name: member.user.name,
@@ -422,6 +432,7 @@ export async function exportTenantAccessReview() {
       addedPermissions: diff.added,
       removedPermissions: diff.removed,
       riskFlags: risks.map((risk) => risk.message),
+      warehouseScope,
     };
   });
 }
@@ -432,6 +443,7 @@ const ACCESS_REVIEW_COLUMNS: ExportColumn[] = [
   { key: "role", header: "Role" },
   { key: "personas", header: "Personas" },
   { key: "portalClient", header: "Portal Client" },
+  { key: "warehouseScope", header: "Warehouse Scope" },
   { key: "grants", header: "Grants" },
   { key: "denies", header: "Denies" },
   { key: "effectivePermissionCount", header: "Effective Permissions" },
@@ -451,6 +463,7 @@ export async function exportTenantAccessReviewCsv(): Promise<Response> {
       portalClient: row.portalClientName
         ? `${row.portalClientName}${row.portalClientCode ? ` (${row.portalClientCode})` : ""}`
         : "",
+      warehouseScope: row.warehouseScope,
       grants: row.grants.join("; "),
       denies: row.denies.join("; "),
       effectivePermissionCount: row.effectivePermissionCount,

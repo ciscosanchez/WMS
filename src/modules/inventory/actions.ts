@@ -2,6 +2,7 @@
 
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { mockInventory, mockTransactions } from "@/lib/mock-data";
 import {
   type PaginatedResult,
@@ -15,6 +16,16 @@ import { asTenantDb, type TenantDb } from "@/lib/tenant/db-types";
 
 async function getReadContext() {
   return requireTenantContext("inventory:read");
+}
+
+/** Returns a Prisma `where` clause fragment that scopes inventory records to
+ *  accessible warehouses via the bin→shelf→rack→aisle→zone chain.
+ *  Returns {} (no filter) when the user is unrestricted. */
+function warehouseFilter(accessibleIds: string[] | null) {
+  if (accessibleIds === null) return {};
+  return {
+    bin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+  };
 }
 
 type RawInventoryAttributeValue = {
@@ -173,7 +184,8 @@ export async function getInventory(filters?: {
 }) {
   if (config.useMockData) return mockInventory;
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const tenantDb = asTenantDb(tenant.db);
   const inventoryIds =
     filters?.attributeDefinitionId && filters.attributeValue
@@ -186,6 +198,7 @@ export async function getInventory(filters?: {
 
   const rows = await tenant.db.inventory.findMany({
     where: {
+      ...warehouseFilter(accessibleIds),
       ...(filters?.productId ? { productId: filters.productId } : {}),
       ...(filters?.binId ? { binId: filters.binId } : {}),
       ...(inventoryIds ? { id: { in: inventoryIds } } : {}),
@@ -234,7 +247,8 @@ export async function getInventoryPaginated(opts: {
     return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
   }
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const tenantDb = asTenantDb(tenant.db);
   const inventoryIds =
     opts.attributeDefinitionId && opts.attributeValue
@@ -246,6 +260,7 @@ export async function getInventoryPaginated(opts: {
       : null;
 
   const where = {
+    ...warehouseFilter(accessibleIds),
     ...(opts.productId ? { productId: opts.productId } : {}),
     ...(opts.binId ? { binId: opts.binId } : {}),
     ...(inventoryIds ? { id: { in: inventoryIds } } : {}),
@@ -283,10 +298,16 @@ export async function getInventoryTransactions(filters?: { productId?: string; t
       ? mockTransactions.filter((t) => t.type === filters.type)
       : mockTransactions;
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  const txBinFilter =
+    accessibleIds !== null
+      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      : {};
 
   return tenant.db.inventoryTransaction.findMany({
     where: {
+      ...txBinFilter,
       ...(filters?.productId ? { productId: filters.productId } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(filters?.type ? { type: filters.type as any } : {}),
@@ -331,9 +352,15 @@ export async function getInventoryTransactionsPaginated(opts: {
     return buildPaginatedResult(filtered.slice(skip, skip + take), total, page, pageSize);
   }
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+  const txBinFilter =
+    accessibleIds !== null
+      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      : {};
 
   const where = {
+    ...txBinFilter,
     ...(opts.productId ? { productId: opts.productId } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(opts.type ? { type: opts.type as any } : {}),
@@ -385,9 +412,11 @@ export async function getInventoryCursor(opts: {
     );
   }
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const where = {
+    ...warehouseFilter(accessibleIds),
     ...(opts.productId ? { productId: opts.productId } : {}),
     ...(opts.binId ? { binId: opts.binId } : {}),
     ...(opts.search
@@ -450,9 +479,17 @@ export async function getTransactionsCursor(opts: {
     );
   }
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
+  // Transactions filter via fromBin (the source bin is in an accessible warehouse)
+  const binFilter =
+    accessibleIds !== null
+      ? { fromBin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } } }
+      : {};
 
   const where = {
+    ...binFilter,
     ...(opts.productId ? { productId: opts.productId } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(opts.type ? { type: opts.type as any } : {}),
@@ -484,12 +521,14 @@ export async function getTransactionsCursor(opts: {
 export async function getExpiringInventory(daysAhead: number = 30) {
   if (config.useMockData) return [];
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + daysAhead);
 
   return tenant.db.inventory.findMany({
     where: {
+      ...warehouseFilter(accessibleIds),
       expirationDate: { lte: cutoff },
       available: { gt: 0 },
     },
