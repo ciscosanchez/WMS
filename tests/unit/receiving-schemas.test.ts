@@ -7,8 +7,8 @@ import {
 
 describe("Receiving schemas", () => {
   describe("inboundShipmentSchema", () => {
-    it("validates minimal shipment with only clientId", () => {
-      const result = inboundShipmentSchema.safeParse({ clientId: "client-1" });
+    it("validates minimal shipment with clientId and warehouseId", () => {
+      const result = inboundShipmentSchema.safeParse({ clientId: "client-1", warehouseId: "wh-1" });
       expect(result.success).toBe(true);
     });
 
@@ -25,6 +25,7 @@ describe("Receiving schemas", () => {
     it("accepts optional fields", () => {
       const result = inboundShipmentSchema.safeParse({
         clientId: "client-1",
+        warehouseId: "wh-1",
         carrier: "FedEx",
         trackingNumber: "1234567890",
         bolNumber: "BOL-001",
@@ -38,6 +39,7 @@ describe("Receiving schemas", () => {
     it("accepts null optional fields", () => {
       const result = inboundShipmentSchema.safeParse({
         clientId: "client-1",
+        warehouseId: "wh-1",
         carrier: null,
         trackingNumber: null,
         bolNumber: null,

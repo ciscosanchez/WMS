@@ -32,8 +32,9 @@ describe("getEffectiveWarehouseRole", () => {
       expect(getEffectiveWarehouseRole("manager", null, WH_MEMPHIS)).toBe("manager");
     });
 
-    it("returns tenantRole when warehouseAccess is empty array", () => {
-      expect(getEffectiveWarehouseRole("manager", [], WH_MEMPHIS)).toBe("manager");
+    it("returns null (no access) when warehouseAccess is empty array", () => {
+      // [] = fully revoked; no warehouse assignments means no warehouse access
+      expect(getEffectiveWarehouseRole("manager", [], WH_MEMPHIS)).toBeNull();
     });
 
     it("returns tenantRole for warehouse_worker with no restrictions", () => {
@@ -114,8 +115,9 @@ describe("getAccessibleWarehouseIds", () => {
       expect(getAccessibleWarehouseIds("manager", null)).toBeNull();
     });
 
-    it("returns null for manager with empty assignments array", () => {
-      expect(getAccessibleWarehouseIds("manager", [])).toBeNull();
+    it("returns empty array (fully revoked) for manager with empty assignments array", () => {
+      // [] ≠ null; null = unrestricted, [] = no warehouses accessible
+      expect(getAccessibleWarehouseIds("manager", [])).toEqual([]);
     });
 
     it("returns null for warehouse_worker with no assignments", () => {

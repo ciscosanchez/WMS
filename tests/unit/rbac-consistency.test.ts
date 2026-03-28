@@ -360,7 +360,7 @@ describe("RBAC consistency — PERMISSION_LEVEL maps", () => {
       });
     });
 
-    describe("unrestricted users (null or empty assignments) access all warehouses", () => {
+    describe("unrestricted users (null assignments) access all warehouses", () => {
       it.each(["manager", "warehouse_worker", "viewer"] as TenantRole[])(
         "%s with null assignments gets tenant role at any warehouse",
         (role) => {
@@ -369,10 +369,16 @@ describe("RBAC consistency — PERMISSION_LEVEL maps", () => {
           expect(getAccessibleWarehouseIds(role, null)).toBeNull();
         }
       );
+    });
 
-      it("empty assignments array treated same as null", () => {
-        expect(getEffectiveWarehouseRole("manager", [], WH_A)).toBe("manager");
-        expect(getAccessibleWarehouseIds("manager", [])).toBeNull();
+    describe("empty assignments array means fully revoked (not unrestricted)", () => {
+      it("empty array returns null from getEffectiveWarehouseRole (no access)", () => {
+        // null warehouseAccess = unrestricted; [] = explicitly revoked
+        expect(getEffectiveWarehouseRole("manager", [], WH_A)).toBeNull();
+      });
+
+      it("empty array returns [] from getAccessibleWarehouseIds (zero accessible warehouses)", () => {
+        expect(getAccessibleWarehouseIds("manager", [])).toEqual([]);
       });
     });
 

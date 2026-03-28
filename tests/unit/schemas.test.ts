@@ -103,6 +103,7 @@ describe("Zod schemas", () => {
     it("validates minimal shipment", () => {
       const result = inboundShipmentSchema.safeParse({
         clientId: "client-1",
+        warehouseId: "wh-1",
       });
       expect(result.success).toBe(true);
     });
