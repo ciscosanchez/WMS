@@ -76,13 +76,31 @@ model TenantUser {
   portalClientId String?    @map("portal_client_id") // If set, user is a portal user scoped to this client
   permissionOverrides Json  @default("{\"grants\":[],\"denies\":[]}") @map("permission_overrides")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warehouseAssignments TenantUserWarehouse[]
 
   @@unique([tenantId, userId])
   @@index([tenantId])
   @@index([userId])
   @@map("tenant_users")
+}
+
+// Scopes a tenant user to specific warehouses with an optional per-location role.
+// No rows = unrestricted (sees all warehouses at their tenant role).
+// role = null means inherit the tenant-level role at that warehouse.
+// Users with role=admin bypass this table entirely.
+model TenantUserWarehouse {
+  id           String      @id @default(cuid())
+  tenantUserId String      @map("tenant_user_id")
+  warehouseId  String      @map("warehouse_id") // Cross-schema string ref — no DB FK possible
+  role         TenantRole?                       // null = inherit tenant role
+
+  tenantUser TenantUser @relation(fields: [tenantUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantUserId, warehouseId])
+  @@index([tenantUserId])
+  @@map("tenant_user_warehouses")
 }
 
 // ─── NextAuth Tables ────────────────────────────────────
