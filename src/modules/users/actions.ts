@@ -386,13 +386,22 @@ export async function updateUserPermissionOverrides(
 }
 
 export async function exportTenantAccessReview() {
-  const { tenant } = await requireTenantContext("users:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("users:read");
+  const actorAccessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const members = await publicDb.tenantUser.findMany({
     where: { tenantId: tenant.tenantId },
     include: {
       user: { select: { id: true, name: true, email: true, isSuperadmin: true } },
-      warehouseAssignments: { select: { warehouseId: true, role: true } },
+      // Only export assignments the actor can access — prevents cross-warehouse
+      // disclosure via the CSV download path.
+      warehouseAssignments:
+        actorAccessibleIds !== null
+          ? {
+              select: { warehouseId: true, role: true },
+              where: { warehouseId: { in: actorAccessibleIds } },
+            }
+          : { select: { warehouseId: true, role: true } },
     },
     orderBy: { user: { createdAt: "asc" } },
   });
