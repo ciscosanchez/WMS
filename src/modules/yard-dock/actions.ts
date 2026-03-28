@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { assertTransition, APPOINTMENT_TRANSITIONS } from "@/lib/workflow/transitions";
@@ -17,15 +18,22 @@ import {
 export async function getDockDoors(warehouseId?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext("yard-dock:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("yard-dock:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
+  // If caller requested a specific warehouse that isn't accessible, return empty
+  if (warehouseId && accessibleIds && !accessibleIds.includes(warehouseId)) return [];
+
+  const warehouseFilter = warehouseId
+    ? { warehouseId }
+    : accessibleIds
+      ? { warehouseId: { in: accessibleIds } }
+      : {};
+
   return db.dockDoor.findMany({
-    where: {
-      ...(warehouseId ? { warehouseId } : {}),
-      isActive: true,
-    },
+    where: { ...warehouseFilter, isActive: true },
     include: { warehouse: { select: { code: true, name: true } } },
     orderBy: { code: "asc" },
   });
@@ -118,15 +126,22 @@ export async function deleteDockDoor(id: string) {
 export async function getYardSpots(warehouseId?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext("yard-dock:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("yard-dock:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
+  // If caller requested a specific warehouse that isn't accessible, return empty
+  if (warehouseId && accessibleIds && !accessibleIds.includes(warehouseId)) return [];
+
+  const warehouseFilter = warehouseId
+    ? { warehouseId }
+    : accessibleIds
+      ? { warehouseId: { in: accessibleIds } }
+      : {};
+
   return db.yardSpot.findMany({
-    where: {
-      ...(warehouseId ? { warehouseId } : {}),
-      isActive: true,
-    },
+    where: { ...warehouseFilter, isActive: true },
     include: {
       warehouse: { select: { code: true, name: true } },
       yardVisits: {

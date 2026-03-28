@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { generateBinBarcode } from "@/lib/barcode";
 import {
@@ -20,8 +21,11 @@ async function getReadContext() {
 export async function getWarehouses() {
   if (config.useMockData) return mockWarehouses;
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.warehouse.findMany({
+    where: accessibleIds ? { id: { in: accessibleIds } } : undefined,
     include: {
       zones: {
         include: {
@@ -46,7 +50,8 @@ export async function getWarehouses() {
 export async function getWarehouse(id: string) {
   if (config.useMockData) return mockWarehouses.find((w) => w.id === id) ?? null;
 
-  const { tenant } = await getReadContext();
+  // requireTenantContext with warehouseId throws 403 if user has no access to this warehouse
+  const { tenant } = await requireTenantContext("warehouse:read", { warehouseId: id });
   return tenant.db.warehouse.findUnique({
     where: { id },
     include: {
@@ -189,8 +194,13 @@ export async function generateBulkLocations(data: unknown) {
 export async function getBins(_warehouseId?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.bin.findMany({
+    where: accessibleIds
+      ? { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } }
+      : undefined,
     include: {
       shelf: {
         include: {
@@ -215,8 +225,13 @@ export async function getBins(_warehouseId?: string) {
 export async function getBinChoices() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.bin.findMany({
+    where: accessibleIds
+      ? { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } }
+      : undefined,
     select: {
       id: true,
       code: true,
@@ -254,8 +269,13 @@ export async function getBin(id: string) {
 export async function getShelfOptions() {
   if (config.useMockData) return [];
 
-  const { tenant } = await getReadContext();
+  const { tenant, role, warehouseAccess } = await getReadContext();
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
+
   return tenant.db.shelf.findMany({
+    where: accessibleIds
+      ? { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } }
+      : undefined,
     include: {
       rack: {
         include: {

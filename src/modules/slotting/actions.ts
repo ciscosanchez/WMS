@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { slottingQueue } from "@/lib/jobs/queue";
 import { z } from "zod";
@@ -101,12 +102,22 @@ export async function triggerSlottingRun(
 export async function getSlottingRuns(warehouseId?: string) {
   if (config.useMockData) return [];
 
-  const { tenant } = await requireTenantContext("inventory:read");
+  const { tenant, role, warehouseAccess } = await requireTenantContext("inventory:read");
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = tenant.db as any;
 
+  // If caller requested a specific warehouse that isn't accessible, return empty
+  if (warehouseId && accessibleIds && !accessibleIds.includes(warehouseId)) return [];
+
+  const warehouseFilter = warehouseId
+    ? { warehouseId }
+    : accessibleIds
+      ? { warehouseId: { in: accessibleIds } }
+      : undefined;
+
   return db.slottingRun.findMany({
-    where: warehouseId ? { warehouseId } : undefined,
+    where: warehouseFilter,
     orderBy: { createdAt: "desc" },
     take: 20,
   });

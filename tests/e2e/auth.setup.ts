@@ -10,22 +10,36 @@ import {
   encodeMockAuthCookie,
   type MockAuthUser,
 } from "../../src/lib/auth/mock-auth";
+import { E2E_WAREHOUSE_MEMPHIS } from "./e2e-constants";
 
-export type MockPersona = "superadmin" | "admin" | "manager" | "operator" | "viewer" | "portal";
+export type MockPersona =
+  | "superadmin"
+  | "admin"
+  | "manager"
+  | "operator"
+  | "viewer"
+  | "portal"
+  | "location_manager"; // manager scoped to Memphis only (requires db:seed:e2e)
 
 function createPersonaUser(persona: MockPersona, slug: string): MockAuthUser {
+  const role =
+    persona === "manager" || persona === "location_manager"
+      ? "manager"
+      : persona === "operator"
+        ? "warehouse_worker"
+        : persona === "viewer" || persona === "portal"
+          ? "viewer"
+          : "admin";
+
   const membership = {
     tenantId: `mock-${slug}`,
     slug,
-    role:
-      persona === "manager"
-        ? "manager"
-        : persona === "operator"
-          ? "warehouse_worker"
-          : persona === "viewer" || persona === "portal"
-            ? "viewer"
-            : "admin",
+    role,
     portalClientId: persona === "portal" ? "mock-client-1" : null,
+    warehouseAccess:
+      persona === "location_manager"
+        ? [{ warehouseId: E2E_WAREHOUSE_MEMPHIS, role: null }]
+        : null,
   } as const;
 
   switch (persona) {
@@ -70,6 +84,15 @@ function createPersonaUser(persona: MockPersona, slug: string): MockAuthUser {
         id: "mock-portal",
         email: "portal@arteriors.com",
         name: "Lisa Chen",
+        isSuperadmin: false,
+        authVersion: 0,
+        tenants: [membership],
+      };
+    case "location_manager":
+      return {
+        id: "mock-location-manager",
+        email: "loc.mgr@armstrong.com",
+        name: "Jordan Kim",
         isSuperadmin: false,
         authVersion: 0,
         tenants: [membership],
