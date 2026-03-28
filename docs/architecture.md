@@ -119,6 +119,7 @@ Notes:
 - `operator` is derived from `warehouse_worker`
 - middleware and layout routing shape the UX, but server-side context checks are the real enforcement boundary
 - portal data access adds client scoping on top of role checks
+- warehouse-scoped users are restricted to shipments, tasks, and board data belonging to their assigned warehouses — see [docs/rbac.md](rbac.md) for scoping semantics
 - middleware applies persona-aware default routing:
   - superadmin -> `/platform`
   - portal user -> `/portal/inventory`
@@ -243,6 +244,20 @@ adjust     | null     | A-01   |  -2 | ADJ-2026-0003
 ```
 
 The `inventory` table holds current state; the `inventory_transactions` table is the immutable ledger. Current state can always be rebuilt from the ledger.
+
+### Access Scoping Model
+
+The enforcement model has three scoping dimensions:
+
+| Dimension                              | Mechanism                            | Implementation                                                                                 |
+| -------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Tenant isolation                       | Schema-per-tenant                    | Prisma client per schema, no cross-tenant queries possible                                     |
+| Client scoping (portal)                | `portal_client_id` on `tenant_users` | `requirePortalContext()` filters all queries by bound client                                   |
+| Warehouse scoping (operators/managers) | `warehouse_access` on `tenant_users` | `getAccessibleWarehouseIds()` returned from `requireTenantContext()`, applied as WHERE filters |
+
+Inbound scope uses a direct `warehouseId` field on `InboundShipment`. Outbound scope (no `warehouseId` on `Shipment`) traces through the pick task → bin → zone → warehouse chain.
+
+Fail-closed: null `warehouseId` on inbound rows, or no accessible pick lines on outbound orders, denies access for any scoped actor.
 
 ## Request Lifecycle
 

@@ -96,17 +96,17 @@ Current permission families:
 
 This table reflects the current role thresholds in `PERMISSION_LEVEL`.
 
-| Permission family | Viewer | Warehouse Worker | Manager | Admin |
-| --- | --- | --- | --- | --- |
-| Read data (`*:read`, reports) | Yes | Yes | Yes | Yes |
-| Operator work | Read only | Read + write | Read + write | Read + write |
-| Receiving write | No | Yes | Yes | Yes |
-| Inventory write / count | No | Yes | Yes | Yes |
-| Shipping write | No | Yes | Yes | Yes |
-| Products / orders / warehouse write | No | No | Yes | Yes |
-| Billing write | No | No | Yes | Yes |
-| Settings read / users read | No | No | Yes | Yes |
-| Settings write / users write / billing approve / customs file | No | No | No | Yes |
+| Permission family                                             | Viewer    | Warehouse Worker | Manager      | Admin        |
+| ------------------------------------------------------------- | --------- | ---------------- | ------------ | ------------ |
+| Read data (`*:read`, reports)                                 | Yes       | Yes              | Yes          | Yes          |
+| Operator work                                                 | Read only | Read + write     | Read + write | Read + write |
+| Receiving write                                               | No        | Yes              | Yes          | Yes          |
+| Inventory write / count                                       | No        | Yes              | Yes          | Yes          |
+| Shipping write                                                | No        | Yes              | Yes          | Yes          |
+| Products / orders / warehouse write                           | No        | No               | Yes          | Yes          |
+| Billing write                                                 | No        | No               | Yes          | Yes          |
+| Settings read / users read                                    | No        | No               | Yes          | Yes          |
+| Settings write / users write / billing approve / customs file | No        | No               | No           | Yes          |
 
 Notes:
 
@@ -349,6 +349,7 @@ Intentional choices right now:
 - keep `portal_user` client-scoped rather than tenant-wide
 - keep middleware persona routing as a UX accelerator, not the only security control
 - require server-side permission checks and portal scoping on sensitive actions and exports
+
 ## Phase 3 Governance
 
 RBAC now includes a governance layer on top of raw permission overrides:
@@ -406,3 +407,78 @@ Implementation notes:
 - tenant-saved presets are additive to those shared defaults in the UI
 
 This keeps the role model stable while making RBAC practical for recurring review and repeat admin operations.
+
+## Warehouse-Level Access Scoping
+
+### Model
+
+`tenant_users` has an optional `warehouse_access` JSON column. Each entry is
+`{ warehouseId: string, role?: TenantRole }`.
+
+Three semantic states:
+
+- `null` (not set) — unrestricted; actor sees all warehouses. `admin` role always
+  resolves to `null` regardless of the stored value.
+- `[]` (empty array) — fully revoked; actor sees no warehouses.
+- `[...]` (one or more entries) — restricted to the listed warehouse IDs.
+
+### Key Functions
+
+Defined in
+[rbac.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/rbac.ts):
+
+- `getAccessibleWarehouseIds(role, warehouseAccess)` — returns `null`
+  (unrestricted) or `string[]`
+- `getEffectiveWarehouseRole(tenantRole, warehouseAccess, warehouseId)` —
+  returns the effective role at a specific warehouse, or `null` if no access
+
+### Enforcement: Inbound (Receiving)
+
+All actions in
+[receiving/actions.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/modules/receiving/actions.ts)
+call `assertShipmentWarehouseAccess(tenant, shipmentId, accessibleIds)`:
+
+- no-op when `accessibleIds === null`
+- throws "Access denied" when `shipment.warehouseId` is `null` (legacy/pre-migration rows — fail-closed for scoped actors)
+- throws "Access denied" when `shipment.warehouseId` is not in `accessibleIds`
+
+Actions that enforce this: `getShipment`, `createShipment`, `addShipmentLine`,
+`updateShipmentStatus`, `receiveLine`, `getDiscrepancies`, `createDiscrepancy`,
+`resolveDiscrepancy`.
+
+### Enforcement: Outbound (Shipping)
+
+Outbound `Shipment` has no direct `warehouseId` field. Warehouse scope is
+resolved via the pick task chain:
+
+```
+Shipment → order.picks → lines → bin → shelf → rack → aisle → zone → warehouseId
+```
+
+Actions that enforce this:
+
+- `getShipmentsReadyForRelease`, `getReleasedShipmentsToday` (read) — filter via
+  Prisma relation chains
+- `releaseShipment`, `markShipmentShipped`, `getLabelDownloadUrl` (write/read) —
+  require at least one `PickTaskLine` in an accessible bin before proceeding;
+  fail-closed: no pick lines found → deny
+
+### Fail-Closed Rules
+
+1. `null` warehouseId on an inbound shipment = denied for scoped actors
+2. No accessible pick lines for an outbound order = denied for scoped actors
+3. `admin` role is always unrestricted (`getAccessibleWarehouseIds` returns
+   `null`)
+
+### Implementation Authority
+
+- [src/lib/auth/rbac.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/lib/auth/rbac.ts)
+  — `getAccessibleWarehouseIds`, `getEffectiveWarehouseRole`
+- [src/modules/receiving/actions.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/modules/receiving/actions.ts)
+  — `assertShipmentWarehouseAccess`
+- [src/modules/shipping/release-actions.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/modules/shipping/release-actions.ts)
+  — outbound read scope
+- [src/modules/shipping/ship-actions.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/modules/shipping/ship-actions.ts)
+  — outbound write scope
+- [src/modules/dashboard/manager-actions.ts](/Users/cisco.sanchez/Sales/armstrong/wms/src/modules/dashboard/manager-actions.ts)
+  — manager board release gate scope

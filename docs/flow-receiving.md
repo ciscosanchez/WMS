@@ -32,6 +32,8 @@ POST /receiving/new
   → status: draft
 ```
 
+The warehouse selected at creation time determines which scoped operators and managers can subsequently view and process the shipment.
+
 ### 2. Add Line Items
 
 **Who**: Manager, Admin
@@ -172,3 +174,24 @@ Every action in the receiving flow creates an `audit_log` entry:
 - Each receiving transaction
 - Discrepancy creation and resolution
 - Document uploads
+
+## Warehouse Access Enforcement
+
+All receiving actions are warehouse-scoped. Every server action in `src/modules/receiving/actions.ts` calls `assertShipmentWarehouseAccess` before touching data.
+
+Rules:
+
+- Admins and users with no `warehouse_access` override are unrestricted — they see all shipments.
+- Scoped actors (users with explicit `warehouse_access` assignments) may only access shipments whose `warehouseId` is in their assignment list.
+- Shipments with a `null` `warehouseId` (legacy/pre-migration rows) are **denied** for scoped actors (fail-closed).
+
+Affected actions:
+
+- `getShipments` — WHERE filter: `warehouseId IN (accessible)`
+- `getShipment` — asserts access before returning detail
+- `createShipment` — verifies `data.warehouseId` is accessible before creating
+- `addShipmentLine`, `updateShipmentStatus`, `receiveLine` — assert access by shipment ID
+- `getDiscrepancies` — WHERE filter via `shipment.warehouseId`
+- `createDiscrepancy`, `resolveDiscrepancy` — assert access via the shipment on the discrepancy record
+
+See [docs/rbac.md](rbac.md) for the full warehouse-scoping model.

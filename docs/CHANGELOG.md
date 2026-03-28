@@ -2,6 +2,73 @@
 
 All notable changes to Ramola WMS.
 
+## 2026-03-28 — Operator Dashboard, Release Gate, Pick Path, Security Hardening
+
+### Feature #9 — Operator Dashboard Enrichment
+
+- Shift banner at top of `/my-tasks`: amber "Not clocked in" links to `/shift`; green "On shift · Xh Ym" when active
+- "Available to Claim" section shows pending unassigned pick tasks with a per-row Claim button (calls `claimPickTask`, then reloads)
+- Pick task cards now deep-link to `/pick?task=<taskId>` instead of the generic `/pick` list
+- VAS tasks assigned to the current operator now appear in their own section with a type badge
+- `getMyTasksSummary` extended to include shift status, available tasks, and VAS tasks in a single `Promise.all`
+
+### Feature #9 — Manager Board Enrichment
+
+- Shift indicator per operator row: green dot + elapsed time if clocked in, grey dot if not
+- Operators who are only doing receiving or cycle counts are now visible in the board (previously filtered out if they had no pick tasks)
+- Receiving count and cycle-count task badges added alongside pick task badges per operator row
+- "Not on Floor" section added at the bottom listing `warehouse_worker` members with no shift today
+- Board polls every 60 s via `useEffect` — no manual refresh needed
+- `getOperationsBoard` extended: active shifts, per-operator receiving and count activity, absent worker list
+
+### Feature #3a — Scan-Out Release Gate
+
+- New operator screen at `/release`: queue of `label_created` shipments awaiting dock release
+- Operators scan each item in a shipment to verify before releasing; quantity label shows case-equivalent ("3 CS = 36 units") when `unitsPerCase > 1`
+- "Release to Carrier" button is gated until all items are verified
+- `releaseShipment` server action: verifies items, calls `markShipmentShipped` (inventory deduction, order status update, Shopify fulfillment push), then stamps `releasedAt`/`releasedBy`
+- Release gate data surfaced in the manager operations board: pending-release count and released-today list
+- `Shipment` model gains `releasedAt` and `releasedBy` fields with a supporting index
+
+### Feature #7 — Pick Path Optimization
+
+- Bin codes are structured (`MEM-01-A-03-02-05` = warehouse-aisle-rack-shelf-bin); lexicographic sort approximates physical travel order
+- Pick task lines are now sorted by bin code before presentation so operators walk a near-optimal path through the warehouse
+- Putaway suggestions added to the operator receive flow: top 5 bins with existing stock for the same product, same-aisle bins ranked first
+- `getPutawaySuggestions(productId, warehouseId)` and `getSuggestedBins(shipmentLineId)` in `src/modules/receiving/putaway-suggestions.ts`
+
+### Security — Audit Findings (6 closed, 1 pre-existing confirmed fixed)
+
+**Receiving warehouse scope (High)**
+
+- All item-level receiving actions (`getShipment`, `createShipment`, `addShipmentLine`, `updateShipmentStatus`, `receiveLine`, `getDiscrepancies`, `createDiscrepancy`, `resolveDiscrepancy`) now verify the actor's warehouse access before executing
+- `assertShipmentWarehouseAccess` helper: fail-closed on both out-of-scope and null `warehouseId` (legacy pre-migration rows)
+
+**Release atomicity (High)**
+
+- `releaseShipment` previously stamped `releasedAt` before calling `markShipmentShipped`; a failure left the shipment in a stuck half-released state
+- Fixed: `markShipmentShipped` is called first; `releasedAt`/`releasedBy` are only stamped on success
+
+**Outbound warehouse scope (Medium)**
+
+- `getShipmentsReadyForRelease`, `getReleasedShipmentsToday`, and both manager board release gate queries now scope outbound shipments through the pick task → bin → zone → warehouse chain (outbound `Shipment` has no direct `warehouseId` field)
+- `releaseShipment`, `markShipmentShipped`, and `getLabelDownloadUrl` independently verify that at least one pick task line for the order sits in an accessible warehouse before proceeding
+- Label download (presigned S3 URL) was previously unscoped; a warehouse-scoped user who knew another shipment's ID could retrieve its label — now denied
+
+**Null warehouseId bypass (Medium)**
+
+- `assertShipmentWarehouseAccess` previously allowed null-warehouse rows through for scoped actors due to a `&&` vs `||` logic error — fixed to fail-closed
+
+**Finding 4 (pre-existing, confirmed)**
+
+- "No access" label and "No access (0 assignments)" were already in place from a prior session; audit was based on a pre-fix snapshot
+
+### Documentation
+
+- `docs/rbac.md` — new "Warehouse-Level Access Scoping" section: three-state model (`null` / `[]` / `[...]`), key functions, inbound vs outbound enforcement patterns, fail-closed rules, and implementation authority
+- `docs/flow-receiving.md` — warehouse access enforcement section added; ASN creation note: warehouse selected at creation determines which scoped operators can process the shipment
+- `docs/architecture.md` — RBAC model note and new Access Scoping Model table covering tenant isolation, client scoping, and warehouse scoping
+
 ## 2026-03-28 — Workflow Hardening, Warehouse Setup, and Browser Smoke Coverage
 
 ### Warehouse and Layout Setup
