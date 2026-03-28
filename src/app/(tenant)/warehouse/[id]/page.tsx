@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { getWarehouse, createZone } from "@/modules/warehouse/actions";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { parseWarehouseAddress, composeWarehouseAddress } from "@/modules/warehouse/address";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function countBinsInAisle(aisle: any): number {
@@ -109,6 +110,12 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
     return <div className="text-center py-24 text-muted-foreground">Warehouse not found.</div>;
   }
 
+  const parsedAddress = parseWarehouseAddress(wh.address);
+  const fullAddress = composeWarehouseAddress(parsedAddress);
+  const mapUrl = fullAddress
+    ? `https://www.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`
+    : "";
+
   // Compute totals from real nested data
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const totalBins = (wh.zones ?? []).reduce(
@@ -149,7 +156,7 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
-      <PageHeader title={wh.name} description={wh.address}>
+      <PageHeader title={wh.name} description={fullAddress}>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href="/warehouse/bins/new">{t("addBin")}</Link>
@@ -197,6 +204,38 @@ export default function WarehouseDetailPage({ params }: { params: Promise<{ id: 
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("mapPreview")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="space-y-3">
+            <div className="rounded-lg border bg-muted/20 p-3 text-sm">
+              {fullAddress ? (
+                <p>{fullAddress}</p>
+              ) : (
+                <p className="text-muted-foreground">{t("mapPreviewEmpty")}</p>
+              )}
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-lg border">
+            {mapUrl ? (
+              <iframe
+                title={t("mapPreview")}
+                src={mapUrl}
+                className="h-72 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            ) : (
+              <div className="flex h-72 items-center justify-center bg-muted/20 text-sm text-muted-foreground">
+                {t("mapPreviewEmpty")}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Zones */}
       <div className="flex items-center justify-between">
