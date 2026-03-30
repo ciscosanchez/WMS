@@ -155,3 +155,166 @@ export async function checkReplenishmentNeeds(): Promise<ReplenishmentNeed[]> {
 
   return needs;
 }
+
+export interface ReplenishmentMoveResult {
+  ruleId: string;
+  productSku: string;
+  fromBinBarcode: string;
+  toBinBarcode: string;
+  movedQty: number;
+}
+
+/**
+ * Execute a single replenishment: move inventory from a bulk bin
+ * to the pick-face bin defined in the rule.
+ */
+export async function executeReplenishment(ruleId: string): Promise<ReplenishmentMoveResult> {
+  if (config.useMockData) {
+    return {
+      ruleId,
+      productSku: "MOCK",
+      fromBinBarcode: "BULK-01",
+      toBinBarcode: "PICK-01",
+      movedQty: 0,
+    };
+  }
+
+  const { user, tenant } = await requireTenantContext("inventory:write");
+  const db = tenant.db;
+
+  const rule = await db.replenishmentRule.findUniqueOrThrow({
+    where: { id: ruleId },
+    include: {
+      product: { select: { id: true, sku: true, name: true } },
+      bin: { select: { id: true, barcode: true } },
+    },
+  });
+
+  // Current qty in the pick-face bin
+  const pickInv = await db.inventory.findFirst({
+    where: { productId: rule.productId, binId: rule.binId },
+    select: { available: true },
+  });
+  const currentQty = pickInv?.available ?? 0;
+  const neededQty = rule.maxQty - currentQty;
+
+  if (neededQty <= 0) {
+    return {
+      ruleId,
+      productSku: rule.product.sku,
+      fromBinBarcode: "-",
+      toBinBarcode: rule.bin.barcode,
+      movedQty: 0,
+    };
+  }
+
+  // Find bulk inventory for this product in other bins (not the pick-face bin)
+  const bulkSources = await db.inventory.findMany({
+    where: {
+      productId: rule.productId,
+      binId: { not: rule.binId },
+      available: { gt: 0 },
+      bin: { type: "bulk" },
+    },
+    include: { bin: { select: { id: true, barcode: true } } },
+    orderBy: { available: "desc" },
+  });
+
+  if (bulkSources.length === 0) {
+    throw new Error(`No bulk inventory found for product ${rule.product.sku}`);
+  }
+
+  // Use first source with enough, or take what is available
+  const source = bulkSources[0];
+  const moveQty = Math.min(neededQty, source.available);
+
+  // Atomic move: decrement bulk, increment pick, log transaction
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await db.$transaction(async (prisma: any) => {
+    // Decrement source bulk bin
+    const newSourceOnHand = source.onHand - moveQty;
+    await prisma.inventory.update({
+      where: { id: source.id },
+      data: {
+        onHand: newSourceOnHand,
+        available: newSourceOnHand - source.allocated,
+      },
+    });
+
+    // Increment pick-face bin
+    const existing = await prisma.inventory.findFirst({
+      where: { productId: rule.productId, binId: rule.binId },
+    });
+
+    if (existing) {
+      const newOnHand = existing.onHand + moveQty;
+      await prisma.inventory.update({
+        where: { id: existing.id },
+        data: { onHand: newOnHand, available: newOnHand - existing.allocated },
+      });
+    } else {
+      await prisma.inventory.create({
+        data: {
+          productId: rule.productId,
+          binId: rule.binId,
+          onHand: moveQty,
+          allocated: 0,
+          available: moveQty,
+        },
+      });
+    }
+
+    await prisma.inventoryTransaction.create({
+      data: {
+        type: "move",
+        productId: rule.productId,
+        fromBinId: source.binId,
+        toBinId: rule.binId,
+        quantity: moveQty,
+        referenceType: "replenishment_rule",
+        referenceId: ruleId,
+        performedBy: user.id,
+      },
+    });
+  });
+
+  await logAudit(db, {
+    userId: user.id,
+    action: "create",
+    entityType: "replenishment_move",
+    entityId: ruleId,
+  });
+
+  revalidatePath(REVALIDATE);
+  return {
+    ruleId,
+    productSku: rule.product.sku,
+    fromBinBarcode: source.bin.barcode,
+    toBinBarcode: rule.bin.barcode,
+    movedQty: moveQty,
+  };
+}
+
+/**
+ * Auto-trigger replenishment for all active rules that are below reorder point.
+ * Returns a summary of all moves executed.
+ */
+export async function autoTriggerReplenishment(): Promise<ReplenishmentMoveResult[]> {
+  if (config.useMockData) return [];
+
+  const needs = await checkReplenishmentNeeds();
+  const results: ReplenishmentMoveResult[] = [];
+
+  for (const need of needs) {
+    try {
+      const result = await executeReplenishment(need.ruleId);
+      if (result.movedQty > 0) {
+        results.push(result);
+      }
+    } catch (err) {
+      console.error(`[Replenishment] Failed for rule ${need.ruleId}:`, err);
+    }
+  }
+
+  return results;
+}

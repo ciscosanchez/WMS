@@ -17,6 +17,8 @@ async function processNotification(job: Job) {
     const { notifyWarehouseTeam } = await import("@/lib/notifications/notify");
     const { getTenantDb } = await import("@/lib/db/tenant-client");
     const { publicDb } = await import("@/lib/db/public-client");
+    const { checkUserPrefsForCategory } =
+      await import("@/modules/settings/notification-prefs-actions");
 
     const tenant = await publicDb.tenant.findUnique({
       where: { id: data.tenantId },
@@ -24,8 +26,35 @@ async function processNotification(job: Job) {
     });
     if (!tenant) throw new Error(`Tenant ${data.tenantId} not found`);
 
-    const db = getTenantDb(tenant.dbSchema);
-    await notifyWarehouseTeam(db, data);
+    // Resolve notification category from the job's notifyType (e.g. "low_stock_alert")
+    const notifyType = data.notifyType as string | undefined;
+
+    if (notifyType) {
+      // Get the team members who would normally receive this notification
+      const teamMembers = await publicDb.tenantUser.findMany({
+        where: {
+          tenantId: data.tenantId,
+          role: { in: ["admin", "manager"] },
+        },
+        select: { userId: true },
+      });
+      const userIds = teamMembers.map((tu: { userId: string }) => tu.userId);
+
+      // Check each user's preferences for this category
+      const prefs = await checkUserPrefsForCategory(data.tenantId, userIds, notifyType);
+      const prefsMap = new Map(prefs.map((p) => [p.userId, p]));
+
+      // Pass filtered preferences to the notification helper
+      const db = getTenantDb(tenant.dbSchema);
+      await notifyWarehouseTeam(db, {
+        ...data,
+        _userPrefs: Object.fromEntries(prefsMap),
+      });
+    } else {
+      // No notifyType specified — send to all (backward compatible)
+      const db = getTenantDb(tenant.dbSchema);
+      await notifyWarehouseTeam(db, data);
+    }
   }
 }
 
@@ -53,6 +82,20 @@ async function processIntegration(job: Job) {
       db
     );
     if (result.error) throw new Error(result.error);
+  } else if (type === "dispatchpro_create") {
+    const { createDispatchOrder } = await import("@/lib/integrations/dispatchpro/client");
+    const result = await createDispatchOrder({
+      tenantSlug: data.tenantSlug,
+      wmsOrderId: data.orderId,
+      wmsOrderNumber: data.orderNumber,
+      customer: data.customer,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      zip: data.zip,
+      items: data.items,
+    });
+    if ("error" in result) throw new Error(result.error);
   }
 }
 

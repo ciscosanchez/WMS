@@ -91,27 +91,48 @@ async function findInventoryForOrderLine(
   });
 }
 
+export type SplitAllocationResult = {
+  task: { id: string } | null;
+  allocatedLines: Array<{ productId: string; quantity: number }>;
+  backorderedLines: Array<{ productId: string; quantity: number }>;
+};
+
 async function createPickTaskForOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
   order: EligibleOrder,
   userId: string,
-  method: PickTaskMethod
-) {
+  method: PickTaskMethod,
+  allowPartial = false
+): Promise<SplitAllocationResult> {
   const taskNumber = await nextSequence(db, "PICK");
 
-  const task = await db.$transaction(
+  const result = await db.$transaction(
     async (
       prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any
     ) => {
-      const lineData = [];
+      const lineData: Array<{
+        productId: string;
+        binId: string;
+        quantity: number;
+        pickedQty: number;
+      }> = [];
+      const allocatedLines: SplitAllocationResult["allocatedLines"] = [];
+      const backorderedLines: SplitAllocationResult["backorderedLines"] = [];
 
       for (const line of order.lines) {
         const inventory = await findInventoryForOrderLine(prisma, line);
         let claimedInventory = inventory;
 
         if (inventory) {
+          // ── Optimistic locking pattern ──────────────────────────────────
+          // Uses `updateMany` with a compound WHERE (id + available >= qty)
+          // so the update atomically checks that sufficient inventory still
+          // exists. If another transaction decremented `available` between
+          // our read and this write, count === 0 and we treat the line as
+          // unallocable — no silent overwrite, no stale data.
+          // See also: src/lib/db/optimistic-lock.ts for the generic helper.
           const updated = await prisma.inventory.updateMany({
             where: {
               id: inventory.id,
@@ -140,19 +161,27 @@ async function createPickTaskForOrder(
               performedBy: userId,
             },
           });
+
+          lineData.push({
+            productId: line.productId,
+            binId: claimedInventory.binId,
+            quantity: line.quantity,
+            pickedQty: 0,
+          });
+          allocatedLines.push({ productId: line.productId, quantity: line.quantity });
+        } else if (allowPartial) {
+          backorderedLines.push({ productId: line.productId, quantity: line.quantity });
         } else {
           throw new Error(`Insufficient available inventory for product ${line.productId}`);
         }
-
-        lineData.push({
-          productId: line.productId,
-          binId: claimedInventory.binId,
-          quantity: line.quantity,
-          pickedQty: 0,
-        });
       }
 
-      return prisma.pickTask.create({
+      if (lineData.length === 0) {
+        // No lines could be allocated at all
+        return { task: null, allocatedLines, backorderedLines };
+      }
+
+      const task = await prisma.pickTask.create({
         data: {
           taskNumber,
           orderId: order.id,
@@ -161,20 +190,27 @@ async function createPickTaskForOrder(
           lines: { create: lineData },
         },
       });
+
+      return { task, allocatedLines, backorderedLines };
     }
   );
 
-  await logAudit(db, {
-    userId,
-    action: "create",
-    entityType: "pick_task",
-    entityId: task.id,
-    changes: {
-      source: { old: null, new: method === "wave" ? "wave_generation" : "manual_generation" },
-    },
-  });
+  if (result.task) {
+    await logAudit(db, {
+      userId,
+      action: "create",
+      entityType: "pick_task",
+      entityId: result.task.id,
+      changes: {
+        source: { old: null, new: method === "wave" ? "wave_generation" : "manual_generation" },
+        ...(result.backorderedLines.length > 0
+          ? { partialAllocation: { old: null, new: result.backorderedLines.length } }
+          : {}),
+      },
+    });
+  }
 
-  return task;
+  return result;
 }
 
 async function generatePickTasksForEligibleOrders(method: PickTaskMethod) {
@@ -214,13 +250,20 @@ async function generatePickTasksForEligibleOrders(method: PickTaskMethod) {
     }
 
     try {
-      await createPickTaskForOrder(db, order, user.id, method);
-      await db.order.update({
-        where: { id: order.id },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { status: "picking" as any },
-      });
-      created += 1;
+      const result = await createPickTaskForOrder(db, order, user.id, method, true);
+
+      if (result.task) {
+        const newStatus = result.backorderedLines.length > 0 ? "backordered" : "picking";
+        await db.order.update({
+          where: { id: order.id },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: { status: newStatus as any },
+        });
+        created += 1;
+      } else {
+        // No lines could be allocated
+        skipped += 1;
+      }
     } catch {
       skipped += 1;
     }

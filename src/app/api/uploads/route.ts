@@ -22,9 +22,17 @@ const ALLOWED_ENTITY_TYPES = new Set(["shipment", "product", "order", "docai"]);
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 export async function POST(request: NextRequest) {
-  // ── Rate limit ──────────────────────────────────────────────────────────────
-  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const rateCheck = await rateLimiter.check(`upload:${clientIp}`);
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ── Rate limit (keyed by userId when authenticated, IP fallback) ──────────
+  const rateLimitKey = session.user?.id
+    ? `upload:user:${session.user.id}`
+    : `upload:ip:${request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"}`;
+  const rateCheck = await rateLimiter.check(rateLimitKey);
   if (!rateCheck.allowed) {
     return NextResponse.json(
       { error: "Too many requests" },
@@ -35,12 +43,6 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  }
-
-  // ── Auth ────────────────────────────────────────────────────────────────────
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // ── Tenant ──────────────────────────────────────────────────────────────────

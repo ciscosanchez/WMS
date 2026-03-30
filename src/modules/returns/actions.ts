@@ -308,7 +308,12 @@ export async function finalizeReturn(rmaId: string): Promise<{ error?: string }>
             // Find or create a target bin (use the inspection bin or first available)
             const inspection = line.inspections[0];
             const binId = inspection?.binId;
-            if (!binId) continue;
+            if (!binId) {
+              throw new Error(
+                `Cannot restock return line for product ${line.productId}: no inspection bin assigned. ` +
+                  `Assign a bin during inspection before finalizing.`
+              );
+            }
 
             // Upsert inventory in the target bin
             const existing = await prisma.inventory.findFirst({

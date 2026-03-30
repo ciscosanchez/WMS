@@ -9,13 +9,14 @@
 export const ORDER_TRANSITIONS: Record<string, string[]> = {
   pending: ["awaiting_fulfillment", "cancelled"],
   awaiting_fulfillment: ["allocated", "cancelled"],
-  allocated: ["picking", "cancelled"],
-  picking: ["picked", "cancelled"],
+  allocated: ["picking", "backordered", "cancelled"],
+  picking: ["picked", "backordered", "cancelled"],
   picked: ["packing"],
   packing: ["packed"],
   packed: ["shipped"],
   shipped: ["delivered"],
   delivered: [],
+  backordered: ["picking", "cancelled"],
   cancelled: [],
 };
 

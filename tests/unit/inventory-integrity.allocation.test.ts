@@ -141,7 +141,7 @@ describe("Transactional inventory integrity", () => {
       mockTxPrisma.inventory.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
       await expect(updateOrderStatus(orderId, "picking")).rejects.toThrow(
-        "Insufficient available inventory for product prod-1"
+        "No inventory available for any order lines"
       );
 
       expect(mockTxPrisma.pickTask.create).not.toHaveBeenCalled();

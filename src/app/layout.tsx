@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   title: "Ramola WMS",
   description: "Warehouse Management System for Freight & 3PL Operations",
   manifest: "/manifest.json",
+  themeColor: "#1e293b",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

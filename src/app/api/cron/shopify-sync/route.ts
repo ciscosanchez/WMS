@@ -10,11 +10,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import type { PrismaClient as TenantClient } from "../../../../../node_modules/.prisma/tenant-client";
+import { verifyCronRequest } from "@/lib/security/cron-auth";
 
 export async function GET(req: NextRequest) {
-  // Verify the cron secret
-  const secret = req.headers.get("x-cron-secret") ?? req.nextUrl.searchParams.get("secret");
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!verifyCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

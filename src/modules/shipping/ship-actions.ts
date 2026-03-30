@@ -148,32 +148,37 @@ export async function markShipmentShipped(
               },
             });
 
-            if (inv) {
-              await prisma.inventory.update({
-                where: { id: inv.id },
-                data: {
-                  onHand: { decrement: item.quantity },
-                  allocated: { decrement: Math.min(item.quantity, inv.allocated) },
-                  available:
-                    inv.available - (item.quantity - Math.min(item.quantity, inv.allocated)),
-                },
-              });
-
-              // Write ledger entry
-              await prisma.inventoryTransaction.create({
-                data: {
-                  type: "deallocate",
-                  productId: item.productId,
-                  fromBinId: pickLine.binId,
-                  quantity: item.quantity,
-                  lotNumber: item.lotNumber,
-                  serialNumber: item.serialNumber,
-                  referenceType: "shipment",
-                  referenceId: shipmentId,
-                  performedBy: user.id,
-                },
-              });
+            if (!inv) {
+              throw new Error(
+                `Inventory record missing for product ${item.productId} in bin ${pickLine.binId}. ` +
+                  `Cannot decrement on-hand — investigate inventory state.`
+              );
             }
+
+            const allocDec = Math.min(item.quantity, inv.allocated);
+            await prisma.inventory.update({
+              where: { id: inv.id },
+              data: {
+                onHand: { decrement: item.quantity },
+                allocated: { decrement: allocDec },
+                available: inv.onHand - item.quantity - (inv.allocated - allocDec),
+              },
+            });
+
+            // Write ledger entry
+            await prisma.inventoryTransaction.create({
+              data: {
+                type: "deallocate",
+                productId: item.productId,
+                fromBinId: pickLine.binId,
+                quantity: item.quantity,
+                lotNumber: item.lotNumber,
+                serialNumber: item.serialNumber,
+                referenceType: "shipment",
+                referenceId: shipmentId,
+                performedBy: user.id,
+              },
+            });
           }
         }
       }

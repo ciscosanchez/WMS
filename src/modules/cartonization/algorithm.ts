@@ -115,14 +115,15 @@ export function cartonize(items: PackItem[], boxes: BoxType[]): PackedCarton[] {
       });
 
       if (!eligibleBox) {
-        // Fall back to the largest box available
+        // No box can fit this item — reject instead of silently overloading
         const largestBox = sortedBoxes[sortedBoxes.length - 1];
-        cartons.push({
-          box: largestBox,
-          items: [unit],
-          usedVolume: unitVol,
-          currentWeight: unitWeight,
-        });
+        const maxPayload = largestBox.maxWeight - largestBox.tareWeight;
+        const largestVol = volume(largestBox.length, largestBox.width, largestBox.height);
+        throw new Error(
+          `Item ${unit.productId} cannot fit in any available carton type. ` +
+            `Item: ${unitWeight}lb / ${unitVol}cu-in, ` +
+            `Largest box (${largestBox.code}): ${maxPayload}lb / ${largestVol}cu-in`
+        );
       } else {
         cartons.push({
           box: eligibleBox,

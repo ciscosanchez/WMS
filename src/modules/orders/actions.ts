@@ -15,6 +15,11 @@ import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions"
 import { asTenantDb } from "@/lib/tenant/db-types";
 import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
 import { convertQuantityToBaseUom } from "@/modules/products/uom";
+import {
+  findInventoryForOrderLine,
+  attributeValueToDisplay,
+  type RawOperationalAttributeValueWithEntityId,
+} from "./inventory-matching";
 
 async function getReadContext() {
   return requireTenantContext("orders:read");
@@ -188,15 +193,28 @@ export async function updateOrderStatus(id: string, status: string) {
   assertTransition("order", existing.status, status, ORDER_TRANSITIONS);
 
   // When transitioning to "picking", generate pick tasks BEFORE updating status.
-  // If pick task generation fails, the order stays in its current state.
+  // Supports partial allocation: if some lines lack inventory, order goes to "backordered".
+  let resolvedStatus = status;
   if (status === "picking") {
-    await generatePickTasksForOrder(tenant.db, existing, user.id);
+    const result = await generatePickTasksForOrder(tenant.db, existing, user.id, true);
+
+    if (!result.task) {
+      // No lines could be allocated at all
+      throw new Error("No inventory available for any order lines");
+    }
+
+    if (result.backorderedLines.length > 0) {
+      // Partial allocation — some lines are backordered
+      resolvedStatus = "backordered";
+      // Validate the backordered transition is allowed from current state
+      assertTransition("order", existing.status, resolvedStatus, ORDER_TRANSITIONS);
+    }
   }
 
   const order = await tenant.db.order.update({
     where: { id },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: { status: status as any },
+    data: { status: resolvedStatus as any },
   });
 
   await logAudit(tenant.db, {
@@ -204,33 +222,38 @@ export async function updateOrderStatus(id: string, status: string) {
     action: "update",
     entityType: "order",
     entityId: id,
-    changes: { status: { old: existing.status, new: status } },
+    changes: { status: { old: existing.status, new: resolvedStatus } },
   });
 
-  // When order is packed, send to DispatchPro for dispatch
+  // When order is packed, queue DispatchPro dispatch (retryable via integrations queue)
   if (status === "packed") {
-    const dispatchResult = await createDispatchOrder({
-      tenantSlug: tenant.slug,
-      wmsOrderId: existing.id,
-      wmsOrderNumber: existing.orderNumber,
-      customer: existing.shipToName,
-      address: existing.shipToAddress1,
-      city: existing.shipToCity,
-      state: existing.shipToState ?? "",
-      zip: existing.shipToZip,
-      items: existing.lines.map(
-        (line: { product: { sku: string; name: string; weight: unknown }; quantity: number }) => ({
-          sku: line.product.sku,
-          description: line.product.name,
-          quantity: line.quantity,
-          weight: line.product.weight ? Number(line.product.weight) : undefined,
-        })
-      ),
-    });
-
-    if ("error" in dispatchResult) {
-      // Log but don't block — order status is already updated
-      console.error("[DispatchPro] Failed to create dispatch order:", dispatchResult.error);
+    try {
+      const { integrationQueue } = await import("@/lib/jobs/queue");
+      await integrationQueue.add("dispatchpro_create", {
+        type: "dispatchpro_create",
+        tenantSlug: tenant.slug,
+        tenantId: tenant.tenantId,
+        orderId: existing.id,
+        orderNumber: existing.orderNumber,
+        customer: existing.shipToName,
+        address: existing.shipToAddress1,
+        city: existing.shipToCity,
+        state: existing.shipToState ?? "",
+        zip: existing.shipToZip,
+        items: existing.lines.map(
+          (line: {
+            product: { sku: string; name: string; weight: unknown };
+            quantity: number;
+          }) => ({
+            sku: line.product.sku,
+            description: line.product.name,
+            quantity: line.quantity,
+            weight: line.product.weight ? Number(line.product.weight) : undefined,
+          })
+        ),
+      });
+    } catch (queueErr) {
+      console.error("[DispatchPro] Failed to enqueue dispatch job:", queueErr);
     }
   }
 
@@ -238,22 +261,37 @@ export async function updateOrderStatus(id: string, status: string) {
   return order;
 }
 
-/** Internal helper — creates a PickTask + PickTaskLines for an order and allocates inventory. */
+export type SplitAllocationResult = {
+  task: { id: string } | null;
+  allocatedLines: Array<{ productId: string; quantity: number }>;
+  backorderedLines: Array<{ productId: string; quantity: number }>;
+};
+
+/** Internal helper — creates a PickTask + PickTaskLines for an order and allocates inventory.
+ *  Supports partial allocation: lines with inventory are picked, others are backordered. */
 async function generatePickTasksForOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
   order: { id: string; lines: Array<{ productId: string; quantity: number; id: string }> },
-  userId: string
-) {
+  userId: string,
+  allowPartial = false
+): Promise<SplitAllocationResult> {
   const taskNumber = await nextSequence(db, "PICK");
 
   // Atomic: find bins, allocate inventory, create pick task in one transaction
-  const task = await db.$transaction(
+  const result = await db.$transaction(
     async (
       prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any
     ) => {
-      const lineData = [];
+      const lineData: Array<{
+        productId: string;
+        binId: string;
+        quantity: number;
+        pickedQty: number;
+      }> = [];
+      const allocatedLines: SplitAllocationResult["allocatedLines"] = [];
+      const backorderedLines: SplitAllocationResult["backorderedLines"] = [];
 
       for (const line of order.lines) {
         const inv = await findInventoryForOrderLine(prisma, line);
@@ -280,20 +318,26 @@ async function generatePickTasksForOrder(
               performedBy: userId,
             },
           });
+
+          lineData.push({
+            productId: line.productId,
+            binId: inv.binId,
+            quantity: line.quantity,
+            pickedQty: 0,
+          });
+          allocatedLines.push({ productId: line.productId, quantity: line.quantity });
+        } else if (allowPartial) {
+          backorderedLines.push({ productId: line.productId, quantity: line.quantity });
         } else {
           throw new Error(`Insufficient available inventory for product ${line.productId}`);
         }
-
-        lineData.push({
-          productId: line.productId,
-          binId: inv.binId,
-          quantity: line.quantity,
-          pickedQty: 0,
-        });
       }
 
-      // Sort lines by bin barcode for optimal pick path (zone → aisle → rack → shelf → bin)
-      // Resolve barcodes for sorting — bin IDs are cuid strings, barcodes encode location
+      if (lineData.length === 0) {
+        return { task: null, allocatedLines, backorderedLines };
+      }
+
+      // Sort lines by bin barcode for optimal pick path (zone -> aisle -> rack -> shelf -> bin)
       const binIds = lineData
         .map((l: { binId: string | null }) => l.binId)
         .filter(Boolean) as string[];
@@ -309,12 +353,12 @@ async function generatePickTasksForOrder(
       );
 
       const sortedLines = [...lineData].sort((a, b) => {
-        const aKey = (a.binId && binBarcodeMap.get(a.binId)) ?? "zzz";
-        const bKey = (b.binId && binBarcodeMap.get(b.binId)) ?? "zzz";
+        const aKey = String((a.binId && binBarcodeMap.get(a.binId)) ?? "zzz");
+        const bKey = String((b.binId && binBarcodeMap.get(b.binId)) ?? "zzz");
         return aKey.localeCompare(bKey);
       });
 
-      return prisma.pickTask.create({
+      const task = await prisma.pickTask.create({
         data: {
           taskNumber,
           orderId: order.id,
@@ -323,127 +367,27 @@ async function generatePickTasksForOrder(
           lines: { create: sortedLines },
         },
       });
+
+      return { task, allocatedLines, backorderedLines };
     }
   );
 
-  await logAudit(db, {
-    userId,
-    action: "create",
-    entityType: "pick_task",
-    entityId: task.id,
-    changes: { source: { old: null, new: "auto_generated" } },
-  });
-}
-
-type RawOperationalAttributeValue = {
-  definition: { key: string };
-  textValue?: string | null;
-  numberValue?: number | null;
-  booleanValue?: boolean | null;
-  dateValue?: Date | null;
-  jsonValue?: unknown;
-};
-
-type RawOperationalAttributeValueWithEntityId = RawOperationalAttributeValue & {
-  entityId: string;
-  definition: { key: string; label: string };
-};
-
-function attributeValueToDisplay(value: RawOperationalAttributeValue) {
-  if (value.numberValue !== null && value.numberValue !== undefined)
-    return String(value.numberValue);
-  if (value.booleanValue !== null && value.booleanValue !== undefined)
-    return value.booleanValue ? "Yes" : "No";
-  if (value.dateValue) return value.dateValue.toISOString().slice(0, 10);
-  if (value.jsonValue !== null && value.jsonValue !== undefined) {
-    if (Array.isArray(value.jsonValue)) return value.jsonValue.map(String).join(", ");
-    return JSON.stringify(value.jsonValue);
-  }
-  return value.textValue ?? "";
-}
-
-function attributeValueToComparable(value: RawOperationalAttributeValue) {
-  if (value.booleanValue !== null && value.booleanValue !== undefined)
-    return value.booleanValue ? "true" : "false";
-  if (value.dateValue) return value.dateValue.toISOString();
-  if (value.jsonValue !== null && value.jsonValue !== undefined) {
-    if (Array.isArray(value.jsonValue)) {
-      return JSON.stringify([...value.jsonValue].map(String).sort());
-    }
-    return JSON.stringify(value.jsonValue);
-  }
-  return attributeValueToDisplay(value);
-}
-
-async function findInventoryForOrderLine(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  prisma: any,
-  line: { id: string; productId: string; quantity: number }
-) {
-  const criteria = ((await prisma.operationalAttributeValue.findMany({
-    where: {
-      entityScope: "order_line",
-      entityId: line.id,
-    },
-    include: {
-      definition: { select: { key: true } },
-    },
-  })) ?? []) as RawOperationalAttributeValue[];
-
-  if (criteria.length === 0) {
-    return prisma.inventory.findFirst({
-      where: { productId: line.productId, available: { gte: line.quantity } },
-      orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
+  if (result.task) {
+    await logAudit(db, {
+      userId,
+      action: "create",
+      entityType: "pick_task",
+      entityId: result.task.id,
+      changes: {
+        source: { old: null, new: "auto_generated" },
+        ...(result.backorderedLines.length > 0
+          ? { partialAllocation: { old: null, new: result.backorderedLines.length } }
+          : {}),
+      },
     });
   }
 
-  const targetDefinitions = ((await prisma.operationalAttributeDefinition.findMany({
-    where: {
-      entityScope: "inventory_record",
-      isActive: true,
-      key: { in: criteria.map((item) => item.definition.key) },
-    },
-    select: { id: true, key: true },
-  })) ?? []) as Array<{ id: string; key: string }>;
-
-  if (targetDefinitions.length === 0) return null;
-
-  const targetByKey = new Map(
-    targetDefinitions.map((definition) => [definition.key, definition.id])
-  );
-  const candidateInventory = ((await prisma.inventory.findMany({
-    where: { productId: line.productId, available: { gte: line.quantity } },
-    orderBy: [{ expirationDate: { sort: "asc", nulls: "last" } }, { available: "desc" }],
-  })) ?? []) as Array<{ id: string }>;
-
-  for (const inventoryRecord of candidateInventory) {
-    const inventoryValues = ((await prisma.operationalAttributeValue.findMany({
-      where: {
-        entityScope: "inventory_record",
-        entityId: inventoryRecord.id,
-        definitionId: { in: targetDefinitions.map((definition) => definition.id) },
-      },
-      include: {
-        definition: { select: { key: true } },
-      },
-    })) ?? []) as RawOperationalAttributeValue[];
-
-    const inventoryByKey = new Map(
-      inventoryValues.map((value) => [value.definition.key, attributeValueToComparable(value)])
-    );
-
-    const matchesAllCriteria = criteria.every((criterion) => {
-      const targetDefinitionId = targetByKey.get(criterion.definition.key);
-      if (!targetDefinitionId) return false;
-      return inventoryByKey.get(criterion.definition.key) === attributeValueToComparable(criterion);
-    });
-
-    if (matchesAllCriteria) {
-      return inventoryRecord;
-    }
-  }
-
-  return null;
+  return result;
 }
 
 export async function deleteOrder(id: string) {

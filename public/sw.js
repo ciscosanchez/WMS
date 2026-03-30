@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
 
 // Operator app routes — precached on install for offline shell
 const APP_SHELL_ROUTES = [
+  "/dashboard",
   "/my-tasks",
   "/receive",
   "/pick",
@@ -62,7 +63,10 @@ self.addEventListener("fetch", (event) => {
   // Skip auth-related requests — never cache these
   if (url.pathname.startsWith("/api/auth")) return;
 
-  // Skip API routes entirely — must always be fresh
+  // SSE event stream — never cache, let the browser handle reconnect
+  if (url.pathname.startsWith("/api/events")) return;
+
+  // API routes: network-first, no cache fallback (must always be fresh)
   if (url.pathname.startsWith("/api/")) return;
 
   // Static assets (immutable builds, icons): cache-first

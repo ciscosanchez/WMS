@@ -10,10 +10,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCronRequest } from "@/lib/security/cron-auth";
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret") ?? req.nextUrl.searchParams.get("secret");
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  if (!verifyCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -45,14 +45,9 @@ export async function GET(req: NextRequest) {
       const dbAny = db as any;
 
       try {
-        // Idempotency: skip if already captured today for this tenant
-        const alreadyCaptured = await dbAny.billingEvent.findFirst({
-          where: { serviceType: "storage_pallet", referenceId },
-        });
-        if (alreadyCaptured) {
-          tenantResults.push({ tenant: tenant.slug, clients: [] });
-          continue;
-        }
+        // Note: idempotency is checked per-client below, not per-tenant,
+        // so partial re-runs (e.g. after a mid-loop crash) only skip clients
+        // that were already captured — not the entire tenant.
 
         const clients = await dbAny.client.findMany({
           where: { isActive: true },
@@ -84,12 +79,31 @@ export async function GET(req: NextRequest) {
             continue;
           }
 
+          // Per-client idempotency: skip if this client already has a storage event for today
+          const clientRefId = `${referenceId}-${client.id}`;
+          const alreadyCaptured = await dbAny.billingEvent.findFirst({
+            where: {
+              serviceType: "storage_pallet",
+              referenceId: clientRefId,
+              clientId: client.id,
+            },
+          });
+          if (alreadyCaptured) {
+            clientResults.push({
+              clientId: client.id,
+              name: client.name,
+              pallets: occupiedBins,
+              captured: true,
+            });
+            continue;
+          }
+
           const event = await captureEvent(db, {
             clientId: client.id,
             serviceType: "storage_pallet",
             qty: occupiedBins,
             referenceType: "storage_snapshot",
-            referenceId,
+            referenceId: clientRefId,
           });
 
           clientResults.push({

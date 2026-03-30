@@ -13,6 +13,35 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    const corsOrigins = process.env.CORS_ALLOWED_ORIGINS;
+
+    const corsHeaders = corsOrigins
+      ? [
+          {
+            source: "/api/(.*)",
+            headers: [
+              {
+                key: "Access-Control-Allow-Origin",
+                value: corsOrigins,
+              },
+              {
+                key: "Access-Control-Allow-Methods",
+                value: "GET, POST, PUT, DELETE, OPTIONS",
+              },
+              {
+                key: "Access-Control-Allow-Headers",
+                value:
+                  "Content-Type, Authorization, x-tenant-slug, x-cron-secret",
+              },
+              {
+                key: "Access-Control-Max-Age",
+                value: "86400",
+              },
+            ],
+          },
+        ]
+      : [];
+
     return [
       {
         source: "/(.*)",
@@ -71,6 +100,8 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // CORS headers for API routes (only if CORS_ALLOWED_ORIGINS is set)
+      ...corsHeaders,
     ];
   },
 };

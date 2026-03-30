@@ -1,12 +1,12 @@
 {
   "name": "Ramola WMS",
-  "short_name": "Ramola",
+  "short_name": "WMS",
   "description": "Warehouse Management System for Freight & 3PL Operations",
-  "start_url": "/my-tasks",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0a0a0a",
+  "theme_color": "#1e293b",
   "orientation": "portrait-primary",
   "icons": [
     {

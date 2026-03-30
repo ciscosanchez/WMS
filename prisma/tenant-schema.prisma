@@ -9,6 +9,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  TENANT SCHEMA — TABLE OF CONTENTS                                         ║
+// ║                                                                            ║
+// ║  This file is ~2000 lines. Prisma does not support multi-file schemas      ║
+// ║  without the prismaSchemaFolder preview feature, so we keep everything     ║
+// ║  here with clear section headers. Use Ctrl+G (go to line) to navigate.     ║
+// ║                                                                            ║
+// ║  Section                                  Line Range                       ║
+// ║  ─────────────────────────────────────────────────────                      ║
+// ║  Clients (Cargo Owners)                   ~50–81                           ║
+// ║  Products                                 ~83–144                          ║
+// ║  Configurable Operational Attributes      ~146–230                         ║
+// ║  Warehouse Layout (Zone/Aisle/Rack/Bin)   ~232–341                         ║
+// ║  Receiving Module                         ~343–534                         ║
+// ║  Inventory Module                         ~536–691                         ║
+// ║  Fulfillment / E-Commerce Module          ~693–798                         ║
+// ║  Picking                                  ~800–853                         ║
+// ║  Packing & Shipping                       ~855–910                         ║
+// ║  Carrier Rate Shopping                    ~912–924                         ║
+// ║  Infrastructure (Audit, Notifications)    ~926–965                         ║
+// ║  Billing Engine                           ~967–1134                        ║
+// ║  VAS / Kitting                            ~1136–1185                       ║
+// ║  Task Interleaving                        ~1187–1240                       ║
+// ║  Slotting Optimization                    ~1242–1312                       ║
+// ║  Cartonization & Manifesting              ~1314–1365                       ║
+// ║  Returns / RMA                            ~1367–1457                       ║
+// ║  Labor Management                         ~1459–1528                       ║
+// ║  Yard & Dock Scheduling                   ~1530–1685                       ║
+// ║  Compliance & Customs                     ~1687–1724                       ║
+// ║  LPN / Container Tracking                 ~1726–1766                       ║
+// ║  Cross-Dock Orchestration                 ~1768–1805                       ║
+// ║  Automation & Robotics                    ~1807–1861                       ║
+// ║  Document Intelligence (DocAI)            ~1863–1906                       ║
+// ║  Transfer Orders (Multi-Warehouse)        ~1908–1958                       ║
+// ║  Replenishment Rules                      ~1960–1980                       ║
+// ║  Customs & Freight                        ~1982–2052                       ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
 // ─── Clients (Cargo Owners) ────────────────────────────
 
 model Client {
