@@ -7,6 +7,7 @@ import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
 import { publishShipmentStatus } from "@/lib/events/event-bus";
+import { logger } from "@/lib/logger";
 
 export async function getLabelDownloadUrl(
   shipmentId: string
@@ -235,11 +236,15 @@ export async function markShipmentShipped(
       try {
         publishShipmentStatus(tenant.tenantId, { shipmentId, status: "shipped", trackingNumber });
       } catch (sseErr) {
-        console.error("[markShipmentShipped] SSE publish failed:", sseErr);
+        logger.error("[markShipmentShipped] SSE publish failed", { shipmentId }, sseErr);
       }
     } catch (postCommitErr) {
       // Log but do NOT propagate — the shipment is already shipped
-      console.error("[markShipmentShipped] post-commit side-effect failed:", postCommitErr);
+      logger.error(
+        "[markShipmentShipped] post-commit side-effect failed",
+        { shipmentId },
+        postCommitErr
+      );
     }
 
     revalidatePath("/shipping");

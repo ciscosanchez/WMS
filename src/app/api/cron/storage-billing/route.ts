@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/security/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   if (!verifyCronRequest(req)) {
@@ -114,16 +115,24 @@ export async function GET(req: NextRequest) {
           });
         }
 
-        console.warn(`[Storage Billing Cron] ${tenant.slug} date=${dateKey}`, clientResults);
+        logger.info("[Storage Billing Cron] tenant processed", {
+          tenant: tenant.slug,
+          dateKey,
+          clients: clientResults,
+        });
         tenantResults.push({ tenant: tenant.slug, clients: clientResults });
       } catch (tenantErr) {
-        console.error(`[Storage Billing Cron] Error processing tenant ${tenant.slug}:`, tenantErr);
+        logger.error(
+          "[Storage Billing Cron] Error processing tenant",
+          { tenant: tenant.slug },
+          tenantErr
+        );
       }
     }
 
     return NextResponse.json({ date: dateKey, tenants: tenantResults });
   } catch (err) {
-    console.error("[Storage Billing Cron] error:", err);
+    logger.error("[Storage Billing Cron] fatal error", {}, err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed" },
       { status: 500 }

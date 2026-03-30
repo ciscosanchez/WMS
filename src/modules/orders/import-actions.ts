@@ -226,7 +226,7 @@ export async function importOrders(
   tenantSlug: string,
   orders: ParsedOrder[]
 ): Promise<ImportSummary> {
-  const { user, tenant } = await requireTenantContext("orders:write");
+  const { user, tenant, portalClientId } = await requireTenantContext("orders:write");
   const db = asTenantDb(tenant.db);
 
   const summary: ImportSummary = { created: 0, errors: [] };
@@ -245,6 +245,15 @@ export async function importOrders(
         summary.errors.push({
           row: orderIdx,
           message: `Client not found: "${order.clientCode}"`,
+        });
+        continue;
+      }
+
+      // Portal users may only import orders for their bound client
+      if (portalClientId && client.id !== portalClientId) {
+        summary.errors.push({
+          row: orderIdx,
+          message: `Access denied: you may only import orders for your bound client`,
         });
         continue;
       }

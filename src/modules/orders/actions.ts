@@ -192,6 +192,11 @@ export async function updateOrderStatus(id: string, status: string) {
   // Validate transition before any mutations
   assertTransition("order", existing.status, status, ORDER_TRANSITIONS);
 
+  // When cancelling an order with existing pick tasks, deallocate inventory first
+  if (status === "cancelled") {
+    await deallocateOrder(tenant.db, id, user.id);
+  }
+
   // When transitioning to "picking", generate pick tasks BEFORE updating status.
   // Supports partial allocation: if some lines lack inventory, order goes to "backordered".
   let resolvedStatus = status;
@@ -388,6 +393,81 @@ async function generatePickTasksForOrder(
   }
 
   return result;
+}
+
+/**
+ * Deallocate inventory for an order by reversing all pick task allocations.
+ * For each pick task line: decrement allocated, increment available, write
+ * a "deallocate" inventory transaction, then delete the pick tasks.
+ */
+async function deallocateOrder(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  orderId: string,
+  userId: string
+): Promise<void> {
+  const pickTasks = await db.pickTask.findMany({
+    where: { orderId },
+    include: { lines: true },
+  });
+
+  if (pickTasks.length === 0) return;
+
+  await db.$transaction(
+    async (
+      prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any
+    ) => {
+      for (const task of pickTasks) {
+        for (const line of task.lines) {
+          // Only deallocate lines that were allocated (have a binId)
+          if (!line.binId) continue;
+
+          // Reverse allocation: decrement allocated, increment available
+          await prisma.inventory.updateMany({
+            where: {
+              productId: line.productId,
+              binId: line.binId,
+            },
+            data: {
+              allocated: { decrement: line.quantity },
+              available: { increment: line.quantity },
+            },
+          });
+
+          // Write deallocate ledger entry
+          await prisma.inventoryTransaction.create({
+            data: {
+              type: "deallocate",
+              productId: line.productId,
+              fromBinId: line.binId,
+              quantity: line.quantity,
+              referenceType: "order",
+              referenceId: orderId,
+              performedBy: userId,
+            },
+          });
+        }
+
+        // Delete the pick task lines, then the pick task
+        await prisma.pickTaskLine.deleteMany({
+          where: { pickTaskId: task.id },
+        });
+        await prisma.pickTask.delete({ where: { id: task.id } });
+      }
+    }
+  );
+
+  await logAudit(db, {
+    userId,
+    action: "delete",
+    entityType: "pick_task",
+    entityId: orderId,
+    changes: {
+      reason: { old: null, new: "order_cancellation" },
+      tasksRemoved: { old: null, new: pickTasks.length },
+    },
+  });
 }
 
 export async function deleteOrder(id: string) {

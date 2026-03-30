@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
+import { paginateQuery, buildPaginatedResult, type PaginatedResult } from "@/lib/pagination";
 import { z } from "zod";
 
 const REVALIDATE = "/inventory/cycle-counts";
@@ -37,8 +39,22 @@ const submitCountSchema = z.object({
 
 // ─── Helpers ────────────────────────────────────────────
 
-async function getContext() {
-  return requireTenantContext("inventory:read");
+function assertNotPortal(ctx: { portalClientId?: string | null }) {
+  if (ctx.portalClientId) {
+    throw new Error("Forbidden: portal users cannot access cycle count operations");
+  }
+}
+
+async function getReadContext() {
+  const ctx = await requireTenantContext("inventory:read");
+  assertNotPortal(ctx);
+  return ctx;
+}
+
+async function getWriteContext() {
+  const ctx = await requireTenantContext("inventory:write");
+  assertNotPortal(ctx);
+  return ctx;
 }
 
 function computeNextRunAt(frequency: string, from: Date = new Date()): Date {
@@ -60,10 +76,6 @@ function computeNextRunAt(frequency: string, from: Date = new Date()): Date {
   return next;
 }
 
-/**
- * Determine if a product should be counted based on ABC method and frequency.
- * A items: weekly, B items: monthly, C items: quarterly.
- */
 function shouldCountAbc(abcClass: string, frequency: string): boolean {
   switch (abcClass) {
     case "A":
@@ -71,27 +83,72 @@ function shouldCountAbc(abcClass: string, frequency: string): boolean {
     case "B":
       return frequency === "monthly" || frequency === "weekly" || frequency === "daily";
     case "C":
-      return true; // quarterly catches all
+      return true;
     default:
       return true;
   }
 }
 
+type InventoryRow = {
+  id: string;
+  productId: string;
+  binId: string;
+  lotNumber: string | null;
+  serialNumber: string | null;
+  onHand: number;
+};
+
+const INV_SELECT = {
+  id: true,
+  productId: true,
+  binId: true,
+  lotNumber: true,
+  serialNumber: true,
+  onHand: true,
+} as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function warehouseBinFilter(accessibleIds: string[] | null): any {
+  if (accessibleIds === null) return {};
+  return {
+    bin: { shelf: { rack: { aisle: { zone: { warehouseId: { in: accessibleIds } } } } } },
+  };
+}
+
 // ─── Actions ────────────────────────────────────────────
 
-export async function getCycleCountPlans() {
-  if (config.useMockData) return [];
+export async function getCycleCountPlans(opts?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedResult<{ id: string; [key: string]: unknown }>> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 25;
 
-  const { tenant } = await getContext();
-  return tenant.db.cycleCountPlan.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  if (config.useMockData) {
+    return buildPaginatedResult([], 0, page, pageSize);
+  }
+
+  const { tenant } = await getReadContext();
+  const [data, total] = await Promise.all([
+    tenant.db.cycleCountPlan.findMany({
+      orderBy: { createdAt: "desc" },
+      ...paginateQuery(page, pageSize),
+    }),
+    tenant.db.cycleCountPlan.count(),
+  ]);
+
+  return buildPaginatedResult(
+    data as Array<{ id: string; [key: string]: unknown }>,
+    total,
+    page,
+    pageSize
+  );
 }
 
 export async function createCycleCountPlan(data: unknown) {
   if (config.useMockData) return { id: "mock-plan", ...(data as object) };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant } = await getWriteContext();
   const parsed = createPlanSchema.parse(data);
 
   const plan = await tenant.db.cycleCountPlan.create({
@@ -118,7 +175,7 @@ export async function createCycleCountPlan(data: unknown) {
 export async function updateCycleCountPlan(id: string, data: unknown) {
   if (config.useMockData) return { id, ...(data as object) };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant } = await getWriteContext();
   const parsed = createPlanSchema.partial().parse(data);
 
   const updateData: Record<string, unknown> = { ...parsed };
@@ -145,7 +202,7 @@ export async function updateCycleCountPlan(id: string, data: unknown) {
 export async function deleteCycleCountPlan(id: string) {
   if (config.useMockData) return { id, deleted: true };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant } = await getWriteContext();
 
   await tenant.db.cycleCountPlan.update({
     where: { id },
@@ -166,82 +223,55 @@ export async function deleteCycleCountPlan(id: string) {
 /**
  * Generate cycle count tasks for a plan. Creates an InventoryAdjustment
  * with type=cycle_count and AdjustmentLines for each bin/product to count.
+ * Bins are filtered by the user's accessible warehouses.
  */
 export async function generateCycleCountTasks(planId: string) {
   if (config.useMockData) return { adjustmentId: "mock-adj", lineCount: 0 };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant, role, warehouseAccess } = await getWriteContext();
   const db = tenant.db;
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const plan = await db.cycleCountPlan.findUniqueOrThrow({ where: { id: planId } });
   const planConfig = (plan.config ?? {}) as { zoneCodes?: string[]; randomCount?: number };
 
-  // Collect bins to count based on method
-  let inventoryRows: Array<{
-    id: string;
-    productId: string;
-    binId: string;
-    lotNumber: string | null;
-    serialNumber: string | null;
-    onHand: number;
-  }> = [];
+  let inventoryRows: InventoryRow[] = [];
 
   if (plan.method === "full") {
     inventoryRows = await db.inventory.findMany({
-      where: { onHand: { gt: 0 } },
-      select: {
-        id: true,
-        productId: true,
-        binId: true,
-        lotNumber: true,
-        serialNumber: true,
-        onHand: true,
-      },
+      where: { onHand: { gt: 0 }, ...warehouseBinFilter(accessibleIds) },
+      select: INV_SELECT,
     });
   } else if (plan.method === "zone") {
     const zoneCodes = planConfig.zoneCodes ?? [];
     if (zoneCodes.length === 0) {
       throw new Error("Zone method requires at least one zone code in plan config");
     }
+    const whFilter = accessibleIds !== null ? { warehouseId: { in: accessibleIds } } : {};
     inventoryRows = await db.inventory.findMany({
       where: {
         onHand: { gt: 0 },
         bin: {
           shelf: {
-            rack: { aisle: { zone: { code: { in: zoneCodes } } } },
+            rack: { aisle: { zone: { code: { in: zoneCodes }, ...whFilter } } },
           },
         },
       },
-      select: {
-        id: true,
-        productId: true,
-        binId: true,
-        lotNumber: true,
-        serialNumber: true,
-        onHand: true,
-      },
+      select: INV_SELECT,
     });
   } else if (plan.method === "random") {
     const count = planConfig.randomCount ?? 50;
     const allOccupied = await db.inventory.findMany({
-      where: { onHand: { gt: 0 } },
-      select: {
-        id: true,
-        productId: true,
-        binId: true,
-        lotNumber: true,
-        serialNumber: true,
-        onHand: true,
-      },
+      where: { onHand: { gt: 0 }, ...warehouseBinFilter(accessibleIds) },
+      select: INV_SELECT,
     });
-    // Fisher-Yates shuffle then take N
     for (let i = allOccupied.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allOccupied[i], allOccupied[j]] = [allOccupied[j], allOccupied[i]];
     }
     inventoryRows = allOccupied.slice(0, count);
   } else if (plan.method === "abc") {
-    inventoryRows = await collectAbcInventory(db, plan.frequency);
+    inventoryRows = await collectAbcInventory(db, plan.frequency, accessibleIds);
   }
 
   if (inventoryRows.length === 0) {
@@ -269,13 +299,12 @@ export async function generateCycleCountTasks(planId: string) {
           serialNumber: row.serialNumber,
           systemQty: row.onHand,
           countedQty: 0,
-          variance: -row.onHand, // Will be updated when counts are submitted
+          variance: -row.onHand,
         })),
       },
     },
   });
 
-  // Update plan timestamps
   await db.cycleCountPlan.update({
     where: { id: planId },
     data: {
@@ -295,25 +324,12 @@ export async function generateCycleCountTasks(planId: string) {
   return { adjustmentId: adjustment.id, lineCount: inventoryRows.length };
 }
 
-/**
- * Collect inventory for ABC method: A items counted weekly,
- * B items monthly, C items quarterly.
- */
 async function collectAbcInventory(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any,
-  frequency: string
-): Promise<
-  Array<{
-    id: string;
-    productId: string;
-    binId: string;
-    lotNumber: string | null;
-    serialNumber: string | null;
-    onHand: number;
-  }>
-> {
-  // Get pick frequency from slotting recommendations to determine ABC class
+  frequency: string,
+  accessibleIds: string[] | null
+): Promise<InventoryRow[]> {
   const recs = await db.slottingRecommendation.findMany({
     select: { productId: true, abcClass: true },
     distinct: ["productId"],
@@ -325,15 +341,8 @@ async function collectAbcInventory(
   }
 
   const allOccupied = await db.inventory.findMany({
-    where: { onHand: { gt: 0 } },
-    select: {
-      id: true,
-      productId: true,
-      binId: true,
-      lotNumber: true,
-      serialNumber: true,
-      onHand: true,
-    },
+    where: { onHand: { gt: 0 }, ...warehouseBinFilter(accessibleIds) },
+    select: INV_SELECT,
   });
 
   return allOccupied.filter((row: { productId: string }) => {
@@ -342,14 +351,10 @@ async function collectAbcInventory(
   });
 }
 
-/**
- * Submit actual counts for a cycle count adjustment.
- * Records counted quantities and computes variance for each line.
- */
 export async function submitCycleCount(data: unknown) {
   if (config.useMockData) return { success: true };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant } = await getWriteContext();
   const db = tenant.db;
   const parsed = submitCountSchema.parse(data);
 
@@ -400,14 +405,10 @@ export async function submitCycleCount(data: unknown) {
   return { success: true, adjustmentId: parsed.adjustmentId };
 }
 
-/**
- * Approve a cycle count: apply variances to inventory (onHand adjustments)
- * and write ledger entries (InventoryTransaction) for each non-zero variance.
- */
 export async function approveCycleCount(adjustmentId: string) {
   if (config.useMockData) return { success: true };
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant } = await getWriteContext();
   const db = tenant.db;
 
   const adjustment = await db.inventoryAdjustment.findUniqueOrThrow({
@@ -427,7 +428,6 @@ export async function approveCycleCount(adjustmentId: string) {
     for (const line of adjustment.lines) {
       if (line.variance === 0) continue;
 
-      // Update inventory onHand and available
       const inv = await prisma.inventory.findFirst({
         where: {
           productId: line.productId,
@@ -447,7 +447,6 @@ export async function approveCycleCount(adjustmentId: string) {
           },
         });
       } else if (line.variance > 0) {
-        // Found inventory that the system didn't know about
         await prisma.inventory.create({
           data: {
             productId: line.productId,
@@ -461,7 +460,6 @@ export async function approveCycleCount(adjustmentId: string) {
         });
       }
 
-      // Write ledger entry
       await prisma.inventoryTransaction.create({
         data: {
           type: "count",

@@ -152,6 +152,18 @@ const navigation: NavGroup[] = [
     labelKey: "fulfillment",
     items: [
       { titleKey: "orders", href: "/orders", icon: ShoppingCart, permission: "orders:read" },
+      {
+        titleKey: "backorders",
+        href: "/orders/backorders",
+        icon: AlertTriangle,
+        permission: "orders:read",
+      },
+      {
+        titleKey: "importOrders",
+        href: "/orders/import",
+        icon: ArrowDownToLine,
+        permission: "orders:write",
+      },
       { titleKey: "picking", href: "/picking", icon: ScanLine, permission: "shipping:read" },
       { titleKey: "shipping", href: "/shipping", icon: Truck, permission: "shipping:read" },
       {
@@ -282,6 +294,12 @@ const navigation: NavGroup[] = [
         permission: "reports:read",
       },
       { titleKey: "settings", href: "/settings", icon: Settings, permission: "settings:read" },
+      {
+        titleKey: "notifications",
+        href: "/settings/notifications",
+        icon: Smartphone,
+        permission: "settings:read",
+      },
     ],
   },
 ];

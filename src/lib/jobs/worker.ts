@@ -7,6 +7,7 @@
  */
 import { Worker, type Job } from "bullmq";
 import { bullmqConnection as connection } from "./redis-connection";
+import { logger } from "@/lib/logger";
 
 // ── Notification Worker ─────────────────────────────────────────────────────
 
@@ -331,9 +332,11 @@ async function processReport(job: Job) {
       });
     }
 
-    console.warn(
-      `[Report Worker] ${tenantSlug} inventory_summary: ${inventory.length} rows, ${admins.length} recipients`
-    );
+    logger.info("[Report Worker] inventory_summary generated", {
+      tenantSlug,
+      rows: inventory.length,
+      recipients: admins.length,
+    });
   }
 }
 
@@ -370,5 +373,7 @@ export function startWorkers() {
     concurrency: 2,
   });
 
-  console.warn("[jobs] BullMQ workers started: notifications, integrations, email, slotting, reports");
+  logger.info("[jobs] BullMQ workers started", {
+    queues: ["notifications", "integrations", "email", "slotting", "reports"],
+  });
 }

@@ -97,6 +97,9 @@
     "lpn": "LPN Tracking",
     "transfers": "Transfers",
     "replenishment": "Replenishment",
-    "pickMovement": "Pick Movement"
+    "pickMovement": "Pick Movement",
+    "backorders": "Backorders",
+    "importOrders": "Import Orders",
+    "notifications": "Notifications"
   }
 }

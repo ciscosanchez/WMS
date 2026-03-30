@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
 import { asTenantDb } from "@/lib/tenant/db-types";
+import { paginateQuery, buildPaginatedResult, type PaginatedResult } from "@/lib/pagination";
 
 async function getReadContext() {
   return requireTenantContext("orders:read");
@@ -36,31 +37,50 @@ type BackorderedOrder = {
 };
 
 /**
- * Returns all orders currently in `backordered` status, including their lines
- * and any existing pick tasks (to identify which lines are already allocated).
+ * Returns paginated orders currently in `backordered` status, including their
+ * lines and any existing pick tasks (to identify which lines are already allocated).
+ * Portal users only see backorders for their bound client.
  */
-export async function getBackorders(): Promise<BackorderedOrder[]> {
-  if (config.useMockData) return [];
+export async function getBackorders(opts?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<PaginatedResult<BackorderedOrder>> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 25;
 
-  const { tenant } = await getReadContext();
+  if (config.useMockData) {
+    return buildPaginatedResult<BackorderedOrder>([], 0, page, pageSize);
+  }
+
+  const { tenant, portalClientId } = await getReadContext();
   const db = asTenantDb(tenant.db);
 
-  const orders = await db.order.findMany({
-    where: { status: "backordered" },
-    include: {
-      lines: {
-        include: { product: { select: { sku: true, name: true } } },
-      },
-      picks: {
-        include: {
-          lines: { select: { productId: true, quantity: true } },
+  // Portal users may only see backorders for their bound client
+  const whereClause: Record<string, unknown> = { status: "backordered" };
+  if (portalClientId) {
+    whereClause.clientId = portalClientId;
+  }
+
+  const [orders, total] = await Promise.all([
+    db.order.findMany({
+      where: whereClause,
+      include: {
+        lines: {
+          include: { product: { select: { sku: true, name: true } } },
+        },
+        picks: {
+          include: {
+            lines: { select: { productId: true, quantity: true } },
+          },
         },
       },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+      orderBy: { createdAt: "asc" },
+      ...paginateQuery(page, pageSize),
+    }),
+    db.order.count({ where: whereClause }),
+  ]);
 
-  return orders as unknown as BackorderedOrder[];
+  return buildPaginatedResult(orders as unknown as BackorderedOrder[], total, page, pageSize);
 }
 
 type FulfillmentCheckLine = {

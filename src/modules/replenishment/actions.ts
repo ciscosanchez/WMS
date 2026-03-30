@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { config } from "@/lib/config";
 import { requireTenantContext } from "@/lib/tenant/context";
+import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
 
@@ -179,16 +180,37 @@ export async function executeReplenishment(ruleId: string): Promise<Replenishmen
     };
   }
 
-  const { user, tenant } = await requireTenantContext("inventory:write");
+  const { user, tenant, role, warehouseAccess } = await requireTenantContext("inventory:write");
   const db = tenant.db;
+  const accessibleIds = getAccessibleWarehouseIds(role, warehouseAccess);
 
   const rule = await db.replenishmentRule.findUniqueOrThrow({
     where: { id: ruleId },
     include: {
       product: { select: { id: true, sku: true, name: true } },
-      bin: { select: { id: true, barcode: true } },
+      bin: {
+        select: {
+          id: true,
+          barcode: true,
+          shelf: {
+            select: {
+              rack: { select: { aisle: { select: { zone: { select: { warehouseId: true } } } } } },
+            },
+          },
+        },
+      },
     },
   });
+
+  // Verify warehouse access for the rule's bin
+  if (accessibleIds !== null) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bin = rule.bin as any;
+    const warehouseId = bin?.shelf?.rack?.aisle?.zone?.warehouseId;
+    if (warehouseId && !accessibleIds.includes(warehouseId)) {
+      throw new Error("Access denied: you do not have access to this warehouse");
+    }
+  }
 
   // Current qty in the pick-face bin
   const pickInv = await db.inventory.findFirst({

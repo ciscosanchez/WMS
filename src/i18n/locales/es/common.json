@@ -97,6 +97,9 @@
     "lpn": "Rastreo LPN",
     "transfers": "Transferencias",
     "replenishment": "Reabastecimiento",
-    "pickMovement": "Movimiento de Picking"
+    "pickMovement": "Movimiento de Picking",
+    "backorders": "Pedidos Pendientes",
+    "importOrders": "Importar Órdenes",
+    "notifications": "Notificaciones"
   }
 }
