@@ -240,6 +240,45 @@ export async function sendOrderShippedCustomer(opts: {
   return { sent: true };
 }
 
+export async function sendScheduledReport(opts: {
+  to: string;
+  reportName: string;
+  tenantSlug: string;
+  dateKey: string;
+  csvContent: string;
+  locale?: string;
+}): Promise<SendResult> {
+  const client = getClient();
+  if (!client) return NO_KEY;
+
+  const t = await getServerTranslations(opts.locale ?? "en", "email");
+
+  // Encode CSV as a base64 attachment
+  const csvBase64 = Buffer.from(opts.csvContent, "utf-8").toString("base64");
+  const filename = `${opts.reportName.replace(/\s+/g, "_")}_${opts.dateKey}.csv`;
+
+  await client.emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: t("scheduledReport.subject", {
+      reportName: opts.reportName,
+      date: opts.dateKey,
+    }),
+    html: `
+      <p>${t("scheduledReport.body", { reportName: opts.reportName, date: opts.dateKey })}</p>
+      <p>${t("scheduledReport.attached", { filename })}</p>
+      <p style="color:#888;font-size:12px;">${APP_NAME}</p>
+    `,
+    attachments: [
+      {
+        filename,
+        content: csvBase64,
+      },
+    ],
+  });
+  return { sent: true };
+}
+
 export async function sendLowStockAlert(opts: {
   to: string;
   products: { sku: string; name: string; available: number; minStock: number }[];

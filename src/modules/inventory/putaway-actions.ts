@@ -6,6 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { suggestPutawayLocation } from "./putaway-engine";
 import { mockAdjustments } from "@/lib/mock-data";
+import { publishInventoryUpdate } from "@/lib/events/event-bus";
 
 async function getContext() {
   return requireTenantContext("inventory:read");
@@ -247,6 +248,17 @@ export async function confirmPutaway(receivingTxId: string, targetBinId: string)
     entityType: "putaway",
     entityId: receivingTxId,
   });
+
+  // Publish SSE event for real-time UI updates
+  try {
+    publishInventoryUpdate(tenant.tenantId, {
+      action: "putaway",
+      productId: rxTx.line.productId,
+      binId: targetBinId,
+    });
+  } catch (sseErr) {
+    console.error("[confirmPutaway] SSE publish failed:", sseErr);
+  }
 
   revalidatePath("/inventory/putaway");
   return { success: true };

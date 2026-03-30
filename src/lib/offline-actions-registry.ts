@@ -27,6 +27,9 @@ import { receiveLine, updateShipmentStatus } from "@/modules/receiving/actions";
 // Inventory actions
 import { moveInventory } from "@/modules/inventory/mutations";
 
+// Cycle count actions
+import { submitCycleCount } from "@/modules/inventory/cycle-count-actions";
+
 export function registerAllOfflineActions() {
   registerOfflineActions("operator", {
     claimPickTask: claimPickTask as (...args: unknown[]) => Promise<unknown>,
@@ -43,5 +46,6 @@ export function registerAllOfflineActions() {
 
   registerOfflineActions("inventory", {
     moveInventory: moveInventory as (...args: unknown[]) => Promise<unknown>,
+    submitCycleCount: submitCycleCount as (...args: unknown[]) => Promise<unknown>,
   });
 }

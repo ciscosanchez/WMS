@@ -6,6 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { logAudit } from "@/lib/audit";
 import { nextSequence } from "@/lib/sequences";
 import { asTenantDb } from "@/lib/tenant/db-types";
+import { publishPickTaskUpdate } from "@/lib/events/event-bus";
 
 async function getContext() {
   return requireTenantContext("orders:read");
@@ -259,6 +260,14 @@ async function generatePickTasksForEligibleOrders(method: PickTaskMethod) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data: { status: newStatus as any },
         });
+
+        // Publish SSE event for real-time UI updates
+        try {
+          publishPickTaskUpdate(tenant.tenantId, { taskId: result.task.id, status: "pending" });
+        } catch (sseErr) {
+          console.error("[generatePickTasks] SSE publish failed:", sseErr);
+        }
+
         created += 1;
       } else {
         // No lines could be allocated

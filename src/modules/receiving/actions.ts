@@ -16,6 +16,7 @@ import { mockShipments } from "@/lib/mock-data";
 import { assertTransition, SHIPMENT_TRANSITIONS } from "@/lib/workflow/transitions";
 import { finalizeReceiving, captureBillingOnReceive } from "./finalize";
 import { notificationQueue } from "@/lib/jobs/queue";
+import { publishInventoryUpdate } from "@/lib/events/event-bus";
 import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";
 import { convertQuantityToBaseUom } from "@/modules/products/uom";
 
@@ -322,6 +323,18 @@ export async function receiveLine(shipmentId: string, data: unknown) {
     entityType: "receiving_transaction",
     entityId: transaction.id,
   });
+
+  // Publish SSE event for real-time UI updates
+  try {
+    publishInventoryUpdate(tenant.tenantId, {
+      action: "receive",
+      productId: transaction.lineId ?? parsed.lineId,
+      shipmentId,
+      quantity: parsed.quantity,
+    });
+  } catch (sseErr) {
+    console.error("[receiveLine] SSE publish failed:", sseErr);
+  }
 
   revalidatePath("/receiving");
   return transaction;

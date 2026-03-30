@@ -1,79 +1,97 @@
-import { getReplenishmentRules, checkReplenishmentNeeds } from "@/modules/replenishment/actions";
+import { AlertTriangle, Settings2 } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import {
+  getReplenishmentRules,
+  checkReplenishmentNeeds,
+} from "@/modules/replenishment/actions";
+import { ReplenishmentNeeds } from "@/components/inventory/replenishment-needs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function ReplenishmentPage() {
-  const [rules, needs] = await Promise.all([getReplenishmentRules(), checkReplenishmentNeeds()]);
+  const [rules, needs] = await Promise.all([
+    getReplenishmentRules(),
+    checkReplenishmentNeeds(),
+  ]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
+      <PageHeader
+        title="Replenishment Dashboard"
+        description="Monitor pick-face inventory and execute replenishment moves"
+      />
+
+      {/* Section: Replenishment Needs (Urgent) */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Replenishment</h1>
-        <p className="text-muted-foreground">Auto-reorder rules and pick-face replenishment</p>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          Replenishment Needs
+          {needs.length > 0 && (
+            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              {needs.length}
+            </span>
+          )}
+        </h2>
+        <ReplenishmentNeeds needs={needs} />
       </div>
 
-      {needs.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-          <h2 className="mb-2 font-semibold text-amber-800 dark:text-amber-300">
-            Replenishment Needed ({needs.length})
-          </h2>
-          <div className="space-y-1">
-            {needs.map(
-              (need: {
-                ruleId: string;
-                productSku: string;
-                binBarcode: string;
-                currentQty: number;
-                reorderPoint: number;
-                suggestedQty: number;
-              }) => (
-                <div
-                  key={need.ruleId}
-                  className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400"
-                >
-                  <span>
-                    {need.productSku} in {need.binBarcode}: {need.currentQty} on hand (reorder at{" "}
-                    {need.reorderPoint})
-                  </span>
-                  <span className="font-medium">Need +{need.suggestedQty}</span>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      )}
-
+      {/* Section: Rules Configuration */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Active Rules</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+          <Settings2 className="h-5 w-5" />
+          Active Rules
+        </h2>
+
         {rules.length === 0 ? (
-          <div className="rounded-lg border bg-card p-12 text-center">
-            <p className="text-muted-foreground">No replenishment rules configured.</p>
-          </div>
+          <EmptyState
+            icon={Settings2}
+            title="No Replenishment Rules"
+            description="Configure replenishment rules to automate pick-face restocking."
+          />
         ) : (
-          <div className="rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-3 text-left font-medium">SKU</th>
-                  <th className="p-3 text-left font-medium">Product</th>
-                  <th className="p-3 text-left font-medium">Bin</th>
-                  <th className="p-3 text-right font-medium">Min</th>
-                  <th className="p-3 text-right font-medium">Reorder</th>
-                  <th className="p-3 text-right font-medium">Max</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Bin</TableHead>
+                  <TableHead className="text-right">Min</TableHead>
+                  <TableHead className="text-right">Reorder Point</TableHead>
+                  <TableHead className="text-right">Max</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {rules.map((rule: any) => (
-                  <tr key={rule.id} className="border-b">
-                    <td className="p-3 font-mono text-xs">{rule.product?.sku ?? "—"}</td>
-                    <td className="p-3">{rule.product?.name ?? "—"}</td>
-                    <td className="p-3 font-mono text-xs">{rule.bin?.barcode ?? "—"}</td>
-                    <td className="p-3 text-right">{rule.minQty}</td>
-                    <td className="p-3 text-right font-medium">{rule.reorderPoint}</td>
-                    <td className="p-3 text-right">{rule.maxQty}</td>
-                  </tr>
+                  <TableRow key={rule.id}>
+                    <TableCell className="font-mono text-xs">
+                      {rule.product?.sku ?? "-"}
+                    </TableCell>
+                    <TableCell>{rule.product?.name ?? "-"}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {rule.bin?.barcode ?? rule.bin?.code ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {rule.minQty}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {rule.reorderPoint}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {rule.maxQty}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

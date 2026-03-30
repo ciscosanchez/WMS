@@ -6,6 +6,7 @@ import { requireTenantContext } from "@/lib/tenant/context";
 import { getAccessibleWarehouseIds } from "@/lib/auth/rbac";
 import { logAudit } from "@/lib/audit";
 import { notificationQueue, integrationQueue, emailQueue } from "@/lib/jobs/queue";
+import { publishShipmentStatus } from "@/lib/events/event-bus";
 
 export async function getLabelDownloadUrl(
   shipmentId: string
@@ -229,6 +230,12 @@ export async function markShipmentShipped(
           trackingNumber,
           carrier,
         });
+      }
+      // Publish SSE event for real-time UI updates
+      try {
+        publishShipmentStatus(tenant.tenantId, { shipmentId, status: "shipped", trackingNumber });
+      } catch (sseErr) {
+        console.error("[markShipmentShipped] SSE publish failed:", sseErr);
       }
     } catch (postCommitErr) {
       // Log but do NOT propagate — the shipment is already shipped

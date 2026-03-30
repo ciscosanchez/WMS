@@ -1,6 +1,7 @@
 import { requireTenantContext } from "@/lib/tenant/context";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/components/shared/dashboard-charts";
+import { LiveKpiStrip } from "@/components/dashboard/live-kpi-strip";
 import { getDashboardChartData } from "@/modules/dashboard/actions";
 import { PackageOpen, PackageCheck, Boxes, MapPin, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,6 +135,9 @@ export default async function DashboardPage() {
           icon={AlertTriangle}
         />
       </div>
+
+      {/* Live KPI Strip — real-time SSE counters */}
+      <LiveKpiStrip />
 
       {/* Charts */}
       <DashboardCharts

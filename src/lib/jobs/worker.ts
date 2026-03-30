@@ -115,6 +115,11 @@ async function processEmail(job: Job) {
     if (!result.sent && result.warning) {
       console.warn(`[email] ${result.warning}`);
     }
+  } else if (template === "scheduled_report") {
+    const result = await email.sendScheduledReport(data);
+    if (!result.sent && result.warning) {
+      console.warn(`[email] ${result.warning}`);
+    }
   }
 }
 
@@ -264,6 +269,74 @@ async function processSlotting(job: Job) {
   }
 }
 
+// ── Report Worker ────────────────────────────────────────────────────────
+
+async function processReport(job: Job) {
+  const { reportType, tenantId, tenantSlug, dbSchema, dateKey, reportName } = job.data;
+  const { getTenantDb } = await import("@/lib/db/tenant-client");
+  const { publicDb } = await import("@/lib/db/public-client");
+  const { emailQueue } = await import("@/lib/jobs/queue");
+
+  const db = getTenantDb(dbSchema);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbAny = db as any;
+
+  if (reportType === "inventory_summary") {
+    // Gather inventory data
+    const inventory = await dbAny.inventory.findMany({
+      where: { onHand: { gt: 0 } },
+      include: {
+        product: { select: { sku: true, name: true } },
+        bin: { select: { barcode: true } },
+      },
+      orderBy: { product: { sku: "asc" } },
+    });
+
+    // Generate CSV
+    const csvHeader = "SKU,Product Name,Bin,On Hand,Allocated,Available";
+    const csvRows = inventory.map(
+      (row: {
+        product: { sku: string; name: string };
+        bin: { barcode: string } | null;
+        onHand: number;
+        allocated: number;
+        available: number;
+      }) =>
+        [
+          `"${row.product.sku}"`,
+          `"${row.product.name.replace(/"/g, '""')}"`,
+          `"${row.bin?.barcode ?? "-"}"`,
+          row.onHand,
+          row.allocated,
+          row.available,
+        ].join(",")
+    );
+    const csv = [csvHeader, ...csvRows].join("\n");
+
+    // Find admin users to email the report
+    const admins = await publicDb.tenantUser.findMany({
+      where: { tenantId, role: "admin" },
+      select: { user: { select: { email: true, name: true } } },
+    });
+
+    for (const admin of admins) {
+      if (!admin.user?.email) continue;
+      await emailQueue.add(`report_delivery_${tenantSlug}_${dateKey}`, {
+        template: "scheduled_report",
+        to: admin.user.email,
+        reportName: reportName ?? "Inventory Summary",
+        tenantSlug,
+        dateKey,
+        csvContent: csv,
+      });
+    }
+
+    console.warn(
+      `[Report Worker] ${tenantSlug} inventory_summary: ${inventory.length} rows, ${admins.length} recipients`
+    );
+  }
+}
+
 // ── Start Workers ───────────────────────────────────────────────────────────
 
 let started = false;
@@ -292,5 +365,10 @@ export function startWorkers() {
     concurrency: 1,
   });
 
-  console.warn("[jobs] BullMQ workers started: notifications, integrations, email, slotting");
+  new Worker("wms-reports", processReport, {
+    connection,
+    concurrency: 2,
+  });
+
+  console.warn("[jobs] BullMQ workers started: notifications, integrations, email, slotting, reports");
 }

@@ -1,125 +1,277 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarcodeScannerInput } from "@/components/shared/barcode-scanner-input";
-import { Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ListChecks, Check, Loader2, ScanLine, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { getCycleCountBins, submitCount } from "@/modules/operator/actions";
-import { actionKey } from "@/hooks/use-offline";
-import { useSharedOffline } from "@/providers/offline-provider";
+import { submitCycleCount } from "@/modules/inventory/cycle-count-actions";
+import { getPendingCycleCountAdjustments } from "@/modules/inventory/cycle-count-queries";
 
-type CountBin = Awaited<ReturnType<typeof getCycleCountBins>>[number];
+/* ── Types ──────────────────────────────────────────────────────────────── */
 
-export default function OperatorCountPage() {
-  const [bins, setBins] = useState<CountBin[]>([]);
+type AdjustmentLine = {
+  id: string;
+  productId: string;
+  product: { sku: string; name: string };
+  binId: string;
+  bin: { barcode: string };
+  systemQty: number;
+  countedQty: number;
+  variance: number;
+};
+
+type Adjustment = {
+  id: string;
+  adjustmentNumber: string;
+  reason: string | null;
+  status: string;
+  lines: AdjustmentLine[];
+};
+
+/* ── Page component ─────────────────────────────────────────────────────── */
+
+export default function OperatorCycleCountPage() {
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeBin, setActiveBin] = useState<CountBin | null>(null);
+  const [activeAdj, setActiveAdj] = useState<Adjustment | null>(null);
+  const [activeLineIdx, setActiveLineIdx] = useState(0);
   const [counts, setCounts] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const { executeAction } = useSharedOffline();
+  const [showSystem, setShowSystem] = useState<Record<string, boolean>>({});
+  const [isPending, startTransition] = useTransition();
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const countInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   const t = useTranslations("operator.count");
   const tc = useTranslations("common");
 
-  useEffect(() => {
-    getCycleCountBins()
-      .then((data) => setBins(data as CountBin[]))
+  function load() {
+    getPendingCycleCountAdjustments()
+      .then((data) => setAdjustments(data as Adjustment[]))
       .catch(() => toast.error(t("failedLoadBins")))
       .finally(() => setLoading(false));
-  }, [t]);
+  }
 
-  function handleBinScan(barcode: string) {
-    const bin = bins.find((b) => b.barcode === barcode);
-    if (!bin) {
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ── Barcode scan handler ─────────────────────────────────────────────── */
+
+  function handleBarcodeScan(barcode: string) {
+    if (!activeAdj) return;
+    const idx = activeAdj.lines.findIndex((l) => l.bin.barcode === barcode);
+    if (idx === -1) {
       toast.error(t("binNotFound", { barcode }));
       return;
     }
-    setActiveBin(bin);
-    // Pre-fill counts with system quantities
-    const initial: Record<string, string> = {};
-    for (const item of bin.inventory) {
-      initial[item.id] = String(item.onHand);
-    }
-    setCounts(initial);
-    toast.success(t("counting", { barcode: bin.barcode }));
+    setActiveLineIdx(idx);
+    toast.success(t("counting", { barcode }));
+    setTimeout(() => countInputRef.current?.focus(), 100);
   }
 
-  async function handleSubmit() {
-    if (!activeBin) return;
+  function handleScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      const value = (e.target as HTMLInputElement).value.trim();
+      if (value) {
+        handleBarcodeScan(value);
+        (e.target as HTMLInputElement).value = "";
+      }
+    }
+  }
 
-    setSubmitting(true);
-    try {
-      const lines = activeBin.inventory.map((item: CountBin["inventory"][number]) => ({
-        productId: item.productId,
-        systemQty: item.onHand,
-        countedQty: parseInt(counts[item.id] ?? "0"),
-        lotNumber: item.lotNumber,
+  /* ── Submit counts ────────────────────────────────────────────────────── */
+
+  function handleSubmit() {
+    if (!activeAdj) return;
+
+    const countEntries = activeAdj.lines
+      .filter((line) => counts[line.id] !== undefined && counts[line.id] !== "")
+      .map((line) => ({
+        lineId: line.id,
+        countedQty: parseInt(counts[line.id], 10),
       }));
 
-      const { queued } = await executeAction(
-        actionKey("operator", "submitCount"),
-        submitCount as (...args: unknown[]) => Promise<unknown>,
-        [activeBin.id, lines]
-      );
+    if (countEntries.length === 0) {
+      toast.error(t("failedSubmitCount"));
+      return;
+    }
 
-      if (queued) {
-        toast.info(t("countQueued"));
-      } else {
-        const variances = lines.filter(
-          (l: { countedQty: number; systemQty: number }) => l.countedQty !== l.systemQty
-        );
-        if (variances.length > 0) {
-          toast.warning(t("countSubmittedVariances", { count: variances.length }));
-        } else {
-          toast.success(t("countSubmittedClean"));
+    startTransition(async () => {
+      try {
+        const result = await submitCycleCount({
+          adjustmentId: activeAdj.id,
+          counts: countEntries,
+        });
+        if (result && "error" in result) {
+          toast.error(String(result.error));
+          return;
         }
+        toast.success(t("countSubmittedClean"));
+        setActiveAdj(null);
+        setCounts({});
+        setShowSystem({});
+        setActiveLineIdx(0);
+        setLoading(true);
+        load();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t("failedSubmitCount"));
       }
+    });
+  }
 
-      setActiveBin(null);
-      setCounts({});
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("failedSubmitCount"));
-    } finally {
-      setSubmitting(false);
+  /* ── Auto-advance on Enter ────────────────────────────────────────────── */
+
+  function handleCountKeyDown(e: React.KeyboardEvent<HTMLInputElement>, lineIdx: number) {
+    if (e.key === "Enter" && activeAdj) {
+      if (lineIdx < activeAdj.lines.length - 1) {
+        setActiveLineIdx(lineIdx + 1);
+        setTimeout(() => countInputRef.current?.focus(), 100);
+      }
     }
   }
 
-  async function handleEmpty() {
-    if (!activeBin) return;
+  /* ── Loading state ────────────────────────────────────────────────────── */
 
-    setSubmitting(true);
-    try {
-      const lines = activeBin.inventory.map((item: CountBin["inventory"][number]) => ({
-        productId: item.productId,
-        systemQty: item.onHand,
-        countedQty: 0,
-        lotNumber: item.lotNumber,
-      }));
-
-      const { queued } = await executeAction(
-        actionKey("operator", "submitCount"),
-        submitCount as (...args: unknown[]) => Promise<unknown>,
-        [activeBin.id, lines]
-      );
-
-      if (queued) {
-        toast.info(t("emptyCountQueued"));
-      } else {
-        toast.warning(t("binMarkedEmpty"));
-      }
-
-      setActiveBin(null);
-      setCounts({});
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("failedSubmitCount"));
-    } finally {
-      setSubmitting(false);
-    }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
+
+  /* ── Active adjustment: counting mode ─────────────────────────────────── */
+
+  if (activeAdj) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">{activeAdj.adjustmentNumber}</h1>
+            <p className="text-sm text-muted-foreground">
+              {activeAdj.lines.length} {tc("lines")} &middot;{" "}
+              {Object.keys(counts).filter((k) => counts[k] !== "").length} counted
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setActiveAdj(null)}>
+            {tc("back")}
+          </Button>
+        </div>
+
+        {/* Barcode scan input */}
+        <div className="relative">
+          <ScanLine className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+          <Input
+            ref={scanInputRef}
+            className="h-12 pl-10 text-lg"
+            placeholder={t("scanBinPlaceholder")}
+            onKeyDown={handleScanKeyDown}
+            autoFocus
+          />
+        </div>
+
+        {/* Line list */}
+        <div className="space-y-2">
+          {activeAdj.lines.map((line, idx) => {
+            const isCurrent = idx === activeLineIdx;
+            const counted = counts[line.id] ?? "";
+            const hasCount = counted !== "";
+            const hasVariance = hasCount && parseInt(counted, 10) !== line.systemQty;
+
+            return (
+              <Card
+                key={line.id}
+                className={`transition-colors ${
+                  isCurrent ? "border-primary ring-1 ring-primary" : ""
+                } ${hasCount && !isCurrent ? "opacity-70" : ""}`}
+                onClick={() => {
+                  setActiveLineIdx(idx);
+                  setTimeout(() => countInputRef.current?.focus(), 100);
+                }}
+              >
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono font-semibold text-sm">{line.product.sku}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {line.bin.barcode}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {hasCount && (
+                        <Badge
+                          variant={hasVariance ? "destructive" : "secondary"}
+                          className="text-xs"
+                        >
+                          {hasVariance
+                            ? `Var: ${parseInt(counted, 10) - line.systemQty}`
+                            : "OK"}
+                        </Badge>
+                      )}
+                      <button
+                        className="text-xs text-muted-foreground underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSystem((prev) => ({
+                            ...prev,
+                            [line.id]: !prev[line.id],
+                          }));
+                        }}
+                      >
+                        {showSystem[line.id]
+                          ? `Sys: ${line.systemQty}`
+                          : t("system", { onHand: "?" })}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isCurrent && (
+                    <Input
+                      ref={countInputRef}
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      className="h-14 text-center text-2xl font-bold"
+                      placeholder={t("countPlaceholder")}
+                      value={counted}
+                      onChange={(e) =>
+                        setCounts((prev) => ({ ...prev, [line.id]: e.target.value }))
+                      }
+                      onKeyDown={(e) => handleCountKeyDown(e, idx)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <Button
+          className="h-14 w-full text-lg"
+          size="lg"
+          disabled={
+            isPending || Object.keys(counts).filter((k) => counts[k] !== "").length === 0
+          }
+          onClick={handleSubmit}
+        >
+          {isPending ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <Check className="mr-2 h-5 w-5" />
+          )}
+          {t("submitCount")}
+        </Button>
+      </div>
+    );
+  }
+
+  /* ── Adjustment list ──────────────────────────────────────────────────── */
 
   return (
     <div className="space-y-6">
@@ -128,141 +280,48 @@ export default function OperatorCountPage() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {/* Scan to select bin */}
-      <BarcodeScannerInput
-        placeholder={t("scanBinPlaceholder")}
-        onScan={handleBinScan}
-        showFeedback
-      />
-
-      {/* Active count */}
-      {activeBin && (
-        <Card className="border-primary">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold font-mono">{activeBin.barcode}</p>
-                <p className="text-sm text-muted-foreground">
-                  {activeBin.inventory.length} {t("skusInBin")}
-                </p>
-              </div>
-              <Badge className="bg-orange-100 text-orange-700">{t("active")}</Badge>
-            </div>
-
-            <div className="space-y-3">
-              {activeBin.inventory.map((item: CountBin["inventory"][number]) => {
-                const counted = counts[item.id] ?? "";
-                const hasVariance = counted !== "" && parseInt(counted) !== item.onHand;
-                return (
-                  <div key={item.id} className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-mono font-medium">{item.product.sku}</p>
-                        <p className="text-xs text-muted-foreground">{item.product.name}</p>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {t("system", { onHand: item.onHand })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder={t("countPlaceholder")}
-                        className={`h-12 text-center text-xl font-bold ${
-                          hasVariance ? "border-orange-400 bg-orange-50" : ""
-                        }`}
-                        value={counted}
-                        onChange={(e) =>
-                          setCounts((prev) => ({ ...prev, [item.id]: e.target.value }))
-                        }
-                      />
-                      {hasVariance && (
-                        <span className="text-sm font-medium text-orange-600 whitespace-nowrap">
-                          {t("variance", { delta: parseInt(counted) - item.onHand })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                className="h-12 flex-1"
-                size="lg"
-                disabled={submitting}
-                onClick={handleSubmit}
-              >
-                {submitting ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Check className="mr-2 h-5 w-5" />
-                )}
-                {t("submitCount")}
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12"
-                disabled={submitting}
-                onClick={handleEmpty}
-              >
-                {t("empty")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {adjustments.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <ListChecks className="h-12 w-12 text-muted-foreground/50" />
+          <h3 className="mt-4 text-lg font-semibold">No pending counts</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            All cycle counts are up to date.
+          </p>
+        </div>
       )}
 
-      {/* Bin list */}
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-          {t("binsWithInventory", { count: bins.length })}
-        </h2>
-
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t("loadingBins")}
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {bins.map((bin) => (
-            <Card
-              key={bin.id}
-              className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                activeBin?.id === bin.id ? "border-primary" : ""
-              }`}
-              onClick={() => {
-                setActiveBin(bin);
-                const initial: Record<string, string> = {};
-                for (const item of bin.inventory) {
-                  initial[item.id] = String(item.onHand);
-                }
-                setCounts(initial);
-              }}
-            >
-              <CardContent className="flex items-center justify-between p-3">
-                <div>
-                  <p className="font-mono font-medium text-sm">{bin.barcode}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {bin.inventory.length} SKU(s) &middot;{" "}
-                    {bin.inventory.reduce(
-                      (sum: number, i: CountBin["inventory"][number]) => sum + i.onHand,
-                      0
-                    )}{" "}
-                    {tc("units")}
-                  </p>
+      <div className="space-y-2">
+        {adjustments.map((adj) => (
+          <Card
+            key={adj.id}
+            className="cursor-pointer transition-colors hover:bg-muted/50"
+            onClick={() => {
+              setActiveAdj(adj);
+              setActiveLineIdx(0);
+              setCounts({});
+              setShowSystem({});
+            }}
+          >
+            <CardContent className="flex items-center gap-3 py-3">
+              <div className="flex-1 min-w-0">
+                <span className="font-medium">{adj.adjustmentNumber}</span>
+                {adj.reason && (
+                  <p className="text-sm text-muted-foreground truncate">{adj.reason}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="text-right">
+                  <div className="text-sm font-medium">{adj.lines.length}</div>
+                  <div className="text-xs text-muted-foreground">{tc("lines")}</div>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {bin.status}
+                <Badge variant="default" className="text-xs">
+                  {adj.status}
                 </Badge>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
