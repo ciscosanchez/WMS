@@ -274,24 +274,7 @@ export async function completeTransfer(transferId: string) {
     data: { status: "completed" },
   });
 
-  // Capture billing event if a billingEvent model exists
-  try {
-    const totalQty = transfer.lines.reduce(
-      (sum: number, l: { quantity: number }) => sum + l.quantity,
-      0
-    );
-    await tenant.db.billingEvent.create({
-      data: {
-        type: "transfer",
-        referenceType: "transfer_order",
-        referenceId: transferId,
-        description: `Transfer ${transfer.transferNumber}: ${totalQty} units`,
-        quantity: totalQty,
-      },
-    });
-  } catch {
-    // billingEvent table may not exist yet — silently skip
-  }
+  // TODO: capture billing event for transfers once a transfer service type is added
 
   await logAudit(tenant.db, {
     userId: user.id,

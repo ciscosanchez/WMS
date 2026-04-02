@@ -14,14 +14,14 @@ export default async function BackordersPage() {
         description="Orders waiting for inventory availability"
       />
 
-      {backorders.length === 0 ? (
+      {backorders.data.length === 0 ? (
         <EmptyState
           icon={PackageX}
           title="No backorders"
           description="There are no backordered orders at this time."
         />
       ) : (
-        <BackordersTable data={backorders} />
+        <BackordersTable data={backorders.data} />
       )}
     </div>
   );

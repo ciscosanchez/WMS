@@ -95,7 +95,7 @@ export default async function CycleCountsPage() {
           <CardTitle>Cycle Count Plans</CardTitle>
         </CardHeader>
         <CardContent>
-          {(plans as Array<Record<string, unknown>>).length === 0 ? (
+          {plans.data.length === 0 ? (
             <EmptyState
               icon={ListChecks}
               title="No plans yet"
@@ -104,7 +104,7 @@ export default async function CycleCountsPage() {
           ) : (
             <CycleCountPlansTable
               data={
-                plans as Array<{
+                plans.data as Array<{
                   id: string;
                   name: string;
                   method: string;

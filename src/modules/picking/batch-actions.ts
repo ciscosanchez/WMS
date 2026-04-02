@@ -72,7 +72,7 @@ export async function createBatchPickTask(orderIds: string[]) {
 
   const taskNumber = await nextSequence(tenant.db, "PICK");
 
-  const result = await db.$transaction(
+  const result = (await db.$transaction(
     async (
       prisma: // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any
@@ -174,7 +174,7 @@ export async function createBatchPickTask(orderIds: string[]) {
 
       return { task, allocated, skipped };
     }
-  );
+  )) as { task: { id: string } | null; allocated: number; skipped: number };
 
   if (result.task) {
     await logAudit(tenant.db, {

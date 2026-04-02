@@ -111,10 +111,10 @@ function orderKey(row: CsvRow): string {
  * Parse a CSV string into grouped orders with validation.
  * Rows sharing the same clientCode + shipToName + shipToAddress1 become one order.
  */
-export function parseOrderCsv(csvContent: string): {
+export async function parseOrderCsv(csvContent: string): Promise<{
   orders: ParsedOrder[];
   errors: ImportError[];
-} {
+}> {
   const rawLines = csvContent.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (rawLines.length < 2) {
     return {
@@ -211,7 +211,7 @@ export function parseOrderCsv(csvContent: string): {
 export async function validateImportPreview(csvContent: string): Promise<ImportPreview> {
   await requireTenantContext("orders:read");
 
-  const { orders, errors } = parseOrderCsv(csvContent);
+  const { orders, errors } = await parseOrderCsv(csvContent);
   const totalRows = csvContent.split(/\r?\n/).filter((l) => l.trim().length > 0).length - 1;
 
   return { orders, errors, totalRows };
