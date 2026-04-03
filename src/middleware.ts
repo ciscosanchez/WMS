@@ -23,7 +23,7 @@ function getSecurityHeaders(nonce: string): Record<string, string> {
       // In dev, Next.js hot-reload requires unsafe-eval; in prod, use nonce-based loading
       isDev
         ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-        : `script-src 'self' 'nonce-${nonce}'`,
+        : `script-src 'self' 'nonce-${nonce}' 'sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk='`,
       // unsafe-inline required for styles — React/Radix/Recharts use inline style attributes
       `style-src 'self' 'unsafe-inline'`,
       "img-src 'self' data: blob: https:",
