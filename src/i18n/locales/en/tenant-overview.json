@@ -15,7 +15,11 @@
       "lowStockAlertsDesc": "Products below minimum",
       "recentActivity": "Recent Activity",
       "noActivity": "No recent activity",
-      "tenantNotFound": "Tenant not found"
+      "tenantNotFound": "Tenant not found",
+      "receivingVolume": "Receiving Volume (Items/Day)",
+      "ordersByStatus": "Orders by Status",
+      "occupiedBinsByZone": "Occupied Bins by Zone",
+      "fulfillmentThroughput": "Fulfillment Throughput (Orders/Day)"
     },
     "analytics": {
       "title": "Advanced Analytics",

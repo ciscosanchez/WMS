@@ -15,7 +15,11 @@
       "lowStockAlertsDesc": "Productos por debajo del mínimo",
       "recentActivity": "Actividad reciente",
       "noActivity": "Sin actividad reciente",
-      "tenantNotFound": "Inquilino no encontrado"
+      "tenantNotFound": "Inquilino no encontrado",
+      "receivingVolume": "Volumen de Recepción (Artículos/Día)",
+      "ordersByStatus": "Órdenes por Estado",
+      "occupiedBinsByZone": "Bins Ocupados por Zona",
+      "fulfillmentThroughput": "Rendimiento de Cumplimiento (Órdenes/Día)"
     },
     "analytics": {
       "title": "Analítica Avanzada",

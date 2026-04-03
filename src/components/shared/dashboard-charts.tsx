@@ -12,6 +12,12 @@ interface DashboardChartsProps {
   ordersByStatus: ChartDataPoint[];
   zoneUtilization: ChartDataPoint[];
   fulfillmentThroughput: ChartDataPoint[];
+  labels?: {
+    receivingVolume: string;
+    ordersByStatus: string;
+    occupiedBinsByZone: string;
+    fulfillmentThroughput: string;
+  };
 }
 
 export function DashboardCharts({
@@ -19,18 +25,25 @@ export function DashboardCharts({
   ordersByStatus,
   zoneUtilization,
   fulfillmentThroughput,
+  labels,
 }: DashboardChartsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <LineChartCard title="Receiving Volume (Items/Day)" data={receivingVolume} />
-      <PieChartCard title="Orders by Status" data={ordersByStatus} />
+      <LineChartCard
+        title={labels?.receivingVolume ?? "Receiving Volume (Items/Day)"}
+        data={receivingVolume}
+      />
+      <PieChartCard
+        title={labels?.ordersByStatus ?? "Orders by Status"}
+        data={ordersByStatus}
+      />
       <BarChartCard
-        title="Occupied Bins by Zone"
+        title={labels?.occupiedBinsByZone ?? "Occupied Bins by Zone"}
         data={zoneUtilization}
         color="hsl(160, 60%, 45%)"
       />
       <BarChartCard
-        title="Fulfillment Throughput (Orders/Day)"
+        title={labels?.fulfillmentThroughput ?? "Fulfillment Throughput (Orders/Day)"}
         data={fulfillmentThroughput}
         color="hsl(220, 70%, 55%)"
       />

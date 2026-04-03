@@ -145,6 +145,12 @@ export default async function DashboardPage() {
         ordersByStatus={chartData.ordersByStatus}
         zoneUtilization={chartData.zoneUtilization}
         fulfillmentThroughput={chartData.fulfillmentThroughput}
+        labels={{
+          receivingVolume: t("receivingVolume"),
+          ordersByStatus: t("ordersByStatus"),
+          occupiedBinsByZone: t("occupiedBinsByZone"),
+          fulfillmentThroughput: t("fulfillmentThroughput"),
+        }}
       />
 
       <Card>
