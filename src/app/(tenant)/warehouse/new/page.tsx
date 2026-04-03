@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { MapPin } from "lucide-react";
 
 export default function NewWarehousePage() {
   const t = useTranslations("tenant.warehouse");
@@ -47,10 +48,24 @@ export default function NewWarehousePage() {
   }
 
   const fullAddress = useMemo(() => composeWarehouseAddress(address), [address]);
-  const mapUrl = useMemo(() => {
-    if (!fullAddress) return "";
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+
+  // Debounce the address for the map embed so it doesn't reload on every keystroke
+  const [debouncedAddress, setDebouncedAddress] = useState("");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedAddress(fullAddress);
+    }, 800);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
   }, [fullAddress]);
+
+  const mapEmbedUrl = useMemo(() => {
+    if (!debouncedAddress) return "";
+    return `https://www.google.com/maps?q=${encodeURIComponent(debouncedAddress)}&output=embed&z=15`;
+  }, [debouncedAddress]);
 
   return (
     <div className="space-y-6">
@@ -58,7 +73,7 @@ export default function NewWarehousePage() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
+        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_480px]"
       >
         <Card>
           <CardHeader>
@@ -156,34 +171,33 @@ export default function NewWarehousePage() {
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
+        <Card className="sticky top-6 h-fit">
           <CardHeader>
-            <CardTitle>{t("mapPreview")}</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              {t("mapPreview")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-lg border bg-muted/20 p-3 text-sm">
-              {fullAddress ? (
+            {fullAddress && (
+              <div className="rounded-lg border bg-muted/20 p-3 text-sm">
                 <p>{fullAddress}</p>
+              </div>
+            )}
+            <div className="overflow-hidden rounded-lg border">
+              {mapEmbedUrl ? (
+                <iframe
+                  key={debouncedAddress}
+                  src={mapEmbedUrl}
+                  className="h-80 w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Warehouse location preview"
+                />
               ) : (
-                <p className="text-muted-foreground">{t("mapPreviewEmpty")}</p>
-              )}
-            </div>
-            <div className="rounded-lg border bg-muted/20 p-6">
-              {mapUrl ? (
-                <div className="flex min-h-72 flex-col items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">{t("mapPreviewReady")}</p>
-                    <p className="text-sm text-muted-foreground">{t("mapPreviewHelp")}</p>
-                  </div>
-                  <Button asChild variant="outline">
-                    <a href={mapUrl} target="_blank" rel="noreferrer">
-                      {t("openInMaps")}
-                    </a>
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex h-72 items-center justify-center bg-muted/20 text-sm text-muted-foreground">
-                  {t("mapPreviewEmpty")}
+                <div className="flex h-80 flex-col items-center justify-center gap-2 bg-muted/20 text-sm text-muted-foreground">
+                  <MapPin className="h-8 w-8 opacity-40" />
+                  <p>Start typing an address to see a live map preview</p>
                 </div>
               )}
             </div>
