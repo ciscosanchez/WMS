@@ -2,10 +2,11 @@ import type { PrismaClient, Prisma } from "../../../node_modules/.prisma/tenant-
 
 interface AuditLogInput {
   userId: string;
-  action: "create" | "update" | "delete";
+  action: string;
   entityType: string;
   entityId: string;
   changes?: Record<string, { old: unknown; new: unknown }>;
+  meta?: Record<string, unknown>;
   ipAddress?: string;
 }
 

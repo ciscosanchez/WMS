@@ -363,13 +363,20 @@ export function AppSidebar() {
       items: group.items.filter((item) => canAccessNavItem(item, currentMembership)),
     }))
     .filter((group) => group.items.length > 0);
-  const [manualOpenGroup, setManualOpenGroup] = useState<string | null>(null);
-  const activeGroup =
-    visibleGroups.find((group) => getGroupHrefMatch(pathname, group))?.labelKey ?? null;
-  const openGroup =
-    manualOpenGroup && visibleGroups.some((group) => group.labelKey === manualOpenGroup)
-      ? manualOpenGroup
-      : (activeGroup ?? visibleGroups[0]?.labelKey ?? null);
+  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
+
+  function toggleGroup(labelKey: string) {
+    setClosedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(labelKey)) next.delete(labelKey);
+      else next.add(labelKey);
+      return next;
+    });
+  }
+
+  function isGroupOpen(labelKey: string) {
+    return !closedGroups.has(labelKey);
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -421,22 +428,18 @@ export function AppSidebar() {
               <button
                 type="button"
                 className="flex w-full items-center justify-between text-left"
-                onClick={() =>
-                  setManualOpenGroup((current) =>
-                    current === group.labelKey ? null : group.labelKey
-                  )
-                }
+                onClick={() => toggleGroup(group.labelKey)}
               >
                 <span>{t(group.labelKey)}</span>
                 <ChevronDown
                   className={`h-4 w-4 transition-transform ${
-                    openGroup === group.labelKey ? "rotate-180" : ""
+                    isGroupOpen(group.labelKey) ? "rotate-180" : ""
                   }`}
                 />
               </button>
             </SidebarGroupLabel>
             <SidebarGroupContent
-              className={state === "collapsed" || openGroup === group.labelKey ? "" : "hidden"}
+              className={state === "collapsed" || isGroupOpen(group.labelKey) ? "" : "hidden"}
             >
               <SidebarMenu>
                 {group.items.map((item) => (
