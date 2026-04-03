@@ -27,6 +27,9 @@ export interface TenantSettings {
   pickPrefix: string;
   authMode: TenantAuthMode;
   ssoProviders: TenantSsoProviderConfig[];
+  brandPrimary: string;
+  brandSidebarBg: string;
+  brandSidebarText: string;
 }
 
 const DEFAULTS: TenantSettings = {
@@ -42,6 +45,9 @@ const DEFAULTS: TenantSettings = {
   pickPrefix: "PCK-",
   authMode: "password",
   ssoProviders: [],
+  brandPrimary: "",
+  brandSidebarBg: "",
+  brandSidebarText: "",
 };
 
 export async function getTenantSettings(): Promise<TenantSettings> {
@@ -68,6 +74,9 @@ export async function getTenantSettings(): Promise<TenantSettings> {
     pickPrefix: (saved.pickPrefix as string) ?? DEFAULTS.pickPrefix,
     authMode: authConfig.mode,
     ssoProviders: authConfig.ssoProviders,
+    brandPrimary: (saved.brandPrimary as string) ?? DEFAULTS.brandPrimary,
+    brandSidebarBg: (saved.brandSidebarBg as string) ?? DEFAULTS.brandSidebarBg,
+    brandSidebarText: (saved.brandSidebarText as string) ?? DEFAULTS.brandSidebarText,
   };
 }
 
@@ -123,6 +132,9 @@ export async function saveTenantSettings(data: TenantSettings): Promise<{ error?
         mode: authConfig.mode,
         ssoProviders: authConfig.ssoProviders,
       },
+      brandPrimary: data.brandPrimary || "",
+      brandSidebarBg: data.brandSidebarBg || "",
+      brandSidebarText: data.brandSidebarText || "",
     };
 
     await publicDb.tenant.update({

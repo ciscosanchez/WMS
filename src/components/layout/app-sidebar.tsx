@@ -70,133 +70,33 @@ type NavItem = {
 type NavGroup = { labelKey: string; items: NavItem[] };
 
 const navigation: NavGroup[] = [
+  // ── OPERATIONS (daily work) ──
   {
     labelKey: "overview",
     items: [
-      {
-        titleKey: "dashboard",
-        href: "/dashboard",
-        icon: LayoutDashboard,
-        permission: "reports:read",
-      },
+      { titleKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, permission: "reports:read" },
       { titleKey: "operations", href: "/operations", icon: Users, permission: "reports:read" },
     ],
   },
   {
     labelKey: "inbound",
     items: [
-      {
-        titleKey: "inboundShipments",
-        href: "/receiving",
-        icon: PackageOpen,
-        permission: "receiving:read",
-      },
-      {
-        titleKey: "discrepancies",
-        href: "/receiving/discrepancies",
-        icon: AlertTriangle,
-        permission: "receiving:read",
-      },
-    ],
-  },
-  {
-    labelKey: "labor",
-    items: [
-      { titleKey: "laborDashboard", href: "/labor", icon: HardHat, permission: "operator:read" },
-      { titleKey: "shifts", href: "/labor/shifts", icon: Clock, permission: "operator:read" },
-      {
-        titleKey: "laborCosts",
-        href: "/labor/costs",
-        icon: DollarSign,
-        permission: "settings:read",
-      },
-    ],
-  },
-  {
-    labelKey: "yardDock",
-    items: [
-      {
-        titleKey: "dockSchedule",
-        href: "/yard-dock",
-        icon: Calendar,
-        permission: "yard-dock:read",
-      },
-      {
-        titleKey: "appointments",
-        href: "/yard-dock/appointments",
-        icon: ClipboardCheck,
-        permission: "yard-dock:read",
-      },
-      { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map, permission: "yard-dock:read" },
-      {
-        titleKey: "yardSpots",
-        href: "/yard-dock/yard-spots",
-        icon: MapPin,
-        permission: "yard-dock:read",
-      },
-      {
-        titleKey: "dockDoors",
-        href: "/yard-dock/dock-doors",
-        icon: Warehouse,
-        permission: "yard-dock:read",
-      },
-      {
-        titleKey: "driverCheckIn",
-        href: "/yard-dock/check-in",
-        icon: UserCheck,
-        permission: "yard-dock:write",
-      },
+      { titleKey: "inboundShipments", href: "/receiving", icon: PackageOpen, permission: "receiving:read" },
+      { titleKey: "discrepancies", href: "/receiving/discrepancies", icon: AlertTriangle, permission: "receiving:read" },
     ],
   },
   {
     labelKey: "fulfillment",
     items: [
       { titleKey: "orders", href: "/orders", icon: ShoppingCart, permission: "orders:read" },
-      {
-        titleKey: "backorders",
-        href: "/orders/backorders",
-        icon: AlertTriangle,
-        permission: "orders:read",
-      },
-      {
-        titleKey: "importOrders",
-        href: "/orders/import",
-        icon: ArrowDownToLine,
-        permission: "orders:write",
-      },
+      { titleKey: "backorders", href: "/orders/backorders", icon: AlertTriangle, permission: "orders:read" },
+      { titleKey: "importOrders", href: "/orders/import", icon: ArrowDownToLine, permission: "orders:write" },
       { titleKey: "picking", href: "/picking", icon: ScanLine, permission: "shipping:read" },
       { titleKey: "shipping", href: "/shipping", icon: Truck, permission: "shipping:read" },
-      {
-        titleKey: "cartonTypes",
-        href: "/shipping/carton-types",
-        icon: Boxes,
-        permission: "shipping:read",
-      },
       { titleKey: "returns", href: "/returns", icon: RotateCcw, permission: "returns:read" },
-      {
-        titleKey: "crossDock",
-        href: "/shipping/cross-dock",
-        icon: Repeat,
-        permission: "cross_dock:read",
-      },
-      {
-        titleKey: "customs",
-        href: "/shipping/customs",
-        icon: FileCheck,
-        permission: "customs:read",
-      },
-      {
-        titleKey: "compliance",
-        href: "/shipping/compliance",
-        icon: Shield,
-        permission: "shipping:read",
-      },
-      {
-        titleKey: "gs1Labels",
-        href: "/shipping/labels",
-        icon: ScanLine,
-        permission: "shipping:read",
-      },
+      { titleKey: "crossDock", href: "/shipping/cross-dock", icon: Repeat, permission: "cross_dock:read" },
+      { titleKey: "customsCompliance", href: "/shipping/customs", icon: Shield, permission: "customs:read" },
+      { titleKey: "gs1Labels", href: "/shipping/labels", icon: ScanLine, permission: "shipping:read" },
     ],
   },
   {
@@ -204,102 +104,68 @@ const navigation: NavGroup[] = [
     items: [
       { titleKey: "stockBrowser", href: "/inventory", icon: Boxes, permission: "inventory:read" },
       { titleKey: "lpn", href: "/inventory/lpn", icon: Package, permission: "inventory:read" },
-      {
-        titleKey: "putaway",
-        href: "/inventory/putaway",
-        icon: ArrowDownToLine,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "movements",
-        href: "/inventory/movements",
-        icon: ArrowLeftRight,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "adjustments",
-        href: "/inventory/adjustments",
-        icon: ClipboardCheck,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "cycleCounts",
-        href: "/inventory/cycle-counts",
-        icon: ListChecks,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "slotting",
-        href: "/inventory/slotting",
-        icon: BarChart3,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "expiring",
-        href: "/inventory/expiring",
-        icon: AlertTriangle,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "transfers",
-        href: "/inventory/transfers",
-        icon: Truck,
-        permission: "inventory:read",
-      },
-      {
-        titleKey: "replenishment",
-        href: "/inventory/replenishment",
-        icon: ArrowDownToLine,
-        permission: "inventory:read",
-      },
+      { titleKey: "putaway", href: "/inventory/putaway", icon: ArrowDownToLine, permission: "inventory:read" },
+      { titleKey: "movements", href: "/inventory/movements", icon: ArrowLeftRight, permission: "inventory:read" },
+      { titleKey: "adjustments", href: "/inventory/adjustments", icon: ClipboardCheck, permission: "inventory:read" },
+      { titleKey: "cycleCounts", href: "/inventory/cycle-counts", icon: ListChecks, permission: "inventory:read" },
+      { titleKey: "slotting", href: "/inventory/slotting", icon: BarChart3, permission: "inventory:read" },
+      { titleKey: "transfers", href: "/inventory/transfers", icon: Truck, permission: "inventory:read" },
+      { titleKey: "replenishment", href: "/inventory/replenishment", icon: ArrowDownToLine, permission: "inventory:read" },
     ],
   },
   {
-    labelKey: "setup",
+    labelKey: "yardDock",
+    items: [
+      { titleKey: "dockSchedule", href: "/yard-dock", icon: Calendar, permission: "yard-dock:read" },
+      { titleKey: "appointments", href: "/yard-dock/appointments", icon: ClipboardCheck, permission: "yard-dock:read" },
+      { titleKey: "yardMap", href: "/yard-dock/yard-map", icon: Map, permission: "yard-dock:read" },
+      { titleKey: "yardSpots", href: "/yard-dock/yard-spots", icon: MapPin, permission: "yard-dock:read" },
+      { titleKey: "dockDoors", href: "/yard-dock/dock-doors", icon: Warehouse, permission: "yard-dock:read" },
+      { titleKey: "driverCheckIn", href: "/yard-dock/check-in", icon: UserCheck, permission: "yard-dock:write" },
+    ],
+  },
+  {
+    labelKey: "labor",
+    items: [
+      { titleKey: "laborDashboard", href: "/labor", icon: HardHat, permission: "operator:read" },
+      { titleKey: "shifts", href: "/labor/shifts", icon: Clock, permission: "operator:read" },
+      { titleKey: "laborCosts", href: "/labor/costs", icon: DollarSign, permission: "settings:read" },
+    ],
+  },
+  // ── INSIGHTS ──
+  {
+    labelKey: "reports",
+    items: [
+      { titleKey: "analytics", href: "/analytics", icon: TrendingUp, permission: "reports:read" },
+      { titleKey: "reports", href: "/reports", icon: BarChart3, permission: "reports:read" },
+      { titleKey: "pickMovement", href: "/reports/pick-movement", icon: MapPin, permission: "reports:read" },
+      { titleKey: "billingReports", href: "/billing", icon: Receipt, permission: "billing:read" },
+    ],
+  },
+  // ── CONFIGURATION (admin) ──
+  {
+    labelKey: "administration",
     items: [
       { titleKey: "locations", href: "/warehouse", icon: MapPin, permission: "warehouse:read" },
       { titleKey: "clients", href: "/clients", icon: Users, permission: "clients:read" },
       { titleKey: "products", href: "/products", icon: Package, permission: "products:read" },
       { titleKey: "kits", href: "/products/kits", icon: Puzzle, permission: "products:read" },
       { titleKey: "channels", href: "/channels", icon: Store, permission: "orders:read" },
-      {
-        titleKey: "automation",
-        href: "/warehouse/automation",
-        icon: Bot,
-        permission: "warehouse:read",
-      },
-      {
-        titleKey: "workflowRules",
-        href: "/settings/rules",
-        icon: Zap,
-        permission: "settings:read",
-      },
+      { titleKey: "cartonTypes", href: "/shipping/carton-types", icon: Boxes, permission: "shipping:read" },
+      { titleKey: "carriers", href: "/settings/carriers", icon: Truck, permission: "settings:read" },
+      { titleKey: "automation", href: "/warehouse/automation", icon: Bot, permission: "warehouse:read" },
+      { titleKey: "workflowRules", href: "/settings/rules", icon: Zap, permission: "settings:read" },
+      { titleKey: "integrations", href: "/settings/integrations", icon: Puzzle, permission: "settings:read" },
+      { titleKey: "edi", href: "/settings/edi", icon: FileCheck, permission: "settings:read" },
+      { titleKey: "usersPermissions", href: "/settings/users", icon: Users, permission: "settings:read" },
     ],
   },
+  // ── USER (all roles) ──
   {
-    labelKey: "billing",
+    labelKey: "preferences",
     items: [
-      { titleKey: "billingDashboard", href: "/billing", icon: Receipt, permission: "billing:read" },
-    ],
-  },
-  {
-    labelKey: "system",
-    items: [
-      { titleKey: "analytics", href: "/analytics", icon: TrendingUp, permission: "reports:read" },
-      { titleKey: "reports", href: "/reports", icon: BarChart3, permission: "reports:read" },
-      {
-        titleKey: "pickMovement",
-        href: "/reports/pick-movement",
-        icon: MapPin,
-        permission: "reports:read",
-      },
-      { titleKey: "settings", href: "/settings", icon: Settings, permission: "settings:read" },
-      {
-        titleKey: "notifications",
-        href: "/settings/notifications",
-        icon: Smartphone,
-        permission: "settings:read",
-      },
+      { titleKey: "settings", href: "/settings", icon: Settings },
+      { titleKey: "notifications", href: "/settings/notifications", icon: Smartphone },
     ],
   },
 ];

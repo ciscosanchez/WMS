@@ -100,6 +100,14 @@
     "pickMovement": "Movimiento de Picking",
     "backorders": "Pedidos Pendientes",
     "importOrders": "Importar Órdenes",
-    "notifications": "Notificaciones"
+    "notifications": "Notificaciones",
+    "administration": "Administración",
+    "preferences": "Preferencias",
+    "customsCompliance": "Aduanas y Cumplimiento",
+    "carriers": "Transportistas",
+    "integrations": "Integraciones",
+    "edi": "EDI",
+    "usersPermissions": "Usuarios y Permisos",
+    "billingReports": "Facturación"
   }
 }

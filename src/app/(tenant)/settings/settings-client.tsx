@@ -41,6 +41,9 @@ interface Settings {
   pickPrefix: string;
   authMode: TenantAuthMode;
   ssoProviders: TenantSsoProviderConfig[];
+  brandPrimary: string;
+  brandSidebarBg: string;
+  brandSidebarText: string;
 }
 
 export function SettingsClient({ initialSettings }: { initialSettings: Settings }) {
@@ -59,6 +62,9 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
   const [ssoProviders, setSsoProviders] = useState<TenantSsoProviderConfig[]>(
     initialSettings.ssoProviders
   );
+  const [brandPrimary, setBrandPrimary] = useState(initialSettings.brandPrimary);
+  const [brandSidebarBg, setBrandSidebarBg] = useState(initialSettings.brandSidebarBg);
+  const [brandSidebarText, setBrandSidebarText] = useState(initialSettings.brandSidebarText);
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -108,6 +114,9 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
         pickPrefix,
         authMode,
         ssoProviders,
+        brandPrimary,
+        brandSidebarBg,
+        brandSidebarText,
       });
       if (result.error) {
         toast.error(result.error);
@@ -244,6 +253,106 @@ export function SettingsClient({ initialSettings }: { initialSettings: Settings 
                 personal preference.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Plug className="h-4 w-4" />
+              Sidebar Branding
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Customize the sidebar colors for your organization. Leave blank for the default theme.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="brandSidebarBg">Sidebar Background</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    id="brandSidebarBgPicker"
+                    value={brandSidebarBg || "#0a0a0a"}
+                    onChange={(e) => setBrandSidebarBg(e.target.value)}
+                    className="h-9 w-12 cursor-pointer rounded border"
+                  />
+                  <Input
+                    id="brandSidebarBg"
+                    value={brandSidebarBg}
+                    onChange={(e) => setBrandSidebarBg(e.target.value)}
+                    placeholder="#0a0a0a"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brandSidebarText">Sidebar Text</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    id="brandSidebarTextPicker"
+                    value={brandSidebarText || "#fafafa"}
+                    onChange={(e) => setBrandSidebarText(e.target.value)}
+                    placeholder="#fafafa"
+                    className="h-9 w-12 cursor-pointer rounded border"
+                  />
+                  <Input
+                    id="brandSidebarText"
+                    value={brandSidebarText}
+                    onChange={(e) => setBrandSidebarText(e.target.value)}
+                    placeholder="#fafafa"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="brandPrimary">Accent Color</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    id="brandPrimaryPicker"
+                    value={brandPrimary || "#2563eb"}
+                    onChange={(e) => setBrandPrimary(e.target.value)}
+                    className="h-9 w-12 cursor-pointer rounded border"
+                  />
+                  <Input
+                    id="brandPrimary"
+                    value={brandPrimary}
+                    onChange={(e) => setBrandPrimary(e.target.value)}
+                    placeholder="#2563eb"
+                  />
+                </div>
+              </div>
+            </div>
+            {(brandSidebarBg || brandSidebarText || brandPrimary) && (
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-12 items-center gap-2 rounded-lg px-4 text-sm font-medium"
+                  style={{
+                    backgroundColor: brandSidebarBg || "#0a0a0a",
+                    color: brandSidebarText || "#fafafa",
+                  }}
+                >
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: brandPrimary || "#2563eb" }}
+                  />
+                  Preview
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setBrandPrimary("");
+                    setBrandSidebarBg("");
+                    setBrandSidebarText("");
+                  }}
+                >
+                  Reset to default
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
