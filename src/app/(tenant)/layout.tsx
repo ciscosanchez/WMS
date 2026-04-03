@@ -19,9 +19,18 @@ export default async function TenantLayout({ children }: { children: React.React
   const tenant = await publicDb.tenant.findUnique({ where: { slug: slug as string } });
   const settings = (tenant?.settings ?? {}) as Record<string, unknown>;
   const brandStyle: Record<string, string> = {};
-  if (settings.brandSidebarBg) brandStyle["--sidebar-background"] = settings.brandSidebarBg as string;
-  if (settings.brandSidebarText) brandStyle["--sidebar-foreground"] = settings.brandSidebarText as string;
-  if (settings.brandPrimary) brandStyle["--sidebar-primary"] = settings.brandPrimary as string;
+  if (settings.brandSidebarBg) {
+    brandStyle["--sidebar"] = settings.brandSidebarBg as string;
+    brandStyle["--sidebar-accent"] = settings.brandSidebarBg as string;
+  }
+  if (settings.brandSidebarText) {
+    brandStyle["--sidebar-foreground"] = settings.brandSidebarText as string;
+    brandStyle["--sidebar-accent-foreground"] = settings.brandSidebarText as string;
+    brandStyle["--sidebar-primary-foreground"] = settings.brandSidebarText as string;
+  }
+  if (settings.brandPrimary) {
+    brandStyle["--sidebar-primary"] = settings.brandPrimary as string;
+  }
 
   return (
     <SidebarProvider>
