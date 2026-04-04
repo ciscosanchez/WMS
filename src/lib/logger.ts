@@ -61,6 +61,7 @@ function emit(entry: LogEntry) {
     const ts = entry.timestamp.slice(11, 23); // HH:mm:ss.SSS
 
     const consoleFn =
+      // eslint-disable-next-line no-console -- this IS the logger; console.log is intentional
       entry.level === "error" ? console.error : entry.level === "warn" ? console.warn : console.log;
 
     consoleFn(`${ts} ${prefix} ${entry.message}`);

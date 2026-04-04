@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +44,6 @@ export default function OperatorCycleCountPage() {
   const [isPending, startTransition] = useTransition();
   const scanInputRef = useRef<HTMLInputElement>(null);
   const countInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
   const t = useTranslations("operator.count");
   const tc = useTranslations("common");
 

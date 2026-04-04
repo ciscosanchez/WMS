@@ -10,7 +10,6 @@ import {
   orderLineSchemaStatic as orderLineSchema,
 } from "./schemas";
 import { mockOrders } from "@/lib/mock-data";
-import { createDispatchOrder } from "@/lib/integrations/dispatchpro/client";
 import { assertTransition, ORDER_TRANSITIONS } from "@/lib/workflow/transitions";
 import { asTenantDb } from "@/lib/tenant/db-types";
 import { saveOperationalAttributeValuesForEntity } from "@/modules/attributes/value-service";

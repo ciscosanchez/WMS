@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
           },
         });
 
-        console.log(
+        console.warn(
           `[Audit Retention Cron] ${tenant.slug}: deleted ${count} records older than ${retentionDays} days`
         );
 
