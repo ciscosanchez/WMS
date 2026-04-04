@@ -10,8 +10,7 @@ import { parseOrderCsv } from "@/modules/orders/import-actions";
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe("parseOrderCsv", () => {
-  const HEADER =
-    "clientCode,shipToName,shipToAddress1,shipToCity,shipToZip,sku,quantity";
+  const HEADER = "clientCode,shipToName,shipToAddress1,shipToCity,shipToZip,sku,quantity";
 
   // ── Grouping ──────────────────────────────────────────────────────────────
 
@@ -64,10 +63,7 @@ describe("parseOrderCsv", () => {
 
   describe("validates required fields", () => {
     it("reports error for missing clientCode", async () => {
-      const csv = [
-        HEADER,
-        ",John Doe,123 Main St,Dallas,75201,SKU-1,5",
-      ].join("\n");
+      const csv = [HEADER, ",John Doe,123 Main St,Dallas,75201,SKU-1,5"].join("\n");
 
       const { orders, errors } = await parseOrderCsv(csv);
 
@@ -78,10 +74,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("reports error for missing sku", async () => {
-      const csv = [
-        HEADER,
-        "ACME,John Doe,123 Main St,Dallas,75201,,5",
-      ].join("\n");
+      const csv = [HEADER, "ACME,John Doe,123 Main St,Dallas,75201,,5"].join("\n");
 
       const { errors } = await parseOrderCsv(csv);
 
@@ -90,10 +83,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("reports error for non-numeric quantity", async () => {
-      const csv = [
-        HEADER,
-        "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,abc",
-      ].join("\n");
+      const csv = [HEADER, "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,abc"].join("\n");
 
       const { errors } = await parseOrderCsv(csv);
 
@@ -102,10 +92,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("reports error for zero quantity", async () => {
-      const csv = [
-        HEADER,
-        "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,0",
-      ].join("\n");
+      const csv = [HEADER, "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,0"].join("\n");
 
       const { errors } = await parseOrderCsv(csv);
 
@@ -114,10 +101,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("reports error for missing required columns", async () => {
-      const csv = [
-        HEADER,
-        "ACME,,123 Main St,Dallas,75201,SKU-1,5",
-      ].join("\n");
+      const csv = [HEADER, "ACME,,123 Main St,Dallas,75201,SKU-1,5"].join("\n");
 
       const { errors } = await parseOrderCsv(csv);
 
@@ -142,10 +126,7 @@ describe("parseOrderCsv", () => {
 
   describe("handles edge cases", () => {
     it("handles quoted CSV fields with commas", async () => {
-      const csv = [
-        HEADER,
-        'ACME,"Doe, John","123 Main St, Apt 4",Dallas,75201,SKU-1,5',
-      ].join("\n");
+      const csv = [HEADER, 'ACME,"Doe, John","123 Main St, Apt 4",Dallas,75201,SKU-1,5'].join("\n");
 
       const { orders, errors } = await parseOrderCsv(csv);
 
@@ -156,10 +137,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("handles quoted fields with escaped quotes", async () => {
-      const csv = [
-        HEADER,
-        'ACME,"John ""JD"" Doe",123 Main St,Dallas,75201,SKU-1,5',
-      ].join("\n");
+      const csv = [HEADER, 'ACME,"John ""JD"" Doe",123 Main St,Dallas,75201,SKU-1,5'].join("\n");
 
       const { orders, errors } = await parseOrderCsv(csv);
 
@@ -218,10 +196,7 @@ describe("parseOrderCsv", () => {
     });
 
     it("handles Windows-style line endings (CRLF)", async () => {
-      const csv = [
-        HEADER,
-        "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,5",
-      ].join("\r\n");
+      const csv = [HEADER, "ACME,John Doe,123 Main St,Dallas,75201,SKU-1,5"].join("\r\n");
 
       const { orders, errors } = await parseOrderCsv(csv);
 

@@ -52,11 +52,15 @@ describe("PortalLayout boundary", () => {
   });
 
   it("redirects non-portal users back to the tenant dashboard", async () => {
-    mockRequirePortalContext.mockRejectedValue(new Error("Forbidden: portal client binding required"));
+    mockRequirePortalContext.mockRejectedValue(
+      new Error("Forbidden: portal client binding required")
+    );
 
     const Layout = (await import("@/app/(portal)/layout")).default;
 
-    await expect(Layout({ children: <div>portal child</div> })).rejects.toThrow("redirect:/dashboard");
+    await expect(Layout({ children: <div>portal child</div> })).rejects.toThrow(
+      "redirect:/dashboard"
+    );
     expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
   });
 });

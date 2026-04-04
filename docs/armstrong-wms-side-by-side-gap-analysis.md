@@ -33,18 +33,18 @@ That foundational layer is **not present** in the current WMS codebase. There ar
 
 ## 1. Side-by-Side Against the November 2024 WMS Presentation
 
-| Armstrong Need from 2024 Deck | Current WMS Status | Assessment |
-| --- | --- | --- |
-| Multiple units of measure at the item level | `Product.baseUom`, `unitsPerCase`, and `UomConversion` exist in the tenant schema | `Yes` |
-| Customer portal for inventory / ASNs / visibility | Dedicated portal app exists with inventory, orders, shipments, billing, and reports pages | `Yes` |
-| Rate shopping / multiple carrier options | Carrier accounts, UPS/FedEx/USPS adapters, and rate-shopping flow exist | `Yes` |
-| E-commerce / EDI / API integrations | Shopify, Amazon, EDI parsing/generation, and integration settings exist | `Yes` |
-| Reporting for leadership and customers | Tenant analytics/reports plus CSV exports and portal reports exist | `Yes` |
-| Ability to receive against ASN | Inbound shipment / ASN creation and receiving workflows exist | `Yes` |
-| Cycle counting | Inventory adjustments / cycle count flows exist | `Yes` |
-| Different pick workflows | Operator app, picking, replenishment, interleaving, and workflow rules exist | `Partial to Yes` |
-| Blind receipts / shipments showing up unannounced | Receiving exists, document-driven intake exists, but a first-class blind-receive workflow is not clearly modeled as a configurable operator flow | `Partial` |
-| Agency-specific notifications / rules | Workflow rules and notifications exist, but explicit per-agency order notification behavior is not clearly surfaced as a dedicated feature | `Partial` |
+| Armstrong Need from 2024 Deck                     | Current WMS Status                                                                                                                               | Assessment       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| Multiple units of measure at the item level       | `Product.baseUom`, `unitsPerCase`, and `UomConversion` exist in the tenant schema                                                                | `Yes`            |
+| Customer portal for inventory / ASNs / visibility | Dedicated portal app exists with inventory, orders, shipments, billing, and reports pages                                                        | `Yes`            |
+| Rate shopping / multiple carrier options          | Carrier accounts, UPS/FedEx/USPS adapters, and rate-shopping flow exist                                                                          | `Yes`            |
+| E-commerce / EDI / API integrations               | Shopify, Amazon, EDI parsing/generation, and integration settings exist                                                                          | `Yes`            |
+| Reporting for leadership and customers            | Tenant analytics/reports plus CSV exports and portal reports exist                                                                               | `Yes`            |
+| Ability to receive against ASN                    | Inbound shipment / ASN creation and receiving workflows exist                                                                                    | `Yes`            |
+| Cycle counting                                    | Inventory adjustments / cycle count flows exist                                                                                                  | `Yes`            |
+| Different pick workflows                          | Operator app, picking, replenishment, interleaving, and workflow rules exist                                                                     | `Partial to Yes` |
+| Blind receipts / shipments showing up unannounced | Receiving exists, document-driven intake exists, but a first-class blind-receive workflow is not clearly modeled as a configurable operator flow | `Partial`        |
+| Agency-specific notifications / rules             | Workflow rules and notifications exist, but explicit per-agency order notification behavior is not clearly surfaced as a dedicated feature       | `Partial`        |
 
 ### What This Means
 
@@ -60,24 +60,24 @@ The system is especially strong where the old deck cared about:
 
 ## 2. Side-by-Side Against the March 2026 Metafields Kickoff
 
-| Metafields Requirement | Current WMS Status | Assessment |
-| --- | --- | --- |
-| `MetafieldDefinition` CRUD | No generic metafield definition model or admin CRUD was found in schema or app modules | `Missing` |
-| `MetafieldValue` capture on receiving | Receiving captures fixed shipment/line/transaction fields; DocAI can extract fixed structured data, but there is no generic field capture layer | `Missing` |
-| Mobile receiving capture for 12+ custom fields | Operator and receiving apps exist, but not generic configurable field capture | `Missing` |
-| Desktop receiving/config views for custom fields | Admin/settings and receiving pages exist, but not a generic custom-field config/view system | `Missing` |
-| LP association model for metafields | LPN support exists, but there is no generic metafield-to-LPN lifecycle model | `Missing` |
-| Search / filter by metafield | Inventory search exists, but not by configurable metafield values | `Missing` |
-| Manual allocation by metafield criteria | Allocation exists, but not against configurable metafield criteria | `Missing` |
-| Role-based permissions for field management | RBAC is present and strong enough to support this once metafields exist | `Ready once built` |
-| Reports with metafield columns | Report/export surface exists, but not generic metafield columns | `Missing` |
-| Document builder merge fields using metafields | No generic document builder / merge-field system was found | `Missing` |
-| Custom label templates using metafields | GS1 and retailer label helpers exist, but not a generic label-template system fed by custom metafields | `Partial` |
-| PDF manifests using metafield data | Shipment manifests / master PDF pieces exist, but not driven by generic metafields | `Partial` |
-| Dropdown population from historical values | No generic metafield population logic was found | `Missing` |
-| Duplicate-value detection and warnings | No generic metafield duplicate detection layer was found | `Missing` |
-| Audit logging for field changes | Cross-system audit log exists and is reusable for this | `Ready once built` |
-| Scale for 5K+ items under one SKU with unique differentiators | Current schema can store lot/serial/document data, but not the generic differentiators Armstrong described | `Not yet` |
+| Metafields Requirement                                        | Current WMS Status                                                                                                                              | Assessment         |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `MetafieldDefinition` CRUD                                    | No generic metafield definition model or admin CRUD was found in schema or app modules                                                          | `Missing`          |
+| `MetafieldValue` capture on receiving                         | Receiving captures fixed shipment/line/transaction fields; DocAI can extract fixed structured data, but there is no generic field capture layer | `Missing`          |
+| Mobile receiving capture for 12+ custom fields                | Operator and receiving apps exist, but not generic configurable field capture                                                                   | `Missing`          |
+| Desktop receiving/config views for custom fields              | Admin/settings and receiving pages exist, but not a generic custom-field config/view system                                                     | `Missing`          |
+| LP association model for metafields                           | LPN support exists, but there is no generic metafield-to-LPN lifecycle model                                                                    | `Missing`          |
+| Search / filter by metafield                                  | Inventory search exists, but not by configurable metafield values                                                                               | `Missing`          |
+| Manual allocation by metafield criteria                       | Allocation exists, but not against configurable metafield criteria                                                                              | `Missing`          |
+| Role-based permissions for field management                   | RBAC is present and strong enough to support this once metafields exist                                                                         | `Ready once built` |
+| Reports with metafield columns                                | Report/export surface exists, but not generic metafield columns                                                                                 | `Missing`          |
+| Document builder merge fields using metafields                | No generic document builder / merge-field system was found                                                                                      | `Missing`          |
+| Custom label templates using metafields                       | GS1 and retailer label helpers exist, but not a generic label-template system fed by custom metafields                                          | `Partial`          |
+| PDF manifests using metafield data                            | Shipment manifests / master PDF pieces exist, but not driven by generic metafields                                                              | `Partial`          |
+| Dropdown population from historical values                    | No generic metafield population logic was found                                                                                                 | `Missing`          |
+| Duplicate-value detection and warnings                        | No generic metafield duplicate detection layer was found                                                                                        | `Missing`          |
+| Audit logging for field changes                               | Cross-system audit log exists and is reusable for this                                                                                          | `Ready once built` |
+| Scale for 5K+ items under one SKU with unique differentiators | Current schema can store lot/serial/document data, but not the generic differentiators Armstrong described                                      | `Not yet`          |
 
 ### What This Means
 

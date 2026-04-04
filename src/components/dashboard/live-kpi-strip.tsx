@@ -46,9 +46,7 @@ const KPI_DEFS: KpiItem[] = [
   },
 ];
 
-function deriveCountsFromEvents(
-  events: Array<{ type: string; data?: Record<string, unknown> }>
-) {
+function deriveCountsFromEvents(events: Array<{ type: string; data?: Record<string, unknown> }>) {
   let ordersShipped = 0;
   let itemsReceived = 0;
   let pickTasksActive = 0;
@@ -82,10 +80,7 @@ export function LiveKpiStrip() {
   });
 
   const counts = useMemo(
-    () =>
-      deriveCountsFromEvents(
-        events as Array<{ type: string; data?: Record<string, unknown> }>
-      ),
+    () => deriveCountsFromEvents(events as Array<{ type: string; data?: Record<string, unknown> }>),
     [events]
   );
 
@@ -97,9 +92,7 @@ export function LiveKpiStrip() {
       <div className="absolute -top-2 right-0 flex items-center gap-1.5 text-xs text-muted-foreground">
         <span
           className={`inline-block h-2 w-2 rounded-full ${
-            connected
-              ? "bg-green-500 animate-pulse"
-              : "bg-muted-foreground/40"
+            connected ? "bg-green-500 animate-pulse" : "bg-muted-foreground/40"
           }`}
         />
         {connected ? "Live" : "Offline"}
@@ -117,9 +110,7 @@ export function LiveKpiStrip() {
                   <Icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground truncate">
-                    {kpi.label}
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground truncate">{kpi.label}</p>
                   <p className="text-2xl font-bold tabular-nums">{value}</p>
                 </div>
               </CardContent>

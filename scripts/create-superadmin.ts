@@ -53,7 +53,9 @@ function parseArgs(argv: string[]): Options {
   }
 
   if (!options.promoteOnly && !options.password) {
-    console.error("Missing required argument: --password (or use --promote-only for an existing user)");
+    console.error(
+      "Missing required argument: --password (or use --promote-only for an existing user)"
+    );
     printUsageAndExit(1);
   }
 

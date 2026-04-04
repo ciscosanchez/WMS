@@ -361,12 +361,36 @@ describe("Cycle count actions", () => {
       type: "cycle_count",
       status: "pending_approval",
       lines: [
-        { id: "line-1", productId: "p1", binId: "bin-A", lotNumber: null,
-          serialNumber: null, systemQty: 10, countedQty: 8, variance: -2 },
-        { id: "line-2", productId: "p2", binId: "bin-B", lotNumber: "LOT-1",
-          serialNumber: null, systemQty: 25, countedQty: 30, variance: 5 },
-        { id: "line-3", productId: "p3", binId: "bin-C", lotNumber: null,
-          serialNumber: null, systemQty: 15, countedQty: 15, variance: 0 },
+        {
+          id: "line-1",
+          productId: "p1",
+          binId: "bin-A",
+          lotNumber: null,
+          serialNumber: null,
+          systemQty: 10,
+          countedQty: 8,
+          variance: -2,
+        },
+        {
+          id: "line-2",
+          productId: "p2",
+          binId: "bin-B",
+          lotNumber: "LOT-1",
+          serialNumber: null,
+          systemQty: 25,
+          countedQty: 30,
+          variance: 5,
+        },
+        {
+          id: "line-3",
+          productId: "p3",
+          binId: "bin-C",
+          lotNumber: null,
+          serialNumber: null,
+          systemQty: 15,
+          countedQty: 15,
+          variance: 0,
+        },
       ],
     };
 
@@ -409,15 +433,25 @@ describe("Cycle count actions", () => {
       // Negative variance -> fromBinId set, toBinId null
       expect(mockTxPrisma.inventoryTransaction.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          type: "count", productId: "p1", fromBinId: "bin-A", toBinId: null,
-          quantity: 2, referenceType: "cycle_count", referenceId: "adj-1",
+          type: "count",
+          productId: "p1",
+          fromBinId: "bin-A",
+          toBinId: null,
+          quantity: 2,
+          referenceType: "cycle_count",
+          referenceId: "adj-1",
         }),
       });
       // Positive variance -> toBinId set, fromBinId null
       expect(mockTxPrisma.inventoryTransaction.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          type: "count", productId: "p2", fromBinId: null, toBinId: "bin-B",
-          quantity: 5, referenceType: "cycle_count", referenceId: "adj-1",
+          type: "count",
+          productId: "p2",
+          fromBinId: null,
+          toBinId: "bin-B",
+          quantity: 5,
+          referenceType: "cycle_count",
+          referenceId: "adj-1",
         }),
       });
     });
@@ -429,15 +463,18 @@ describe("Cycle count actions", () => {
       expect(mockTxPrisma.inventoryAdjustment.update).toHaveBeenCalledWith({
         where: { id: "adj-1" },
         data: expect.objectContaining({
-          status: "completed", approvedBy: "user-1",
-          approvedAt: expect.any(Date), completedAt: expect.any(Date),
+          status: "completed",
+          approvedBy: "user-1",
+          approvedAt: expect.any(Date),
+          completedAt: expect.any(Date),
         }),
       });
     });
 
     it("rejects approval when status is not pending_approval", async () => {
       mockDb.inventoryAdjustment.findUniqueOrThrow.mockResolvedValue({
-        ...adjustment, status: "draft",
+        ...adjustment,
+        status: "draft",
       });
       await expect(approveCycleCount("adj-1")).rejects.toThrow(
         /Cannot approve adjustment in status: draft/
@@ -446,10 +483,21 @@ describe("Cycle count actions", () => {
 
     it("creates new inventory when positive variance but no existing row", async () => {
       const singleLineAdj = {
-        id: "adj-2", type: "cycle_count", status: "pending_approval",
-        lines: [{ id: "line-x", productId: "p-new", binId: "bin-X",
-          lotNumber: null, serialNumber: "SN-99", systemQty: 0,
-          countedQty: 3, variance: 3 }],
+        id: "adj-2",
+        type: "cycle_count",
+        status: "pending_approval",
+        lines: [
+          {
+            id: "line-x",
+            productId: "p-new",
+            binId: "bin-X",
+            lotNumber: null,
+            serialNumber: "SN-99",
+            systemQty: 0,
+            countedQty: 3,
+            variance: 3,
+          },
+        ],
       };
       mockDb.inventoryAdjustment.findUniqueOrThrow.mockResolvedValue(singleLineAdj);
       mockTxPrisma.inventory.findFirst.mockResolvedValue(null);
@@ -461,8 +509,12 @@ describe("Cycle count actions", () => {
 
       expect(mockTxPrisma.inventory.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          productId: "p-new", binId: "bin-X", serialNumber: "SN-99",
-          onHand: 3, allocated: 0, available: 3,
+          productId: "p-new",
+          binId: "bin-X",
+          serialNumber: "SN-99",
+          onHand: 3,
+          allocated: 0,
+          available: 3,
         }),
       });
     });

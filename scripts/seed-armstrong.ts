@@ -273,11 +273,26 @@ async function main() {
 
   // Products
   const products = [
-    { clientCode: "ARTERIORS", sku: "ART-LAMP-001", name: "Caviar Adjustable Pendant", weight: 8.5 },
+    {
+      clientCode: "ARTERIORS",
+      sku: "ART-LAMP-001",
+      name: "Caviar Adjustable Pendant",
+      weight: 8.5,
+    },
     { clientCode: "ARTERIORS", sku: "ART-TABLE-002", name: "Mosquito Side Table", weight: 22.0 },
     { clientCode: "ARTERIORS", sku: "ART-MIRROR-003", name: "Keri Mirror", weight: 15.0 },
-    { clientCode: "HONEYWELL", sku: "HW-VEST-001", name: "Hi-Vis Safety Vest Class 3", weight: 0.4 },
-    { clientCode: "HONEYWELL", sku: "HW-GLOVE-002", name: "Cut-Resistant Gloves (12pk)", weight: 1.8 },
+    {
+      clientCode: "HONEYWELL",
+      sku: "HW-VEST-001",
+      name: "Hi-Vis Safety Vest Class 3",
+      weight: 0.4,
+    },
+    {
+      clientCode: "HONEYWELL",
+      sku: "HW-GLOVE-002",
+      name: "Cut-Resistant Gloves (12pk)",
+      weight: 1.8,
+    },
     { clientCode: "HONEYWELL", sku: "HW-HARD-003", name: "Hard Hat with Ratchet", weight: 0.9 },
     { clientCode: "LIGHTANNEX", sku: "LA-FIX-001", name: "Modern Flush Mount LED", weight: 3.2 },
     { clientCode: "LIGHTANNEX", sku: "LA-PEND-002", name: "Industrial Pendant Light", weight: 5.6 },

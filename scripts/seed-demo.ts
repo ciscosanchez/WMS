@@ -85,7 +85,12 @@ async function main() {
   const zone = await tenantDb.zone.upsert({
     where: { warehouseId_code: { warehouseId: warehouse.id, code: "A" } },
     update: {},
-    create: { warehouseId: warehouse.id, code: "A", name: "Zone A - General Storage", type: "storage" },
+    create: {
+      warehouseId: warehouse.id,
+      code: "A",
+      name: "Zone A - General Storage",
+      type: "storage",
+    },
   });
 
   // Create aisle

@@ -1,10 +1,7 @@
 import { AlertTriangle, Settings2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
-import {
-  getReplenishmentRules,
-  checkReplenishmentNeeds,
-} from "@/modules/replenishment/actions";
+import { getReplenishmentRules, checkReplenishmentNeeds } from "@/modules/replenishment/actions";
 import { ReplenishmentNeeds } from "@/components/inventory/replenishment-needs";
 import {
   Table,
@@ -16,10 +13,7 @@ import {
 } from "@/components/ui/table";
 
 export default async function ReplenishmentPage() {
-  const [rules, needs] = await Promise.all([
-    getReplenishmentRules(),
-    checkReplenishmentNeeds(),
-  ]);
+  const [rules, needs] = await Promise.all([getReplenishmentRules(), checkReplenishmentNeeds()]);
 
   return (
     <div className="space-y-6">
@@ -72,22 +66,14 @@ export default async function ReplenishmentPage() {
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {rules.map((rule: any) => (
                   <TableRow key={rule.id}>
-                    <TableCell className="font-mono text-xs">
-                      {rule.product?.sku ?? "-"}
-                    </TableCell>
+                    <TableCell className="font-mono text-xs">{rule.product?.sku ?? "-"}</TableCell>
                     <TableCell>{rule.product?.name ?? "-"}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {rule.bin?.barcode ?? rule.bin?.code ?? "-"}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {rule.minQty}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {rule.reorderPoint}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {rule.maxQty}
-                    </TableCell>
+                    <TableCell className="text-right">{rule.minQty}</TableCell>
+                    <TableCell className="text-right font-medium">{rule.reorderPoint}</TableCell>
+                    <TableCell className="text-right">{rule.maxQty}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

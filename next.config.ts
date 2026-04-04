@@ -30,8 +30,7 @@ const nextConfig: NextConfig = {
               },
               {
                 key: "Access-Control-Allow-Headers",
-                value:
-                  "Content-Type, Authorization, x-tenant-slug, x-cron-secret",
+                value: "Content-Type, Authorization, x-tenant-slug, x-cron-secret",
               },
               {
                 key: "Access-Control-Max-Age",

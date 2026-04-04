@@ -186,7 +186,9 @@
 
 /* Print styles */
 @media print {
-  nav, header, .no-print {
+  nav,
+  header,
+  .no-print {
     display: none !important;
   }
   main {

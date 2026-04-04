@@ -79,5 +79,7 @@ if (hasErrors) {
   console.error("\ni18n key check FAILED — missing translations detected.");
   process.exit(1);
 } else {
-  console.log(`\ni18n key check PASSED — all ${files.length} files in sync across ${TARGET_LOCALES.length + 1} locale(s).`);
+  console.log(
+    `\ni18n key check PASSED — all ${files.length} files in sync across ${TARGET_LOCALES.length + 1} locale(s).`
+  );
 }

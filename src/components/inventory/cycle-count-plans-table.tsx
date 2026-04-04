@@ -44,15 +44,11 @@ function ActionsCell({ plan }: { plan: CycleCountPlan }) {
       if (result.lineCount === 0) {
         toast.info(result.message ?? "No inventory matched the plan criteria");
       } else {
-        toast.success(
-          `Generated ${result.lineCount} cycle count tasks`
-        );
+        toast.success(`Generated ${result.lineCount} cycle count tasks`);
       }
       router.refresh();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to generate tasks"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to generate tasks");
     } finally {
       setLoading(false);
     }
@@ -66,9 +62,7 @@ function ActionsCell({ plan }: { plan: CycleCountPlan }) {
       toast.success("Plan deleted");
       router.refresh();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete plan"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to delete plan");
     } finally {
       setLoading(false);
     }
@@ -84,18 +78,11 @@ function ActionsCell({ plan }: { plan: CycleCountPlan }) {
           <Play className="mr-2 h-4 w-4" />
           Generate Tasks
         </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={loading}
-          onClick={() => toast.info("Edit not yet implemented")}
-        >
+        <DropdownMenuItem disabled={loading} onClick={() => toast.info("Edit not yet implemented")}>
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem
-          className="text-destructive"
-          disabled={loading}
-          onClick={handleDelete}
-        >
+        <DropdownMenuItem className="text-destructive" disabled={loading} onClick={handleDelete}>
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </DropdownMenuItem>
@@ -108,40 +95,28 @@ const columns: ColumnDef<CycleCountPlan>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => <SortableHeader column={column} title="Name" />,
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.name}</span>
-    ),
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "method",
     header: "Method",
-    cell: ({ row }) => (
-      <Badge variant="outline">{row.original.method.toUpperCase()}</Badge>
-    ),
+    cell: ({ row }) => <Badge variant="outline">{row.original.method.toUpperCase()}</Badge>,
   },
   {
     accessorKey: "frequency",
     header: "Frequency",
-    cell: ({ row }) => (
-      <span className="capitalize">{row.original.frequency}</span>
-    ),
+    cell: ({ row }) => <span className="capitalize">{row.original.frequency}</span>,
   },
   {
     id: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <StatusBadge status={row.original.isActive ? "active" : "inactive"} />
-    ),
+    cell: ({ row }) => <StatusBadge status={row.original.isActive ? "active" : "inactive"} />,
   },
   {
     accessorKey: "lastRunAt",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Last Run" />
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Last Run" />,
     cell: ({ row }) =>
-      row.original.lastRunAt
-        ? format(new Date(row.original.lastRunAt), "MMM d, yyyy")
-        : "-",
+      row.original.lastRunAt ? format(new Date(row.original.lastRunAt), "MMM d, yyyy") : "-",
   },
   {
     id: "actions",
@@ -151,11 +126,6 @@ const columns: ColumnDef<CycleCountPlan>[] = [
 
 export function CycleCountPlansTable({ data }: { data: CycleCountPlan[] }) {
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      searchKey="name"
-      searchPlaceholder="Search plans..."
-    />
+    <DataTable columns={columns} data={data} searchKey="name" searchPlaceholder="Search plans..." />
   );
 }

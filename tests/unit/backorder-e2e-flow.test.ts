@@ -225,8 +225,7 @@ describe("Backorder E2E flow", () => {
     mockDb.order.update.mockResolvedValue({ ...baseOrder, status: "picking" });
 
     // Simulate no inventory in any bin
-    mockTxPrisma.inventory.findFirst
-      .mockResolvedValueOnce(null); // no stock for prod-1
+    mockTxPrisma.inventory.findFirst.mockResolvedValueOnce(null); // no stock for prod-1
 
     await expect(updateOrderStatus(orderId, "picking")).rejects.toThrow(
       "No inventory available for any order lines"

@@ -16,10 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  validateImportPreview,
-  importOrders,
-} from "@/modules/orders/import-actions";
+import { validateImportPreview, importOrders } from "@/modules/orders/import-actions";
 import type { ImportPreview, ParsedOrder, ImportError } from "@/modules/orders/import-actions";
 
 export default function BulkOrderImportPage() {
@@ -87,9 +84,7 @@ export default function BulkOrderImportPage() {
         if (result.errors.length === 0) {
           toast.success(`Successfully imported ${result.created} orders`);
         } else {
-          toast.warning(
-            `Imported ${result.created} orders with ${result.errors.length} errors`
-          );
+          toast.warning(`Imported ${result.created} orders with ${result.errors.length} errors`);
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Import failed");
@@ -130,18 +125,11 @@ export default function BulkOrderImportPage() {
               accept=".csv"
               onChange={handleFileChange}
             />
-            {fileName && (
-              <p className="text-sm text-muted-foreground">
-                Selected: {fileName}
-              </p>
-            )}
+            {fileName && <p className="text-sm text-muted-foreground">Selected: {fileName}</p>}
           </div>
 
           <div className="flex gap-2">
-            <Button
-              onClick={handlePreview}
-              disabled={!csvContent || isPreviewing}
-            >
+            <Button onClick={handlePreview} disabled={!csvContent || isPreviewing}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               {isPreviewing ? "Previewing..." : "Preview"}
             </Button>
@@ -154,13 +142,10 @@ export default function BulkOrderImportPage() {
 
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
             <p className="font-medium">Expected CSV columns:</p>
-            <p>
-              clientCode, shipToName, shipToAddress1, shipToCity, shipToZip,
-              sku, quantity
-            </p>
+            <p>clientCode, shipToName, shipToAddress1, shipToCity, shipToZip, sku, quantity</p>
             <p className="mt-1">
-              Optional: shipToState, shipToCountry, shipToEmail, shipToPhone,
-              priority, lotNumber, uom, notes
+              Optional: shipToState, shipToCountry, shipToEmail, shipToPhone, priority, lotNumber,
+              uom, notes
             </p>
           </div>
         </CardContent>
@@ -181,9 +166,7 @@ export default function BulkOrderImportPage() {
                 <p className="text-2xl font-bold text-green-700 dark:text-green-400">
                   {importResult.created}
                 </p>
-                <p className="text-green-600 dark:text-green-500">
-                  Orders Created
-                </p>
+                <p className="text-green-600 dark:text-green-500">Orders Created</p>
               </div>
               <div className="rounded-md bg-red-50 px-4 py-3 dark:bg-red-900/20">
                 <p className="text-2xl font-bold text-red-700 dark:text-red-400">
@@ -234,8 +217,7 @@ export default function BulkOrderImportPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  Preview: {preview.orders.length} Orders from{" "}
-                  {preview.totalRows} Rows
+                  Preview: {preview.orders.length} Orders from {preview.totalRows} Rows
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -253,43 +235,28 @@ export default function BulkOrderImportPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {preview.orders.map(
-                        (order: ParsedOrder, idx: number) => (
-                          <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">
-                              {idx + 1}
-                            </TableCell>
-                            <TableCell>{order.clientCode}</TableCell>
-                            <TableCell>{order.shipToName}</TableCell>
-                            <TableCell>
-                              {order.shipToCity}
-                              {order.shipToState
-                                ? `, ${order.shipToState}`
-                                : ""}
-                            </TableCell>
-                            <TableCell>{order.priority}</TableCell>
-                            <TableCell>{order.lines.length}</TableCell>
-                            <TableCell className="font-medium">
-                              {order.lines.reduce(
-                                (sum, l) => sum + l.quantity,
-                                0
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
+                      {preview.orders.map((order: ParsedOrder, idx: number) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-mono text-xs">{idx + 1}</TableCell>
+                          <TableCell>{order.clientCode}</TableCell>
+                          <TableCell>{order.shipToName}</TableCell>
+                          <TableCell>
+                            {order.shipToCity}
+                            {order.shipToState ? `, ${order.shipToState}` : ""}
+                          </TableCell>
+                          <TableCell>{order.priority}</TableCell>
+                          <TableCell>{order.lines.length}</TableCell>
+                          <TableCell className="font-medium">
+                            {order.lines.reduce((sum, l) => sum + l.quantity, 0)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
 
-                <Button
-                  onClick={handleImport}
-                  disabled={isImporting}
-                  className="w-full"
-                >
-                  {isImporting
-                    ? "Importing..."
-                    : `Import ${preview.orders.length} Orders`}
+                <Button onClick={handleImport} disabled={isImporting} className="w-full">
+                  {isImporting ? "Importing..." : `Import ${preview.orders.length} Orders`}
                 </Button>
               </CardContent>
             </Card>

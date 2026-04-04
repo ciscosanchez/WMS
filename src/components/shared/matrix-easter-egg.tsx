@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const MATRIX_CHARS = "ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍRAMOLA01234567890";
 const TRIGGER = "JCS";
@@ -124,10 +124,7 @@ export function MatrixEasterEgg() {
   if (!active) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] cursor-none"
-      style={{ background: "#000" }}
-    >
+    <div className="fixed inset-0 z-[9999] cursor-none" style={{ background: "#000" }}>
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <p
@@ -150,10 +147,7 @@ export function MatrixEasterEgg() {
         >
           The Matrix has you
         </p>
-        <p
-          className="mt-8 text-xs font-mono"
-          style={{ color: "#0a0", opacity: 0.4 }}
-        >
+        <p className="mt-8 text-xs font-mono" style={{ color: "#0a0", opacity: 0.4 }}>
           Follow the white rabbit...
         </p>
       </div>

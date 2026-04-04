@@ -199,9 +199,7 @@ export default function OperatorCycleCountPage() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="font-mono font-semibold text-sm">{line.product.sku}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {line.bin.barcode}
-                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{line.bin.barcode}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {hasCount && (
@@ -209,9 +207,7 @@ export default function OperatorCycleCountPage() {
                           variant={hasVariance ? "destructive" : "secondary"}
                           className="text-xs"
                         >
-                          {hasVariance
-                            ? `Var: ${parseInt(counted, 10) - line.systemQty}`
-                            : "OK"}
+                          {hasVariance ? `Var: ${parseInt(counted, 10) - line.systemQty}` : "OK"}
                         </Badge>
                       )}
                       <button
@@ -255,9 +251,7 @@ export default function OperatorCycleCountPage() {
         <Button
           className="h-14 w-full text-lg"
           size="lg"
-          disabled={
-            isPending || Object.keys(counts).filter((k) => counts[k] !== "").length === 0
-          }
+          disabled={isPending || Object.keys(counts).filter((k) => counts[k] !== "").length === 0}
           onClick={handleSubmit}
         >
           {isPending ? (
@@ -284,9 +278,7 @@ export default function OperatorCycleCountPage() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ListChecks className="h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 text-lg font-semibold">No pending counts</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            All cycle counts are up to date.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">All cycle counts are up to date.</p>
         </div>
       )}
 

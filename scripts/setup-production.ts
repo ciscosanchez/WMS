@@ -142,10 +142,7 @@ async function main() {
   }
 
   // ── Step 5: Seed colleague tenant ──────────────────────────────────────
-  const ok5 = await run(
-    "npx tsx scripts/seed-colleague.ts",
-    "Seeding Colleague Sandbox tenant"
-  );
+  const ok5 = await run("npx tsx scripts/seed-colleague.ts", "Seeding Colleague Sandbox tenant");
   if (!ok5) {
     console.log("    (Non-fatal — colleague tenant is optional)");
   }

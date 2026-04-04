@@ -30,21 +30,13 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function CycleCountsPage() {
-  const [plans, counts] = await Promise.all([
-    getCycleCountPlans(),
-    getCycleCounts(),
-  ]);
+  const [plans, counts] = await Promise.all([getCycleCountPlans(), getCycleCounts()]);
 
   const activeCount = counts.filter(
     (c: CycleCountItem) => !["completed", "rejected"].includes(c.status)
   ).length;
-  const completedCount = counts.filter(
-    (c: CycleCountItem) => c.status === "completed"
-  ).length;
-  const totalLines = counts.reduce(
-    (sum: number, c: CycleCountItem) => sum + c.lines.length,
-    0
-  );
+  const completedCount = counts.filter((c: CycleCountItem) => c.status === "completed").length;
+  const totalLines = counts.reduce((sum: number, c: CycleCountItem) => sum + c.lines.length, 0);
 
   return (
     <div className="space-y-6">
@@ -74,16 +66,12 @@ export default async function CycleCountsPage() {
         <Card>
           <CardContent className="pt-6">
             <span className="text-sm text-muted-foreground">Completed</span>
-            <p className="mt-1 text-2xl font-bold text-green-600">
-              {completedCount}
-            </p>
+            <p className="mt-1 text-2xl font-bold text-green-600">{completedCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <span className="text-sm text-muted-foreground">
-              Total Lines Counted
-            </span>
+            <span className="text-sm text-muted-foreground">Total Lines Counted</span>
             <p className="mt-1 text-2xl font-bold">{totalLines}</p>
           </CardContent>
         </Card>
@@ -140,10 +128,7 @@ export default async function CycleCountsPage() {
             <TableBody>
               {counts.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-muted-foreground py-8"
-                  >
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No cycle counts yet
                   </TableCell>
                 </TableRow>
@@ -155,22 +140,14 @@ export default async function CycleCountsPage() {
                     </TableCell>
                     <TableCell>{count.reason ?? "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {count.lines.length} items
-                      </Badge>
+                      <Badge variant="outline">{count.lines.length} items</Badge>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge
-                        status={statusLabels[count.status] ?? count.status}
-                      />
+                      <StatusBadge status={statusLabels[count.status] ?? count.status} />
                     </TableCell>
+                    <TableCell>{format(count.createdAt, "MMM d, yyyy")}</TableCell>
                     <TableCell>
-                      {format(count.createdAt, "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      {count.completedAt
-                        ? format(count.completedAt, "MMM d, yyyy")
-                        : "-"}
+                      {count.completedAt ? format(count.completedAt, "MMM d, yyyy") : "-"}
                     </TableCell>
                   </TableRow>
                 ))

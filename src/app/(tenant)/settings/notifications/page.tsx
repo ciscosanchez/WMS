@@ -59,10 +59,7 @@ export default function NotificationPreferencesPage() {
       });
   }, []);
 
-  function togglePref(
-    category: NotificationCategory,
-    channel: "inApp" | "email"
-  ) {
+  function togglePref(category: NotificationCategory, channel: "inApp" | "email") {
     if (!prefs) return;
     setPrefs({
       ...prefs,
@@ -76,13 +73,11 @@ export default function NotificationPreferencesPage() {
   function handleSave() {
     if (!prefs) return;
 
-    const prefArray: NotificationPref[] = NOTIFICATION_CATEGORIES.map(
-      (cat) => ({
-        category: cat,
-        inApp: prefs[cat].inApp,
-        email: prefs[cat].email,
-      })
-    );
+    const prefArray: NotificationPref[] = NOTIFICATION_CATEGORIES.map((cat) => ({
+      category: cat,
+      inApp: prefs[cat].inApp,
+      email: prefs[cat].email,
+    }));
 
     startSave(async () => {
       try {
@@ -93,9 +88,7 @@ export default function NotificationPreferencesPage() {
           toast.success("Notification preferences saved");
         }
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to save preferences"
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to save preferences");
       }
     });
   }
@@ -118,10 +111,7 @@ export default function NotificationPreferencesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Notification Preferences"
-        description="Choose how you want to be notified"
-      >
+      <PageHeader title="Notification Preferences" description="Choose how you want to be notified">
         <Button onClick={handleSave} disabled={isSaving || !prefs}>
           <Save className="mr-2 h-4 w-4" />
           {isSaving ? "Saving..." : "Save Preferences"}
@@ -151,9 +141,7 @@ export default function NotificationPreferencesPage() {
                     <TableRow key={category}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">
-                            {CATEGORY_LABELS[category]}
-                          </p>
+                          <p className="font-medium">{CATEGORY_LABELS[category]}</p>
                           <p className="text-xs text-muted-foreground">
                             {CATEGORY_DESCRIPTIONS[category]}
                           </p>
@@ -162,17 +150,13 @@ export default function NotificationPreferencesPage() {
                       <TableCell className="text-center">
                         <Checkbox
                           checked={prefs[category].inApp}
-                          onCheckedChange={() =>
-                            togglePref(category, "inApp")
-                          }
+                          onCheckedChange={() => togglePref(category, "inApp")}
                         />
                       </TableCell>
                       <TableCell className="text-center">
                         <Checkbox
                           checked={prefs[category].email}
-                          onCheckedChange={() =>
-                            togglePref(category, "email")
-                          }
+                          onCheckedChange={() => togglePref(category, "email")}
                         />
                       </TableCell>
                     </TableRow>

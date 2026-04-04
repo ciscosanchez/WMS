@@ -34,10 +34,7 @@ async function main() {
   console.log(`  Created schema: ${dbSchema}`);
 
   // Push tenant schema
-  const schemaPath = path.resolve(
-    process.cwd(),
-    "prisma/tenant-schema.prisma"
-  );
+  const schemaPath = path.resolve(process.cwd(), "prisma/tenant-schema.prisma");
   const dbUrl = `${process.env.DATABASE_URL!.split("?")[0]}?schema=${dbSchema}`;
 
   console.log("  Pushing tenant schema...");

@@ -92,11 +92,7 @@ function resetMocks() {
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
-import {
-  shipTransfer,
-  receiveTransfer,
-  completeTransfer,
-} from "@/modules/transfers/execution";
+import { shipTransfer, receiveTransfer, completeTransfer } from "@/modules/transfers/execution";
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -114,9 +110,7 @@ describe("Transfer execution", () => {
       status: "approved",
       fromWarehouseId: "wh-1",
       toWarehouseId: "wh-2",
-      lines: [
-        { id: "line-1", productId: "p1", quantity: 10, lotNumber: null },
-      ],
+      lines: [{ id: "line-1", productId: "p1", quantity: 10, lotNumber: null }],
     };
 
     it("decrements source inventory and writes move transaction", async () => {
@@ -156,9 +150,7 @@ describe("Transfer execution", () => {
         { id: "inv-1", binId: "bin-A", onHand: 5, allocated: 0 },
       ]);
 
-      await expect(shipTransfer("xfer-1")).rejects.toThrow(
-        /Insufficient inventory for product p1/
-      );
+      await expect(shipTransfer("xfer-1")).rejects.toThrow(/Insufficient inventory for product p1/);
     });
 
     it("splits across multiple bins when single bin lacks stock", async () => {
@@ -214,9 +206,7 @@ describe("Transfer execution", () => {
       status: "in_transit",
       fromWarehouseId: "wh-1",
       toWarehouseId: "wh-2",
-      lines: [
-        { id: "line-1", productId: "p1", quantity: 10, lotNumber: null },
-      ],
+      lines: [{ id: "line-1", productId: "p1", quantity: 10, lotNumber: null }],
     };
 
     it("upserts destination inventory when existing record found", async () => {
@@ -299,9 +289,7 @@ describe("Transfer execution", () => {
         status: "received",
         fromWarehouseId: "wh-1",
         toWarehouseId: "wh-2",
-        lines: [
-          { id: "line-1", productId: "p1", quantity: 10, receivedQty: 10 },
-        ],
+        lines: [{ id: "line-1", productId: "p1", quantity: 10, receivedQty: 10 }],
       });
       mockDb.transferOrder.update.mockResolvedValue({});
       mockDb.billingEvent.create.mockResolvedValue({});

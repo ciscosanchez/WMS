@@ -9,10 +9,7 @@ export default async function BackordersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Backorders"
-        description="Orders waiting for inventory availability"
-      />
+      <PageHeader title="Backorders" description="Orders waiting for inventory availability" />
 
       {backorders.data.length === 0 ? (
         <EmptyState

@@ -8,11 +8,7 @@
 
 const CACHE_NAME = "ramola-wms-v1";
 
-const STATIC_ASSETS = [
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png",
-];
+const STATIC_ASSETS = ["/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 // Operator app routes — precached on install for offline shell
 const APP_SHELL_ROUTES = [
@@ -30,9 +26,7 @@ const APP_SHELL_ROUTES = [
 // can open any page even if they go offline before visiting it.
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll([...STATIC_ASSETS, ...APP_SHELL_ROUTES])
-    )
+    caches.open(CACHE_NAME).then((cache) => cache.addAll([...STATIC_ASSETS, ...APP_SHELL_ROUTES]))
   );
   self.skipWaiting();
 });
@@ -40,13 +34,11 @@ self.addEventListener("install", (event) => {
 // ─── Activate ─────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
       )
-    )
   );
   self.clients.claim();
 });

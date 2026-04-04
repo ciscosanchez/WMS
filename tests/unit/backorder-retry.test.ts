@@ -159,9 +159,7 @@ describe("Backorder retry", () => {
       mockDb.order.findUniqueOrThrow.mockResolvedValue(backorderedOrder);
 
       // No inventory found for either product
-      mockTxPrisma.inventory.findFirst
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
+      mockTxPrisma.inventory.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
       await expect(retryBackorderAllocation("order-1")).rejects.toThrow(
         /No inventory available for any backordered lines/
@@ -194,9 +192,7 @@ describe("Backorder retry", () => {
         status: "picking",
       });
 
-      await expect(retryBackorderAllocation("order-1")).rejects.toThrow(
-        /not backordered/
-      );
+      await expect(retryBackorderAllocation("order-1")).rejects.toThrow(/not backordered/);
     });
   });
 
@@ -216,8 +212,8 @@ describe("Backorder retry", () => {
       });
 
       mockDb.inventory.findMany
-        .mockResolvedValueOnce([{ available: 10 }])  // p1
-        .mockResolvedValueOnce([{ available: 5 }]);   // p2
+        .mockResolvedValueOnce([{ available: 10 }]) // p1
+        .mockResolvedValueOnce([{ available: 5 }]); // p2
 
       const result = await checkBackorderFulfillment("order-1");
 
@@ -241,8 +237,8 @@ describe("Backorder retry", () => {
       });
 
       mockDb.inventory.findMany
-        .mockResolvedValueOnce([{ available: 10 }])  // p1 has enough
-        .mockResolvedValueOnce([{ available: 1 }]);   // p2 not enough
+        .mockResolvedValueOnce([{ available: 10 }]) // p1 has enough
+        .mockResolvedValueOnce([{ available: 1 }]); // p2 not enough
 
       const result = await checkBackorderFulfillment("order-1");
 
@@ -255,9 +251,7 @@ describe("Backorder retry", () => {
         id: "order-1",
         orderNumber: "ORD-001",
         status: "backordered",
-        lines: [
-          { id: "ol-1", productId: "p1", quantity: 5 },
-        ],
+        lines: [{ id: "ol-1", productId: "p1", quantity: 5 }],
         picks: [],
       });
 
@@ -274,12 +268,8 @@ describe("Backorder retry", () => {
         id: "order-1",
         orderNumber: "ORD-001",
         status: "backordered",
-        lines: [
-          { id: "ol-1", productId: "p1", quantity: 10 },
-        ],
-        picks: [
-          { id: "pick-1", lines: [{ productId: "p1", quantity: 7 }] },
-        ],
+        lines: [{ id: "ol-1", productId: "p1", quantity: 10 }],
+        picks: [{ id: "pick-1", lines: [{ productId: "p1", quantity: 7 }] }],
       });
 
       // Only need 3 more (10 - 7 already allocated)

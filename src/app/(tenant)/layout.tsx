@@ -34,7 +34,9 @@ export default async function TenantLayout({ children }: { children: React.React
 
   return (
     <SidebarProvider>
-      <div style={Object.keys(brandStyle).length > 0 ? brandStyle as React.CSSProperties : undefined}>
+      <div
+        style={Object.keys(brandStyle).length > 0 ? (brandStyle as React.CSSProperties) : undefined}
+      >
         <AppSidebar />
       </div>
       <SidebarInset>

@@ -9,7 +9,12 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
-  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/", "<rootDir>/tests/e2e/", "<rootDir>/.claude/"],
+  testPathIgnorePatterns: [
+    "<rootDir>/.next/",
+    "<rootDir>/node_modules/",
+    "<rootDir>/tests/e2e/",
+    "<rootDir>/.claude/",
+  ],
   coverageDirectory: "coverage",
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",

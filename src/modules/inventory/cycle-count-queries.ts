@@ -22,54 +22,56 @@ export async function getPendingCycleCountAdjustments() {
 
   // Enrich lines with product and bin info
   const enriched = await Promise.all(
-    adjustments.map(async (adj: {
-      id: string;
-      adjustmentNumber: string;
-      reason: string | null;
-      status: string;
-      lines: Array<{
+    adjustments.map(
+      async (adj: {
         id: string;
-        productId: string;
-        binId: string;
-        systemQty: number;
-        countedQty: number;
-        variance: number;
-      }>;
-    }) => {
-      const productIds = [...new Set(adj.lines.map((l) => l.productId))];
-      const binIds = [...new Set(adj.lines.map((l) => l.binId))];
+        adjustmentNumber: string;
+        reason: string | null;
+        status: string;
+        lines: Array<{
+          id: string;
+          productId: string;
+          binId: string;
+          systemQty: number;
+          countedQty: number;
+          variance: number;
+        }>;
+      }) => {
+        const productIds = [...new Set(adj.lines.map((l) => l.productId))];
+        const binIds = [...new Set(adj.lines.map((l) => l.binId))];
 
-      const [products, bins] = await Promise.all([
-        db.product.findMany({
-          where: { id: { in: productIds } },
-          select: { id: true, sku: true, name: true },
-        }),
-        db.bin.findMany({
-          where: { id: { in: binIds } },
-          select: { id: true, barcode: true },
-        }),
-      ]);
+        const [products, bins] = await Promise.all([
+          db.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, sku: true, name: true },
+          }),
+          db.bin.findMany({
+            where: { id: { in: binIds } },
+            select: { id: true, barcode: true },
+          }),
+        ]);
 
-      const productMap = new Map(products.map((p: { id: string }) => [p.id, p]));
-      const binMap = new Map(bins.map((b: { id: string }) => [b.id, b]));
+        const productMap = new Map(products.map((p: { id: string }) => [p.id, p]));
+        const binMap = new Map(bins.map((b: { id: string }) => [b.id, b]));
 
-      return {
-        id: adj.id,
-        adjustmentNumber: adj.adjustmentNumber,
-        reason: adj.reason,
-        status: adj.status,
-        lines: adj.lines.map((line) => ({
-          id: line.id,
-          productId: line.productId,
-          product: productMap.get(line.productId) ?? { sku: "-", name: "-" },
-          binId: line.binId,
-          bin: binMap.get(line.binId) ?? { barcode: "-" },
-          systemQty: line.systemQty,
-          countedQty: line.countedQty,
-          variance: line.variance,
-        })),
-      };
-    })
+        return {
+          id: adj.id,
+          adjustmentNumber: adj.adjustmentNumber,
+          reason: adj.reason,
+          status: adj.status,
+          lines: adj.lines.map((line) => ({
+            id: line.id,
+            productId: line.productId,
+            product: productMap.get(line.productId) ?? { sku: "-", name: "-" },
+            binId: line.binId,
+            bin: binMap.get(line.binId) ?? { barcode: "-" },
+            systemQty: line.systemQty,
+            countedQty: line.countedQty,
+            variance: line.variance,
+          })),
+        };
+      }
+    )
   );
 
   return enriched;

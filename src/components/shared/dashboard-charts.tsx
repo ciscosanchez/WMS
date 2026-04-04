@@ -33,10 +33,7 @@ export function DashboardCharts({
         title={labels?.receivingVolume ?? "Receiving Volume (Items/Day)"}
         data={receivingVolume}
       />
-      <PieChartCard
-        title={labels?.ordersByStatus ?? "Orders by Status"}
-        data={ordersByStatus}
-      />
+      <PieChartCard title={labels?.ordersByStatus ?? "Orders by Status"} data={ordersByStatus} />
       <BarChartCard
         title={labels?.occupiedBinsByZone ?? "Occupied Bins by Zone"}
         data={zoneUtilization}

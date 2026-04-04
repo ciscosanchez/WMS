@@ -52,9 +52,7 @@ export default function PackStationPage() {
   }
 
   function handleOrderScan(value: string) {
-    const task = tasks.find(
-      (t) => t.taskNumber === value || t.order?.orderNumber === value
-    );
+    const task = tasks.find((t) => t.taskNumber === value || t.order?.orderNumber === value);
     if (!task) {
       toast.error(`No task found for "${value}"`);
       return;
@@ -74,8 +72,7 @@ export default function PackStationPage() {
     if (!activeTask) return;
 
     const line = activeTask.lines.find(
-      (l: PackLineItem) =>
-        l.product.sku === value || l.product.barcode === value
+      (l: PackLineItem) => l.product.sku === value || l.product.barcode === value
     );
 
     if (!line) {
@@ -200,9 +197,7 @@ export default function PackStationPage() {
               </div>
               <div className="flex items-center gap-2">
                 {activeTask.order?.priority && (
-                  <Badge className="bg-blue-100 text-blue-700">
-                    {activeTask.order.priority}
-                  </Badge>
+                  <Badge className="bg-blue-100 text-blue-700">{activeTask.order.priority}</Badge>
                 )}
                 <Badge variant={allVerified ? "default" : "secondary"}>
                   {verifiedCount}/{activeTask.lines.length} verified
@@ -239,13 +234,12 @@ export default function PackStationPage() {
                   const scanned = verified.get(line.id) ?? 0;
                   const done = scanned >= line.pickedQty;
                   return (
-                    <TableRow key={line.id} className={done ? "bg-green-50 dark:bg-green-950/30" : ""}>
-                      <TableCell className="font-mono font-medium">
-                        {line.product.sku}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {line.product.name}
-                      </TableCell>
+                    <TableRow
+                      key={line.id}
+                      className={done ? "bg-green-50 dark:bg-green-950/30" : ""}
+                    >
+                      <TableCell className="font-mono font-medium">{line.product.sku}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{line.product.name}</TableCell>
                       <TableCell className="text-right text-lg font-bold">
                         {line.pickedQty}
                       </TableCell>
@@ -261,9 +255,7 @@ export default function PackStationPage() {
                             variant="outline"
                             className="h-7 text-xs"
                             onClick={() => {
-                              setVerified((prev) =>
-                                new Map(prev).set(line.id, line.pickedQty)
-                              );
+                              setVerified((prev) => new Map(prev).set(line.id, line.pickedQty));
                             }}
                           >
                             Manual
@@ -309,8 +301,8 @@ export default function PackStationPage() {
                         Box {carton.cartonSeq}: {carton.cartonTypeCode}
                       </span>
                       <span className="text-muted-foreground">
-                        {carton.items.reduce((s, i) => s + i.quantity, 0)} items
-                        &middot; {carton.totalWeight.toFixed(1)} lb
+                        {carton.items.reduce((s, i) => s + i.quantity, 0)} items &middot;{" "}
+                        {carton.totalWeight.toFixed(1)} lb
                       </span>
                     </div>
                   ))}
@@ -365,18 +357,13 @@ export default function PackStationPage() {
               >
                 <CardContent className="flex items-center justify-between p-4">
                   <div>
-                    <p className="font-semibold">
-                      {task.order?.orderNumber ?? task.taskNumber}
-                    </p>
+                    <p className="font-semibold">{task.order?.orderNumber ?? task.taskNumber}</p>
                     <p className="text-sm text-muted-foreground">
-                      {task.lines.length} line(s) &middot;{" "}
-                      {task.order?.shipToName ?? "---"}
+                      {task.lines.length} line(s) &middot; {task.order?.shipToName ?? "---"}
                     </p>
                   </div>
                   {task.order?.priority && (
-                    <Badge className="bg-blue-100 text-blue-700">
-                      {task.order.priority}
-                    </Badge>
+                    <Badge className="bg-blue-100 text-blue-700">{task.order.priority}</Badge>
                   )}
                 </CardContent>
               </Card>

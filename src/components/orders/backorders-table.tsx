@@ -49,22 +49,14 @@ function ActionsCell({ order }: { order: BackorderedOrder }) {
     try {
       const result = await checkBackorderFulfillment(order.id);
       if (result.canFulfillAll) {
-        toast.success(
-          `${result.orderNumber}: All lines can be fulfilled`
-        );
+        toast.success(`${result.orderNumber}: All lines can be fulfilled`);
       } else if (result.canFulfillSome) {
-        toast.info(
-          `${result.orderNumber}: Some lines can be fulfilled`
-        );
+        toast.info(`${result.orderNumber}: Some lines can be fulfilled`);
       } else {
-        toast.warning(
-          `${result.orderNumber}: No lines can be fulfilled yet`
-        );
+        toast.warning(`${result.orderNumber}: No lines can be fulfilled yet`);
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to check fulfillment"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to check fulfillment");
     } finally {
       setLoading(false);
     }
@@ -83,9 +75,7 @@ function ActionsCell({ order }: { order: BackorderedOrder }) {
       }
       router.refresh();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to retry allocation"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to retry allocation");
     } finally {
       setLoading(false);
     }
@@ -123,20 +113,12 @@ function ActionsCell({ order }: { order: BackorderedOrder }) {
 const columns: ColumnDef<BackorderedOrder>[] = [
   {
     accessorKey: "orderNumber",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Order #" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium font-mono">
-        {row.original.orderNumber}
-      </span>
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Order #" />,
+    cell: ({ row }) => <span className="font-medium font-mono">{row.original.orderNumber}</span>,
   },
   {
     accessorKey: "shipToName",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Client" />
-    ),
+    header: ({ column }) => <SortableHeader column={column} title="Client" />,
   },
   {
     accessorKey: "status",
@@ -146,9 +128,7 @@ const columns: ColumnDef<BackorderedOrder>[] = [
   {
     id: "lines",
     header: "Lines",
-    cell: ({ row }) => (
-      <Badge variant="outline">{row.original.lines.length} items</Badge>
-    ),
+    cell: ({ row }) => <Badge variant="outline">{row.original.lines.length} items</Badge>,
   },
   {
     id: "actions",

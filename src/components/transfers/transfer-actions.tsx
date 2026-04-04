@@ -17,11 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  shipTransfer,
-  receiveTransfer,
-  completeTransfer,
-} from "@/modules/transfers/execution";
+import { shipTransfer, receiveTransfer, completeTransfer } from "@/modules/transfers/execution";
 
 interface TransferActionsProps {
   transferId: string;
@@ -92,13 +88,9 @@ export function TransferActions({
       try {
         await config.action(transferId);
         setCurrentStatus(config.targetStatus);
-        toast.success(
-          `Transfer ${transferNumber} is now ${config.targetStatus.replace("_", " ")}`
-        );
+        toast.success(`Transfer ${transferNumber} is now ${config.targetStatus.replace("_", " ")}`);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Action failed"
-        );
+        toast.error(err instanceof Error ? err.message : "Action failed");
       }
     });
   }
@@ -138,11 +130,7 @@ export function TransferActions({
           <AlertDialog>
             <AlertDialogTrigger
               render={
-                <Button
-                  className="w-full"
-                  variant={config.variant}
-                  disabled={isPending}
-                >
+                <Button className="w-full" variant={config.variant} disabled={isPending}>
                   <config.icon className="mr-2 h-4 w-4" />
                   {isPending ? "Processing..." : config.label}
                 </Button>
@@ -151,15 +139,11 @@ export function TransferActions({
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>{config.label}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {config.description}
-                </AlertDialogDescription>
+                <AlertDialogDescription>{config.description}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleExecute}>
-                  Confirm
-                </AlertDialogAction>
+                <AlertDialogAction onClick={handleExecute}>Confirm</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
