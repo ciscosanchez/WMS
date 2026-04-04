@@ -89,6 +89,9 @@ describe("tenant settings auth validation", () => {
           domains: [],
         },
       ],
+      brandPrimary: "",
+      brandSidebarBg: "",
+      brandSidebarText: "",
     });
 
     expect(result).toEqual({
@@ -114,6 +117,9 @@ describe("tenant settings auth validation", () => {
       pickPrefix: "PCK-",
       authMode: "hybrid",
       ssoProviders: [],
+      brandPrimary: "",
+      brandSidebarBg: "",
+      brandSidebarText: "",
     });
 
     expect(result).toEqual({
@@ -147,6 +153,9 @@ describe("tenant settings auth validation", () => {
           domains: ["acme.com"],
         },
       ],
+      brandPrimary: "",
+      brandSidebarBg: "",
+      brandSidebarText: "",
     });
 
     expect(result).toEqual({});
@@ -179,6 +188,9 @@ describe("tenant settings auth validation", () => {
               },
             ],
           },
+          brandPrimary: "",
+          brandSidebarBg: "",
+          brandSidebarText: "",
         },
       },
     });

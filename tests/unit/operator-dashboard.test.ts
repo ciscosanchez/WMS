@@ -23,6 +23,10 @@ jest.mock("next/headers", () => ({
   }),
 }));
 
+jest.mock("@/lib/config", () => ({
+  config: { useMockData: false },
+}));
+
 jest.mock("@/lib/db/public-client", () => ({
   publicDb: {
     tenant: {

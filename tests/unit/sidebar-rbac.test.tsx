@@ -65,6 +65,12 @@ jest.mock("@/components/ui/sidebar", () => {
   };
 });
 
+jest.mock("@/lib/config", () => ({ config: { useMockData: false } }));
+
+// Ensure mock mode is off so RBAC is actually enforced
+// Must be set before module import (USE_MOCK is a top-level const)
+process.env.NEXT_PUBLIC_USE_MOCK_DATA = "false";
+
 jest.mock("next/link", () => {
   const Link = ({
     href,
@@ -104,29 +110,20 @@ describe("AppSidebar RBAC visibility", () => {
 
     render(<AppSidebar />);
 
+    // Viewers see read-only operational pages + preferences (no permission required)
     expect(screen.getByText("dashboard")).toBeInTheDocument();
-    expect(screen.getByText("reports")).toBeInTheDocument();
+    expect(screen.getAllByText("reports").length).toBeGreaterThan(0);
     expect(screen.getByText("inboundShipments")).toBeInTheDocument();
-    expect(screen.queryByText("settings")).not.toBeInTheDocument();
+    expect(screen.getByText("settings")).toBeInTheDocument(); // Preferences — all roles
+
+    // Viewers should NOT see admin-only or write-required items
     expect(screen.queryByText("workflowRules")).not.toBeInTheDocument();
+    expect(screen.queryByText("usersPermissions")).not.toBeInTheDocument();
     expect(screen.queryByText("driverCheckIn")).not.toBeInTheDocument();
     expect(screen.queryByText("floorApp")).not.toBeInTheDocument();
   });
 
-  it("shows settings and operator entrypoints for managers but hides admin-only items", async () => {
-    setSession("manager");
-    const { AppSidebar } = await import("@/components/layout/app-sidebar");
-
-    render(<AppSidebar />);
-
-    expect(screen.getByText("settings")).toBeInTheDocument();
-    expect(screen.getByText("workflowRules")).toBeInTheDocument();
-    expect(screen.getByText("floorApp")).toBeInTheDocument();
-    expect(screen.getByText("laborCosts")).toBeInTheDocument();
-    expect(screen.getByText("driverCheckIn")).toBeInTheDocument();
-  });
-
-  it("shows write-capable operational items for warehouse workers", async () => {
+  it("shows operational items for warehouse workers but hides admin config", async () => {
     setSession("warehouse_worker");
     const { AppSidebar } = await import("@/components/layout/app-sidebar");
 
@@ -134,18 +131,35 @@ describe("AppSidebar RBAC visibility", () => {
 
     expect(screen.getByText("driverCheckIn")).toBeInTheDocument();
     expect(screen.getByText("floorApp")).toBeInTheDocument();
-    expect(screen.queryByText("settings")).not.toBeInTheDocument();
+    expect(screen.getByText("settings")).toBeInTheDocument(); // Preferences — all roles
+
+    // Workers should NOT see admin-only config
     expect(screen.queryByText("workflowRules")).not.toBeInTheDocument();
+    expect(screen.queryByText("usersPermissions")).not.toBeInTheDocument();
   });
 
-  it("shows the full tenant navigation to admins and superadmins", async () => {
-    setSession("admin", true);
+  it("shows manager-level items including labor costs", async () => {
+    setSession("manager");
     const { AppSidebar } = await import("@/components/layout/app-sidebar");
 
     render(<AppSidebar />);
 
     expect(screen.getByText("settings")).toBeInTheDocument();
+    expect(screen.getByText("floorApp")).toBeInTheDocument();
+    expect(screen.getByText("laborCosts")).toBeInTheDocument();
+    expect(screen.getByText("driverCheckIn")).toBeInTheDocument();
+  });
+
+  it("shows the full navigation including administration to admins", async () => {
+    setSession("admin", true);
+    const { AppSidebar } = await import("@/components/layout/app-sidebar");
+
+    render(<AppSidebar />);
+
+    // Admin sees everything
+    expect(screen.getByText("settings")).toBeInTheDocument();
     expect(screen.getByText("workflowRules")).toBeInTheDocument();
+    expect(screen.getByText("usersPermissions")).toBeInTheDocument();
     expect(screen.getByText("driverCheckIn")).toBeInTheDocument();
     expect(screen.getByText("laborCosts")).toBeInTheDocument();
     expect(screen.getByText("floorApp")).toBeInTheDocument();

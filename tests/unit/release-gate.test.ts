@@ -24,6 +24,10 @@ jest.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
 
+jest.mock("@/lib/config", () => ({
+  config: { useMockData: false },
+}));
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeTenantDb(overrides: Record<string, unknown> = {}) {

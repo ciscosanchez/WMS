@@ -30,6 +30,10 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("@/lib/config", () => ({
+  config: { useMockData: false },
+}));
+
 jest.mock("next/headers", () => ({
   headers: jest.fn().mockResolvedValue({
     get: (key: string) => (key === "x-tenant-slug" ? "test" : null),
